@@ -70,7 +70,7 @@ function LayoutContent({ children, currentPageName }) {
         return () => clearInterval(interval);
     }, []);
     const { language, isRTL, toggleLanguage, t } = useLanguage();
-    const { logout, user } = useAuth();
+    const { logout } = useAuth();
     const navigate = useNavigate();
 
     const menuItems = [
@@ -197,7 +197,7 @@ function LayoutContent({ children, currentPageName }) {
                             className="mt-2 w-full justify-start gap-2 text-red-600 hover:bg-red-50 hover:text-red-700"
                         >
                             <LogOut className="w-4 h-4" />
-                            <span className="flex-1 truncate text-start">{user?.email || 'Logout'}</span>
+                            <span className="flex-1 truncate text-start">Logout</span>
                         </Button>
                     </div>
 
