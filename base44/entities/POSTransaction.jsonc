@@ -1,0 +1,117 @@
+{
+  "name": "POSTransaction",
+  "type": "object",
+  "properties": {
+    "transaction_number": {
+      "type": "string",
+      "description": "Unique POS transaction number"
+    },
+    "transaction_date": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Date and time of transaction"
+    },
+    "cashier_name": {
+      "type": "string",
+      "description": "Cashier who processed the transaction"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Customer name (optional for walk-in)"
+    },
+    "customer_phone": {
+      "type": "string"
+    },
+    "items": {
+      "type": "array",
+      "description": "Line items in the transaction",
+      "items": {
+        "type": "object",
+        "properties": {
+          "product_code": {
+            "type": "string"
+          },
+          "product_name": {
+            "type": "string"
+          },
+          "quantity": {
+            "type": "number"
+          },
+          "unit_price": {
+            "type": "number"
+          },
+          "discount_percent": {
+            "type": "number"
+          },
+          "line_total": {
+            "type": "number"
+          },
+          "vat_amount": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "subtotal": {
+      "type": "number",
+      "description": "Subtotal before VAT",
+      "default": 0
+    },
+    "discount_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "vat_amount": {
+      "type": "number",
+      "default": 0
+    },
+    "total_amount": {
+      "type": "number",
+      "description": "Total including VAT"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "cash",
+        "card",
+        "bank_transfer",
+        "split"
+      ],
+      "default": "cash"
+    },
+    "cash_received": {
+      "type": "number",
+      "default": 0
+    },
+    "change_given": {
+      "type": "number",
+      "default": 0
+    },
+    "branch_code": {
+      "type": "string",
+      "description": "Branch where transaction occurred"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "voided",
+        "refunded"
+      ],
+      "default": "completed"
+    },
+    "invoice_number": {
+      "type": "string",
+      "description": "Linked invoice number if generated"
+    },
+    "notes": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "transaction_number",
+    "transaction_date",
+    "total_amount",
+    "payment_method"
+  ]
+}
