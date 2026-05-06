@@ -40,6 +40,30 @@ const metadataColumns = new Set([
   'updated_at'
 ]);
 
+const organizationScopedEntityExclusions = new Set([
+  'Organization',
+  'User',
+  'Role',
+  'AuditTrail',
+  'IntegrationConfig',
+  'IntegrationLog',
+  'DocumentNumberSeries'
+]);
+
+const shouldScopeEntityToOrganization = (entityName) =>
+  !organizationScopedEntityExclusions.has(entityName);
+
+const getSelectedOrganizationId = () => {
+  if (typeof window === 'undefined') return null;
+  const selectedId = window.localStorage.getItem('selected_organization_id');
+  return selectedId && selectedId !== 'null' && selectedId !== 'undefined' ? selectedId : null;
+};
+
+const notifyOrganizationsChanged = () => {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('matrixsales:organizations-changed'));
+};
+
 const normalizeRow = (row) => ({
   ...(row?.record || {}),
   id: row?.id,
@@ -117,10 +141,17 @@ const getCurrentSupabaseUser = async () => {
 
 const createSupabaseEntity = (entityName) => {
   const tableName = tableNameForEntity(entityName);
+  const isOrganizationScoped = shouldScopeEntityToOrganization(entityName);
 
   const listRows = async (filters = {}, sort, limit) => {
     const client = requireSupabase();
     let query = client.from(tableName).select('*');
+    const selectedOrganizationId = getSelectedOrganizationId();
+    const hasOrganizationFilter = Object.prototype.hasOwnProperty.call(filters || {}, 'organization_id');
+
+    if (isOrganizationScoped && selectedOrganizationId && !hasOrganizationFilter) {
+      query = query.eq('organization_id', selectedOrganizationId);
+    }
 
     Object.entries(filters || {}).forEach(([key, value]) => {
       if (value === undefined || value === null || value === '') return;
@@ -143,11 +174,16 @@ const createSupabaseEntity = (entityName) => {
     filter: (filters = {}, sort, limit) => listRows(filters, sort, limit),
     create: async (data) => {
       const client = requireSupabase();
+      const selectedOrganizationId = getSelectedOrganizationId();
+      const organizationId = data.organization_id || (isOrganizationScoped ? selectedOrganizationId : null);
       const payload = {
         base44_id: data.base44_id || data.base44Id || null,
-        organization_id: data.organization_id || null,
+        organization_id: organizationId,
         organization_key: data.organization_key || null,
-        record: data || {}
+        record: {
+          ...(data || {}),
+          ...(organizationId ? { organization_id: organizationId } : {})
+        }
       };
 
       const { data: row, error } = await client
@@ -157,16 +193,24 @@ const createSupabaseEntity = (entityName) => {
         .single();
 
       if (error) throw error;
+      if (entityName === 'Organization') notifyOrganizationsChanged();
       return normalizeRow(row);
     },
     bulkCreate: async (records = []) => {
       const client = requireSupabase();
-      const payload = records.map((record) => ({
-        base44_id: record.base44_id || record.base44Id || null,
-        organization_id: record.organization_id || null,
-        organization_key: record.organization_key || null,
-        record
-      }));
+      const selectedOrganizationId = getSelectedOrganizationId();
+      const payload = records.map((record) => {
+        const organizationId = record.organization_id || (isOrganizationScoped ? selectedOrganizationId : null);
+        return {
+          base44_id: record.base44_id || record.base44Id || null,
+          organization_id: organizationId,
+          organization_key: record.organization_key || null,
+          record: {
+            ...record,
+            ...(organizationId ? { organization_id: organizationId } : {})
+          }
+        };
+      });
 
       const { data, error } = await client
         .from(tableName)
@@ -178,6 +222,7 @@ const createSupabaseEntity = (entityName) => {
     },
     update: async (id, data) => {
       const client = requireSupabase();
+      const selectedOrganizationId = getSelectedOrganizationId();
       const { data: existing, error: readError } = await client
         .from(tableName)
         .select('*')
@@ -188,13 +233,17 @@ const createSupabaseEntity = (entityName) => {
 
       const record = {
         ...(existing?.record || {}),
-        ...(data || {})
+        ...(data || {}),
+        ...((data?.organization_id || existing?.organization_id || (isOrganizationScoped ? selectedOrganizationId : null))
+          ? { organization_id: data?.organization_id || existing?.organization_id || selectedOrganizationId }
+          : {})
       };
+      const organizationId = data?.organization_id || existing?.organization_id || (isOrganizationScoped ? selectedOrganizationId : null);
 
       const { data: row, error } = await client
         .from(tableName)
         .update({
-          organization_id: data?.organization_id ?? existing?.organization_id ?? null,
+          organization_id: organizationId,
           organization_key: data?.organization_key ?? existing?.organization_key ?? null,
           record
         })
@@ -203,12 +252,14 @@ const createSupabaseEntity = (entityName) => {
         .single();
 
       if (error) throw error;
+      if (entityName === 'Organization') notifyOrganizationsChanged();
       return normalizeRow(row);
     },
     delete: async (id) => {
       const client = requireSupabase();
       const { error } = await client.from(tableName).delete().eq('id', id);
       if (error) throw error;
+      if (entityName === 'Organization') notifyOrganizationsChanged();
       return { id };
     }
   };

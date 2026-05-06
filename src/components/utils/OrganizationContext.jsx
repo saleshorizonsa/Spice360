@@ -19,6 +19,18 @@ export const OrganizationProvider = ({ children }) => {
 
     useEffect(() => {
         initializeOrganization();
+
+        const handleOrganizationsChanged = () => {
+            initializeOrganization();
+        };
+
+        window.addEventListener('matrixsales:organizations-changed', handleOrganizationsChanged);
+        window.addEventListener('focus', handleOrganizationsChanged);
+
+        return () => {
+            window.removeEventListener('matrixsales:organizations-changed', handleOrganizationsChanged);
+            window.removeEventListener('focus', handleOrganizationsChanged);
+        };
     }, []);
 
     const initializeOrganization = async () => {
@@ -28,7 +40,8 @@ export const OrganizationProvider = ({ children }) => {
             setUser(currentUser);
 
             // Get all organizations
-            const orgs = await matrixSales.entities.Organization.list();
+            const orgsResult = await matrixSales.entities.Organization.list();
+            const orgs = Array.isArray(orgsResult) ? orgsResult : [];
             setOrganizations(orgs);
 
             // Get user's last selected organization from localStorage
@@ -47,6 +60,9 @@ export const OrganizationProvider = ({ children }) => {
             if (selectedOrg) {
                 setCurrentOrg(selectedOrg);
                 localStorage.setItem('selected_organization_id', selectedOrg.id);
+            } else {
+                setCurrentOrg(null);
+                localStorage.removeItem('selected_organization_id');
             }
         } catch (error) {
             console.error('Error initializing organization:', error);
@@ -76,6 +92,7 @@ export const OrganizationProvider = ({ children }) => {
 
     const value = {
         currentOrg,
+        currentOrganization: currentOrg,
         organizations,
         loading,
         user,
