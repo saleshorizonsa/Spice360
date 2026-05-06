@@ -1,4 +1,4 @@
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 
 /**
  * Auto-generates document numbers based on series configuration
@@ -12,7 +12,7 @@ export const getNextDocumentNumber = async (documentType, branchCode = 'ALL') =>
         const currentYear = new Date().getFullYear().toString().slice(-2);
         
         // Fetch or create series for this document type
-        const seriesList = await base44.entities.DocumentNumberSeries.filter({
+        const seriesList = await matrixSales.entities.DocumentNumberSeries.filter({
             document_type: documentType,
             branch_code: branchCode,
             fiscal_year: currentYear,
@@ -24,7 +24,7 @@ export const getNextDocumentNumber = async (documentType, branchCode = 'ALL') =>
         if (seriesList.length === 0) {
             // Create new series
             const prefix = getDocumentPrefix(documentType);
-            series = await base44.entities.DocumentNumberSeries.create({
+            series = await matrixSales.entities.DocumentNumberSeries.create({
                 series_id: `${prefix}-${branchCode}-${currentYear}`,
                 document_type: documentType,
                 prefix: prefix,
@@ -45,7 +45,7 @@ export const getNextDocumentNumber = async (documentType, branchCode = 'ALL') =>
         const nextNumber = (series.current_number || 0) + 1;
         
         // Update series
-        await base44.entities.DocumentNumberSeries.update(series.id, {
+        await matrixSales.entities.DocumentNumberSeries.update(series.id, {
             current_number: nextNumber,
             last_generated_number: formatDocumentNumber(series, nextNumber),
             last_generated_date: new Date().toISOString()

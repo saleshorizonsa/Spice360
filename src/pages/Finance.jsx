@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,37 +33,37 @@ export default function Finance() {
 
     const { data: journals = [] } = useQuery({
         queryKey: ['journals'],
-        queryFn: () => base44.entities.JournalEntry.list('-posting_date'),
+        queryFn: () => matrixSales.entities.JournalEntry.list('-posting_date'),
         initialData: []
     });
 
     const { data: arTransactions = [] } = useQuery({
         queryKey: ['ar'],
-        queryFn: () => base44.entities.AccountsReceivable.list('-invoice_date'),
+        queryFn: () => matrixSales.entities.AccountsReceivable.list('-invoice_date'),
         initialData: []
     });
 
     const { data: apTransactions = [] } = useQuery({
         queryKey: ['ap'],
-        queryFn: () => base44.entities.AccountsPayable.list('-invoice_date'),
+        queryFn: () => matrixSales.entities.AccountsPayable.list('-invoice_date'),
         initialData: []
     });
 
     const { data: payments = [] } = useQuery({
         queryKey: ['payments'],
-        queryFn: () => base44.entities.Payment.list('-payment_date'),
+        queryFn: () => matrixSales.entities.Payment.list('-payment_date'),
         initialData: []
     });
 
     const { data: assets = [] } = useQuery({
         queryKey: ['assets'],
-        queryFn: () => base44.entities.FixedAsset.list('-acquisition_date'),
+        queryFn: () => matrixSales.entities.FixedAsset.list('-acquisition_date'),
         initialData: []
     });
 
     const { data: banks = [] } = useQuery({
         queryKey: ['banks'],
-        queryFn: () => base44.entities.BankAccount.list(),
+        queryFn: () => matrixSales.entities.BankAccount.list(),
         initialData: []
     });
 
@@ -81,7 +81,7 @@ export default function Finance() {
         : 0;
 
     const deleteMutation = useMutation({
-        mutationFn: ({ entity, id }) => base44.entities[entity].delete(id),
+        mutationFn: ({ entity, id }) => matrixSales.entities[entity].delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries();
             toast({

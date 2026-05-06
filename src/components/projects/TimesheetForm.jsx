@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -49,9 +49,9 @@ export default function TimesheetForm({ item, onClose }) {
     const saveMutation = useMutation({
         mutationFn: (data) => {
             if (item) {
-                return base44.entities.Timesheet.update(item.id, data);
+                return matrixSales.entities.Timesheet.update(item.id, data);
             }
-            return base44.entities.Timesheet.create(data);
+            return matrixSales.entities.Timesheet.create(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['timesheets'] });

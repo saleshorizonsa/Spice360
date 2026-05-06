@@ -1,4 +1,4 @@
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 
 /**
  * Create a notification for a user
@@ -21,7 +21,7 @@ export async function createNotification({
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + expiresInDays);
 
-        const notification = await base44.entities.Notification.create({
+        const notification = await matrixSales.entities.Notification.create({
             notification_id: notificationId,
             user_email: userEmail,
             notification_type: notificationType,
@@ -55,7 +55,7 @@ export async function createBulkNotifications(userEmails, notificationData) {
     }));
 
     try {
-        return await base44.entities.Notification.bulkCreate(notifications);
+        return await matrixSales.entities.Notification.bulkCreate(notifications);
     } catch (error) {
         console.error('Error creating bulk notifications:', error);
         throw error;
@@ -67,7 +67,7 @@ export async function createBulkNotifications(userEmails, notificationData) {
  */
 export async function markAsRead(notificationId) {
     try {
-        return await base44.entities.Notification.update(notificationId, {
+        return await matrixSales.entities.Notification.update(notificationId, {
             is_read: true,
             read_at: new Date().toISOString()
         });
@@ -82,13 +82,13 @@ export async function markAsRead(notificationId) {
  */
 export async function markAllAsRead(userEmail) {
     try {
-        const notifications = await base44.entities.Notification.filter({
+        const notifications = await matrixSales.entities.Notification.filter({
             user_email: userEmail,
             is_read: false
         });
 
         const updatePromises = notifications.map(n => 
-            base44.entities.Notification.update(n.id, {
+            matrixSales.entities.Notification.update(n.id, {
                 is_read: true,
                 read_at: new Date().toISOString()
             })
@@ -107,12 +107,12 @@ export async function markAllAsRead(userEmail) {
 export async function deleteExpiredNotifications() {
     try {
         const now = new Date().toISOString();
-        const expired = await base44.entities.Notification.filter({
+        const expired = await matrixSales.entities.Notification.filter({
             expires_at: { $lt: now }
         });
 
         const deletePromises = expired.map(n => 
-            base44.entities.Notification.delete(n.id)
+            matrixSales.entities.Notification.delete(n.id)
         );
 
         return await Promise.all(deletePromises);

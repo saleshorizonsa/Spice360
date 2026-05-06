@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ export default function UserRoleAssignment() {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const user = await base44.auth.me();
+                const user = await matrixSales.auth.me();
                 setCurrentUser(user);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -42,13 +42,13 @@ export default function UserRoleAssignment() {
 
     const { data: users = [] } = useQuery({
         queryKey: ['users'],
-        queryFn: () => base44.entities.User.list(),
+        queryFn: () => matrixSales.entities.User.list(),
         initialData: []
     });
 
     const { data: roles = [] } = useQuery({
         queryKey: ['roles'],
-        queryFn: () => base44.entities.Role.filter({ status: 'active' }),
+        queryFn: () => matrixSales.entities.Role.filter({ status: 'active' }),
         initialData: []
     });
 
@@ -56,7 +56,7 @@ export default function UserRoleAssignment() {
         mutationFn: async ({ userId, roleCodes }) => {
             const beforeData = selectedUser;
             
-            const updated = await base44.entities.User.update(userId, {
+            const updated = await matrixSales.entities.User.update(userId, {
                 assigned_roles: roleCodes
             });
 
@@ -110,7 +110,7 @@ export default function UserRoleAssignment() {
                 invite_link: inviteLink
             };
 
-            const invitedUser = await base44.entities.User.create(userPayload);
+            const invitedUser = await matrixSales.entities.User.create(userPayload);
 
             await logAuditTrail({
                 entityType: 'user',

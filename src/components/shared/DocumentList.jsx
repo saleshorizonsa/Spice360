@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ export default function DocumentList({ relatedEntity, relatedEntityId, relatedDo
     const { data: documents = [], isLoading } = useQuery({
         queryKey: ['documents', relatedEntity, relatedEntityId],
         queryFn: async () => {
-            const docs = await base44.entities.Document.filter({
+            const docs = await matrixSales.entities.Document.filter({
                 related_entity: relatedEntity,
                 related_entity_id: relatedEntityId,
                 status: 'active'
@@ -37,7 +37,7 @@ export default function DocumentList({ relatedEntity, relatedEntityId, relatedDo
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id) => base44.entities.Document.update(id, { status: 'deleted' }),
+        mutationFn: (id) => matrixSales.entities.Document.update(id, { status: 'deleted' }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['documents'] });
             toast({ title: "Success", description: "Document deleted successfully" });

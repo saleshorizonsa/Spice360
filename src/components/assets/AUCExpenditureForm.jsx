@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ export default function AUCExpenditureForm({ aucNumber, onClose }) {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const user = await base44.auth.me();
+                const user = await matrixSales.auth.me();
                 setCurrentUser(user);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -32,7 +32,7 @@ export default function AUCExpenditureForm({ aucNumber, onClose }) {
 
     const { data: aucs = [] } = useQuery({
         queryKey: ['aucs', currentOrg?.id],
-        queryFn: () => base44.entities.AssetUnderConstruction.list(),
+        queryFn: () => matrixSales.entities.AssetUnderConstruction.list(),
         initialData: []
     });
 
@@ -85,7 +85,7 @@ export default function AUCExpenditureForm({ aucNumber, onClose }) {
 
     const saveMutation = useMutation({
         mutationFn: async (data) => {
-            const expenditure = await base44.entities.AUCExpenditure.create(data);
+            const expenditure = await matrixSales.entities.AUCExpenditure.create(data);
             
             // Update AUC total actual cost
             const auc = aucs.find(a => a.auc_number === data.auc_number);
@@ -105,7 +105,7 @@ export default function AUCExpenditureForm({ aucNumber, onClose }) {
                     updatedCost.other_costs = (auc.other_costs || 0) + data.total_amount;
                 }
                 
-                await base44.entities.AssetUnderConstruction.update(auc.id, updatedCost);
+                await matrixSales.entities.AssetUnderConstruction.update(auc.id, updatedCost);
             }
             
             await logAuditTrail({

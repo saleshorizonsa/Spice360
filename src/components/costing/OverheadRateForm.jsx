@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -17,13 +17,13 @@ export default function OverheadRateForm({ item, onClose }) {
 
     const { data: costCenters = [] } = useQuery({
         queryKey: ['costCenters', currentOrg?.id],
-        queryFn: () => base44.entities.CostCenter.list(),
+        queryFn: () => matrixSales.entities.CostCenter.list(),
         initialData: []
     });
 
     const { data: costPools = [] } = useQuery({
         queryKey: ['costPools', currentOrg?.id],
-        queryFn: () => base44.entities.CostPool.list(),
+        queryFn: () => matrixSales.entities.CostPool.list(),
         initialData: []
     });
 
@@ -94,9 +94,9 @@ export default function OverheadRateForm({ item, onClose }) {
     const saveMutation = useMutation({
         mutationFn: (data) => {
             if (item) {
-                return base44.entities.OverheadRate.update(item.id, data);
+                return matrixSales.entities.OverheadRate.update(item.id, data);
             }
-            return base44.entities.OverheadRate.create(data);
+            return matrixSales.entities.OverheadRate.create(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['overheadRates'] });

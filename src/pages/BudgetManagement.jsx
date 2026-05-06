@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,14 +27,14 @@ export default function BudgetManagement() {
 
     const { data: budgets = [] } = useQuery({
         queryKey: ['budgets'],
-        queryFn: () => base44.entities.Budget.list('-fiscal_period'),
+        queryFn: () => matrixSales.entities.Budget.list('-fiscal_period'),
         initialData: []
     });
 
     const { data: approvalRequests = [] } = useQuery({
         queryKey: ['approvals'],
         queryFn: async () => {
-            const all = await base44.entities.ApprovalRequest.list('-submission_date');
+            const all = await matrixSales.entities.ApprovalRequest.list('-submission_date');
             return all.filter(a => a.document_type === 'budget');
         },
         initialData: []
@@ -64,7 +64,7 @@ export default function BudgetManagement() {
             const budget = budgets.find(b => b.budget_id === approval.document_number);
             
             // Update approval request
-            await base44.entities.ApprovalRequest.update(approvalRequestId, {
+            await matrixSales.entities.ApprovalRequest.update(approvalRequestId, {
                 ...approval,
                 status: 'approved',
                 approval_date: new Date().toISOString().split('T')[0]
@@ -72,7 +72,7 @@ export default function BudgetManagement() {
 
             // Update budget status
             if (budget) {
-                await base44.entities.Budget.update(budget.id, {
+                await matrixSales.entities.Budget.update(budget.id, {
                     ...budget,
                     status: 'approved'
                 });
@@ -90,14 +90,14 @@ export default function BudgetManagement() {
             const approval = approvalRequests.find(a => a.id === approvalRequestId);
             const budget = budgets.find(b => b.budget_id === approval.document_number);
             
-            await base44.entities.ApprovalRequest.update(approvalRequestId, {
+            await matrixSales.entities.ApprovalRequest.update(approvalRequestId, {
                 ...approval,
                 status: 'rejected',
                 approval_date: new Date().toISOString().split('T')[0]
             });
 
             if (budget) {
-                await base44.entities.Budget.update(budget.id, {
+                await matrixSales.entities.Budget.update(budget.id, {
                     ...budget,
                     status: 'draft'
                 });
@@ -111,7 +111,7 @@ export default function BudgetManagement() {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id) => base44.entities.Budget.delete(id),
+        mutationFn: (id) => matrixSales.entities.Budget.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['budgets'] });
             toast({ title: "Success", description: "Budget deleted successfully" });

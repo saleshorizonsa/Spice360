@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ export default function CostPoolForm({ item, onClose }) {
 
     const { data: costCenters = [] } = useQuery({
         queryKey: ['costCenters', currentOrg?.id],
-        queryFn: () => base44.entities.CostCenter.list(),
+        queryFn: () => matrixSales.entities.CostCenter.list(),
         initialData: []
     });
 
@@ -61,9 +61,9 @@ export default function CostPoolForm({ item, onClose }) {
     const saveMutation = useMutation({
         mutationFn: (data) => {
             if (item) {
-                return base44.entities.CostPool.update(item.id, data);
+                return matrixSales.entities.CostPool.update(item.id, data);
             }
-            return base44.entities.CostPool.create(data);
+            return matrixSales.entities.CostPool.create(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['costPools'] });

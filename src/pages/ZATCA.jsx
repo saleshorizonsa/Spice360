@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,25 +29,25 @@ export default function ZATCA() {
 
     const { data: invoices = [] } = useQuery({
         queryKey: ['invoices'],
-        queryFn: () => base44.entities.Invoice.list('-invoice_date'),
+        queryFn: () => matrixSales.entities.Invoice.list('-invoice_date'),
         initialData: []
     });
 
     const { data: submissionLogs = [] } = useQuery({
         queryKey: ['submissionLogs'],
-        queryFn: () => base44.entities.ZATCASubmissionLog.list('-submission_date'),
+        queryFn: () => matrixSales.entities.ZATCASubmissionLog.list('-submission_date'),
         initialData: []
     });
 
     const { data: configs = [] } = useQuery({
         queryKey: ['zatcaConfigs'],
-        queryFn: () => base44.entities.ZATCAConfiguration.list(),
+        queryFn: () => matrixSales.entities.ZATCAConfiguration.list(),
         initialData: []
     });
 
     const { data: vendorInvoices = [] } = useQuery({
         queryKey: ['vendorInvoices'],
-        queryFn: () => base44.entities.VendorInvoice.list('-invoice_date'),
+        queryFn: () => matrixSales.entities.VendorInvoice.list('-invoice_date'),
         initialData: []
     });
 

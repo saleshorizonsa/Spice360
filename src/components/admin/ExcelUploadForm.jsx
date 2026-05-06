@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -108,7 +108,7 @@ export default function ExcelUploadForm({ entityType, onClose }) {
             for (let i = 0; i < data.length; i++) {
                 try {
                     const record = transformData(data[i], entityType);
-                    await base44.entities[entityType].create(record);
+                    await matrixSales.entities[entityType].create(record);
                     results.success++;
                 } catch (error) {
                     results.failed++;

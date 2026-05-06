@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, Package, Factory, Truck, Users } from "lucide-react";
@@ -9,19 +9,19 @@ export default function SupplyChain() {
     const { t } = useLanguage();
     const { data: purchases = [] } = useQuery({
         queryKey: ['purchases'],
-        queryFn: () => base44.entities.PurchaseOrder.list(),
+        queryFn: () => matrixSales.entities.PurchaseOrder.list(),
         initialData: []
     });
 
     const { data: productions = [] } = useQuery({
         queryKey: ['productions'],
-        queryFn: () => base44.entities.ProductionOrder.list(),
+        queryFn: () => matrixSales.entities.ProductionOrder.list(),
         initialData: []
     });
 
     const { data: sales = [] } = useQuery({
         queryKey: ['sales'],
-        queryFn: () => base44.entities.SalesOrder.list(),
+        queryFn: () => matrixSales.entities.SalesOrder.list(),
         initialData: []
     });
 

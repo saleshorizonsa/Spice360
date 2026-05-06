@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,7 +29,7 @@ export default function Purchasing() {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const user = await base44.auth.me();
+                const user = await matrixSales.auth.me();
                 setCurrentUser(user);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -40,31 +40,31 @@ export default function Purchasing() {
 
     const { data: requisitions = [] } = useQuery({
         queryKey: ['requisitions'],
-        queryFn: () => base44.entities.PurchaseRequisition.list('-pr_date'),
+        queryFn: () => matrixSales.entities.PurchaseRequisition.list('-pr_date'),
         initialData: []
     });
 
     const { data: rfqs = [] } = useQuery({
         queryKey: ['rfqs'],
-        queryFn: () => base44.entities.RFQ.list('-rfq_date'),
+        queryFn: () => matrixSales.entities.RFQ.list('-rfq_date'),
         initialData: []
     });
 
     const { data: pos = [] } = useQuery({
         queryKey: ['purchaseOrders'],
-        queryFn: () => base44.entities.PurchaseOrder.list('-po_date'),
+        queryFn: () => matrixSales.entities.PurchaseOrder.list('-po_date'),
         initialData: []
     });
 
     const { data: grns = [] } = useQuery({
         queryKey: ['grns'],
-        queryFn: () => base44.entities.GoodsReceiptNote.list('-grn_date'),
+        queryFn: () => matrixSales.entities.GoodsReceiptNote.list('-grn_date'),
         initialData: []
     });
 
     const { data: vendorInvoices = [] } = useQuery({
         queryKey: ['vendorInvoices'],
-        queryFn: () => base44.entities.VendorInvoice.list('-invoice_date'),
+        queryFn: () => matrixSales.entities.VendorInvoice.list('-invoice_date'),
         initialData: []
     });
 
@@ -75,7 +75,7 @@ export default function Purchasing() {
     const pendingMatches = vendorInvoices.filter(v => v.three_way_match_status === 'pending' || v.three_way_match_status === 'variance_exceeded').length;
 
     const deleteMutation = useMutation({
-        mutationFn: ({ entity, id }) => base44.entities[entity].delete(id),
+        mutationFn: ({ entity, id }) => matrixSales.entities[entity].delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries();
             toast({

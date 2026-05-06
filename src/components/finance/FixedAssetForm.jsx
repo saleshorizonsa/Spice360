@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ export default function FixedAssetForm({ item, onClose }) {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const user = await base44.auth.me();
+                const user = await matrixSales.auth.me();
                 setCurrentUser(user);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -38,20 +38,20 @@ export default function FixedAssetForm({ item, onClose }) {
 
     const { data: costCenters = [] } = useQuery({
         queryKey: ['costCenters'],
-        queryFn: () => base44.entities.CostCenter.list(),
+        queryFn: () => matrixSales.entities.CostCenter.list(),
         initialData: []
     });
 
     const { data: locations = [] } = useQuery({
         queryKey: ['locations'],
-        queryFn: () => base44.entities.Location.list(),
+        queryFn: () => matrixSales.entities.Location.list(),
         initialData: []
     });
 
     // Fetch all assets, ordered by asset_tag descending, to get the last one for tag generation
     const { data: allAssets = [] } = useQuery({
         queryKey: ['assets'],
-        queryFn: () => base44.entities.FixedAsset.list('-asset_tag'), // Order by asset_tag descending
+        queryFn: () => matrixSales.entities.FixedAsset.list('-asset_tag'), // Order by asset_tag descending
         initialData: []
     });
 
@@ -136,7 +136,7 @@ export default function FixedAssetForm({ item, onClose }) {
             }
 
             if (item) {
-                asset = await base44.entities.FixedAsset.update(item.id, data);
+                asset = await matrixSales.entities.FixedAsset.update(item.id, data);
                 
                 await logAuditTrail({
                     entityType: 'fixed_asset',
@@ -149,7 +149,7 @@ export default function FixedAssetForm({ item, onClose }) {
                     severity: 'info'
                 });
             } else {
-                asset = await base44.entities.FixedAsset.create(data);
+                asset = await matrixSales.entities.FixedAsset.create(data);
                 
                 await logAuditTrail({
                     entityType: 'fixed_asset',

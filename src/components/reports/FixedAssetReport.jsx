@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 export default function FixedAssetReport() {
     const { data: fixedAssets = [] } = useQuery({
         queryKey: ['fixedAssets'],
-        queryFn: () => base44.entities.FixedAsset.list(),
+        queryFn: () => matrixSales.entities.FixedAsset.list(),
         initialData: []
     });
 

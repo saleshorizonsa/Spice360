@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,14 +13,14 @@ export default function BalanceSheetReport() {
 
     const { data: chartOfAccounts = [] } = useQuery({
         queryKey: ['chartOfAccounts'],
-        queryFn: () => base44.entities.ChartOfAccounts.list(),
+        queryFn: () => matrixSales.entities.ChartOfAccounts.list(),
         initialData: []
     });
 
     const { data: journals = [] } = useQuery({
         queryKey: ['journals', asOfDate],
         queryFn: async () => {
-            const allJournals = await base44.entities.JournalEntry.list('-posting_date');
+            const allJournals = await matrixSales.entities.JournalEntry.list('-posting_date');
             return allJournals.filter(j => j.posting_date <= asOfDate && j.status === 'posted');
         },
         initialData: []
@@ -28,19 +28,19 @@ export default function BalanceSheetReport() {
 
     const { data: arTransactions = [] } = useQuery({
         queryKey: ['ar'],
-        queryFn: () => base44.entities.AccountsReceivable.list(),
+        queryFn: () => matrixSales.entities.AccountsReceivable.list(),
         initialData: []
     });
 
     const { data: apTransactions = [] } = useQuery({
         queryKey: ['ap'],
-        queryFn: () => base44.entities.AccountsPayable.list(),
+        queryFn: () => matrixSales.entities.AccountsPayable.list(),
         initialData: []
     });
 
     const { data: assets = [] } = useQuery({
         queryKey: ['assets'],
-        queryFn: () => base44.entities.FixedAsset.list(),
+        queryFn: () => matrixSales.entities.FixedAsset.list(),
         initialData: []
     });
 

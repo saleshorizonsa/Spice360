@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,13 +11,13 @@ export default function MultiLocationStockView() {
 
     const { data: stockLevels = [] } = useQuery({
         queryKey: ['stockLevels'],
-        queryFn: () => base44.entities.StockLevel.list(),
+        queryFn: () => matrixSales.entities.StockLevel.list(),
         initialData: []
     });
 
     const { data: locations = [] } = useQuery({
         queryKey: ['locations'],
-        queryFn: () => base44.entities.Location.list(),
+        queryFn: () => matrixSales.entities.Location.list(),
         initialData: []
     });
 

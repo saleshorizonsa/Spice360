@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -19,13 +19,13 @@ export default function ProductCostForm({ item, onClose }) {
 
     const { data: products = [] } = useQuery({
         queryKey: ['products', currentOrg?.id],
-        queryFn: () => base44.entities.Product.list(),
+        queryFn: () => matrixSales.entities.Product.list(),
         initialData: []
     });
 
     const { data: boms = [] } = useQuery({
         queryKey: ['boms', currentOrg?.id],
-        queryFn: () => base44.entities.BOM.list(),
+        queryFn: () => matrixSales.entities.BOM.list(),
         initialData: []
     });
 
@@ -124,7 +124,7 @@ export default function ProductCostForm({ item, onClose }) {
         
         // Calculate material cost from BOM
         try {
-            const bomItems = await base44.entities.BOMItem.filter({ bom_number: bomNumber });
+            const bomItems = await matrixSales.entities.BOMItem.filter({ bom_number: bomNumber });
             const materialCost = bomItems.reduce((sum, item) => {
                 const material = products.find(p => p.product_code === item.material_code);
                 const unitCost = material?.unit_cost || 0;
@@ -146,9 +146,9 @@ export default function ProductCostForm({ item, onClose }) {
     const saveMutation = useMutation({
         mutationFn: (data) => {
             if (item) {
-                return base44.entities.ProductCost.update(item.id, data);
+                return matrixSales.entities.ProductCost.update(item.id, data);
             }
-            return base44.entities.ProductCost.create(data);
+            return matrixSales.entities.ProductCost.create(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['productCosts'] });

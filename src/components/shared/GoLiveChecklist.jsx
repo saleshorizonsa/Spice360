@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -22,37 +22,37 @@ export default function GoLiveChecklist() {
 
     const { data: assets = [] } = useQuery({
         queryKey: ['assets'],
-        queryFn: () => base44.entities.FixedAsset.list(),
+        queryFn: () => matrixSales.entities.FixedAsset.list(),
         initialData: []
     });
 
     const { data: roles = [] } = useQuery({
         queryKey: ['roles'],
-        queryFn: () => base44.entities.Role.list(),
+        queryFn: () => matrixSales.entities.Role.list(),
         initialData: []
     });
 
     const { data: users = [] } = useQuery({
         queryKey: ['users'],
-        queryFn: () => base44.entities.User.list(),
+        queryFn: () => matrixSales.entities.User.list(),
         initialData: []
     });
 
     const { data: organizations = [] } = useQuery({
         queryKey: ['organizations'],
-        queryFn: () => base44.entities.Organization.list(),
+        queryFn: () => matrixSales.entities.Organization.list(),
         initialData: []
     });
 
     const { data: locations = [] } = useQuery({
         queryKey: ['locations'],
-        queryFn: () => base44.entities.Location.list(),
+        queryFn: () => matrixSales.entities.Location.list(),
         initialData: []
     });
 
     const { data: approvalMatrix = [] } = useQuery({
         queryKey: ['approvalMatrix'],
-        queryFn: () => base44.entities.ApprovalMatrix.list(),
+        queryFn: () => matrixSales.entities.ApprovalMatrix.list(),
         initialData: []
     });
 

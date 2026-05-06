@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,18 +17,18 @@ export default function RoleManagement() {
 
     const { data: roles = [] } = useQuery({
         queryKey: ['roles'],
-        queryFn: () => base44.entities.Role.list(),
+        queryFn: () => matrixSales.entities.Role.list(),
         initialData: []
     });
 
     const { data: users = [] } = useQuery({
         queryKey: ['users'],
-        queryFn: () => base44.entities.User.list(),
+        queryFn: () => matrixSales.entities.User.list(),
         initialData: []
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id) => base44.entities.Role.delete(id),
+        mutationFn: (id) => matrixSales.entities.Role.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['roles'] });
             toast({

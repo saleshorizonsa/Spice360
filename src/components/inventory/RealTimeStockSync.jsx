@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -31,7 +31,7 @@ export default function RealTimeStockSync() {
 export async function syncStockFromGRN(grn) {
     if (grn.status !== 'posted') return;
 
-    const existingStock = await base44.entities.StockLevel.filter({
+    const existingStock = await matrixSales.entities.StockLevel.filter({
         material_code: grn.material_code,
         warehouse_code: grn.delivery_location_code,
         batch_number: grn.batch_number
@@ -40,7 +40,7 @@ export async function syncStockFromGRN(grn) {
     if (existingStock && existingStock.length > 0) {
         // Update existing stock
         const stock = existingStock[0];
-        await base44.entities.StockLevel.update(stock.id, {
+        await matrixSales.entities.StockLevel.update(stock.id, {
             quantity: (stock.quantity || 0) + grn.quantity_received,
             available_quantity: (stock.available_quantity || 0) + grn.quantity_received,
             total_value: (stock.total_value || 0) + (grn.quantity_received * (grn.unit_price || 0)),
@@ -49,7 +49,7 @@ export async function syncStockFromGRN(grn) {
         });
     } else {
         // Create new stock level entry
-        await base44.entities.StockLevel.create({
+        await matrixSales.entities.StockLevel.create({
             material_code: grn.material_code,
             material_name: grn.material_name,
             warehouse_code: grn.delivery_location_code,
@@ -68,7 +68,7 @@ export async function syncStockFromGRN(grn) {
     }
 
     // Create stock movement record
-    await base44.entities.StockMovement.create({
+    await matrixSales.entities.StockMovement.create({
         movement_number: `GR-${grn.grn_number}`,
         movement_date: new Date().toISOString().split('T')[0],
         movement_type: 'goods_receipt',
@@ -93,14 +93,14 @@ export async function syncStockFromGRN(grn) {
 export async function syncStockFromDelivery(delivery) {
     if (!delivery.pgi_done) return;
 
-    const existingStock = await base44.entities.StockLevel.filter({
+    const existingStock = await matrixSales.entities.StockLevel.filter({
         material_code: delivery.product_code,
         warehouse_code: delivery.warehouse_code || 'MAIN'
     });
 
     if (existingStock && existingStock.length > 0) {
         const stock = existingStock[0];
-        await base44.entities.StockLevel.update(stock.id, {
+        await matrixSales.entities.StockLevel.update(stock.id, {
             quantity: (stock.quantity || 0) - delivery.quantity_delivered,
             available_quantity: (stock.available_quantity || 0) - delivery.quantity_delivered,
             total_value: (stock.total_value || 0) - (delivery.quantity_delivered * (stock.unit_cost || 0))
@@ -108,7 +108,7 @@ export async function syncStockFromDelivery(delivery) {
     }
 
     // Create stock movement record
-    await base44.entities.StockMovement.create({
+    await matrixSales.entities.StockMovement.create({
         movement_number: `GI-${delivery.delivery_number}`,
         movement_date: delivery.delivery_date,
         movement_type: 'goods_issue',
@@ -131,7 +131,7 @@ export async function syncStockFromDelivery(delivery) {
 export async function reserveStockForSalesOrder(salesOrder) {
     if (salesOrder.status !== 'approved' && salesOrder.status !== 'confirmed') return;
 
-    const existingStock = await base44.entities.StockLevel.filter({
+    const existingStock = await matrixSales.entities.StockLevel.filter({
         material_code: salesOrder.product_code,
         status: 'available'
     });
@@ -142,7 +142,7 @@ export async function reserveStockForSalesOrder(salesOrder) {
         const quantityToReserve = Math.min(availableQty, salesOrder.quantity);
 
         if (quantityToReserve > 0) {
-            await base44.entities.StockLevel.update(stock.id, {
+            await matrixSales.entities.StockLevel.update(stock.id, {
                 reserved_quantity: (stock.reserved_quantity || 0) + quantityToReserve,
                 available_quantity: availableQty - quantityToReserve
             });

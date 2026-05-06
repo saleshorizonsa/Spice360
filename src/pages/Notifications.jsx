@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ export default function NotificationsPage() {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const user = await base44.auth.me();
+                const user = await matrixSales.auth.me();
                 setCurrentUser(user);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -35,7 +35,7 @@ export default function NotificationsPage() {
         queryFn: async () => {
             if (!currentUser?.email) return [];
             const now = new Date().toISOString();
-            return await base44.entities.Notification.filter({
+            return await matrixSales.entities.Notification.filter({
                 user_email: currentUser.email,
                 expires_at: { $gt: now }
             }, '-created_date', 100);
@@ -66,7 +66,7 @@ export default function NotificationsPage() {
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id) => base44.entities.Notification.delete(id),
+        mutationFn: (id) => matrixSales.entities.Notification.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['notifications'] });
         }

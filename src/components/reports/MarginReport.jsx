@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,13 +16,13 @@ export default function MarginReport() {
 
     const { data: invoices = [] } = useQuery({
         queryKey: ['invoices'],
-        queryFn: () => base44.entities.Invoice.list('-invoice_date'),
+        queryFn: () => matrixSales.entities.Invoice.list('-invoice_date'),
         initialData: []
     });
 
     const { data: materials = [] } = useQuery({
         queryKey: ['materials'],
-        queryFn: () => base44.entities.Material.list(),
+        queryFn: () => matrixSales.entities.Material.list(),
         initialData: []
     });
 

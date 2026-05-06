@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,31 +30,31 @@ export default function Inventory() {
 
     const { data: stockLevels = [] } = useQuery({
         queryKey: ['stockLevels'],
-        queryFn: () => base44.entities.StockLevel.list('-aging_days'),
+        queryFn: () => matrixSales.entities.StockLevel.list('-aging_days'),
         initialData: []
     });
 
     const { data: movements = [] } = useQuery({
         queryKey: ['movements'],
-        queryFn: () => base44.entities.StockMovement.list('-movement_date'),
+        queryFn: () => matrixSales.entities.StockMovement.list('-movement_date'),
         initialData: []
     });
 
     const { data: cycleCounts = [] } = useQuery({
         queryKey: ['cycleCounts'],
-        queryFn: () => base44.entities.CycleCount.list('-count_date'),
+        queryFn: () => matrixSales.entities.CycleCount.list('-count_date'),
         initialData: []
     });
 
     const { data: stos = [] } = useQuery({
         queryKey: ['stos'],
-        queryFn: () => base44.entities.StockTransferOrder.list('-sto_date'),
+        queryFn: () => matrixSales.entities.StockTransferOrder.list('-sto_date'),
         initialData: []
     });
 
     const { data: bins = [] } = useQuery({
         queryKey: ['bins'],
-        queryFn: () => base44.entities.WarehouseBin.list(),
+        queryFn: () => matrixSales.entities.WarehouseBin.list(),
         initialData: []
     });
 
@@ -70,7 +70,7 @@ export default function Inventory() {
     ).length;
 
     const deleteMutation = useMutation({
-        mutationFn: ({ entity, id }) => base44.entities[entity].delete(id),
+        mutationFn: ({ entity, id }) => matrixSales.entities[entity].delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries();
             toast({

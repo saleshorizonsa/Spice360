@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -32,13 +32,13 @@ export default function StorageLocationForm({ item, onClose, open }) {
 
     const { data: organizations = [] } = useQuery({
         queryKey: ['organizations'],
-        queryFn: () => base44.entities.Organization.list(),
+        queryFn: () => matrixSales.entities.Organization.list(),
         initialData: []
     });
 
     const { data: plants = [] } = useQuery({
         queryKey: ['plants'],
-        queryFn: () => base44.entities.Plant.list(),
+        queryFn: () => matrixSales.entities.Plant.list(),
         initialData: []
     });
 
@@ -53,9 +53,9 @@ export default function StorageLocationForm({ item, onClose, open }) {
             data.plant_name = plant?.plant_name;
             
             if (item) {
-                return base44.entities.StorageLocation.update(item.id, data);
+                return matrixSales.entities.StorageLocation.update(item.id, data);
             }
-            return base44.entities.StorageLocation.create(data);
+            return matrixSales.entities.StorageLocation.create(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['storageLocations'] });

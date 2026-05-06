@@ -1,5 +1,5 @@
 import React from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,31 +28,31 @@ export default function Dashboard() {
 
     const { data: assets = [] } = useQuery({
         queryKey: ['assets'],
-        queryFn: () => base44.entities.FixedAsset.list(),
+        queryFn: () => matrixSales.entities.FixedAsset.list(),
         initialData: []
     });
 
     const { data: salesOrders = [] } = useQuery({
         queryKey: ['salesOrders'],
-        queryFn: () => base44.entities.SalesOrder.list('-order_date', 10),
+        queryFn: () => matrixSales.entities.SalesOrder.list('-order_date', 10),
         initialData: []
     });
 
     const { data: maintenance = [] } = useQuery({
         queryKey: ['maintenance'],
-        queryFn: () => base44.entities.AssetMaintenance.list('-maintenance_date', 20),
+        queryFn: () => matrixSales.entities.AssetMaintenance.list('-maintenance_date', 20),
         initialData: []
     });
 
     const { data: approvalRequests = [] } = useQuery({
         queryKey: ['approvalRequests'],
-        queryFn: () => base44.entities.ApprovalRequest.list('-created_date', 10),
+        queryFn: () => matrixSales.entities.ApprovalRequest.list('-created_date', 10),
         initialData: []
     });
 
     const { data: verificationTasks = [] } = useQuery({
         queryKey: ['verificationTasks'],
-        queryFn: () => base44.entities.AssetVerificationTask.list('-scheduled_date', 5),
+        queryFn: () => matrixSales.entities.AssetVerificationTask.list('-scheduled_date', 5),
         initialData: []
     });
 

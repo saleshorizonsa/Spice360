@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,25 +26,25 @@ export default function CRM() {
 
     const { data: leads = [] } = useQuery({
         queryKey: ['leads'],
-        queryFn: () => base44.entities.Lead.list('-lead_date'),
+        queryFn: () => matrixSales.entities.Lead.list('-lead_date'),
         initialData: []
     });
 
     const { data: opportunities = [] } = useQuery({
         queryKey: ['opportunities'],
-        queryFn: () => base44.entities.Opportunity.list('-opportunity_date'),
+        queryFn: () => matrixSales.entities.Opportunity.list('-opportunity_date'),
         initialData: []
     });
 
     const { data: activities = [] } = useQuery({
         queryKey: ['activities'],
-        queryFn: () => base44.entities.Activity.list('-activity_date'),
+        queryFn: () => matrixSales.entities.Activity.list('-activity_date'),
         initialData: []
     });
 
     const { data: contacts = [] } = useQuery({
         queryKey: ['contacts'],
-        queryFn: () => base44.entities.Contact.list(),
+        queryFn: () => matrixSales.entities.Contact.list(),
         initialData: []
     });
 
@@ -95,7 +95,7 @@ export default function CRM() {
     const COLORS = ['#10b981', '#ef4444'];
 
     const deleteMutation = useMutation({
-        mutationFn: ({ entity, id }) => base44.entities[entity].delete(id),
+        mutationFn: ({ entity, id }) => matrixSales.entities[entity].delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries();
             toast({

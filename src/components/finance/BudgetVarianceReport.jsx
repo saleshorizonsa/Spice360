@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,14 +20,14 @@ export default function BudgetVarianceReport() {
 
     const { data: budgets = [] } = useQuery({
         queryKey: ['budgets', selectedPeriod],
-        queryFn: () => base44.entities.Budget.filter({ fiscal_period: selectedPeriod }),
+        queryFn: () => matrixSales.entities.Budget.filter({ fiscal_period: selectedPeriod }),
         initialData: []
     });
 
     const { data: journals = [] } = useQuery({
         queryKey: ['journals', selectedPeriod],
         queryFn: async () => {
-            const allJournals = await base44.entities.JournalEntry.list();
+            const allJournals = await matrixSales.entities.JournalEntry.list();
             const periodStart = selectedPeriod + '-01';
             const periodEnd = new Date(new Date(selectedPeriod).getFullYear(), new Date(selectedPeriod).getMonth() + 1, 0).toISOString().split('T')[0];
             return allJournals.filter(j => 
@@ -41,7 +41,7 @@ export default function BudgetVarianceReport() {
 
     const { data: chartOfAccounts = [] } = useQuery({
         queryKey: ['chartOfAccounts'],
-        queryFn: () => base44.entities.ChartOfAccounts.list(),
+        queryFn: () => matrixSales.entities.ChartOfAccounts.list(),
         initialData: []
     });
 
@@ -51,7 +51,7 @@ export default function BudgetVarianceReport() {
     });
 
     const createBudgetMutation = useMutation({
-        mutationFn: (data) => base44.entities.Budget.create(data),
+        mutationFn: (data) => matrixSales.entities.Budget.create(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['budgets'] });
             toast({ title: "Success", description: "Budget created" });
@@ -94,7 +94,7 @@ export default function BudgetVarianceReport() {
                 const variance = actual - budget.budgeted_amount;
                 const variancePercent = budget.budgeted_amount !== 0 ? (variance / budget.budgeted_amount) * 100 : 0;
 
-                await base44.entities.Budget.update(budget.id, {
+                await matrixSales.entities.Budget.update(budget.id, {
                     ...budget,
                     actual_amount: actual,
                     variance_amount: variance,

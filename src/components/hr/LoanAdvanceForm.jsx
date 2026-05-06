@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ export default function LoanAdvanceForm({ item, onClose }) {
 
     const { data: employees = [] } = useQuery({
         queryKey: ['employees'],
-        queryFn: () => base44.entities.Employee.list(),
+        queryFn: () => matrixSales.entities.Employee.list(),
         initialData: []
     });
 
@@ -63,9 +63,9 @@ export default function LoanAdvanceForm({ item, onClose }) {
     const saveMutation = useMutation({
         mutationFn: (data) => {
             if (item) {
-                return base44.entities.LoanAdvance.update(item.id, data);
+                return matrixSales.entities.LoanAdvance.update(item.id, data);
             }
-            return base44.entities.LoanAdvance.create(data);
+            return matrixSales.entities.LoanAdvance.create(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['loans'] });

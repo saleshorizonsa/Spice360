@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,31 +22,31 @@ export default function TreasuryManagement() {
 
     const { data: banks = [] } = useQuery({
         queryKey: ['banks'],
-        queryFn: () => base44.entities.BankAccount.list(),
+        queryFn: () => matrixSales.entities.BankAccount.list(),
         initialData: []
     });
 
     const { data: arTransactions = [] } = useQuery({
         queryKey: ['ar'],
-        queryFn: () => base44.entities.AccountsReceivable.list(),
+        queryFn: () => matrixSales.entities.AccountsReceivable.list(),
         initialData: []
     });
 
     const { data: apTransactions = [] } = useQuery({
         queryKey: ['ap'],
-        queryFn: () => base44.entities.AccountsPayable.list(),
+        queryFn: () => matrixSales.entities.AccountsPayable.list(),
         initialData: []
     });
 
     const { data: forecasts = [] } = useQuery({
         queryKey: ['cashFlowForecasts', selectedPeriod],
-        queryFn: () => base44.entities.CashFlowForecast.filter({ forecast_period: selectedPeriod }),
+        queryFn: () => matrixSales.entities.CashFlowForecast.filter({ forecast_period: selectedPeriod }),
         initialData: []
     });
 
     const { data: payments = [] } = useQuery({
         queryKey: ['payments'],
-        queryFn: () => base44.entities.Payment.list('-payment_date', 30),
+        queryFn: () => matrixSales.entities.Payment.list('-payment_date', 30),
         initialData: []
     });
 
@@ -100,7 +100,7 @@ export default function TreasuryManagement() {
                 confidenceLevel = 90;
             }
 
-            return base44.entities.CashFlowForecast.create({
+            return matrixSales.entities.CashFlowForecast.create({
                 forecast_id: `CF-${period}-${scenario}-${Date.now()}`,
                 forecast_date: new Date().toISOString().split('T')[0],
                 forecast_period: period,

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ export default function LeaveRequestForm({ item, onClose }) {
 
     useEffect(() => {
         const fetchUser = async () => {
-            const user = await base44.auth.me();
+            const user = await matrixSales.auth.me();
             setCurrentUser(user);
         };
         fetchUser();
@@ -29,7 +29,7 @@ export default function LeaveRequestForm({ item, onClose }) {
 
     const { data: employees = [] } = useQuery({
         queryKey: ['employees'],
-        queryFn: () => base44.entities.Employee.list(),
+        queryFn: () => matrixSales.entities.Employee.list(),
         initialData: []
     });
 
@@ -75,9 +75,9 @@ export default function LeaveRequestForm({ item, onClose }) {
         mutationFn: async (data) => {
             let leaveRequest;
             if (item) {
-                leaveRequest = await base44.entities.LeaveRequest.update(item.id, data);
+                leaveRequest = await matrixSales.entities.LeaveRequest.update(item.id, data);
             } else {
-                leaveRequest = await base44.entities.LeaveRequest.create(data);
+                leaveRequest = await matrixSales.entities.LeaveRequest.create(data);
                 
                 const approvalRequest = await createApprovalRequest({
                     documentType: 'leave_request',
@@ -94,7 +94,7 @@ export default function LeaveRequestForm({ item, onClose }) {
                 });
 
                 if (approvalRequest) {
-                    await base44.entities.LeaveRequest.update(leaveRequest.id, {
+                    await matrixSales.entities.LeaveRequest.update(leaveRequest.id, {
                         status: 'pending_approval'
                     });
                 }

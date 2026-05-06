@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -22,13 +22,13 @@ export default function QuotationForm({ item, onClose }) {
 
     const { data: products = [] } = useQuery({
         queryKey: ['products', currentOrg?.id],
-        queryFn: () => base44.entities.Product.list(),
+        queryFn: () => matrixSales.entities.Product.list(),
         initialData: []
     });
 
     const { data: customers = [] } = useQuery({
         queryKey: ['customers', currentOrg?.id],
-        queryFn: () => base44.entities.Customer.list(),
+        queryFn: () => matrixSales.entities.Customer.list(),
         initialData: []
     });
 
@@ -75,7 +75,7 @@ export default function QuotationForm({ item, onClose }) {
             });
             // Load existing line items
             const loadLineItems = async () => {
-                const lines = await base44.entities.QuotationLine.filter({ quotation_number: item.quotation_number });
+                const lines = await matrixSales.entities.QuotationLine.filter({ quotation_number: item.quotation_number });
                 setLineItems(lines);
             };
             loadLineItems();
@@ -104,15 +104,15 @@ export default function QuotationForm({ item, onClose }) {
         mutationFn: async (data) => {
             let quotation;
             if (item) {
-                quotation = await base44.entities.Quotation.update(item.id, data);
+                quotation = await matrixSales.entities.Quotation.update(item.id, data);
             } else {
-                quotation = await base44.entities.Quotation.create(data);
+                quotation = await matrixSales.entities.Quotation.create(data);
             }
 
             // Delete existing line items if editing
             if (item) {
-                const existingLines = await base44.entities.QuotationLine.filter({ quotation_number: item.quotation_number });
-                await Promise.all(existingLines.map(line => base44.entities.QuotationLine.delete(line.id)));
+                const existingLines = await matrixSales.entities.QuotationLine.filter({ quotation_number: item.quotation_number });
+                await Promise.all(existingLines.map(line => matrixSales.entities.QuotationLine.delete(line.id)));
             }
 
             // Create new line items
@@ -121,7 +121,7 @@ export default function QuotationForm({ item, onClose }) {
                 organization_id: currentOrg?.id,
                 quotation_number: data.quotation_number
             }));
-            await base44.entities.QuotationLine.bulkCreate(linesWithOrgId);
+            await matrixSales.entities.QuotationLine.bulkCreate(linesWithOrgId);
 
             return quotation;
         },

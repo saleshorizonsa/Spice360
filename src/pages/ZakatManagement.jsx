@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,36 +26,36 @@ export default function ZakatManagement() {
 
     const { data: chartOfAccounts = [] } = useQuery({
         queryKey: ['chartOfAccounts'],
-        queryFn: () => base44.entities.ChartOfAccounts.list('account_code'),
+        queryFn: () => matrixSales.entities.ChartOfAccounts.list('account_code'),
         initialData: []
     });
 
     const { data: shareholders = [] } = useQuery({
         queryKey: ['shareholders'],
-        queryFn: () => base44.entities.Shareholder.list('-effective_from'),
+        queryFn: () => matrixSales.entities.Shareholder.list('-effective_from'),
         initialData: []
     });
 
     const { data: configurations = [] } = useQuery({
         queryKey: ['zakatConfigurations'],
-        queryFn: () => base44.entities.ZakatConfiguration.list('-fiscal_year'),
+        queryFn: () => matrixSales.entities.ZakatConfiguration.list('-fiscal_year'),
         initialData: []
     });
 
     const { data: computations = [] } = useQuery({
         queryKey: ['zakatComputations'],
-        queryFn: () => base44.entities.ZakatComputation.list('-computation_date'),
+        queryFn: () => matrixSales.entities.ZakatComputation.list('-computation_date'),
         initialData: []
     });
 
     const { data: adjustments = [] } = useQuery({
         queryKey: ['zakatAdjustments'],
-        queryFn: () => base44.entities.ZakatAdjustment.list('-adjustment_date'),
+        queryFn: () => matrixSales.entities.ZakatAdjustment.list('-adjustment_date'),
         initialData: []
     });
 
     const deleteMutation = useMutation({
-        mutationFn: ({ entity, id }) => base44.entities[entity].delete(id),
+        mutationFn: ({ entity, id }) => matrixSales.entities[entity].delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries();
             toast({

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,13 +14,13 @@ export default function TrialBalanceReport() {
 
     const { data: chartOfAccounts = [] } = useQuery({
         queryKey: ['chartOfAccounts'],
-        queryFn: () => base44.entities.ChartOfAccounts.list(),
+        queryFn: () => matrixSales.entities.ChartOfAccounts.list(),
         initialData: []
     });
 
     const { data: journals = [] } = useQuery({
         queryKey: ['journals', fromDate, toDate],
-        queryFn: () => base44.entities.JournalEntry.filter({
+        queryFn: () => matrixSales.entities.JournalEntry.filter({
             posting_date: { $gte: fromDate, $lte: toDate },
             status: 'posted'
         }),

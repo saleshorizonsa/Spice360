@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -41,7 +41,7 @@ export default function MobileMenu() {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const currentUser = await base44.auth.me();
+                const currentUser = await matrixSales.auth.me();
                 setUser(currentUser);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -134,7 +134,7 @@ export default function MobileMenu() {
     })).filter(section => section.items.length > 0);
 
     const handleLogout = () => {
-        base44.auth.logout();
+        matrixSales.auth.logout();
     };
 
     return (

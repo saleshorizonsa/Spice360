@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ export default function QuickApprovalWidget() {
 
     useEffect(() => {
         const fetchUser = async () => {
-            const currentUser = await base44.auth.me();
+            const currentUser = await matrixSales.auth.me();
             setUser(currentUser);
         };
         fetchUser();
@@ -25,7 +25,7 @@ export default function QuickApprovalWidget() {
 
     const { data: approvalRequests = [] } = useQuery({
         queryKey: ['approvalRequests'],
-        queryFn: () => base44.entities.ApprovalRequest.list('-request_date', 100),
+        queryFn: () => matrixSales.entities.ApprovalRequest.list('-request_date', 100),
         initialData: []
     });
 

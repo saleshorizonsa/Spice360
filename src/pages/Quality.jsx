@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,31 +26,31 @@ export default function Quality() {
 
     const { data: inspectionLots = [] } = useQuery({
         queryKey: ['inspectionLots'],
-        queryFn: () => base44.entities.InspectionLot.list('-lot_date'),
+        queryFn: () => matrixSales.entities.InspectionLot.list('-lot_date'),
         initialData: []
     });
 
     const { data: nonConformances = [] } = useQuery({
         queryKey: ['nonConformances'],
-        queryFn: () => base44.entities.NonConformance.list('-nc_date'),
+        queryFn: () => matrixSales.entities.NonConformance.list('-nc_date'),
         initialData: []
     });
 
     const { data: capas = [] } = useQuery({
         queryKey: ['capas'],
-        queryFn: () => base44.entities.CAPA.list('-capa_date'),
+        queryFn: () => matrixSales.entities.CAPA.list('-capa_date'),
         initialData: []
     });
 
     const { data: coas = [] } = useQuery({
         queryKey: ['coas'],
-        queryFn: () => base44.entities.CertificateOfAnalysis.list('-coa_date'),
+        queryFn: () => matrixSales.entities.CertificateOfAnalysis.list('-coa_date'),
         initialData: []
     });
 
     const { data: qcPlans = [] } = useQuery({
         queryKey: ['qcPlans'],
-        queryFn: () => base44.entities.QCPlan.list(),
+        queryFn: () => matrixSales.entities.QCPlan.list(),
         initialData: []
     });
 
@@ -63,7 +63,7 @@ export default function Quality() {
     const coasIssued = coas.filter(c => c.status === 'issued').length;
 
     const deleteMutation = useMutation({
-        mutationFn: ({ entity, id }) => base44.entities[entity].delete(id),
+        mutationFn: ({ entity, id }) => matrixSales.entities[entity].delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries();
             toast({

@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ export default function APAgingReport() {
 
     const { data: apRecords = [] } = useQuery({
         queryKey: ['accountsPayable'],
-        queryFn: () => base44.entities.AccountsPayable.list(),
+        queryFn: () => matrixSales.entities.AccountsPayable.list(),
         initialData: []
     });
 

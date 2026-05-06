@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ export default function UserRolesMatrixReport() {
 
     const { data: users = [] } = useQuery({
         queryKey: ['users'],
-        queryFn: () => base44.entities.User.list(),
+        queryFn: () => matrixSales.entities.User.list(),
         initialData: []
     });
 

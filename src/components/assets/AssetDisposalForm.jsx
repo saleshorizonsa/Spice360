@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ export default function AssetDisposalForm({ asset, onClose }) {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const user = await base44.auth.me();
+                const user = await matrixSales.auth.me();
                 setCurrentUser(user);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -38,7 +38,7 @@ export default function AssetDisposalForm({ asset, onClose }) {
         queryKey: ['maintenance', asset?.asset_number],
         queryFn: async () => {
             if (!asset) return [];
-            return await base44.entities.AssetMaintenance.filter({ 
+            return await matrixSales.entities.AssetMaintenance.filter({ 
                 asset_number: asset.asset_number 
             });
         },
@@ -121,10 +121,10 @@ export default function AssetDisposalForm({ asset, onClose }) {
     const saveMutation = useMutation({
         mutationFn: async (data) => {
             // Create disposal record
-            const disposal = await base44.entities.AssetDisposal.create(data);
+            const disposal = await matrixSales.entities.AssetDisposal.create(data);
 
             // Update asset status
-            await base44.entities.FixedAsset.update(asset.id, {
+            await matrixSales.entities.FixedAsset.update(asset.id, {
                 status: data.disposal_type === 'sale' ? 'sold' : 
                         data.disposal_type === 'scrap' ? 'retired' : 'disposed',
                 disposal_date: data.disposal_date,

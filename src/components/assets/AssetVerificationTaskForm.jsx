@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ export default function AssetVerificationTaskForm({ item, onClose }) {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const user = await base44.auth.me();
+                const user = await matrixSales.auth.me();
                 setCurrentUser(user);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -32,13 +32,13 @@ export default function AssetVerificationTaskForm({ item, onClose }) {
 
     const { data: locations = [] } = useQuery({
         queryKey: ['locations'],
-        queryFn: () => base44.entities.Location.list(),
+        queryFn: () => matrixSales.entities.Location.list(),
         initialData: []
     });
 
     const { data: assets = [] } = useQuery({
         queryKey: ['assets'],
-        queryFn: () => base44.entities.FixedAsset.list(),
+        queryFn: () => matrixSales.entities.FixedAsset.list(),
         initialData: []
     });
 
@@ -107,7 +107,7 @@ export default function AssetVerificationTaskForm({ item, onClose }) {
             const beforeData = item ? { ...item } : null;
 
             if (item) {
-                task = await base44.entities.AssetVerificationTask.update(item.id, data);
+                task = await matrixSales.entities.AssetVerificationTask.update(item.id, data);
                 
                 await logAuditTrail({
                     entityType: 'asset_verification_task',
@@ -120,7 +120,7 @@ export default function AssetVerificationTaskForm({ item, onClose }) {
                     severity: 'info'
                 });
             } else {
-                task = await base44.entities.AssetVerificationTask.create(data);
+                task = await matrixSales.entities.AssetVerificationTask.create(data);
                 
                 await logAuditTrail({
                     entityType: 'asset_verification_task',

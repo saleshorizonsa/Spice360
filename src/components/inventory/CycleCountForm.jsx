@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -27,7 +27,7 @@ export default function CycleCountForm({ item, onClose }) {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const user = await base44.auth.me();
+                const user = await matrixSales.auth.me();
                 setCurrentUser(user);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -38,19 +38,19 @@ export default function CycleCountForm({ item, onClose }) {
 
     const { data: materials = [] } = useQuery({
         queryKey: ['materials', currentOrg?.id],
-        queryFn: () => base44.entities.Material.list(),
+        queryFn: () => matrixSales.entities.Material.list(),
         initialData: []
     });
 
     const { data: locations = [] } = useQuery({
         queryKey: ['locations', currentOrg?.id],
-        queryFn: () => base44.entities.Location.list(),
+        queryFn: () => matrixSales.entities.Location.list(),
         initialData: []
     });
 
     const { data: stockLevels = [] } = useQuery({
         queryKey: ['stockLevels', currentOrg?.id],
-        queryFn: () => base44.entities.StockLevel.list(),
+        queryFn: () => matrixSales.entities.StockLevel.list(),
         initialData: []
     });
 
@@ -148,7 +148,7 @@ export default function CycleCountForm({ item, onClose }) {
             const beforeData = item ? { ...item } : null;
 
             if (item) {
-                cycleCount = await base44.entities.CycleCount.update(item.id, data);
+                cycleCount = await matrixSales.entities.CycleCount.update(item.id, data);
                 
                 // Log audit trail
                 await logAuditTrail({
@@ -162,7 +162,7 @@ export default function CycleCountForm({ item, onClose }) {
                     severity: Math.abs(data.variance_percent) > 10 ? 'warning' : 'info'
                 });
             } else {
-                cycleCount = await base44.entities.CycleCount.create(data);
+                cycleCount = await matrixSales.entities.CycleCount.create(data);
                 
                 // Log audit trail
                 await logAuditTrail({

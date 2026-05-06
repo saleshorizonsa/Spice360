@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,7 +44,7 @@ export default function AIAssistant() {
 
     useEffect(() => {
         if (activeConversation?.id) {
-            const unsubscribe = base44.agents.subscribeToConversation(
+            const unsubscribe = matrixSales.agents.subscribeToConversation(
                 activeConversation.id,
                 (data) => {
                     setMessages(data.messages || []);
@@ -57,7 +57,7 @@ export default function AIAssistant() {
 
     const loadConversations = async () => {
         try {
-            const convos = await base44.agents.listConversations({
+            const convos = await matrixSales.agents.listConversations({
                 agent_name: "erp_assistant"
             });
             setConversations(convos || []);
@@ -74,7 +74,7 @@ export default function AIAssistant() {
 
     const createNewConversation = async () => {
         try {
-            const conversation = await base44.agents.createConversation({
+            const conversation = await matrixSales.agents.createConversation({
                 agent_name: "erp_assistant",
                 metadata: {
                     name: `Chat ${new Date().toLocaleString()}`,
@@ -107,7 +107,7 @@ export default function AIAssistant() {
         setIsLoading(true);
 
         try {
-            await base44.agents.addMessage(conversationToUse, {
+            await matrixSales.agents.addMessage(conversationToUse, {
                 role: "user",
                 content: userMessage
             });

@@ -30,7 +30,7 @@ import {
     Brain,
     Landmark
 } from "lucide-react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Toaster } from "@/components/ui/toaster";
@@ -53,8 +53,8 @@ function LayoutContent({ children, currentPageName }) {
         const fetchCounts = async () => {
             try {
                 const [approvals, notifications] = await Promise.all([
-                    base44.entities.ApprovalRequest.filter({ status: 'pending' }),
-                    base44.entities.Notification.filter({ is_read: false })
+                    matrixSales.entities.ApprovalRequest.filter({ status: 'pending' }),
+                    matrixSales.entities.Notification.filter({ is_read: false })
                 ]);
                 setPendingApprovals(approvals?.length || 0);
                 setUnreadNotifications(notifications?.length || 0);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { matrixSales } from '@/api/matrixSalesClient';
 
 /**
  * Custom hook to check user permissions
@@ -14,14 +14,14 @@ export function usePermissions() {
     useEffect(() => {
         const fetchUserAndRoles = async () => {
             try {
-                const user = await base44.auth.me();
+                const user = await matrixSales.auth.me();
                 setCurrentUser(user);
 
                 // Fetch user's assigned roles
                 if (user.assigned_roles && user.assigned_roles.length > 0) {
                     const roles = await Promise.all(
                         user.assigned_roles.map(roleCode => 
-                            base44.entities.Role.filter({ role_code: roleCode })
+                            matrixSales.entities.Role.filter({ role_code: roleCode })
                         )
                     );
                     setUserRoles(roles.flat().filter(r => r.status === 'active'));
@@ -136,7 +136,7 @@ export function PermissionGate({ module, action, children, fallback = null }) {
  */
 export async function checkPermission(module, action) {
     try {
-        const user = await base44.auth.me();
+        const user = await matrixSales.auth.me();
         
         // Admins have all permissions
         if (user.role === 'admin') return true;
@@ -146,7 +146,7 @@ export async function checkPermission(module, action) {
 
         const roles = await Promise.all(
             user.assigned_roles.map(roleCode => 
-                base44.entities.Role.filter({ role_code: roleCode })
+                matrixSales.entities.Role.filter({ role_code: roleCode })
             )
         );
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ export default function UnitConversionForm({ item, materialCode, onClose }) {
 
     const { data: materials = [] } = useQuery({
         queryKey: ['materials'],
-        queryFn: () => base44.entities.Material.list(),
+        queryFn: () => matrixSales.entities.Material.list(),
         initialData: []
     });
 
@@ -53,9 +53,9 @@ export default function UnitConversionForm({ item, materialCode, onClose }) {
     const saveMutation = useMutation({
         mutationFn: (data) => {
             if (item) {
-                return base44.entities.UnitConversion.update(item.id, data);
+                return matrixSales.entities.UnitConversion.update(item.id, data);
             }
-            return base44.entities.UnitConversion.create(data);
+            return matrixSales.entities.UnitConversion.create(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['unitConversions'] });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ export default function GRNForm({ item, onClose }) {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const user = await base44.auth.me();
+                const user = await matrixSales.auth.me();
                 setCurrentUser(user);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -39,19 +39,19 @@ export default function GRNForm({ item, onClose }) {
 
     const { data: purchaseOrders = [] } = useQuery({
         queryKey: ['purchaseOrders', currentOrg?.id],
-        queryFn: () => base44.entities.PurchaseOrder.list('-po_date'),
+        queryFn: () => matrixSales.entities.PurchaseOrder.list('-po_date'),
         initialData: []
     });
 
     const { data: locations = [] } = useQuery({
         queryKey: ['locations', currentOrg?.id],
-        queryFn: () => base44.entities.Location.list(),
+        queryFn: () => matrixSales.entities.Location.list(),
         initialData: []
     });
 
     const { data: bins = [] } = useQuery({
         queryKey: ['bins', currentOrg?.id],
-        queryFn: () => base44.entities.WarehouseBin.list(),
+        queryFn: () => matrixSales.entities.WarehouseBin.list(),
         initialData: []
     });
 
@@ -140,7 +140,7 @@ export default function GRNForm({ item, onClose }) {
             const beforeData = item ? { ...item } : null;
 
             if (item) {
-                grn = await base44.entities.GoodsReceiptNote.update(item.id, data);
+                grn = await matrixSales.entities.GoodsReceiptNote.update(item.id, data);
                 
                 // Log audit trail
                 await logAuditTrail({
@@ -154,7 +154,7 @@ export default function GRNForm({ item, onClose }) {
                     severity: 'info'
                 });
             } else {
-                grn = await base44.entities.GoodsReceiptNote.create(data);
+                grn = await matrixSales.entities.GoodsReceiptNote.create(data);
                 
                 // Log audit trail
                 await logAuditTrail({
@@ -199,16 +199,16 @@ export default function GRNForm({ item, onClose }) {
             await processGoodsReceipt(formData, currentUser);
 
             // Update GRN
-            await base44.entities.GoodsReceiptNote.update(item?.id || formData.id, {
+            await matrixSales.entities.GoodsReceiptNote.update(item?.id || formData.id, {
                 stock_posted: true,
                 status: 'completed'
             });
 
             // Update PO quantity received
-            const pos = await base44.entities.PurchaseOrder.filter({ po_number: formData.po_number });
+            const pos = await matrixSales.entities.PurchaseOrder.filter({ po_number: formData.po_number });
             if (pos && pos.length > 0) {
                 const po = pos[0];
-                await base44.entities.PurchaseOrder.update(po.id, {
+                await matrixSales.entities.PurchaseOrder.update(po.id, {
                     quantity_received: (po.quantity_received || 0) + formData.quantity_received
                 });
             }

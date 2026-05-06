@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -28,13 +28,13 @@ export default function InvoiceClearingDialog({ open, onClose }) {
 
     const { data: customers = [] } = useQuery({
         queryKey: ['customers'],
-        queryFn: () => base44.entities.Customer.list(),
+        queryFn: () => matrixSales.entities.Customer.list(),
         initialData: []
     });
 
     const { data: allAR = [] } = useQuery({
         queryKey: ['ar'],
-        queryFn: () => base44.entities.AccountsReceivable.list(),
+        queryFn: () => matrixSales.entities.AccountsReceivable.list(),
         initialData: []
     });
 
@@ -53,12 +53,12 @@ export default function InvoiceClearingDialog({ open, onClose }) {
 
     const clearingMutation = useMutation({
         mutationFn: async (data) => {
-            const user = await base44.auth.me();
+            const user = await matrixSales.auth.me();
             const paymentNumber = `PMT-${Date.now()}`;
             const clearingRef = `CLR-${Date.now()}`;
 
             // Create payment record
-            await base44.entities.Payment.create({
+            await matrixSales.entities.Payment.create({
                 payment_number: paymentNumber,
                 payment_type: 'incoming',
                 payment_date: data.paymentDate,
@@ -76,7 +76,7 @@ export default function InvoiceClearingDialog({ open, onClose }) {
             // Create allocation records and update AR
             for (const allocation of data.allocations) {
                 // Create payment allocation
-                await base44.entities.PaymentAllocation.create({
+                await matrixSales.entities.PaymentAllocation.create({
                     allocation_id: `ALLOC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                     payment_number: paymentNumber,
                     ar_number: allocation.ar_number,
@@ -102,7 +102,7 @@ export default function InvoiceClearingDialog({ open, onClose }) {
                     newStatus = 'partially_paid';
                 }
 
-                await base44.entities.AccountsReceivable.update(allocation.ar_id, {
+                await matrixSales.entities.AccountsReceivable.update(allocation.ar_id, {
                     paid_amount: newPaidAmount,
                     outstanding_amount: newOutstanding,
                     status: newStatus

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,7 +24,7 @@ export default function KPIDashboard() {
 
     const { data: kpis = [] } = useQuery({
         queryKey: ['kpis', selectedPeriod],
-        queryFn: () => base44.entities.KPI.filter({ period: selectedPeriod }),
+        queryFn: () => matrixSales.entities.KPI.filter({ period: selectedPeriod }),
         initialData: []
     });
 

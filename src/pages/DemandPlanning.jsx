@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,25 +20,25 @@ export default function DemandPlanning() {
 
     const { data: materials = [] } = useQuery({
         queryKey: ['materials'],
-        queryFn: () => base44.entities.Material.list(),
+        queryFn: () => matrixSales.entities.Material.list(),
         initialData: []
     });
 
     const { data: forecasts = [] } = useQuery({
         queryKey: ['demandForecasts', selectedPeriod],
-        queryFn: () => base44.entities.DemandForecast.filter({ forecast_period: selectedPeriod }),
+        queryFn: () => matrixSales.entities.DemandForecast.filter({ forecast_period: selectedPeriod }),
         initialData: []
     });
 
     const { data: salesOrders = [] } = useQuery({
         queryKey: ['salesOrders'],
-        queryFn: () => base44.entities.SalesOrder.list(),
+        queryFn: () => matrixSales.entities.SalesOrder.list(),
         initialData: []
     });
 
     const { data: stockLevels = [] } = useQuery({
         queryKey: ['stockLevels'],
-        queryFn: () => base44.entities.StockLevel.list(),
+        queryFn: () => matrixSales.entities.StockLevel.list(),
         initialData: []
     });
 
@@ -87,7 +87,7 @@ export default function DemandPlanning() {
             const safetyStock = forecastedQty * 0.2;
             const reorderPoint = forecastedQty + safetyStock;
 
-            return base44.entities.DemandForecast.create({
+            return matrixSales.entities.DemandForecast.create({
                 forecast_id: `DF-${materialCode}-${period}-${Date.now()}`,
                 material_code: materialCode,
                 material_name: material.material_name,

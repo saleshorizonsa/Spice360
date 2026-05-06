@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ export default function GLZakatMappingForm({ item, accounts, onClose }) {
             if (bulkUpdate && selectedAccounts.length > 0) {
                 const promises = selectedAccounts.map(accountId => {
                     const account = accounts.find(a => a.id === accountId);
-                    return base44.entities.ChartOfAccounts.update(accountId, {
+                    return matrixSales.entities.ChartOfAccounts.update(accountId, {
                         zakat_category: data.zakat_category,
                         zakat_subcategory: data.zakat_subcategory,
                         is_related_party_account: data.is_related_party_account
@@ -29,7 +29,7 @@ export default function GLZakatMappingForm({ item, accounts, onClose }) {
                 });
                 return Promise.all(promises);
             } else {
-                return base44.entities.ChartOfAccounts.update(item.id, data);
+                return matrixSales.entities.ChartOfAccounts.update(item.id, data);
             }
         },
         onSuccess: () => {

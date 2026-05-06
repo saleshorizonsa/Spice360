@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ export default function DeliveryForm({ item, onClose }) {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const user = await base44.auth.me();
+                const user = await matrixSales.auth.me();
                 setCurrentUser(user);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -36,13 +36,13 @@ export default function DeliveryForm({ item, onClose }) {
 
     const { data: salesOrders = [] } = useQuery({
         queryKey: ['sales'],
-        queryFn: () => base44.entities.SalesOrder.list('-order_date'),
+        queryFn: () => matrixSales.entities.SalesOrder.list('-order_date'),
         initialData: []
     });
 
     const { data: products = [] } = useQuery({
         queryKey: ['products'],
-        queryFn: () => base44.entities.Product.list(),
+        queryFn: () => matrixSales.entities.Product.list(),
         initialData: []
     });
 
@@ -96,7 +96,7 @@ export default function DeliveryForm({ item, onClose }) {
             const beforeData = item ? { ...item } : null;
             
             if (item) {
-                delivery = await base44.entities.Delivery.update(item.id, data);
+                delivery = await matrixSales.entities.Delivery.update(item.id, data);
                 
                 // Log audit trail
                 await logAuditTrail({
@@ -111,7 +111,7 @@ export default function DeliveryForm({ item, onClose }) {
                     organizationId: currentOrg?.id // Pass organization ID if available
                 });
             } else {
-                delivery = await base44.entities.Delivery.create(data);
+                delivery = await matrixSales.entities.Delivery.create(data);
                 
                 // Log audit trail
                 await logAuditTrail({
@@ -154,7 +154,7 @@ export default function DeliveryForm({ item, onClose }) {
             await processGoodsIssue(deliveryData, currentUser, currentOrg?.id); // Pass organization ID
 
             // Update delivery record
-            const updatedDelivery = await base44.entities.Delivery.update(deliveryData.id, {
+            const updatedDelivery = await matrixSales.entities.Delivery.update(deliveryData.id, {
                 ...deliveryData, // Ensure all fields are passed
                 pgi_done: true,
                 pgi_date: new Date().toISOString().split('T')[0],
@@ -163,7 +163,7 @@ export default function DeliveryForm({ item, onClose }) {
             });
 
             // Find and update sales order quantity delivered and status
-            const salesOrdersResult = await base44.entities.SalesOrder.filter({
+            const salesOrdersResult = await matrixSales.entities.SalesOrder.filter({
                 order_number: deliveryData.sales_order_number
             });
             
@@ -178,7 +178,7 @@ export default function DeliveryForm({ item, onClose }) {
                     newSalesOrderStatus = 'partially_delivered';
                 }
 
-                await base44.entities.SalesOrder.update(salesOrder.id, {
+                await matrixSales.entities.SalesOrder.update(salesOrder.id, {
                     quantity_delivered: newQuantityDelivered,
                     status: newSalesOrderStatus
                 });

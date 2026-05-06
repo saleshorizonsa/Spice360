@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -46,7 +46,7 @@ export default function RoleForm({ item, onClose }) {
     }, [item]);
 
     const createMutation = useMutation({
-        mutationFn: (data) => base44.entities.Role.create(data),
+        mutationFn: (data) => matrixSales.entities.Role.create(data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['roles'] });
             toast({ title: "Success", description: "Role created successfully" });
@@ -55,7 +55,7 @@ export default function RoleForm({ item, onClose }) {
     });
 
     const updateMutation = useMutation({
-        mutationFn: (data) => base44.entities.Role.update(item.id, data),
+        mutationFn: (data) => matrixSales.entities.Role.update(item.id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['roles'] });
             toast({ title: "Success", description: "Role updated successfully" });

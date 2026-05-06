@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -50,43 +50,43 @@ export default function FixedAssets() {
 
     const { data: assets = [] } = useQuery({
         queryKey: ['assets'],
-        queryFn: () => base44.entities.FixedAsset.list('-acquisition_date'),
+        queryFn: () => matrixSales.entities.FixedAsset.list('-acquisition_date'),
         initialData: []
     });
 
     const { data: allocations = [] } = useQuery({
         queryKey: ['allocations'],
-        queryFn: () => base44.entities.AssetAllocation.list('-allocation_date'),
+        queryFn: () => matrixSales.entities.AssetAllocation.list('-allocation_date'),
         initialData: []
     });
 
     const { data: maintenance = [] } = useQuery({
         queryKey: ['maintenance'],
-        queryFn: () => base44.entities.AssetMaintenance.list('-maintenance_date'),
+        queryFn: () => matrixSales.entities.AssetMaintenance.list('-maintenance_date'),
         initialData: []
     });
 
     const { data: aucs = [] } = useQuery({
         queryKey: ['aucs'],
-        queryFn: () => base44.entities.AssetUnderConstruction.list('-start_date'),
+        queryFn: () => matrixSales.entities.AssetUnderConstruction.list('-start_date'),
         initialData: []
     });
 
     const { data: depreciation = [] } = useQuery({
         queryKey: ['depreciation'],
-        queryFn: () => base44.entities.AssetDepreciation.list('-depreciation_date'),
+        queryFn: () => matrixSales.entities.AssetDepreciation.list('-depreciation_date'),
         initialData: []
     });
 
     const { data: aucExpenditures = [] } = useQuery({
         queryKey: ['aucExpenditures'],
-        queryFn: () => base44.entities.AUCExpenditure.list('-expenditure_date'),
+        queryFn: () => matrixSales.entities.AUCExpenditure.list('-expenditure_date'),
         initialData: []
     });
 
     const { data: disposals = [] } = useQuery({
         queryKey: ['disposals'],
-        queryFn: () => base44.entities.AssetDisposal.list('-disposal_date'),
+        queryFn: () => matrixSales.entities.AssetDisposal.list('-disposal_date'),
         initialData: []
     });
 
@@ -103,7 +103,7 @@ export default function FixedAssets() {
     const totalAUCValue = aucs.reduce((sum, a) => sum + (a.total_actual_cost || 0), 0);
 
     const deleteMutation = useMutation({
-        mutationFn: ({ entity, id }) => base44.entities[entity].delete(id),
+        mutationFn: ({ entity, id }) => matrixSales.entities[entity].delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries();
             toast({
@@ -138,11 +138,11 @@ export default function FixedAssets() {
             );
             
             for (const entry of depEntries) {
-                await base44.entities.AssetDepreciation.create(entry);
+                await matrixSales.entities.AssetDepreciation.create(entry);
                 
                 const asset = assets.find(a => a.asset_number === entry.asset_number);
                 if (asset) {
-                    await base44.entities.FixedAsset.update(asset.id, {
+                    await matrixSales.entities.FixedAsset.update(asset.id, {
                         accumulated_depreciation: entry.accumulated_depreciation,
                         net_book_value: entry.net_book_value
                     });

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -24,7 +24,7 @@ export default function AssetAllocationForm({ item, onClose }) {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const user = await base44.auth.me();
+                const user = await matrixSales.auth.me();
                 setCurrentUser(user);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -35,13 +35,13 @@ export default function AssetAllocationForm({ item, onClose }) {
 
     const { data: assets = [] } = useQuery({
         queryKey: ['assets', currentOrg?.id],
-        queryFn: () => base44.entities.FixedAsset.filter({ status: 'active' }),
+        queryFn: () => matrixSales.entities.FixedAsset.filter({ status: 'active' }),
         initialData: []
     });
 
     const { data: employees = [] } = useQuery({
         queryKey: ['employees', currentOrg?.id],
-        queryFn: () => base44.entities.Employee.list(),
+        queryFn: () => matrixSales.entities.Employee.list(),
         initialData: []
     });
 
@@ -119,7 +119,7 @@ export default function AssetAllocationForm({ item, onClose }) {
             const beforeData = item ? { ...item } : null;
 
             if (item) {
-                allocation = await base44.entities.AssetAllocation.update(item.id, data);
+                allocation = await matrixSales.entities.AssetAllocation.update(item.id, data);
                 
                 await logAuditTrail({
                     entityType: 'asset_allocation',
@@ -132,7 +132,7 @@ export default function AssetAllocationForm({ item, onClose }) {
                     severity: 'info'
                 });
             } else {
-                allocation = await base44.entities.AssetAllocation.create(data);
+                allocation = await matrixSales.entities.AssetAllocation.create(data);
                 
                 await logAuditTrail({
                     entityType: 'asset_allocation',

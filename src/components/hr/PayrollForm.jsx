@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ export default function PayrollForm({ item, onClose }) {
 
     const { data: employees = [] } = useQuery({
         queryKey: ['employees'],
-        queryFn: () => base44.entities.Employee.list(),
+        queryFn: () => matrixSales.entities.Employee.list(),
         initialData: []
     });
 
@@ -98,18 +98,18 @@ export default function PayrollForm({ item, onClose }) {
         mutationFn: async (data) => {
             // Create payroll record
             const payrollResult = item 
-                ? await base44.entities.Payroll.update(item.id, data)
-                : await base44.entities.Payroll.create(data);
+                ? await matrixSales.entities.Payroll.update(item.id, data)
+                : await matrixSales.entities.Payroll.create(data);
 
             // Auto-create GOSI contribution record if not already exists
             if (data.status === 'calculated' || data.status === 'paid') {
-                const existingGOSI = await base44.entities.GOSIContribution.filter({
+                const existingGOSI = await matrixSales.entities.GOSIContribution.filter({
                     month: data.payroll_month,
                     employee_id: data.employee_id
                 });
 
                 if (!existingGOSI || existingGOSI.length === 0) {
-                    await base44.entities.GOSIContribution.create({
+                    await matrixSales.entities.GOSIContribution.create({
                         contribution_id: `GOSI-${data.payroll_month}-${data.employee_id}`,
                         month: data.payroll_month,
                         employee_id: data.employee_id,

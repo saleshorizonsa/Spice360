@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -30,7 +30,7 @@ export default function Approvals() {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const currentUser = await base44.auth.me();
+                const currentUser = await matrixSales.auth.me();
                 setUser(currentUser);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -41,13 +41,13 @@ export default function Approvals() {
 
     const { data: approvalRequests = [] } = useQuery({
         queryKey: ['approvalRequests'],
-        queryFn: () => base44.entities.ApprovalRequest.list('-request_date'),
+        queryFn: () => matrixSales.entities.ApprovalRequest.list('-request_date'),
         initialData: []
     });
 
     const { data: approvalMatrices = [] } = useQuery({
         queryKey: ['approvalMatrices'],
-        queryFn: () => base44.entities.ApprovalMatrix.list('approval_level'),
+        queryFn: () => matrixSales.entities.ApprovalMatrix.list('approval_level'),
         initialData: []
     });
 

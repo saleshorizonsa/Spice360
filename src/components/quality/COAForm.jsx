@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -33,13 +33,13 @@ export default function COAForm({ item, onClose }) {
 
     const { data: materials = [] } = useQuery({
         queryKey: ['materials'],
-        queryFn: () => base44.entities.Material.list(),
+        queryFn: () => matrixSales.entities.Material.list(),
         initialData: []
     });
 
     const { data: inspectionLots = [] } = useQuery({
         queryKey: ['inspectionLots'],
-        queryFn: () => base44.entities.InspectionLot.list(),
+        queryFn: () => matrixSales.entities.InspectionLot.list(),
         initialData: []
     });
 
@@ -52,9 +52,9 @@ export default function COAForm({ item, onClose }) {
     const saveMutation = useMutation({
         mutationFn: (data) => {
             if (item) {
-                return base44.entities.CertificateOfAnalysis.update(item.id, data);
+                return matrixSales.entities.CertificateOfAnalysis.update(item.id, data);
             }
-            return base44.entities.CertificateOfAnalysis.create(data);
+            return matrixSales.entities.CertificateOfAnalysis.create(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['coas'] });

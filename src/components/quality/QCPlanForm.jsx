@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ export default function QCPlanForm({ item, onClose }) {
 
     const { data: materials = [] } = useQuery({
         queryKey: ['materials', currentOrg?.id],
-        queryFn: () => base44.entities.Material.list(),
+        queryFn: () => matrixSales.entities.Material.list(),
         initialData: []
     });
 
@@ -53,7 +53,7 @@ export default function QCPlanForm({ item, onClose }) {
             
             // Load test specifications
             const loadTestSpecs = async () => {
-                const specs = await base44.entities.TestSpecification.filter({ 
+                const specs = await matrixSales.entities.TestSpecification.filter({ 
                     qc_plan_code: item.qc_plan_code 
                 });
                 setTestSpecs(specs);
@@ -114,18 +114,18 @@ export default function QCPlanForm({ item, onClose }) {
         mutationFn: async (data) => {
             let qcPlan;
             if (item) {
-                qcPlan = await base44.entities.QCPlan.update(item.id, data);
+                qcPlan = await matrixSales.entities.QCPlan.update(item.id, data);
             } else {
-                qcPlan = await base44.entities.QCPlan.create(data);
+                qcPlan = await matrixSales.entities.QCPlan.create(data);
             }
 
             // Delete existing test specs if editing
             if (item) {
-                const existingSpecs = await base44.entities.TestSpecification.filter({ 
+                const existingSpecs = await matrixSales.entities.TestSpecification.filter({ 
                     qc_plan_code: item.qc_plan_code 
                 });
                 await Promise.all(existingSpecs.map(spec => 
-                    base44.entities.TestSpecification.delete(spec.id)
+                    matrixSales.entities.TestSpecification.delete(spec.id)
                 ));
             }
 
@@ -135,7 +135,7 @@ export default function QCPlanForm({ item, onClose }) {
                 organization_id: currentOrg?.id,
                 qc_plan_code: data.qc_plan_code
             }));
-            await base44.entities.TestSpecification.bulkCreate(specsWithPlanCode);
+            await matrixSales.entities.TestSpecification.bulkCreate(specsWithPlanCode);
 
             return qcPlan;
         },

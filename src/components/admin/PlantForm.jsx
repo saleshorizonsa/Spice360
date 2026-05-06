@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -33,16 +33,16 @@ export default function PlantForm({ item, onClose, open }) {
 
     const { data: organizations = [] } = useQuery({
         queryKey: ['organizations'],
-        queryFn: () => base44.entities.Organization.list(),
+        queryFn: () => matrixSales.entities.Organization.list(),
         initialData: []
     });
 
     const mutation = useMutation({
         mutationFn: (data) => {
             if (item) {
-                return base44.entities.Plant.update(item.id, data);
+                return matrixSales.entities.Plant.update(item.id, data);
             }
-            return base44.entities.Plant.create(data);
+            return matrixSales.entities.Plant.create(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plants'] });

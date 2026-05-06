@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,42 +27,42 @@ export default function Costing() {
     // Queries
     const { data: productCosts = [] } = useQuery({
         queryKey: ['productCosts', currentOrg?.id],
-        queryFn: () => base44.entities.ProductCost.filter(withOrgFilter(), '-calculation_date'),
+        queryFn: () => matrixSales.entities.ProductCost.filter(withOrgFilter(), '-calculation_date'),
         initialData: [],
         enabled: !!currentOrg
     });
 
     const { data: actualCosts = [] } = useQuery({
         queryKey: ['actualCosts', currentOrg?.id],
-        queryFn: () => base44.entities.ActualCost.filter(withOrgFilter(), '-posting_date'),
+        queryFn: () => matrixSales.entities.ActualCost.filter(withOrgFilter(), '-posting_date'),
         initialData: [],
         enabled: !!currentOrg
     });
 
     const { data: costVariances = [] } = useQuery({
         queryKey: ['costVariances', currentOrg?.id],
-        queryFn: () => base44.entities.CostVariance.filter(withOrgFilter(), '-variance_date'),
+        queryFn: () => matrixSales.entities.CostVariance.filter(withOrgFilter(), '-variance_date'),
         initialData: [],
         enabled: !!currentOrg
     });
 
     const { data: costPools = [] } = useQuery({
         queryKey: ['costPools', currentOrg?.id],
-        queryFn: () => base44.entities.CostPool.filter(withOrgFilter()),
+        queryFn: () => matrixSales.entities.CostPool.filter(withOrgFilter()),
         initialData: [],
         enabled: !!currentOrg
     });
 
     const { data: overheadRates = [] } = useQuery({
         queryKey: ['overheadRates', currentOrg?.id],
-        queryFn: () => base44.entities.OverheadRate.filter(withOrgFilter()),
+        queryFn: () => matrixSales.entities.OverheadRate.filter(withOrgFilter()),
         initialData: [],
         enabled: !!currentOrg
     });
 
     const { data: jobCosts = [] } = useQuery({
         queryKey: ['jobCosts', currentOrg?.id],
-        queryFn: () => base44.entities.JobCost.filter(withOrgFilter(), '-start_date'),
+        queryFn: () => matrixSales.entities.JobCost.filter(withOrgFilter(), '-start_date'),
         initialData: [],
         enabled: !!currentOrg
     });
@@ -82,7 +82,7 @@ export default function Costing() {
         : 0;
 
     const deleteMutation = useMutation({
-        mutationFn: ({ entity, id }) => base44.entities[entity].delete(id),
+        mutationFn: ({ entity, id }) => matrixSales.entities[entity].delete(id),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries();
             toast({

@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,13 +27,13 @@ export default function AssetVerification() {
 
     const { data: tasks = [] } = useQuery({
         queryKey: ['verificationTasks'],
-        queryFn: () => base44.entities.AssetVerificationTask.list('-scheduled_date'),
+        queryFn: () => matrixSales.entities.AssetVerificationTask.list('-scheduled_date'),
         initialData: []
     });
 
     const { data: verifications = [] } = useQuery({
         queryKey: ['verifications'],
-        queryFn: () => base44.entities.AssetVerification.list('-verification_date'),
+        queryFn: () => matrixSales.entities.AssetVerification.list('-verification_date'),
         initialData: []
     });
 
@@ -52,7 +52,7 @@ export default function AssetVerification() {
         : 0;
 
     const deleteMutation = useMutation({
-        mutationFn: ({ entity, id }) => base44.entities[entity].delete(id),
+        mutationFn: ({ entity, id }) => matrixSales.entities[entity].delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries();
             toast({

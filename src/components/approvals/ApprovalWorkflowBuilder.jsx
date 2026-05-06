@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ export default function ApprovalWorkflowBuilder({ documentType, onSave }) {
     const { data: existingMatrices = [] } = useQuery({
         queryKey: ['approvalMatrices', selectedDocType],
         queryFn: () => selectedDocType ? 
-            base44.entities.ApprovalMatrix.filter({ document_type: selectedDocType, status: 'active' }) : 
+            matrixSales.entities.ApprovalMatrix.filter({ document_type: selectedDocType, status: 'active' }) : 
             Promise.resolve([]),
         enabled: !!selectedDocType
     });

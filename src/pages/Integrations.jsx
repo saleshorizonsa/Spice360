@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,31 +25,31 @@ export default function Integrations() {
 
     const { data: configs = [] } = useQuery({
         queryKey: ['integrationConfigs'],
-        queryFn: () => base44.entities.IntegrationConfig.list('-created_date'),
+        queryFn: () => matrixSales.entities.IntegrationConfig.list('-created_date'),
         initialData: []
     });
 
     const { data: logs = [] } = useQuery({
         queryKey: ['integrationLogs'],
-        queryFn: () => base44.entities.IntegrationLog.list('-sync_date', 100),
+        queryFn: () => matrixSales.entities.IntegrationLog.list('-sync_date', 100),
         initialData: []
     });
 
     const { data: bankStatements = [] } = useQuery({
         queryKey: ['bankStatements'],
-        queryFn: () => base44.entities.BankStatement.list('-transaction_date', 50),
+        queryFn: () => matrixSales.entities.BankStatement.list('-transaction_date', 50),
         initialData: []
     });
 
     const { data: attendanceRecords = [] } = useQuery({
         queryKey: ['attendanceRecords'],
-        queryFn: () => base44.entities.AttendanceRecord.list('-attendance_date', 50),
+        queryFn: () => matrixSales.entities.AttendanceRecord.list('-attendance_date', 50),
         initialData: []
     });
 
     const { data: posTransactions = [] } = useQuery({
         queryKey: ['posTransactions'],
-        queryFn: () => base44.entities.POSTransaction.list('-transaction_date', 50),
+        queryFn: () => matrixSales.entities.POSTransaction.list('-transaction_date', 50),
         initialData: []
     });
 

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,13 +15,13 @@ export default function PayrollRegisterReport() {
 
     const { data: payrolls = [] } = useQuery({
         queryKey: ['payrolls'],
-        queryFn: () => base44.entities.Payroll.list('-payroll_month'),
+        queryFn: () => matrixSales.entities.Payroll.list('-payroll_month'),
         initialData: []
     });
 
     const { data: employees = [] } = useQuery({
         queryKey: ['employees'],
-        queryFn: () => base44.entities.Employee.list(),
+        queryFn: () => matrixSales.entities.Employee.list(),
         initialData: []
     });
 

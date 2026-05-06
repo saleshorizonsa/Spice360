@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -32,19 +32,19 @@ export default function BudgetManagementForm({ item, onClose, open }) {
 
     const { data: chartOfAccounts = [] } = useQuery({
         queryKey: ['chartOfAccounts'],
-        queryFn: () => base44.entities.ChartOfAccounts.list(),
+        queryFn: () => matrixSales.entities.ChartOfAccounts.list(),
         initialData: []
     });
 
     const { data: costCenters = [] } = useQuery({
         queryKey: ['costCenters'],
-        queryFn: () => base44.entities.CostCenter.list(),
+        queryFn: () => matrixSales.entities.CostCenter.list(),
         initialData: []
     });
 
     const { data: projects = [] } = useQuery({
         queryKey: ['projects'],
-        queryFn: () => base44.entities.Project.list(),
+        queryFn: () => matrixSales.entities.Project.list(),
         initialData: []
     });
 
@@ -59,9 +59,9 @@ export default function BudgetManagementForm({ item, onClose, open }) {
     const saveMutation = useMutation({
         mutationFn: (data) => {
             if (item) {
-                return base44.entities.Budget.update(item.id, data);
+                return matrixSales.entities.Budget.update(item.id, data);
             }
-            return base44.entities.Budget.create(data);
+            return matrixSales.entities.Budget.create(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['budgets'] });
@@ -82,23 +82,23 @@ export default function BudgetManagementForm({ item, onClose, open }) {
 
     const submitForApprovalMutation = useMutation({
         mutationFn: async (budget) => {
-            const user = await base44.auth.me();
+            const user = await matrixSales.auth.me();
             
             // Update budget status to pending approval
-            await base44.entities.Budget.update(budget.id, {
+            await matrixSales.entities.Budget.update(budget.id, {
                 ...budget,
                 status: 'pending_approval'
             });
 
             // Find approval matrix for budget
-            const approvalMatrix = await base44.entities.ApprovalMatrix.filter({
+            const approvalMatrix = await matrixSales.entities.ApprovalMatrix.filter({
                 document_type: 'budget',
                 status: 'active'
             });
 
             if (approvalMatrix.length > 0) {
                 // Create approval request
-                await base44.entities.ApprovalRequest.create({
+                await matrixSales.entities.ApprovalRequest.create({
                     request_id: `APR-BDG-${Date.now()}`,
                     document_type: 'budget',
                     document_number: budget.budget_id,

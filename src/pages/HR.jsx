@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -29,37 +29,37 @@ export default function HR() {
 
     const { data: employees = [] } = useQuery({
         queryKey: ['employees'],
-        queryFn: () => base44.entities.Employee.list(),
+        queryFn: () => matrixSales.entities.Employee.list(),
         initialData: []
     });
 
     const { data: leaveRequests = [] } = useQuery({
         queryKey: ['leaveRequests'],
-        queryFn: () => base44.entities.LeaveRequest.list('-applied_date'),
+        queryFn: () => matrixSales.entities.LeaveRequest.list('-applied_date'),
         initialData: []
     });
 
     const { data: payrolls = [] } = useQuery({
         queryKey: ['payrolls'],
-        queryFn: () => base44.entities.Payroll.list('-payroll_month'),
+        queryFn: () => matrixSales.entities.Payroll.list('-payroll_month'),
         initialData: []
     });
 
     const { data: loans = [] } = useQuery({
         queryKey: ['loans'],
-        queryFn: () => base44.entities.LoanAdvance.list('-request_date'),
+        queryFn: () => matrixSales.entities.LoanAdvance.list('-request_date'),
         initialData: []
     });
 
     const { data: eosSettlements = [] } = useQuery({
         queryKey: ['eosSettlements'],
-        queryFn: () => base44.entities.EOSSettlement.list('-last_working_date'),
+        queryFn: () => matrixSales.entities.EOSSettlement.list('-last_working_date'),
         initialData: []
     });
 
     const { data: gosiContributions = [] } = useQuery({
         queryKey: ['gosiContributions'],
-        queryFn: () => base44.entities.GOSIContribution.list('-month'),
+        queryFn: () => matrixSales.entities.GOSIContribution.list('-month'),
         initialData: []
     });
 
@@ -73,7 +73,7 @@ export default function HR() {
     const currentMonthGOSI = gosiContributions.filter(g => g.month === new Date().toISOString().substring(0, 7) && g.status === 'calculated').length;
 
     const deleteMutation = useMutation({
-        mutationFn: ({ entity, id }) => base44.entities[entity].delete(id),
+        mutationFn: ({ entity, id }) => matrixSales.entities[entity].delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries();
             toast({

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,25 +14,25 @@ export default function AIProductionOptimizer() {
 
     const { data: productionOrders = [] } = useQuery({
         queryKey: ['productionOrders'],
-        queryFn: () => base44.entities.ProductionOrder.list(),
+        queryFn: () => matrixSales.entities.ProductionOrder.list(),
         initialData: []
     });
 
     const { data: materials = [] } = useQuery({
         queryKey: ['materials'],
-        queryFn: () => base44.entities.Material.list(),
+        queryFn: () => matrixSales.entities.Material.list(),
         initialData: []
     });
 
     const { data: workCenters = [] } = useQuery({
         queryKey: ['workCenters'],
-        queryFn: () => base44.entities.WorkCenter.list(),
+        queryFn: () => matrixSales.entities.WorkCenter.list(),
         initialData: []
     });
 
     const { data: salesOrders = [] } = useQuery({
         queryKey: ['salesOrders'],
-        queryFn: () => base44.entities.SalesOrder.list('-order_date', 50),
+        queryFn: () => matrixSales.entities.SalesOrder.list('-order_date', 50),
         initialData: []
     });
 
@@ -54,7 +54,7 @@ export default function AIProductionOptimizer() {
                 efficiency: wc.efficiency_rate || 85
             }));
 
-            const response = await base44.integrations.Core.InvokeLLM({
+            const response = await matrixSales.integrations.Core.InvokeLLM({
                 prompt: `You are a production planning AI expert. Analyze this manufacturing data and create an optimized production schedule.
 
 Production Orders (Pending):

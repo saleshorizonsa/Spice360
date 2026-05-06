@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ export default function FinancialTransactionForm({ item, onClose }) {
 
     const { data: accounts = [] } = useQuery({
         queryKey: ['chartOfAccounts'],
-        queryFn: () => base44.entities.ChartOfAccounts.list('account_code'),
+        queryFn: () => matrixSales.entities.ChartOfAccounts.list('account_code'),
         initialData: []
     });
 
@@ -56,9 +56,9 @@ export default function FinancialTransactionForm({ item, onClose }) {
         mutationFn: async (data) => {
             let result;
             if (item) {
-                result = await base44.entities.FinancialTransaction.update(item.id, data);
+                result = await matrixSales.entities.FinancialTransaction.update(item.id, data);
             } else {
-                result = await base44.entities.FinancialTransaction.create(data);
+                result = await matrixSales.entities.FinancialTransaction.create(data);
             }
 
             // Update account balance if account is selected
@@ -67,7 +67,7 @@ export default function FinancialTransactionForm({ item, onClose }) {
                 if (account) {
                     const balanceChange = data.transaction_type === 'revenue' ? data.amount : -data.amount;
                     const newBalance = (account.current_balance || 0) + balanceChange;
-                    await base44.entities.ChartOfAccounts.update(account.id, {
+                    await matrixSales.entities.ChartOfAccounts.update(account.id, {
                         current_balance: newBalance
                     });
                 }

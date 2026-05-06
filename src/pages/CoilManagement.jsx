@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,13 +24,13 @@ export default function CoilManagement() {
 
     const { data: coils = [] } = useQuery({
         queryKey: ['coils'],
-        queryFn: () => base44.entities.Coil.list('-received_date'),
+        queryFn: () => matrixSales.entities.Coil.list('-received_date'),
         initialData: []
     });
 
     const { data: slittings = [] } = useQuery({
         queryKey: ['coilSlittings'],
-        queryFn: () => base44.entities.CoilSlitting.list('-slitting_date'),
+        queryFn: () => matrixSales.entities.CoilSlitting.list('-slitting_date'),
         initialData: []
     });
 
@@ -41,7 +41,7 @@ export default function CoilManagement() {
     const qcPending = coils.filter(c => c.qc_status === 'pending');
 
     const deleteMutation = useMutation({
-        mutationFn: (id) => base44.entities.Coil.delete(id),
+        mutationFn: (id) => matrixSales.entities.Coil.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['coils'] });
             toast({ title: "Success", description: "Coil deleted successfully" });

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +16,7 @@ export default function AIInsights() {
         queryKey: ['sales'],
         queryFn: async () => {
             try {
-                return await base44.entities.SalesOrder.list('-order_date', 100);
+                return await matrixSales.entities.SalesOrder.list('-order_date', 100);
             } catch (error) {
                 console.error("Error fetching sales:", error);
                 return [];
@@ -29,7 +29,7 @@ export default function AIInsights() {
         queryKey: ['purchases'],
         queryFn: async () => {
             try {
-                return await base44.entities.PurchaseOrder.list('-po_date', 100);
+                return await matrixSales.entities.PurchaseOrder.list('-po_date', 100);
             } catch (error) {
                 console.error("Error fetching purchases:", error);
                 return [];
@@ -42,7 +42,7 @@ export default function AIInsights() {
         queryKey: ['stockLevels'],
         queryFn: async () => {
             try {
-                return await base44.entities.StockLevel.list();
+                return await matrixSales.entities.StockLevel.list();
             } catch (error) {
                 console.error("Error fetching stock levels:", error);
                 return [];
@@ -55,7 +55,7 @@ export default function AIInsights() {
         queryKey: ['invoices'],
         queryFn: async () => {
             try {
-                return await base44.entities.Invoice.list('-invoice_date', 100);
+                return await matrixSales.entities.Invoice.list('-invoice_date', 100);
             } catch (error) {
                 console.error("Error fetching invoices:", error);
                 return [];
@@ -68,7 +68,7 @@ export default function AIInsights() {
         queryKey: ['ar'],
         queryFn: async () => {
             try {
-                return await base44.entities.AccountsReceivable.list();
+                return await matrixSales.entities.AccountsReceivable.list();
             } catch (error) {
                 console.error("Error fetching AR:", error);
                 return [];
@@ -106,7 +106,7 @@ export default function AIInsights() {
                 }
             };
 
-            const response = await base44.integrations.Core.InvokeLLM({
+            const response = await matrixSales.integrations.Core.InvokeLLM({
                 prompt: `You are a business intelligence analyst for an ERP system. Analyze the following business data and provide actionable insights, trends, and recommendations.
 
 Business Data:

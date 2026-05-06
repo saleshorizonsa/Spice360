@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -23,25 +23,25 @@ export default function ManufacturingReports() {
 
     const { data: productionOrders = [] } = useQuery({
         queryKey: ['productionOrders'],
-        queryFn: () => base44.entities.ProductionOrder.list('-start_date'),
+        queryFn: () => matrixSales.entities.ProductionOrder.list('-start_date'),
         initialData: []
     });
 
     const { data: mrpPlannedOrders = [] } = useQuery({
         queryKey: ['mrpPlannedOrders'],
-        queryFn: () => base44.entities.MRPPlannedOrder.list(),
+        queryFn: () => matrixSales.entities.MRPPlannedOrder.list(),
         initialData: []
     });
 
     const { data: productionVariances = [] } = useQuery({
         queryKey: ['productionVariances'],
-        queryFn: () => base44.entities.ProductionVariance.list(),
+        queryFn: () => matrixSales.entities.ProductionVariance.list(),
         initialData: []
     });
 
     const { data: workCenters = [] } = useQuery({
         queryKey: ['workCenters'],
-        queryFn: () => base44.entities.WorkCenter.list(),
+        queryFn: () => matrixSales.entities.WorkCenter.list(),
         initialData: []
     });
 

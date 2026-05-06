@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ export default function CashFlowStatementReport() {
     const { data: payments = [] } = useQuery({
         queryKey: ['payments', fromDate, toDate],
         queryFn: async () => {
-            const allPayments = await base44.entities.Payment.list('-payment_date');
+            const allPayments = await matrixSales.entities.Payment.list('-payment_date');
             return allPayments.filter(p => 
                 p.payment_date >= fromDate && 
                 p.payment_date <= toDate &&
@@ -28,7 +28,7 @@ export default function CashFlowStatementReport() {
     const { data: invoices = [] } = useQuery({
         queryKey: ['invoices', fromDate, toDate],
         queryFn: async () => {
-            const allInvoices = await base44.entities.Invoice.list('-invoice_date');
+            const allInvoices = await matrixSales.entities.Invoice.list('-invoice_date');
             return allInvoices.filter(i => 
                 i.invoice_date >= fromDate && 
                 i.invoice_date <= toDate &&
@@ -41,7 +41,7 @@ export default function CashFlowStatementReport() {
     const { data: vendorInvoices = [] } = useQuery({
         queryKey: ['vendorInvoices', fromDate, toDate],
         queryFn: async () => {
-            const allVInvoices = await base44.entities.VendorInvoice.list('-invoice_date');
+            const allVInvoices = await matrixSales.entities.VendorInvoice.list('-invoice_date');
             return allVInvoices.filter(v => 
                 v.invoice_date >= fromDate && 
                 v.invoice_date <= toDate

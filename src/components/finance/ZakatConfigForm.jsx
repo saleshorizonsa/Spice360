@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -35,9 +35,9 @@ export default function ZakatConfigForm({ item, shareholders, onClose }) {
     const saveMutation = useMutation({
         mutationFn: (data) => {
             if (item) {
-                return base44.entities.ZakatConfiguration.update(item.id, data);
+                return matrixSales.entities.ZakatConfiguration.update(item.id, data);
             }
-            return base44.entities.ZakatConfiguration.create(data);
+            return matrixSales.entities.ZakatConfiguration.create(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['zakatConfigurations']);

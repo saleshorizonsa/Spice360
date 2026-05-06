@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ export default function CoilSlittingForm({ onClose }) {
 
     useEffect(() => {
         const fetchUser = async () => {
-            const user = await base44.auth.me();
+            const user = await matrixSales.auth.me();
             setCurrentUser(user);
         };
         fetchUser();
@@ -26,7 +26,7 @@ export default function CoilSlittingForm({ onClose }) {
 
     const { data: coils = [] } = useQuery({
         queryKey: ['coils'],
-        queryFn: () => base44.entities.Coil.list(),
+        queryFn: () => matrixSales.entities.Coil.list(),
         initialData: []
     });
 
@@ -75,7 +75,7 @@ export default function CoilSlittingForm({ onClose }) {
             const newCoilWeight = slitWeight;
             const remainingWeight = selectedCoil.current_weight - slitWeight - scrapWeight;
 
-            const slittingRecord = await base44.entities.CoilSlitting.create({
+            const slittingRecord = await matrixSales.entities.CoilSlitting.create({
                 slitting_number: data.slitting_number,
                 slitting_date: new Date().toISOString(),
                 parent_coil_number: selectedCoil.coil_number,
@@ -95,12 +95,12 @@ export default function CoilSlittingForm({ onClose }) {
                 notes: data.notes
             });
 
-            await base44.entities.Coil.update(selectedCoil.id, {
+            await matrixSales.entities.Coil.update(selectedCoil.id, {
                 current_weight: remainingWeight,
                 status: remainingWeight > 0 ? 'slit' : 'exhausted'
             });
 
-            await base44.entities.Coil.create({
+            await matrixSales.entities.Coil.create({
                 coil_number: data.new_coil_number,
                 material_code: selectedCoil.material_code,
                 material_name: selectedCoil.material_name,

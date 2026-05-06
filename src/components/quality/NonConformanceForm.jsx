@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -39,13 +39,13 @@ export default function NonConformanceForm({ item, onClose }) {
 
     const { data: materials = [] } = useQuery({
         queryKey: ['materials'],
-        queryFn: () => base44.entities.Material.list(),
+        queryFn: () => matrixSales.entities.Material.list(),
         initialData: []
     });
 
     const { data: vendors = [] } = useQuery({
         queryKey: ['vendors'],
-        queryFn: () => base44.entities.Vendor.list(),
+        queryFn: () => matrixSales.entities.Vendor.list(),
         initialData: []
     });
 
@@ -58,9 +58,9 @@ export default function NonConformanceForm({ item, onClose }) {
     const saveMutation = useMutation({
         mutationFn: (data) => {
             if (item) {
-                return base44.entities.NonConformance.update(item.id, data);
+                return matrixSales.entities.NonConformance.update(item.id, data);
             }
-            return base44.entities.NonConformance.create(data);
+            return matrixSales.entities.NonConformance.create(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['nonConformances'] });

@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -47,61 +47,61 @@ export default function Analytics() {
     // Fetch all data
     const { data: sales = [] } = useQuery({
         queryKey: ['sales'],
-        queryFn: () => base44.entities.SalesOrder.list(),
+        queryFn: () => matrixSales.entities.SalesOrder.list(),
         initialData: []
     });
 
     const { data: invoices = [] } = useQuery({
         queryKey: ['invoices'],
-        queryFn: () => base44.entities.Invoice.list(),
+        queryFn: () => matrixSales.entities.Invoice.list(),
         initialData: []
     });
 
     const { data: purchases = [] } = useQuery({
         queryKey: ['purchases'],
-        queryFn: () => base44.entities.PurchaseOrder.list(),
+        queryFn: () => matrixSales.entities.PurchaseOrder.list(),
         initialData: []
     });
 
     const { data: productions = [] } = useQuery({
         queryKey: ['productions'],
-        queryFn: () => base44.entities.ProductionOrder.list(),
+        queryFn: () => matrixSales.entities.ProductionOrder.list(),
         initialData: []
     });
 
     const { data: stockLevels = [] } = useQuery({
         queryKey: ['stockLevels'],
-        queryFn: () => base44.entities.StockLevel.list(),
+        queryFn: () => matrixSales.entities.StockLevel.list(),
         initialData: []
     });
 
     const { data: quality = [] } = useQuery({
         queryKey: ['quality'],
-        queryFn: () => base44.entities.InspectionLot.list(),
+        queryFn: () => matrixSales.entities.InspectionLot.list(),
         initialData: []
     });
 
     const { data: arRecords = [] } = useQuery({
         queryKey: ['ar'],
-        queryFn: () => base44.entities.AccountsReceivable.list(),
+        queryFn: () => matrixSales.entities.AccountsReceivable.list(),
         initialData: []
     });
 
     const { data: apRecords = [] } = useQuery({
         queryKey: ['ap'],
-        queryFn: () => base44.entities.AccountsPayable.list(),
+        queryFn: () => matrixSales.entities.AccountsPayable.list(),
         initialData: []
     });
 
     const { data: employees = [] } = useQuery({
         queryKey: ['employees'],
-        queryFn: () => base44.entities.Employee.list(),
+        queryFn: () => matrixSales.entities.Employee.list(),
         initialData: []
     });
 
     const { data: projects = [] } = useQuery({
         queryKey: ['projects'],
-        queryFn: () => base44.entities.Project.list(),
+        queryFn: () => matrixSales.entities.Project.list(),
         initialData: []
     });
 

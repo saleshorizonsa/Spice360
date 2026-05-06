@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,15 +41,15 @@ export default function DocumentUpload({
         }
 
         setUploading(true);
-        const currentUser = await base44.auth.me();
+        const currentUser = await matrixSales.auth.me();
 
         try {
             for (const file of selectedFiles) {
                 // Upload file
-                const { file_url } = await base44.integrations.Core.UploadFile({ file });
+                const { file_url } = await matrixSales.integrations.Core.UploadFile({ file });
 
                 // Create document record
-                await base44.entities.Document.create({
+                await matrixSales.entities.Document.create({
                     document_id: `DOC-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
                     file_name: file.name,
                     file_url: file_url,

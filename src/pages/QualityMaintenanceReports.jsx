@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,37 +18,37 @@ export default function QualityMaintenanceReports() {
 
     const { data: inspectionLots = [] } = useQuery({
         queryKey: ['inspectionLots'],
-        queryFn: () => base44.entities.InspectionLot.list('-inspection_start_date'),
+        queryFn: () => matrixSales.entities.InspectionLot.list('-inspection_start_date'),
         initialData: []
     });
 
     const { data: nonConformances = [] } = useQuery({
         queryKey: ['nonConformances'],
-        queryFn: () => base44.entities.NonConformance.list('-nc_date'),
+        queryFn: () => matrixSales.entities.NonConformance.list('-nc_date'),
         initialData: []
     });
 
     const { data: capas = [] } = useQuery({
         queryKey: ['capas'],
-        queryFn: () => base44.entities.CAPA.list('-capa_date'),
+        queryFn: () => matrixSales.entities.CAPA.list('-capa_date'),
         initialData: []
     });
 
     const { data: coas = [] } = useQuery({
         queryKey: ['coas'],
-        queryFn: () => base44.entities.CertificateOfAnalysis.list('-coa_date'),
+        queryFn: () => matrixSales.entities.CertificateOfAnalysis.list('-coa_date'),
         initialData: []
     });
 
     const { data: workOrders = [] } = useQuery({
         queryKey: ['workOrders'],
-        queryFn: () => base44.entities.WorkOrder.list('-created_date'),
+        queryFn: () => matrixSales.entities.WorkOrder.list('-created_date'),
         initialData: []
     });
 
     const { data: pmPlans = [] } = useQuery({
         queryKey: ['pmPlans'],
-        queryFn: () => base44.entities.PMPlan.list(),
+        queryFn: () => matrixSales.entities.PMPlan.list(),
         initialData: []
     });
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,7 @@ export default function AssetMaintenanceForm({ item, onClose }) {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const user = await base44.auth.me();
+                const user = await matrixSales.auth.me();
                 setCurrentUser(user);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -34,7 +34,7 @@ export default function AssetMaintenanceForm({ item, onClose }) {
 
     const { data: assets = [] } = useQuery({
         queryKey: ['assets', currentOrg?.id],
-        queryFn: () => base44.entities.FixedAsset.list(),
+        queryFn: () => matrixSales.entities.FixedAsset.list(),
         initialData: []
     });
 
@@ -91,7 +91,7 @@ export default function AssetMaintenanceForm({ item, onClose }) {
             const beforeData = item ? { ...item } : null;
 
             if (item) {
-                maintenance = await base44.entities.AssetMaintenance.update(item.id, data);
+                maintenance = await matrixSales.entities.AssetMaintenance.update(item.id, data);
                 
                 await logAuditTrail({
                     entityType: 'asset_maintenance',
@@ -104,7 +104,7 @@ export default function AssetMaintenanceForm({ item, onClose }) {
                     severity: 'info'
                 });
             } else {
-                maintenance = await base44.entities.AssetMaintenance.create(data);
+                maintenance = await matrixSales.entities.AssetMaintenance.create(data);
                 
                 await logAuditTrail({
                     entityType: 'asset_maintenance',

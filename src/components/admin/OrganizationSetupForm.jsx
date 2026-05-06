@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,7 @@ export default function OrganizationSetupForm() {
 
     const { data: organizations = [], isLoading } = useQuery({
         queryKey: ['organizations'],
-        queryFn: () => base44.entities.Organization.list(),
+        queryFn: () => matrixSales.entities.Organization.list(),
         initialData: []
     });
 
@@ -97,9 +97,9 @@ export default function OrganizationSetupForm() {
     const saveMutation = useMutation({
         mutationFn: (data) => {
             if (existingOrg) {
-                return base44.entities.Organization.update(existingOrg.id, data);
+                return matrixSales.entities.Organization.update(existingOrg.id, data);
             }
-            return base44.entities.Organization.create(data);
+            return matrixSales.entities.Organization.create(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['organizations'] });
@@ -128,7 +128,7 @@ export default function OrganizationSetupForm() {
         const file = e.target.files[0];
         if (file) {
             try {
-                const { file_url } = await base44.integrations.Core.UploadFile({ file });
+                const { file_url } = await matrixSales.integrations.Core.UploadFile({ file });
                 setFormData(prev => ({ ...prev, logo_url: file_url }));
                 toast({
                     title: "Success",

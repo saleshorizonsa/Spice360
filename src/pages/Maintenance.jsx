@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,37 +24,37 @@ export default function Maintenance() {
 
     const { data: workOrders = [] } = useQuery({
         queryKey: ['workOrders'],
-        queryFn: () => base44.entities.WorkOrder.list('-created_date'),
+        queryFn: () => matrixSales.entities.WorkOrder.list('-created_date'),
         initialData: []
     });
 
     const { data: pmPlans = [] } = useQuery({
         queryKey: ['pmPlans'],
-        queryFn: () => base44.entities.PMPlan.list(),
+        queryFn: () => matrixSales.entities.PMPlan.list(),
         initialData: []
     });
 
     const { data: equipment = [] } = useQuery({
         queryKey: ['equipment'],
-        queryFn: () => base44.entities.Equipment.list(),
+        queryFn: () => matrixSales.entities.Equipment.list(),
         initialData: []
     });
 
     const { data: spareParts = [] } = useQuery({
         queryKey: ['spareParts'],
-        queryFn: () => base44.entities.SparePart.list(),
+        queryFn: () => matrixSales.entities.SparePart.list(),
         initialData: []
     });
 
     const { data: downtimes = [] } = useQuery({
         queryKey: ['downtimes'],
-        queryFn: () => base44.entities.EquipmentDowntime.list('-downtime_start'),
+        queryFn: () => matrixSales.entities.EquipmentDowntime.list('-downtime_start'),
         initialData: []
     });
 
     const { data: consumptions = [] } = useQuery({
         queryKey: ['consumptions'],
-        queryFn: () => base44.entities.SparePartConsumption.list('-consumption_date'),
+        queryFn: () => matrixSales.entities.SparePartConsumption.list('-consumption_date'),
         initialData: []
     });
 
@@ -90,7 +90,7 @@ export default function Maintenance() {
     const totalMaintenanceCost = workOrders.reduce((sum, wo) => sum + (wo.total_cost || 0), 0);
 
     const deleteMutation = useMutation({
-        mutationFn: ({ entity, id }) => base44.entities[entity].delete(id),
+        mutationFn: ({ entity, id }) => matrixSales.entities[entity].delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries();
             toast({

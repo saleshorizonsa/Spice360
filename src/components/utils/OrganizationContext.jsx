@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { matrixSales } from '@/api/matrixSalesClient';
 
 const OrganizationContext = createContext();
 
@@ -24,11 +24,11 @@ export const OrganizationProvider = ({ children }) => {
     const initializeOrganization = async () => {
         try {
             // Get current user
-            const currentUser = await base44.auth.me();
+            const currentUser = await matrixSales.auth.me();
             setUser(currentUser);
 
             // Get all organizations
-            const orgs = await base44.entities.Organization.list();
+            const orgs = await matrixSales.entities.Organization.list();
             setOrganizations(orgs);
 
             // Get user's last selected organization from localStorage

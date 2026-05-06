@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -56,19 +56,19 @@ export default function AssetLifecycle() {
 
     const { data: assets = [] } = useQuery({
         queryKey: ['assets'],
-        queryFn: () => base44.entities.FixedAsset.list(),
+        queryFn: () => matrixSales.entities.FixedAsset.list(),
         initialData: []
     });
 
     const { data: disposals = [] } = useQuery({
         queryKey: ['disposals'],
-        queryFn: () => base44.entities.AssetDisposal.list('-disposal_date'),
+        queryFn: () => matrixSales.entities.AssetDisposal.list('-disposal_date'),
         initialData: []
     });
 
     const { data: maintenance = [] } = useQuery({
         queryKey: ['maintenance'],
-        queryFn: () => base44.entities.AssetMaintenance.list(),
+        queryFn: () => matrixSales.entities.AssetMaintenance.list(),
         initialData: []
     });
 

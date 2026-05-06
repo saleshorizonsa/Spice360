@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -46,13 +46,13 @@ export default function DepreciationReports() {
 
     const { data: assets = [] } = useQuery({
         queryKey: ['assets'],
-        queryFn: () => base44.entities.FixedAsset.list(),
+        queryFn: () => matrixSales.entities.FixedAsset.list(),
         initialData: []
     });
 
     const { data: depreciation = [] } = useQuery({
         queryKey: ['depreciation'],
-        queryFn: () => base44.entities.AssetDepreciation.list('-depreciation_date'),
+        queryFn: () => matrixSales.entities.AssetDepreciation.list('-depreciation_date'),
         initialData: []
     });
 

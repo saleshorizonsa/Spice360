@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -91,25 +91,25 @@ export default function Reports() {
     // Fetch summary data for KPIs
     const { data: sales = [] } = useQuery({
         queryKey: ['salesOrders'],
-        queryFn: () => base44.entities.SalesOrder.list(),
+        queryFn: () => matrixSales.entities.SalesOrder.list(),
         initialData: []
     });
 
     const { data: stockLevels = [] } = useQuery({
         queryKey: ['stockLevels'],
-        queryFn: () => base44.entities.StockLevel.list(),
+        queryFn: () => matrixSales.entities.StockLevel.list(),
         initialData: []
     });
 
     const { data: productions = [] } = useQuery({
         queryKey: ['productions'],
-        queryFn: () => base44.entities.ProductionOrder.list(),
+        queryFn: () => matrixSales.entities.ProductionOrder.list(),
         initialData: []
     });
 
     const { data: employees = [] } = useQuery({
         queryKey: ['employees'],
-        queryFn: () => base44.entities.Employee.list(),
+        queryFn: () => matrixSales.entities.Employee.list(),
         initialData: []
     });
 

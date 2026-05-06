@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -35,7 +35,7 @@ export default function MilestoneForm({ item, onClose }) {
 
     const { data: projects = [] } = useQuery({
         queryKey: ['projects'],
-        queryFn: () => base44.entities.Project.list(),
+        queryFn: () => matrixSales.entities.Project.list(),
         initialData: []
     });
 
@@ -48,9 +48,9 @@ export default function MilestoneForm({ item, onClose }) {
     const saveMutation = useMutation({
         mutationFn: (data) => {
             if (item) {
-                return base44.entities.ProjectMilestone.update(item.id, data);
+                return matrixSales.entities.ProjectMilestone.update(item.id, data);
             }
-            return base44.entities.ProjectMilestone.create(data);
+            return matrixSales.entities.ProjectMilestone.create(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['milestones'] });

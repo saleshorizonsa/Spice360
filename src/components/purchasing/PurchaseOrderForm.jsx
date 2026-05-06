@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const user = await base44.auth.me();
+                const user = await matrixSales.auth.me();
                 setCurrentUser(user);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -44,25 +44,25 @@ export default function PurchaseOrderForm({ po, onClose }) {
 
     const { data: vendors = [] } = useQuery({
         queryKey: ['vendors'],
-        queryFn: () => base44.entities.Vendor.list(),
+        queryFn: () => matrixSales.entities.Vendor.list(),
         initialData: []
     });
 
     const { data: materials = [] } = useQuery({
         queryKey: ['materials'],
-        queryFn: () => base44.entities.Material.list(),
+        queryFn: () => matrixSales.entities.Material.list(),
         initialData: []
     });
 
     const { data: rfqs = [] } = useQuery({
         queryKey: ['rfqs'],
-        queryFn: () => base44.entities.RFQ.list(),
+        queryFn: () => matrixSales.entities.RFQ.list(),
         initialData: []
     });
 
     const { data: costCenters = [] } = useQuery({
         queryKey: ['costCenters'],
-        queryFn: () => base44.entities.CostCenter.list(),
+        queryFn: () => matrixSales.entities.CostCenter.list(),
         initialData: []
     });
 
@@ -192,7 +192,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
             const auditSeverity = data.total_amount > 100000 ? 'warning' : 'info';
             
             if (po) {
-                purchaseOrder = await base44.entities.PurchaseOrder.update(po.id, data);
+                purchaseOrder = await matrixSales.entities.PurchaseOrder.update(po.id, data);
                 
                 await logAuditTrail({
                     entityType: 'purchase_order',
@@ -205,7 +205,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
                     severity: auditSeverity
                 });
             } else {
-                purchaseOrder = await base44.entities.PurchaseOrder.create(data);
+                purchaseOrder = await matrixSales.entities.PurchaseOrder.create(data);
                 
                 await logAuditTrail({
                     entityType: 'purchase_order',
@@ -239,7 +239,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
                         summaryAr: `أمر شراء من ${purchaseOrder.vendor_name_ar || purchaseOrder.vendor_name}`
                     });
 
-                    purchaseOrder = await base44.entities.PurchaseOrder.update(purchaseOrder.id, {
+                    purchaseOrder = await matrixSales.entities.PurchaseOrder.update(purchaseOrder.id, {
                         status: 'pending_approval'
                     });
                     

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Link } from "react-router-dom";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -60,19 +60,19 @@ export default function POS() {
 
     const { data: products = [] } = useQuery({
         queryKey: ['posProducts'],
-        queryFn: () => base44.entities.Product.filter({ status: 'active' }),
+        queryFn: () => matrixSales.entities.Product.filter({ status: 'active' }),
         initialData: []
     });
 
     const { data: materials = [] } = useQuery({
         queryKey: ['posMaterials'],
-        queryFn: () => base44.entities.Material.filter({ status: 'active' }),
+        queryFn: () => matrixSales.entities.Material.filter({ status: 'active' }),
         initialData: []
     });
 
     const { data: transactions = [] } = useQuery({
         queryKey: ['posTransactions'],
-        queryFn: () => base44.entities.POSTransaction.list('-transaction_date', 100),
+        queryFn: () => matrixSales.entities.POSTransaction.list('-transaction_date', 100),
         initialData: []
     });
 
@@ -187,7 +187,7 @@ export default function POS() {
     };
 
     const createTransactionMutation = useMutation({
-        mutationFn: (data) => base44.entities.POSTransaction.create(data),
+        mutationFn: (data) => matrixSales.entities.POSTransaction.create(data),
         onSuccess: (tx) => {
             setLastTransaction(tx);
             setShowReceipt(true);

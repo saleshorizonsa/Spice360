@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -41,7 +41,7 @@ export default function AssetVerificationInterface({ taskId, onComplete }) {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const user = await base44.auth.me();
+                const user = await matrixSales.auth.me();
                 setCurrentUser(user);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -66,7 +66,7 @@ export default function AssetVerificationInterface({ taskId, onComplete }) {
     const { data: task } = useQuery({
         queryKey: ['verificationTask', taskId],
         queryFn: async () => {
-            const tasks = await base44.entities.AssetVerificationTask.filter({ task_id: taskId });
+            const tasks = await matrixSales.entities.AssetVerificationTask.filter({ task_id: taskId });
             return tasks[0];
         },
         enabled: !!taskId
@@ -74,20 +74,20 @@ export default function AssetVerificationInterface({ taskId, onComplete }) {
 
     const { data: assets = [] } = useQuery({
         queryKey: ['assets'],
-        queryFn: () => base44.entities.FixedAsset.list(),
+        queryFn: () => matrixSales.entities.FixedAsset.list(),
         initialData: []
     });
 
     const { data: verifications = [] } = useQuery({
         queryKey: ['verifications', taskId],
-        queryFn: () => base44.entities.AssetVerification.filter({ task_id: taskId }),
+        queryFn: () => matrixSales.entities.AssetVerification.filter({ task_id: taskId }),
         initialData: [],
         enabled: !!taskId
     });
 
     const verifyMutation = useMutation({
         mutationFn: async (data) => {
-            const verification = await base44.entities.AssetVerification.create(data);
+            const verification = await matrixSales.entities.AssetVerification.create(data);
             
             // Update task statistics
             if (task) {
@@ -100,7 +100,7 @@ export default function AssetVerificationInterface({ taskId, onComplete }) {
                 const totalVerified = verifications.length + 1;
                 const completionPct = (totalVerified / task.total_assets) * 100;
 
-                await base44.entities.AssetVerificationTask.update(task.id, {
+                await matrixSales.entities.AssetVerificationTask.update(task.id, {
                     verified_count: newVerifiedCount,
                     discrepancy_count: newDiscrepancyCount,
                     not_found_count: newNotFoundCount,
@@ -111,7 +111,7 @@ export default function AssetVerificationInterface({ taskId, onComplete }) {
 
             // Update asset last scanned info
             if (currentAsset) {
-                await base44.entities.FixedAsset.update(currentAsset.id, {
+                await matrixSales.entities.FixedAsset.update(currentAsset.id, {
                     last_scanned_date: new Date().toISOString(),
                     last_scanned_by: currentUser?.email
                 });

@@ -1,6 +1,6 @@
 
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Factory, Settings, Package, TrendingUp, Plus, Sparkles, AlertTriangle, LineChart } from "lucide-react";
@@ -26,37 +26,37 @@ export default function Production() {
 
     const { data: productionOrders = [] } = useQuery({
         queryKey: ['productionOrders'],
-        queryFn: () => base44.entities.ProductionOrder.list('-start_date'),
+        queryFn: () => matrixSales.entities.ProductionOrder.list('-start_date'),
         initialData: []
     });
 
     const { data: boms = [] } = useQuery({
         queryKey: ['boms'],
-        queryFn: () => base44.entities.BOM.list(),
+        queryFn: () => matrixSales.entities.BOM.list(),
         initialData: []
     });
 
     const { data: routings = [] } = useQuery({
         queryKey: ['routings'],
-        queryFn: () => base44.entities.Routing.list(),
+        queryFn: () => matrixSales.entities.Routing.list(),
         initialData: []
     });
 
     const { data: workCenters = [] } = useQuery({
         queryKey: ['workCenters'],
-        queryFn: () => base44.entities.WorkCenter.list(),
+        queryFn: () => matrixSales.entities.WorkCenter.list(),
         initialData: []
     });
 
     const { data: variances = [] } = useQuery({
         queryKey: ['variances'],
-        queryFn: () => base44.entities.ProductionVariance.list('-variance_date'),
+        queryFn: () => matrixSales.entities.ProductionVariance.list('-variance_date'),
         initialData: []
     });
 
     const { data: standardCosts = [] } = useQuery({
         queryKey: ['standardCosts'],
-        queryFn: () => base44.entities.StandardCost.list(),
+        queryFn: () => matrixSales.entities.StandardCost.list(),
         initialData: []
     });
 
@@ -68,7 +68,7 @@ export default function Production() {
     const availableWorkCenters = workCenters.filter(w => w.status === 'available').length;
 
     const deleteMutation = useMutation({
-        mutationFn: ({ entity, id }) => base44.entities[entity].delete(id),
+        mutationFn: ({ entity, id }) => matrixSales.entities[entity].delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries();
             toast({ title: "Success", description: "Deleted successfully" });

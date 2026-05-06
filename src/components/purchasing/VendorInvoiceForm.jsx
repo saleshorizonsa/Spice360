@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -17,13 +17,13 @@ export default function VendorInvoiceForm({ item, onClose }) {
 
     const { data: pos = [] } = useQuery({
         queryKey: ['purchaseOrders'],
-        queryFn: () => base44.entities.PurchaseOrder.list(),
+        queryFn: () => matrixSales.entities.PurchaseOrder.list(),
         initialData: []
     });
 
     const { data: grns = [] } = useQuery({
         queryKey: ['grns'],
-        queryFn: () => base44.entities.GoodsReceiptNote.list(),
+        queryFn: () => matrixSales.entities.GoodsReceiptNote.list(),
         initialData: []
     });
 
@@ -137,9 +137,9 @@ export default function VendorInvoiceForm({ item, onClose }) {
     const saveMutation = useMutation({
         mutationFn: (data) => {
             if (item) {
-                return base44.entities.VendorInvoice.update(item.id, data);
+                return matrixSales.entities.VendorInvoice.update(item.id, data);
             }
-            return base44.entities.VendorInvoice.create(data);
+            return matrixSales.entities.VendorInvoice.create(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['vendorInvoices'] });

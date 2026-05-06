@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,13 +12,13 @@ export default function InventoryValuationReport() {
 
     const { data: stockLevels = [] } = useQuery({
         queryKey: ['stockLevels'],
-        queryFn: () => base44.entities.StockLevel.list(),
+        queryFn: () => matrixSales.entities.StockLevel.list(),
         initialData: []
     });
 
     const { data: movements = [] } = useQuery({
         queryKey: ['movements'],
-        queryFn: () => base44.entities.StockMovement.filter({ 
+        queryFn: () => matrixSales.entities.StockMovement.filter({ 
             movement_type: 'goods_receipt',
             status: 'posted'
         }),

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ export default function GOSIFinanceIntegration() {
 
     const { data: gosiContributions = [] } = useQuery({
         queryKey: ['gosiContributions', selectedMonth],
-        queryFn: () => base44.entities.GOSIContribution.filter({
+        queryFn: () => matrixSales.entities.GOSIContribution.filter({
             month: selectedMonth,
             status: { $in: ['calculated', 'submitted', 'paid'] }
         }),
@@ -119,12 +119,12 @@ export default function GOSIFinanceIntegration() {
 
             // Post all journal entries
             for (const entry of journalEntries) {
-                await base44.entities.JournalEntry.create(entry);
+                await matrixSales.entities.JournalEntry.create(entry);
             }
 
             // Update GOSI contributions status
             for (const gosi of gosiContributions) {
-                await base44.entities.GOSIContribution.update(gosi.id, {
+                await matrixSales.entities.GOSIContribution.update(gosi.id, {
                     ...gosi,
                     status: 'submitted'
                 });

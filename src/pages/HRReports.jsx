@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,25 +21,25 @@ export default function HRReports() {
 
     const { data: employees = [] } = useQuery({
         queryKey: ['employees'],
-        queryFn: () => base44.entities.Employee.list(),
+        queryFn: () => matrixSales.entities.Employee.list(),
         initialData: []
     });
 
     const { data: payrolls = [] } = useQuery({
         queryKey: ['payrolls'],
-        queryFn: () => base44.entities.Payroll.list('-payroll_month'),
+        queryFn: () => matrixSales.entities.Payroll.list('-payroll_month'),
         initialData: []
     });
 
     const { data: leaves = [] } = useQuery({
         queryKey: ['leaves'],
-        queryFn: () => base44.entities.LeaveRequest.list(),
+        queryFn: () => matrixSales.entities.LeaveRequest.list(),
         initialData: []
     });
 
     const { data: eosSettlements = [] } = useQuery({
         queryKey: ['eosSettlements'],
-        queryFn: () => base44.entities.EOSSettlement.list(),
+        queryFn: () => matrixSales.entities.EOSSettlement.list(),
         initialData: []
     });
 

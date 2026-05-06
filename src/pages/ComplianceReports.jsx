@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,31 +24,31 @@ export default function ComplianceReports() {
 
     const { data: vatReturns = [] } = useQuery({
         queryKey: ['vatReturns'],
-        queryFn: () => base44.entities.VATReturn.list('-period_start'),
+        queryFn: () => matrixSales.entities.VATReturn.list('-period_start'),
         initialData: []
     });
 
     const { data: invoiceLogs = [] } = useQuery({
         queryKey: ['zatcaLogs'],
-        queryFn: () => base44.entities.ZATCASubmissionLog.list('-submission_date'),
+        queryFn: () => matrixSales.entities.ZATCASubmissionLog.list('-submission_date'),
         initialData: []
     });
 
     const { data: gosiRecords = [] } = useQuery({
         queryKey: ['gosi'],
-        queryFn: () => base44.entities.GOSIContribution.list('-contribution_month'),
+        queryFn: () => matrixSales.entities.GOSIContribution.list('-contribution_month'),
         initialData: []
     });
 
     const { data: nitaqatSnapshots = [] } = useQuery({
         queryKey: ['nitaqat'],
-        queryFn: () => base44.entities.NitaqatSnapshot.list('-snapshot_date'),
+        queryFn: () => matrixSales.entities.NitaqatSnapshot.list('-snapshot_date'),
         initialData: []
     });
 
     const { data: expiringDocs = [] } = useQuery({
         queryKey: ['expiringDocs'],
-        queryFn: () => base44.entities.DocumentExpiryTracking.filter({ status: 'expiring_soon' }),
+        queryFn: () => matrixSales.entities.DocumentExpiryTracking.filter({ status: 'expiring_soon' }),
         initialData: []
     });
 

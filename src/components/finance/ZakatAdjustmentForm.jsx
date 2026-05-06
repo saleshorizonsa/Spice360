@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -25,9 +25,9 @@ export default function ZakatAdjustmentForm({ item, computations, chartOfAccount
     const saveMutation = useMutation({
         mutationFn: (data) => {
             if (item) {
-                return base44.entities.ZakatAdjustment.update(item.id, data);
+                return matrixSales.entities.ZakatAdjustment.update(item.id, data);
             }
-            return base44.entities.ZakatAdjustment.create(data);
+            return matrixSales.entities.ZakatAdjustment.create(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries(['zakatAdjustments']);

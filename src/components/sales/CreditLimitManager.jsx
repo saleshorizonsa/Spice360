@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,18 +48,18 @@ export default function CreditLimitManager() {
 
     const { data: customers = [], isLoading } = useQuery({
         queryKey: ['customersCredit'],
-        queryFn: () => base44.entities.Customer.list(),
+        queryFn: () => matrixSales.entities.Customer.list(),
         initialData: []
     });
 
     const { data: orders = [] } = useQuery({
         queryKey: ['salesOrdersCredit'],
-        queryFn: () => base44.entities.SalesOrder.filter({ status: 'invoiced' }),
+        queryFn: () => matrixSales.entities.SalesOrder.filter({ status: 'invoiced' }),
         initialData: []
     });
 
     const updateMutation = useMutation({
-        mutationFn: ({ id, data }) => base44.entities.Customer.update(id, data),
+        mutationFn: ({ id, data }) => matrixSales.entities.Customer.update(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['customersCredit'] });
             setEditingId(null);

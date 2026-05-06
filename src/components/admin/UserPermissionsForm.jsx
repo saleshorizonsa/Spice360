@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ export default function UserPermissionsForm({ user, onClose }) {
 
     const { data: roles = [] } = useQuery({
         queryKey: ['roles'],
-        queryFn: () => base44.entities.Role.list(),
+        queryFn: () => matrixSales.entities.Role.list(),
         initialData: []
     });
 
@@ -42,7 +42,7 @@ export default function UserPermissionsForm({ user, onClose }) {
 
     const saveMutation = useMutation({
         mutationFn: (data) => {
-            return base44.auth.updateMe(data);
+            return matrixSales.auth.updateMe(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });

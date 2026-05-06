@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,13 +14,13 @@ export default function PredictiveMaintenanceAlert() {
 
     const { data: equipment = [] } = useQuery({
         queryKey: ['equipment'],
-        queryFn: () => base44.entities.Equipment.list(),
+        queryFn: () => matrixSales.entities.Equipment.list(),
         initialData: []
     });
 
     const { data: maintenanceRecords = [] } = useQuery({
         queryKey: ['maintenanceRecords'],
-        queryFn: () => base44.entities.MaintenanceRecord.list('-maintenance_date', 100),
+        queryFn: () => matrixSales.entities.MaintenanceRecord.list('-maintenance_date', 100),
         initialData: []
     });
 
@@ -39,7 +39,7 @@ export default function PredictiveMaintenanceAlert() {
                 maintenance_count: maintenanceRecords.filter(m => m.equipment_id === e.equipment_id).length
             }));
 
-            const response = await base44.integrations.Core.InvokeLLM({
+            const response = await matrixSales.integrations.Core.InvokeLLM({
                 prompt: `You are a predictive maintenance AI expert. Analyze this equipment and maintenance history data to predict maintenance needs.
 
 Equipment Data:

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,19 +22,19 @@ export default function ITSecurityReports() {
 
     const { data: users = [] } = useQuery({
         queryKey: ['users'],
-        queryFn: () => base44.entities.User.list(),
+        queryFn: () => matrixSales.entities.User.list(),
         initialData: []
     });
 
     const { data: integrationLogs = [] } = useQuery({
         queryKey: ['integrationLogs'],
-        queryFn: () => base44.entities.IntegrationLog.list('-sync_date'),
+        queryFn: () => matrixSales.entities.IntegrationLog.list('-sync_date'),
         initialData: []
     });
 
     const { data: documentSeries = [] } = useQuery({
         queryKey: ['documentSeries'],
-        queryFn: () => base44.entities.DocumentNumberSeries.list(),
+        queryFn: () => matrixSales.entities.DocumentNumberSeries.list(),
         initialData: []
     });
 

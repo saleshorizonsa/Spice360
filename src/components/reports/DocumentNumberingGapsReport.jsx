@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,7 @@ export default function DocumentNumberingGapsReport() {
 
     const { data: documentSeries = [] } = useQuery({
         queryKey: ['documentSeries'],
-        queryFn: () => base44.entities.DocumentNumberSeries.list(),
+        queryFn: () => matrixSales.entities.DocumentNumberSeries.list(),
         initialData: []
     });
 

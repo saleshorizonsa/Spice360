@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,7 +36,7 @@ export default function AuditTrailViewer() {
 
     const { data: auditTrails = [], isLoading } = useQuery({
         queryKey: ['auditTrails'],
-        queryFn: () => base44.entities.AuditTrail.list('-action_timestamp', 500),
+        queryFn: () => matrixSales.entities.AuditTrail.list('-action_timestamp', 500),
         initialData: []
     });
 

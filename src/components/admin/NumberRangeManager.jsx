@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ export default function NumberRangeManager() {
 
     const { data: series = [] } = useQuery({
         queryKey: ['documentSeries'],
-        queryFn: () => base44.entities.DocumentNumberSeries.list(),
+        queryFn: () => matrixSales.entities.DocumentNumberSeries.list(),
         initialData: []
     });
 
@@ -38,7 +38,7 @@ export default function NumberRangeManager() {
     }, {});
 
     const updateMutation = useMutation({
-        mutationFn: ({ id, data }) => base44.entities.DocumentNumberSeries.update(id, data),
+        mutationFn: ({ id, data }) => matrixSales.entities.DocumentNumberSeries.update(id, data),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['documentSeries'] });
             toast({
@@ -52,7 +52,7 @@ export default function NumberRangeManager() {
     const resetMutation = useMutation({
         mutationFn: ({ id }) => {
             const seriesData = series.find(s => s.id === id);
-            return base44.entities.DocumentNumberSeries.update(id, {
+            return matrixSales.entities.DocumentNumberSeries.update(id, {
                 ...seriesData,
                 current_number: seriesData.starting_number || 1
             });

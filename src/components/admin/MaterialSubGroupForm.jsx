@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ export default function MaterialSubGroupForm({ item, onClose }) {
 
     const { data: materialGroups = [] } = useQuery({
         queryKey: ['materialGroups'],
-        queryFn: () => base44.entities.MaterialGroup.list(),
+        queryFn: () => matrixSales.entities.MaterialGroup.list(),
         initialData: []
     });
 
@@ -39,9 +39,9 @@ export default function MaterialSubGroupForm({ item, onClose }) {
     const saveMutation = useMutation({
         mutationFn: (data) => {
             if (item) {
-                return base44.entities.MaterialSubGroup.update(item.id, data);
+                return matrixSales.entities.MaterialSubGroup.update(item.id, data);
             }
-            return base44.entities.MaterialSubGroup.create(data);
+            return matrixSales.entities.MaterialSubGroup.create(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['materialSubGroups'] });

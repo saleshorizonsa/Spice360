@@ -1,6 +1,6 @@
--- MatrixSales entity tables generated from src/** base44.entities.* usage.
+-- MatrixSales entity tables generated from app entity usage.
 -- Each entity gets a dedicated table with common metadata columns plus a
--- flexible record JSONB payload for the current Base44-shaped records.
+-- flexible record JSONB payload for the current MatrixSales-shaped records.
 
 create extension if not exists pgcrypto;
 
@@ -155,7 +155,7 @@ begin
     execute format(
       'create table if not exists public.%I (
         id uuid primary key default gen_random_uuid(),
-        base44_id text unique,
+        external_id text unique,
         organization_id uuid,
         organization_key text,
         record jsonb not null default ''{}''::jsonb,

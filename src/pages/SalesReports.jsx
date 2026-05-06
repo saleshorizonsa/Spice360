@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,25 +22,25 @@ export default function SalesReports() {
 
     const { data: sales = [] } = useQuery({
         queryKey: ['salesOrders'],
-        queryFn: () => base44.entities.SalesOrder.list('-order_date'),
+        queryFn: () => matrixSales.entities.SalesOrder.list('-order_date'),
         initialData: []
     });
 
     const { data: quotations = [] } = useQuery({
         queryKey: ['quotations'],
-        queryFn: () => base44.entities.Quotation.list('-quotation_date'),
+        queryFn: () => matrixSales.entities.Quotation.list('-quotation_date'),
         initialData: []
     });
 
     const { data: returns = [] } = useQuery({
         queryKey: ['returns'],
-        queryFn: () => base44.entities.SalesReturn.list('-return_date'),
+        queryFn: () => matrixSales.entities.SalesReturn.list('-return_date'),
         initialData: []
     });
 
     const { data: arRecords = [] } = useQuery({
         queryKey: ['accountsReceivable'],
-        queryFn: () => base44.entities.AccountsReceivable.list(),
+        queryFn: () => matrixSales.entities.AccountsReceivable.list(),
         initialData: []
     });
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ export default function AUCForm({ item, onClose }) {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const user = await base44.auth.me();
+                const user = await matrixSales.auth.me();
                 setCurrentUser(user);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -33,13 +33,13 @@ export default function AUCForm({ item, onClose }) {
 
     const { data: locations = [] } = useQuery({
         queryKey: ['locations', currentOrg?.id],
-        queryFn: () => base44.entities.Location.list(),
+        queryFn: () => matrixSales.entities.Location.list(),
         initialData: []
     });
 
     const { data: costCenters = [] } = useQuery({
         queryKey: ['costCenters', currentOrg?.id],
-        queryFn: () => base44.entities.CostCenter.list(),
+        queryFn: () => matrixSales.entities.CostCenter.list(),
         initialData: []
     });
 
@@ -90,7 +90,7 @@ export default function AUCForm({ item, onClose }) {
             const beforeData = item ? { ...item } : null;
 
             if (item) {
-                auc = await base44.entities.AssetUnderConstruction.update(item.id, data);
+                auc = await matrixSales.entities.AssetUnderConstruction.update(item.id, data);
                 
                 await logAuditTrail({
                     entityType: 'auc',
@@ -103,7 +103,7 @@ export default function AUCForm({ item, onClose }) {
                     severity: 'info'
                 });
             } else {
-                auc = await base44.entities.AssetUnderConstruction.create(data);
+                auc = await matrixSales.entities.AssetUnderConstruction.create(data);
                 
                 await logAuditTrail({
                     entityType: 'auc',

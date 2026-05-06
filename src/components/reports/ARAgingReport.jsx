@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,13 +35,13 @@ export default function ARAgingReport() {
 
     const { data: arRecords = [] } = useQuery({
         queryKey: ['accountsReceivable'],
-        queryFn: () => base44.entities.AccountsReceivable.list(),
+        queryFn: () => matrixSales.entities.AccountsReceivable.list(),
         initialData: []
     });
 
     const { data: customers = [] } = useQuery({
         queryKey: ['customers'],
-        queryFn: () => base44.entities.Customer.list(),
+        queryFn: () => matrixSales.entities.Customer.list(),
         initialData: []
     });
 

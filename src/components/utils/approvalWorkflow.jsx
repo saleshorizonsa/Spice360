@@ -1,5 +1,5 @@
 
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 
 /**
  * Approval Workflow Utility
@@ -11,7 +11,7 @@ import { base44 } from "@/api/base44Client";
  */
 export async function getApplicableApprovalMatrix(documentType, amount, branch = null, department = null) {
     try {
-        const matrices = await base44.entities.ApprovalMatrix.filter({
+        const matrices = await matrixSales.entities.ApprovalMatrix.filter({
             document_type: documentType,
             status: 'active'
         });
@@ -79,7 +79,7 @@ export async function createApprovalRequest(documentData) {
 
         // Create approval request
         const requestId = `AR-${Date.now()}`;
-        const approvalRequest = await base44.entities.ApprovalRequest.create({
+        const approvalRequest = await matrixSales.entities.ApprovalRequest.create({
             request_id: requestId,
             document_type: documentType,
             document_number: documentNumber,
@@ -116,7 +116,7 @@ export async function createApprovalRequest(documentData) {
  */
 async function findApproverByRole(role, branch = null, department = null) {
     try {
-        const users = await base44.entities.User.filter({
+        const users = await matrixSales.entities.User.filter({
             approval_role: role,
             status: 'active'
         });
@@ -146,7 +146,7 @@ export async function processApprovalAction(requestId, action, comments, approve
     try {
         const { logAuditTrail } = await import('./auditTrail');
         
-        const request = await base44.entities.ApprovalRequest.filter({ request_id: requestId });
+        const request = await matrixSales.entities.ApprovalRequest.filter({ request_id: requestId });
         if (!request || request.length === 0) {
             throw new Error('Approval request not found');
         }
@@ -172,7 +172,7 @@ export async function processApprovalAction(requestId, action, comments, approve
 
         if (action === 'reject') {
             // Rejection - update request status
-            await base44.entities.ApprovalRequest.update(approvalRequest.id, {
+            await matrixSales.entities.ApprovalRequest.update(approvalRequest.id, {
                 status: 'rejected',
                 current_level_status: 'rejected',
                 rejected_by: approverEmail,
@@ -206,7 +206,7 @@ export async function processApprovalAction(requestId, action, comments, approve
         // Approval
         if (currentLevel >= approvalRequest.total_levels_required) {
             // Final approval
-            await base44.entities.ApprovalRequest.update(approvalRequest.id, {
+            await matrixSales.entities.ApprovalRequest.update(approvalRequest.id, {
                 status: 'approved',
                 current_level_status: 'approved',
                 approved_by: approverEmail,
@@ -245,7 +245,7 @@ export async function processApprovalAction(requestId, action, comments, approve
                 approvalRequest.department
             );
 
-            await base44.entities.ApprovalRequest.update(approvalRequest.id, {
+            await matrixSales.entities.ApprovalRequest.update(approvalRequest.id, {
                 approval_level: nextLevel,
                 current_approver_role: nextLevelChain.role,
                 current_approver_email: nextApprover?.email,
@@ -306,7 +306,7 @@ async function updateDocumentStatus(documentType, documentId, approvalStatus) {
             if (documentType === 'leave_request') documentStatus = 'approved';
         }
 
-        await base44.entities[entityName].update(documentId, {
+        await matrixSales.entities[entityName].update(documentId, {
             status: documentStatus
         });
     } catch (error) {
@@ -328,7 +328,7 @@ export async function needsApproval(documentType, amount, branch = null, departm
 export async function getPendingApprovalsForUser(userEmail, userRole) {
     try {
         // Get by email or by role
-        const approvals = await base44.entities.ApprovalRequest.filter({
+        const approvals = await matrixSales.entities.ApprovalRequest.filter({
             status: 'pending'
         });
 
@@ -350,7 +350,7 @@ export async function getPendingApprovalsForUser(userEmail, userRole) {
  */
 export async function getApprovalStatus(documentNumber) {
     try {
-        const requests = await base44.entities.ApprovalRequest.filter({
+        const requests = await matrixSales.entities.ApprovalRequest.filter({
             document_number: documentNumber
         });
 

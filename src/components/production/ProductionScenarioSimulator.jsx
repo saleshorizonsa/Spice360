@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,7 @@ export default function ProductionScenarioSimulator() {
     const simulateScenario = async () => {
         setSimulating(true);
         try {
-            const response = await base44.integrations.Core.InvokeLLM({
+            const response = await matrixSales.integrations.Core.InvokeLLM({
                 prompt: `You are a production simulation expert. Analyze this production scenario and provide detailed impact analysis.
 
 Scenario Parameters:

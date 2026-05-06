@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -39,9 +39,9 @@ export default function CAPAForm({ item, onClose }) {
     const saveMutation = useMutation({
         mutationFn: (data) => {
             if (item) {
-                return base44.entities.CAPA.update(item.id, data);
+                return matrixSales.entities.CAPA.update(item.id, data);
             }
-            return base44.entities.CAPA.create(data);
+            return matrixSales.entities.CAPA.create(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['capas'] });

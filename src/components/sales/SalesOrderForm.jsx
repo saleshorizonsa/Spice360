@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -29,7 +29,7 @@ export default function SalesOrderForm({ order, onClose }) {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const user = await base44.auth.me();
+                const user = await matrixSales.auth.me();
                 setCurrentUser(user);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -40,19 +40,19 @@ export default function SalesOrderForm({ order, onClose }) {
 
     const { data: quotations = [] } = useQuery({
         queryKey: ['quotations', currentOrg?.id],
-        queryFn: () => base44.entities.Quotation.list('-quotation_date'),
+        queryFn: () => matrixSales.entities.Quotation.list('-quotation_date'),
         initialData: []
     });
 
     const { data: products = [] } = useQuery({
         queryKey: ['products', currentOrg?.id],
-        queryFn: () => base44.entities.Product.list(),
+        queryFn: () => matrixSales.entities.Product.list(),
         initialData: []
     });
 
     const { data: customers = [] } = useQuery({
         queryKey: ['customers', currentOrg?.id],
-        queryFn: () => base44.entities.Customer.list(),
+        queryFn: () => matrixSales.entities.Customer.list(),
         initialData: []
     });
 
@@ -88,7 +88,7 @@ export default function SalesOrderForm({ order, onClose }) {
                 organization_id: order.organization_id || currentOrg?.id
             });
             const loadLineItems = async () => {
-                const lines = await base44.entities.SalesOrderLine.filter({ order_number: order.order_number });
+                const lines = await matrixSales.entities.SalesOrderLine.filter({ order_number: order.order_number });
                 setLineItems(lines);
             };
             loadLineItems();
@@ -132,7 +132,7 @@ export default function SalesOrderForm({ order, onClose }) {
             
             // Load quotation line items
             const loadQuotationLines = async () => {
-                const quotLines = await base44.entities.QuotationLine.filter({ quotation_number: quotationNumber });
+                const quotLines = await matrixSales.entities.QuotationLine.filter({ quotation_number: quotationNumber });
                 const mappedLines = quotLines.map((line, index) => ({
                     line_number: index + 1,
                     product_code: line.product_code,
@@ -173,7 +173,7 @@ export default function SalesOrderForm({ order, onClose }) {
             const beforeData = order ? { ...order } : null;
             
             if (order) {
-                salesOrder = await base44.entities.SalesOrder.update(order.id, data);
+                salesOrder = await matrixSales.entities.SalesOrder.update(order.id, data);
                 
                 // Log audit trail for update
                 await logAuditTrail({
@@ -187,7 +187,7 @@ export default function SalesOrderForm({ order, onClose }) {
                     severity: data.total_amount > 100000 ? 'warning' : 'info'
                 });
             } else {
-                salesOrder = await base44.entities.SalesOrder.create(data);
+                salesOrder = await matrixSales.entities.SalesOrder.create(data);
                 
                 // Log audit trail for creation
                 await logAuditTrail({
@@ -228,7 +228,7 @@ export default function SalesOrderForm({ order, onClose }) {
                     });
 
                     // Update order status to pending_approval
-                    salesOrder = await base44.entities.SalesOrder.update(salesOrder.id, {
+                    salesOrder = await matrixSales.entities.SalesOrder.update(salesOrder.id, {
                         status: 'pending_approval'
                     });
                     
@@ -249,8 +249,8 @@ export default function SalesOrderForm({ order, onClose }) {
 
             // Delete existing line items if editing
             if (order) {
-                const existingLines = await base44.entities.SalesOrderLine.filter({ order_number: order.order_number });
-                await Promise.all(existingLines.map(line => base44.entities.SalesOrderLine.delete(line.id)));
+                const existingLines = await matrixSales.entities.SalesOrderLine.filter({ order_number: order.order_number });
+                await Promise.all(existingLines.map(line => matrixSales.entities.SalesOrderLine.delete(line.id)));
             }
 
             // Create new line items
@@ -260,7 +260,7 @@ export default function SalesOrderForm({ order, onClose }) {
                 order_number: data.order_number,
                 sales_order_id: salesOrder.id
             }));
-            await base44.entities.SalesOrderLine.bulkCreate(linesWithOrgId);
+            await matrixSales.entities.SalesOrderLine.bulkCreate(linesWithOrgId);
 
             return salesOrder;
         },

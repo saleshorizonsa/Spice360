@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ export default function GOSIBulkCalculation({ onClose }) {
 
     const { data: employees = [] } = useQuery({
         queryKey: ['employees'],
-        queryFn: () => base44.entities.Employee.list(),
+        queryFn: () => matrixSales.entities.Employee.list(),
         initialData: []
     });
 
@@ -54,7 +54,7 @@ export default function GOSIBulkCalculation({ onClose }) {
                 const occupationalHazards = isSaudi ? (gosiWage * 0.75) / 100 : 0;
                 const sanid = isSaudi ? (gosiWage * 2) / 100 : 0;
                 
-                const contribution = await base44.entities.GOSIContribution.create({
+                const contribution = await matrixSales.entities.GOSIContribution.create({
                     contribution_id: `GOSI-${month}-${employee.employee_id}`,
                     month: month,
                     employee_id: employee.employee_id,

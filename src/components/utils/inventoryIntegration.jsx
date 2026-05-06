@@ -1,4 +1,4 @@
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { logAuditTrail } from "./auditTrail";
 
 /**
@@ -13,7 +13,7 @@ import { logAuditTrail } from "./auditTrail";
 export async function processGoodsReceipt(grn, user = null) {
     try {
         // Create stock movement
-        const movement = await base44.entities.StockMovement.create({
+        const movement = await matrixSales.entities.StockMovement.create({
             movement_number: `GR-${grn.grn_number}`,
             movement_date: grn.receipt_date,
             movement_type: 'goods_receipt',
@@ -72,7 +72,7 @@ export async function processGoodsReceipt(grn, user = null) {
 export async function processGoodsIssue(delivery, user = null) {
     try {
         // Create stock movement
-        const movement = await base44.entities.StockMovement.create({
+        const movement = await matrixSales.entities.StockMovement.create({
             movement_number: `GI-${delivery.delivery_number}`,
             movement_date: delivery.delivery_date,
             movement_type: 'goods_issue',
@@ -130,7 +130,7 @@ export async function reserveStock(salesOrder, lineItems, user = null) {
     try {
         for (const line of lineItems) {
             // Find available stock
-            const stockLevels = await base44.entities.StockLevel.filter({
+            const stockLevels = await matrixSales.entities.StockLevel.filter({
                 material_code: line.product_code,
                 status: 'available'
             });
@@ -144,7 +144,7 @@ export async function reserveStock(salesOrder, lineItems, user = null) {
                 const reserveQty = Math.min(availableQty, remainingToReserve);
 
                 if (reserveQty > 0) {
-                    await base44.entities.StockLevel.update(stock.id, {
+                    await matrixSales.entities.StockLevel.update(stock.id, {
                         reserved_quantity: (stock.reserved_quantity || 0) + reserveQty,
                         available_quantity: availableQty - reserveQty
                     });
@@ -199,7 +199,7 @@ async function updateStockLevel({
         if (bin) filter.bin_code = bin;
         if (batch) filter.batch_number = batch;
 
-        const existingStock = await base44.entities.StockLevel.filter(filter);
+        const existingStock = await matrixSales.entities.StockLevel.filter(filter);
 
         if (existingStock && existingStock.length > 0) {
             // Update existing
@@ -209,7 +209,7 @@ async function updateStockLevel({
                 : Math.max(0, (stock.quantity || 0) - quantity);
             const newAvailable = newQty - (stock.reserved_quantity || 0);
 
-            await base44.entities.StockLevel.update(stock.id, {
+            await matrixSales.entities.StockLevel.update(stock.id, {
                 quantity: newQty,
                 available_quantity: newAvailable,
                 total_value: newQty * (stock.unit_cost || unitCost),
@@ -218,7 +218,7 @@ async function updateStockLevel({
             });
         } else if (operation === 'increase') {
             // Create new stock level (only on receipt)
-            await base44.entities.StockLevel.create({
+            await matrixSales.entities.StockLevel.create({
                 material_code: materialCode,
                 material_name: materialName,
                 warehouse_code: warehouse,
@@ -253,7 +253,7 @@ export async function checkStockAvailability(materialCode, requiredQuantity, war
         };
         if (warehouse) filter.warehouse_code = warehouse;
 
-        const stockLevels = await base44.entities.StockLevel.filter(filter);
+        const stockLevels = await matrixSales.entities.StockLevel.filter(filter);
         
         const totalAvailable = stockLevels.reduce((sum, s) => sum + (s.available_quantity || 0), 0);
         
@@ -283,7 +283,7 @@ export async function checkStockAvailability(materialCode, requiredQuantity, war
  */
 export async function getStockAgingAnalysis() {
     try {
-        const stockLevels = await base44.entities.StockLevel.list();
+        const stockLevels = await matrixSales.entities.StockLevel.list();
         
         const analysis = {
             fast_moving: stockLevels.filter(s => s.aging_days <= 30).length,

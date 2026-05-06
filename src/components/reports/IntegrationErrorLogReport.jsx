@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,7 +17,7 @@ export default function IntegrationErrorLogReport() {
 
     const { data: integrationLogs = [] } = useQuery({
         queryKey: ['integrationLogs'],
-        queryFn: () => base44.entities.IntegrationLog.list('-sync_date'),
+        queryFn: () => matrixSales.entities.IntegrationLog.list('-sync_date'),
         initialData: []
     });
 

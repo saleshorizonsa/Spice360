@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ export default function APForm({ item, onClose }) {
 
     const { data: vendors = [] } = useQuery({
         queryKey: ['vendors'],
-        queryFn: () => base44.entities.Vendor.list(),
+        queryFn: () => matrixSales.entities.Vendor.list(),
         initialData: []
     });
 
@@ -71,9 +71,9 @@ export default function APForm({ item, onClose }) {
     const saveMutation = useMutation({
         mutationFn: (data) => {
             if (item) {
-                return base44.entities.AccountsPayable.update(item.id, data);
+                return matrixSales.entities.AccountsPayable.update(item.id, data);
             }
-            return base44.entities.AccountsPayable.create(data);
+            return matrixSales.entities.AccountsPayable.create(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['ap'] });

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,37 +31,37 @@ export default function Sales() {
 
     const { data: quotations = [] } = useQuery({
         queryKey: ['quotations'],
-        queryFn: () => base44.entities.Quotation.list('-quotation_date'),
+        queryFn: () => matrixSales.entities.Quotation.list('-quotation_date'),
         initialData: []
     });
 
     const { data: orders = [] } = useQuery({
         queryKey: ['sales'],
-        queryFn: () => base44.entities.SalesOrder.list('-order_date'),
+        queryFn: () => matrixSales.entities.SalesOrder.list('-order_date'),
         initialData: []
     });
 
     const { data: deliveries = [] } = useQuery({
         queryKey: ['deliveries'],
-        queryFn: () => base44.entities.Delivery.list('-delivery_date'),
+        queryFn: () => matrixSales.entities.Delivery.list('-delivery_date'),
         initialData: []
     });
 
     const { data: invoices = [] } = useQuery({
         queryKey: ['invoices'],
-        queryFn: () => base44.entities.Invoice.list('-invoice_date'),
+        queryFn: () => matrixSales.entities.Invoice.list('-invoice_date'),
         initialData: []
     });
 
     const { data: returns = [] } = useQuery({
         queryKey: ['returns'],
-        queryFn: () => base44.entities.SalesReturn.list('-return_date'),
+        queryFn: () => matrixSales.entities.SalesReturn.list('-return_date'),
         initialData: []
     });
 
     const { data: serviceOrders = [] } = useQuery({
         queryKey: ['serviceOrders'],
-        queryFn: () => base44.entities.ServiceOrder.list('-order_date'),
+        queryFn: () => matrixSales.entities.ServiceOrder.list('-order_date'),
         initialData: []
     });
 
@@ -84,7 +84,7 @@ export default function Sales() {
     const activeReturns = returns.filter(r => r.status === 'requested' || r.status === 'approved').length;
 
     const deleteMutation = useMutation({
-        mutationFn: ({ entity, id }) => base44.entities[entity].delete(id),
+        mutationFn: ({ entity, id }) => matrixSales.entities[entity].delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries();
             toast({

@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -36,22 +36,22 @@ export default function MaterialForm({ material, onClose }) {
 
     const { data: materialGroups = [] } = useQuery({
         queryKey: ['materialGroups'],
-        queryFn: () => base44.entities.MaterialGroup.list(),
+        queryFn: () => matrixSales.entities.MaterialGroup.list(),
         initialData: []
     });
 
     const { data: vendors = [] } = useQuery({
         queryKey: ['vendors'],
-        queryFn: () => base44.entities.Vendor.list(),
+        queryFn: () => matrixSales.entities.Vendor.list(),
         initialData: []
     });
 
     const saveMutation = useMutation({
         mutationFn: async (data) => {
             if (material?.id) {
-                return base44.entities.Material.update(material.id, data);
+                return matrixSales.entities.Material.update(material.id, data);
             } else {
-                return base44.entities.Material.create(data);
+                return matrixSales.entities.Material.create(data);
             }
         },
         onSuccess: () => {

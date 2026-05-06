@@ -1,4 +1,4 @@
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 
 /**
  * Audit Trail Utility
@@ -35,7 +35,7 @@ export async function logAuditTrail({
         // Get current user if not provided
         if (!user) {
             try {
-                user = await base44.auth.me();
+                user = await matrixSales.auth.me();
             } catch (error) {
                 console.error('Could not get current user for audit trail:', error);
                 return null;
@@ -106,7 +106,7 @@ export async function logAuditTrail({
         };
 
         // Save to database
-        const result = await base44.entities.AuditTrail.create(auditEntry);
+        const result = await matrixSales.entities.AuditTrail.create(auditEntry);
         return result;
 
     } catch (error) {
@@ -121,7 +121,7 @@ export async function logAuditTrail({
  */
 export async function logBulkAuditTrail(entries) {
     try {
-        const user = await base44.auth.me();
+        const user = await matrixSales.auth.me();
         
         const auditEntries = entries.map(entry => ({
             audit_id: `AUD-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -136,7 +136,7 @@ export async function logBulkAuditTrail(entries) {
             ...entry
         }));
 
-        await base44.entities.AuditTrail.bulkCreate(auditEntries);
+        await matrixSales.entities.AuditTrail.bulkCreate(auditEntries);
     } catch (error) {
         console.error('Error logging bulk audit trail:', error);
     }
@@ -147,7 +147,7 @@ export async function logBulkAuditTrail(entries) {
  */
 export async function getAuditTrailForEntity(entityType, entityId) {
     try {
-        const trails = await base44.entities.AuditTrail.filter({
+        const trails = await matrixSales.entities.AuditTrail.filter({
             entity_type: entityType,
             entity_id: entityId
         }, '-action_timestamp');
@@ -164,7 +164,7 @@ export async function getAuditTrailForEntity(entityType, entityId) {
  */
 export async function getAuditTrailForDocument(documentNumber) {
     try {
-        const trails = await base44.entities.AuditTrail.filter({
+        const trails = await matrixSales.entities.AuditTrail.filter({
             document_number: documentNumber
         }, '-action_timestamp');
 
@@ -180,7 +180,7 @@ export async function getAuditTrailForDocument(documentNumber) {
  */
 export async function getAuditTrailForUser(userEmail, limit = 100) {
     try {
-        const trails = await base44.entities.AuditTrail.filter({
+        const trails = await matrixSales.entities.AuditTrail.filter({
             user_email: userEmail
         }, '-action_timestamp', limit);
 
@@ -196,7 +196,7 @@ export async function getAuditTrailForUser(userEmail, limit = 100) {
  */
 export async function getRecentAuditTrails(limit = 100) {
     try {
-        const trails = await base44.entities.AuditTrail.list('-action_timestamp', limit);
+        const trails = await matrixSales.entities.AuditTrail.list('-action_timestamp', limit);
         return trails || [];
     } catch (error) {
         console.error('Error fetching recent audit trails:', error);
@@ -209,7 +209,7 @@ export async function getRecentAuditTrails(limit = 100) {
  */
 export async function getCriticalAuditTrails(limit = 50) {
     try {
-        const trails = await base44.entities.AuditTrail.filter({
+        const trails = await matrixSales.entities.AuditTrail.filter({
             severity: 'critical'
         }, '-action_timestamp', limit);
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -40,7 +40,7 @@ export default function MobileAssetScanner() {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const user = await base44.auth.me();
+                const user = await matrixSales.auth.me();
                 setCurrentUser(user);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -57,13 +57,13 @@ export default function MobileAssetScanner() {
 
     const { data: assets = [] } = useQuery({
         queryKey: ['assets'],
-        queryFn: () => base44.entities.FixedAsset.list(),
+        queryFn: () => matrixSales.entities.FixedAsset.list(),
         initialData: []
     });
 
     const { data: verificationTasks = [] } = useQuery({
         queryKey: ['verificationTasks'],
-        queryFn: () => base44.entities.AssetVerificationTask.filter({ 
+        queryFn: () => matrixSales.entities.AssetVerificationTask.filter({ 
             status: 'in_progress' 
         }),
         initialData: []
@@ -72,7 +72,7 @@ export default function MobileAssetScanner() {
     const logScanMutation = useMutation({
         mutationFn: async ({ asset, action }) => {
             // Update asset last scanned info
-            await base44.entities.FixedAsset.update(asset.id, {
+            await matrixSales.entities.FixedAsset.update(asset.id, {
                 last_scanned_date: new Date().toISOString(),
                 last_scanned_by: currentUser?.email
             });

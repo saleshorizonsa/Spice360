@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -24,25 +24,25 @@ export default function InventoryReports() {
 
     const { data: stockLevels = [] } = useQuery({
         queryKey: ['stockLevels'],
-        queryFn: () => base44.entities.StockLevel.list(),
+        queryFn: () => matrixSales.entities.StockLevel.list(),
         initialData: []
     });
 
     const { data: materials = [] } = useQuery({
         queryKey: ['materials'],
-        queryFn: () => base44.entities.Material.list(),
+        queryFn: () => matrixSales.entities.Material.list(),
         initialData: []
     });
 
     const { data: cycleCounts = [] } = useQuery({
         queryKey: ['cycleCounts'],
-        queryFn: () => base44.entities.CycleCount.list('-count_date'),
+        queryFn: () => matrixSales.entities.CycleCount.list('-count_date'),
         initialData: []
     });
 
     const { data: stockTransfers = [] } = useQuery({
         queryKey: ['stockTransfers'],
-        queryFn: () => base44.entities.StockTransferOrder.list('-sto_date'),
+        queryFn: () => matrixSales.entities.StockTransferOrder.list('-sto_date'),
         initialData: []
     });
 

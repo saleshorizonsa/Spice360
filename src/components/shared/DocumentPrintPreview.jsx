@@ -1,6 +1,6 @@
 
 import React, { useRef } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { X, BarChart3 } from "lucide-react"; // Added BarChart3 import
@@ -32,7 +32,7 @@ export default function DocumentPrintPreview({
 
     const handleEmail = async (emailData) => {
         try {
-            await base44.integrations.Core.SendEmail({
+            await matrixSales.integrations.Core.SendEmail({
                 to: emailData.to,
                 subject: emailData.subject || `${documentType} - ${document.number}`,
                 body: `${emailData.body}\n\nDocument: ${document.number}\nDate: ${document.date}\n\nThis is an automated email from MatrixERP ERP.` // Rebranded from PVC Pro ERP

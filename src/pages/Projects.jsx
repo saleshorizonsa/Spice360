@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -31,43 +31,43 @@ export default function Projects() {
 
     const { data: projects = [] } = useQuery({
         queryKey: ['projects'],
-        queryFn: () => base44.entities.Project.list('-start_date'),
+        queryFn: () => matrixSales.entities.Project.list('-start_date'),
         initialData: []
     });
 
     const { data: timesheets = [] } = useQuery({
         queryKey: ['timesheets'],
-        queryFn: () => base44.entities.Timesheet.list('-week_start_date'),
+        queryFn: () => matrixSales.entities.Timesheet.list('-week_start_date'),
         initialData: []
     });
 
     const { data: expenses = [] } = useQuery({
         queryKey: ['expenses'],
-        queryFn: () => base44.entities.ProjectExpense.list('-expense_date'),
+        queryFn: () => matrixSales.entities.ProjectExpense.list('-expense_date'),
         initialData: []
     });
 
     const { data: milestones = [] } = useQuery({
         queryKey: ['milestones'],
-        queryFn: () => base44.entities.ProjectMilestone.list('sequence_number'),
+        queryFn: () => matrixSales.entities.ProjectMilestone.list('sequence_number'),
         initialData: []
     });
 
     const { data: projectInvoices = [] } = useQuery({
         queryKey: ['projectInvoices'],
-        queryFn: () => base44.entities.ProjectInvoice.list('-invoice_date'),
+        queryFn: () => matrixSales.entities.ProjectInvoice.list('-invoice_date'),
         initialData: []
     });
 
     const { data: projectTasks = [] } = useQuery({
         queryKey: ['projectTasks'],
-        queryFn: () => base44.entities.ProjectTask.list('start_date'),
+        queryFn: () => matrixSales.entities.ProjectTask.list('start_date'),
         initialData: []
     });
 
     const { data: resourceAllocations = [] } = useQuery({
         queryKey: ['resourceAllocations'],
-        queryFn: () => base44.entities.ResourceAllocation.list('-start_date'),
+        queryFn: () => matrixSales.entities.ResourceAllocation.list('-start_date'),
         initialData: []
     });
 
@@ -102,7 +102,7 @@ export default function Projects() {
     const pendingExpenses = expenses.filter(e => e.status === 'submitted').length;
 
     const deleteMutation = useMutation({
-        mutationFn: ({ entity, id }) => base44.entities[entity].delete(id),
+        mutationFn: ({ entity, id }) => matrixSales.entities[entity].delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries();
             toast({

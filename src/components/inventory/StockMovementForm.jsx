@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ export default function StockMovementForm({ item, onClose }) {
     useEffect(() => {
         const fetchUser = async () => {
             try {
-                const user = await base44.auth.me();
+                const user = await matrixSales.auth.me();
                 setCurrentUser(user);
             } catch (error) {
                 console.error('Error fetching user:', error);
@@ -37,19 +37,19 @@ export default function StockMovementForm({ item, onClose }) {
 
     const { data: materials = [] } = useQuery({
         queryKey: ['materials', currentOrg?.id],
-        queryFn: () => base44.entities.Material.list(),
+        queryFn: () => matrixSales.entities.Material.list(),
         initialData: []
     });
 
     const { data: locations = [] } = useQuery({
         queryKey: ['locations', currentOrg?.id],
-        queryFn: () => base44.entities.Location.list(),
+        queryFn: () => matrixSales.entities.Location.list(),
         initialData: []
     });
 
     const { data: bins = [] } = useQuery({
         queryKey: ['bins', currentOrg?.id],
-        queryFn: () => base44.entities.WarehouseBin.list(),
+        queryFn: () => matrixSales.entities.WarehouseBin.list(),
         initialData: []
     });
 
@@ -124,7 +124,7 @@ export default function StockMovementForm({ item, onClose }) {
             const beforeData = item ? { ...item } : null;
 
             if (item) {
-                movement = await base44.entities.StockMovement.update(item.id, data);
+                movement = await matrixSales.entities.StockMovement.update(item.id, data);
                 
                 // Log audit trail
                 await logAuditTrail({
@@ -138,7 +138,7 @@ export default function StockMovementForm({ item, onClose }) {
                     severity: 'info'
                 });
             } else {
-                movement = await base44.entities.StockMovement.create(data);
+                movement = await matrixSales.entities.StockMovement.create(data);
                 
                 // Log audit trail
                 await logAuditTrail({
@@ -221,7 +221,7 @@ export default function StockMovementForm({ item, onClose }) {
         const material = materials.find(m => m.material_code === materialCode);
         
         // Find existing stock level
-        const existingStock = await base44.entities.StockLevel.filter({
+        const existingStock = await matrixSales.entities.StockLevel.filter({
             material_code: materialCode,
             warehouse_code: warehouse,
             bin_code: bin,
@@ -236,7 +236,7 @@ export default function StockMovementForm({ item, onClose }) {
                 : (stock.quantity || 0) - quantity;
             const newAvailable = newQty - (stock.reserved_quantity || 0);
 
-            await base44.entities.StockLevel.update(stock.id, {
+            await matrixSales.entities.StockLevel.update(stock.id, {
                 quantity: newQty,
                 available_quantity: newAvailable,
                 total_value: newQty * (stock.unit_cost || 0),
@@ -244,7 +244,7 @@ export default function StockMovementForm({ item, onClose }) {
             });
         } else {
             // Create new stock level
-            await base44.entities.StockLevel.create({
+            await matrixSales.entities.StockLevel.create({
                 organization_id: currentOrg?.id,
                 material_code: materialCode,
                 material_name: material?.material_name || '',

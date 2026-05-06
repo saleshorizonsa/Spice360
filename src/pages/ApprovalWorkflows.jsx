@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -27,12 +27,12 @@ export default function ApprovalWorkflows() {
 
     const { data: approvalMatrices = [] } = useQuery({
         queryKey: ['approvalMatrices'],
-        queryFn: () => base44.entities.ApprovalMatrix.list('document_type,approval_level'),
+        queryFn: () => matrixSales.entities.ApprovalMatrix.list('document_type,approval_level'),
         initialData: []
     });
 
     const deleteMutation = useMutation({
-        mutationFn: (id) => base44.entities.ApprovalMatrix.delete(id),
+        mutationFn: (id) => matrixSales.entities.ApprovalMatrix.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['approvalMatrices'] });
             toast({ title: "Success", description: "Approval rule deleted successfully" });
@@ -43,14 +43,14 @@ export default function ApprovalWorkflows() {
         mutationFn: async (levels) => {
             // Delete existing matrices for this document type
             const existing = approvalMatrices.filter(m => m.document_type === levels[0]?.document_type);
-            await Promise.all(existing.map(m => base44.entities.ApprovalMatrix.delete(m.id)));
+            await Promise.all(existing.map(m => matrixSales.entities.ApprovalMatrix.delete(m.id)));
 
             // Create new matrices
             await Promise.all(levels.map(level => {
                 if (level.id) {
-                    return base44.entities.ApprovalMatrix.update(level.id, level);
+                    return matrixSales.entities.ApprovalMatrix.update(level.id, level);
                 }
-                return base44.entities.ApprovalMatrix.create(level);
+                return matrixSales.entities.ApprovalMatrix.create(level);
             }));
         },
         onSuccess: () => {

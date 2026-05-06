@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -44,48 +44,48 @@ export default function MasterDataManagement() {
 
     const { data: materials = [], isLoading: loadingMaterials } = useQuery({
         queryKey: ['materials'],
-        queryFn: () => base44.entities.Material.list(),
+        queryFn: () => matrixSales.entities.Material.list(),
         initialData: []
     });
 
     const { data: customers = [], isLoading: loadingCustomers } = useQuery({
         queryKey: ['customers'],
-        queryFn: () => base44.entities.Customer.list(),
+        queryFn: () => matrixSales.entities.Customer.list(),
         initialData: []
     });
 
     const { data: vendors = [], isLoading: loadingVendors } = useQuery({
         queryKey: ['vendors'],
-        queryFn: () => base44.entities.Vendor.list(),
+        queryFn: () => matrixSales.entities.Vendor.list(),
         initialData: []
     });
 
     const { data: salesmen = [], isLoading: loadingSalesmen } = useQuery({ // New query
         queryKey: ['salesmen'],
-        queryFn: () => base44.entities.Salesman.list(),
+        queryFn: () => matrixSales.entities.Salesman.list(),
         initialData: []
     });
 
     const { data: materialGroups = [] } = useQuery({
         queryKey: ['materialGroups'],
-        queryFn: () => base44.entities.MaterialGroup.list(),
+        queryFn: () => matrixSales.entities.MaterialGroup.list(),
         initialData: []
     });
 
     const { data: materialSubGroups = [] } = useQuery({ // New query
         queryKey: ['materialSubGroups'],
-        queryFn: () => base44.entities.MaterialSubGroup.list(),
+        queryFn: () => matrixSales.entities.MaterialSubGroup.list(),
         initialData: []
     });
 
     const { data: unitConversions = [] } = useQuery({ // New query
         queryKey: ['unitConversions'],
-        queryFn: () => base44.entities.UnitConversion.list(),
+        queryFn: () => matrixSales.entities.UnitConversion.list(),
         initialData: []
     });
 
     const deleteMaterialMutation = useMutation({
-        mutationFn: (id) => base44.entities.Material.delete(id),
+        mutationFn: (id) => matrixSales.entities.Material.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['materials'] });
             toast({
@@ -103,7 +103,7 @@ export default function MasterDataManagement() {
     });
 
     const deleteCustomerMutation = useMutation({
-        mutationFn: (id) => base44.entities.Customer.delete(id),
+        mutationFn: (id) => matrixSales.entities.Customer.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['customers'] });
             toast({
@@ -121,7 +121,7 @@ export default function MasterDataManagement() {
     });
 
     const deleteVendorMutation = useMutation({
-        mutationFn: (id) => base44.entities.Vendor.delete(id),
+        mutationFn: (id) => matrixSales.entities.Vendor.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['vendors'] });
             toast({
@@ -139,7 +139,7 @@ export default function MasterDataManagement() {
     });
 
     const deleteSalesmanMutation = useMutation({ // New mutation
-        mutationFn: (id) => base44.entities.Salesman.delete(id),
+        mutationFn: (id) => matrixSales.entities.Salesman.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['salesmen'] });
             toast({ title: "Success", description: "Salesman deleted successfully" });
@@ -154,7 +154,7 @@ export default function MasterDataManagement() {
     });
 
     const deleteMaterialGroupMutation = useMutation({ // New mutation
-        mutationFn: (id) => base44.entities.MaterialGroup.delete(id),
+        mutationFn: (id) => matrixSales.entities.MaterialGroup.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['materialGroups'] });
             toast({ title: "Success", description: "Material Group deleted successfully" });
@@ -169,7 +169,7 @@ export default function MasterDataManagement() {
     });
 
     const deleteMaterialSubGroupMutation = useMutation({ // New mutation
-        mutationFn: (id) => base44.entities.MaterialSubGroup.delete(id),
+        mutationFn: (id) => matrixSales.entities.MaterialSubGroup.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['materialSubGroups'] });
             toast({ title: "Success", description: "Material Sub-Group deleted successfully" });
@@ -184,7 +184,7 @@ export default function MasterDataManagement() {
     });
 
     const deleteUnitConversionMutation = useMutation({ // New mutation
-        mutationFn: (id) => base44.entities.UnitConversion.delete(id),
+        mutationFn: (id) => matrixSales.entities.UnitConversion.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['unitConversions'] });
             toast({ title: "Success", description: "Unit Conversion deleted successfully" });

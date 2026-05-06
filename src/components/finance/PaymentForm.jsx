@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -15,7 +15,7 @@ export default function PaymentForm({ item, onClose }) {
 
     const { data: banks = [] } = useQuery({
         queryKey: ['banks'],
-        queryFn: () => base44.entities.BankAccount.list(),
+        queryFn: () => matrixSales.entities.BankAccount.list(),
         initialData: []
     });
 
@@ -46,9 +46,9 @@ export default function PaymentForm({ item, onClose }) {
     const saveMutation = useMutation({
         mutationFn: (data) => {
             if (item) {
-                return base44.entities.Payment.update(item.id, data);
+                return matrixSales.entities.Payment.update(item.id, data);
             }
-            return base44.entities.Payment.create(data);
+            return matrixSales.entities.Payment.create(data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['payments'] });

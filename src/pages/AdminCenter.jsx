@@ -5,7 +5,7 @@ import { Shield, Users, Building, Rocket, Factory, MapPin, Ruler } from "lucide-
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { base44 } from "@/api/base44Client";
+import { matrixSales } from "@/api/matrixSalesClient";
 import PlantForm from "../components/admin/PlantForm";
 import StorageLocationForm from "../components/admin/StorageLocationForm";
 import UnitConversionForm from "../components/admin/UnitConversionForm";
@@ -33,19 +33,19 @@ export default function AdminCenter() {
 
     const { data: plants = [] } = useQuery({
         queryKey: ['plants'],
-        queryFn: () => base44.entities.Plant.list(),
+        queryFn: () => matrixSales.entities.Plant.list(),
         initialData: []
     });
 
     const { data: storageLocations = [] } = useQuery({
         queryKey: ['storageLocations'],
-        queryFn: () => base44.entities.StorageLocation.list(),
+        queryFn: () => matrixSales.entities.StorageLocation.list(),
         initialData: []
     });
 
     const { data: organizations = [] } = useQuery({
         queryKey: ['organizations'],
-        queryFn: () => base44.entities.Organization.list(),
+        queryFn: () => matrixSales.entities.Organization.list(),
         initialData: []
     });
 
@@ -56,7 +56,7 @@ export default function AdminCenter() {
     };
 
     const deletePlantMutation = useMutation({
-        mutationFn: (id) => base44.entities.Plant.delete(id),
+        mutationFn: (id) => matrixSales.entities.Plant.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plants'] });
             toast({ title: "Success", description: "Plant deleted successfully" });
@@ -67,7 +67,7 @@ export default function AdminCenter() {
     });
 
     const deleteStorageLocationMutation = useMutation({
-        mutationFn: (id) => base44.entities.StorageLocation.delete(id),
+        mutationFn: (id) => matrixSales.entities.StorageLocation.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['storageLocations'] });
             toast({ title: "Success", description: "Storage location deleted successfully" });
@@ -79,7 +79,7 @@ export default function AdminCenter() {
 
     const bulkDeletePlantsMutation = useMutation({
         mutationFn: async (ids) => {
-            await Promise.all(ids.map(id => base44.entities.Plant.delete(id)));
+            await Promise.all(ids.map(id => matrixSales.entities.Plant.delete(id)));
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['plants'] });
@@ -92,7 +92,7 @@ export default function AdminCenter() {
 
     const bulkDeleteStorageLocationsMutation = useMutation({
         mutationFn: async (ids) => {
-            await Promise.all(ids.map(id => base44.entities.StorageLocation.delete(id)));
+            await Promise.all(ids.map(id => matrixSales.entities.StorageLocation.delete(id)));
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['storageLocations'] });
@@ -107,7 +107,7 @@ export default function AdminCenter() {
         mutationFn: async ({ ids, status }) => {
             const plantsToUpdate = plants.filter(p => ids.includes(p.id));
             await Promise.all(plantsToUpdate.map(plant => 
-                base44.entities.Plant.update(plant.id, { ...plant, status })
+                matrixSales.entities.Plant.update(plant.id, { ...plant, status })
             ));
         },
         onSuccess: () => {
@@ -123,7 +123,7 @@ export default function AdminCenter() {
         mutationFn: async ({ ids, status }) => {
             const locationsToUpdate = storageLocations.filter(l => ids.includes(l.id));
             await Promise.all(locationsToUpdate.map(location => 
-                base44.entities.StorageLocation.update(location.id, { ...location, status })
+                matrixSales.entities.StorageLocation.update(location.id, { ...location, status })
             ));
         },
         onSuccess: () => {
