@@ -9,6 +9,7 @@ import { matrixSales } from '@/api/matrixSalesClient';
 export function usePermissions() {
     const [currentUser, setCurrentUser] = useState(null);
     const [userRoles, setUserRoles] = useState([]);
+    const [isBootstrapAdmin, setIsBootstrapAdmin] = useState(false);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -16,6 +17,26 @@ export function usePermissions() {
             try {
                 const user = await matrixSales.auth.me();
                 setCurrentUser(user);
+
+                const configuredAdminEmails = (import.meta.env.VITE_MATRIXSALES_ADMIN_EMAILS || '')
+                    .split(',')
+                    .map(email => email.trim().toLowerCase())
+                    .filter(Boolean);
+                const isConfiguredAdmin = configuredAdminEmails.includes(user.email?.toLowerCase());
+
+                if (user.role === 'admin' || isConfiguredAdmin) {
+                    setIsBootstrapAdmin(isConfiguredAdmin);
+                    setUserRoles([]);
+                    return;
+                }
+
+                try {
+                    const adminUsers = await matrixSales.entities.User.filter({ role: 'admin' });
+                    setIsBootstrapAdmin(!adminUsers || adminUsers.length === 0);
+                } catch (adminCheckError) {
+                    console.error('Error checking bootstrap admin status:', adminCheckError);
+                    setIsBootstrapAdmin(false);
+                }
 
                 // Fetch user's assigned roles
                 if (user.assigned_roles && user.assigned_roles.length > 0) {
@@ -31,6 +52,7 @@ export function usePermissions() {
             } catch (error) {
                 console.error('Error fetching user permissions:', error);
                 setUserRoles([]);
+                setIsBootstrapAdmin(false);
             } finally {
                 setLoading(false);
             }
@@ -47,7 +69,7 @@ export function usePermissions() {
      */
     const hasPermission = (module, action) => {
         // Admins have all permissions
-        if (currentUser?.role === 'admin') return true;
+        if (currentUser?.role === 'admin' || isBootstrapAdmin) return true;
 
         // If no roles assigned, deny access (except admins)
         if (!userRoles || userRoles.length === 0) return false;
@@ -73,7 +95,7 @@ export function usePermissions() {
     /**
      * Check if user is an admin
      */
-    const isAdmin = currentUser?.role === 'admin';
+    const isAdmin = currentUser?.role === 'admin' || isBootstrapAdmin;
 
     /**
      * Check if user has any permission in a module
@@ -112,6 +134,7 @@ export function usePermissions() {
         loading,
         userRoles,
         currentUser,
+        isBootstrapAdmin,
         getRoleNames
     };
 }
