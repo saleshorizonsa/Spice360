@@ -197,11 +197,12 @@ begin
       );
     end if;
 
-    execute format('drop trigger if exists set_%I_updated_at on public.%I', item[2], item[2]);
+    execute format('drop trigger if exists %I on public.%I', 'set_' || item[2] || '_updated_at', item[2]);
     execute format(
-      'create trigger set_%I_updated_at
+      'create trigger %I
         before update on public.%I
         for each row execute function public.set_updated_at()',
+      'set_' || item[2] || '_updated_at',
       item[2],
       item[2]
     );
