@@ -28,7 +28,8 @@ import {
     Bot,
     ArrowLeft,
     Brain,
-    Landmark
+    Landmark,
+    LogOut
 } from "lucide-react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ import AIChatButton from "@/components/ai/AIChatButton";
 import MobileBottomNav from "@/components/mobile/MobileBottomNav";
 import QuickActionSheet from "@/components/mobile/QuickActionSheet";
 import OfflineIndicator from "@/components/mobile/OfflineIndicator";
+import { useAuth } from "@/lib/AuthContext";
 
 function LayoutContent({ children, currentPageName }) {
     const [showQuickAction, setShowQuickAction] = React.useState(false);
@@ -67,6 +69,7 @@ function LayoutContent({ children, currentPageName }) {
         return () => clearInterval(interval);
     }, []);
     const { language, isRTL, toggleLanguage, t } = useLanguage();
+    const { logout, user } = useAuth();
     const navigate = useNavigate();
 
     const menuItems = [
@@ -190,6 +193,15 @@ function LayoutContent({ children, currentPageName }) {
                                 {language === 'en' ? 'AR' : 'EN'}
                             </span>
                         </Button>
+                        <Button
+                            onClick={() => logout()}
+                            variant="ghost"
+                            size="sm"
+                            className="mt-2 w-full justify-start gap-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+                        >
+                            <LogOut className="w-4 h-4" />
+                            <span className="flex-1 truncate text-start">{user?.email || 'Logout'}</span>
+                        </Button>
                     </div>
 
                     <nav className="flex-1 py-6 overflow-y-auto">
@@ -220,6 +232,16 @@ function LayoutContent({ children, currentPageName }) {
                             <span className="absolute -bottom-1 -right-1 text-[10px] font-bold bg-emerald-600 text-white rounded px-1">
                                 {language.toUpperCase()}
                             </span>
+                        </Button>
+
+                        <Button
+                            onClick={() => logout()}
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-600"
+                            aria-label="Logout"
+                        >
+                            <LogOut className="w-5 h-5" />
                         </Button>
                         
                         <Sheet>

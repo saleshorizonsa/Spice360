@@ -24,6 +24,25 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     checkAppState();
+
+    if (appParams.appId || !supabase) return undefined;
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser(toMatrixSalesUser(session.user));
+        setIsAuthenticated(true);
+        setAuthError(null);
+
+        if (window.location.hash.includes('access_token=')) {
+          window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search}`);
+        }
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+    });
+
+    return () => listener?.subscription?.unsubscribe();
   }, []);
 
   const checkAppState = async () => {
@@ -133,6 +152,11 @@ export const AuthProvider = ({ children }) => {
       if (data.session?.user) {
         setUser(toMatrixSalesUser(data.session.user));
         setIsAuthenticated(true);
+        setAuthError(null);
+
+        if (window.location.hash.includes('access_token=')) {
+          window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search}`);
+        }
       } else {
         setUser(null);
         setIsAuthenticated(false);
@@ -173,12 +197,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = (shouldRedirect = true) => {
+  const logout = async (shouldRedirect = true) => {
     setUser(null);
     setIsAuthenticated(false);
 
     if (!appParams.appId && supabase) {
-      supabase.auth.signOut();
+      await supabase.auth.signOut();
+      window.history.replaceState({}, document.title, window.location.pathname);
       return;
     }
     
