@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { matrixSales } from '@/api/matrixSalesClient';
+import { appParams } from '@/lib/app-params';
 import { pagesConfig } from '@/pages.config';
 
 export default function NavigationTracker() {
@@ -31,7 +32,7 @@ export default function NavigationTracker() {
             pageName = matchedKey || null;
         }
 
-        if (isAuthenticated && pageName) {
+        if (isAuthenticated && pageName && appParams.appId) {
             matrixSales.appLogs.logUserInApp(pageName).catch(() => {
                 // Silently fail - logging shouldn't break the app
             });

@@ -1,0 +1,11 @@
+{
+  "name": "MatrixSales",
+  "short_name": "MatrixSales",
+  "description": "MatrixSales enterprise operations workspace",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#059669",
+  "icons": []
+}
