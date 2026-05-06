@@ -216,7 +216,7 @@ function LayoutContent({ children, currentPageName }) {
                         </div>
                     </div>
                     
-                    <div className="border-b border-slate-100 px-4 py-3">
+                    <div className="hidden">
                         <Button
                             onClick={toggleLanguage}
                             variant="outline"
@@ -298,7 +298,7 @@ function LayoutContent({ children, currentPageName }) {
 
             <main className={`lg:pt-0 pt-16 ${isRTL ? 'lg:pr-64' : 'lg:pl-64'}`}>
                 <div className="min-h-screen bg-[#f5f7fb]">
-                    <div className="sticky top-16 z-40 border-b border-slate-200 bg-white/90 px-6 py-3 shadow-sm backdrop-blur lg:top-0">
+                    <div className="sticky top-16 z-40 flex items-center justify-between border-b border-slate-200 bg-white/90 px-6 py-3 shadow-sm backdrop-blur lg:top-0">
                         <Button
                             onClick={() => navigate(-1)}
                             variant="outline"
@@ -308,6 +308,29 @@ function LayoutContent({ children, currentPageName }) {
                             <ArrowLeft className="w-4 h-4" />
                             {t('previous')}
                         </Button>
+                        <div className="hidden items-center gap-2 lg:flex">
+                            <Button
+                                onClick={toggleLanguage}
+                                variant="outline"
+                                size="sm"
+                                className="gap-2 border-slate-200 bg-white"
+                            >
+                                <Languages className="w-4 h-4" />
+                                <span>{language === 'en' ? 'العربية' : 'English'}</span>
+                                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-500">
+                                    {language === 'en' ? 'AR' : 'EN'}
+                                </span>
+                            </Button>
+                            <Button
+                                onClick={() => logout()}
+                                variant="ghost"
+                                size="sm"
+                                className="gap-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+                            >
+                                <LogOut className="w-4 h-4" />
+                                Logout
+                            </Button>
+                        </div>
                     </div>
                     {/* Add bottom padding on mobile for bottom nav */}
                     <div className="pb-20 lg:pb-0">
