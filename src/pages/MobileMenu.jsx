@@ -63,7 +63,6 @@ export default function MobileMenu() {
         {
             title: t('sales'),
             items: [
-                { name: t('crm'), path: "CRM", icon: Target },
                 { name: t('sales'), path: "Sales", icon: ShoppingCart },
             ]
         },

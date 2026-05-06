@@ -324,11 +324,6 @@ function getDefaultPermissions() {
             expense: { view: false, create: false, approve: false },
             milestone: { view: false, create: false, complete: false }
         },
-        crm: {
-            lead: { view: false, create: false, edit: false, convert: false },
-            opportunity: { view: false, create: false, edit: false, close: false },
-            activity: { view: false, create: false, edit: false }
-        },
         costing: {
             product_cost: { view: false, create: false, edit: false, approve: false },
             cost_pool: { view: false, create: false, edit: false },
@@ -458,15 +453,6 @@ function getPermissionModules() {
                 { key: 'timesheet', label: 'Timesheets' },
                 { key: 'expense', label: 'Expenses' },
                 { key: 'milestone', label: 'Milestones' }
-            ]
-        },
-        {
-            name: 'crm',
-            label: 'CRM',
-            items: [
-                { key: 'lead', label: 'Leads' },
-                { key: 'opportunity', label: 'Opportunities' },
-                { key: 'activity', label: 'Activities' }
             ]
         },
         {

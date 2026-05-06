@@ -56,7 +56,6 @@ import AssetLifecycle from './pages/AssetLifecycle';
 import AssetScanner from './pages/AssetScanner';
 import AssetVerification from './pages/AssetVerification';
 import BudgetManagement from './pages/BudgetManagement';
-import CRM from './pages/CRM';
 import CoilManagement from './pages/CoilManagement';
 import ComplianceReports from './pages/ComplianceReports';
 import Costing from './pages/Costing';
@@ -103,7 +102,6 @@ export const PAGES = {
     "AssetScanner": AssetScanner,
     "AssetVerification": AssetVerification,
     "BudgetManagement": BudgetManagement,
-    "CRM": CRM,
     "CoilManagement": CoilManagement,
     "ComplianceReports": ComplianceReports,
     "Costing": Costing,

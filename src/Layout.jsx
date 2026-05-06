@@ -79,7 +79,6 @@ function LayoutContent({ children, currentPageName }) {
         { name: t('analytics'), path: "Analytics", icon: BarChart3, section: "Overview" },
         { name: "AI Assistant", path: "AIAssistant", icon: Bot, section: "Overview" },
         { name: "KPI Dashboard", path: "KPIDashboard", icon: Target, section: "Overview" },
-        { name: t('crm'), path: "CRM", icon: Target, section: "Sales" },
         { name: t('sales'), path: "Sales", icon: ShoppingCart, section: "Sales" },
         { name: "Point of Sale", path: "POS", icon: DollarSign, section: "Sales" },
 
