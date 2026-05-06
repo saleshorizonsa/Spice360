@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/lib/AuthContext';
 import BrandLogo from '@/components/BrandLogo';
 
-export default function LoginScreen({ onLogin }) {
+export default function LoginScreen({ onLogin, onAuthSuccess }) {
   const { authProvider, authError, signInWithPassword, signUpWithPassword } = useAuth();
   const { toast } = useToast();
   const [mode, setMode] = useState('signin');
@@ -57,6 +57,7 @@ export default function LoginScreen({ onLogin }) {
           email: formData.email.trim().toLowerCase(),
           password: formData.password
         });
+        onAuthSuccess?.();
       }
     } catch (error) {
       toast({
@@ -113,8 +114,8 @@ export default function LoginScreen({ onLogin }) {
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef3f9]">
                 <ShieldCheck className="h-6 w-6 text-[#24466f]" />
               </div>
-              <h2 className="text-2xl font-bold tracking-normal text-slate-950">Secure Login</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Use your authorized HORIZON account.</p>
+              <h2 className="text-2xl font-bold tracking-normal text-slate-950">User Login</h2>
+              <p className="mt-2 text-sm leading-6 text-slate-600">Enter your User ID and password to access HORIZON.</p>
             </div>
 
             {authProvider === 'supabase' ? (
@@ -138,13 +139,13 @@ export default function LoginScreen({ onLogin }) {
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">User ID</Label>
                   <Input
                     id="email"
                     type="email"
                     value={formData.email}
                     onChange={(event) => handleChange('email', event.target.value)}
-                    placeholder="you@company.com"
+                    placeholder="user@company.com"
                     autoComplete="email"
                   />
                 </div>

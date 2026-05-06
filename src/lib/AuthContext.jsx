@@ -200,6 +200,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async (shouldRedirect = true) => {
     setUser(null);
     setIsAuthenticated(false);
+    sessionStorage.removeItem('horizon_entered_app');
 
     if (!appParams.appId && supabase) {
       await supabase.auth.signOut();
