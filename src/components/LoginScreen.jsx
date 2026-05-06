@@ -7,7 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/lib/AuthContext';
 
 export default function LoginScreen({ onLogin }) {
-  const { authProvider, signInWithPassword, signUpWithPassword } = useAuth();
+  const { authProvider, authError, signInWithPassword, signUpWithPassword } = useAuth();
   const { toast } = useToast();
   const [mode, setMode] = useState('signin');
   const [formData, setFormData] = useState({
@@ -106,6 +106,12 @@ export default function LoginScreen({ onLogin }) {
 
             {authProvider === 'supabase' ? (
               <form onSubmit={handleSubmit} className="space-y-4">
+                {authError?.type === 'missing_supabase_config' && (
+                  <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                    Supabase is not configured for this deployment. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in Vercel, then redeploy.
+                  </div>
+                )}
+
                 {mode === 'signup' && (
                   <div className="space-y-2">
                     <Label htmlFor="full-name">Full Name</Label>
@@ -142,7 +148,7 @@ export default function LoginScreen({ onLogin }) {
                   />
                 </div>
 
-                <Button type="submit" disabled={isSubmitting} className="h-11 w-full bg-emerald-600 hover:bg-emerald-700">
+                <Button type="submit" disabled={isSubmitting || authError?.type === 'missing_supabase_config'} className="h-11 w-full bg-emerald-600 hover:bg-emerald-700">
                   {mode === 'signup' ? <UserPlus className="mr-2 h-4 w-4" /> : <LogIn className="mr-2 h-4 w-4" />}
                   {isSubmitting ? 'Please wait...' : mode === 'signup' ? 'Create Account' : 'Sign In'}
                 </Button>

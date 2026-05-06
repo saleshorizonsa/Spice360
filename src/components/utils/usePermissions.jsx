@@ -21,7 +21,7 @@ export function usePermissions() {
                 try {
                     user = await matrixSales.auth.me();
                 } catch {
-                    const { data } = await supabase.auth.getUser();
+                    const { data } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
                     user = data.user ? {
                         id: data.user.id,
                         email: data.user.email,
@@ -187,7 +187,7 @@ export async function checkPermission(module, action) {
         try {
             user = await matrixSales.auth.me();
         } catch {
-            const { data } = await supabase.auth.getUser();
+            const { data } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
             user = data.user ? {
                 email: data.user.email,
                 role: isMatrixSalesAdminEmail(

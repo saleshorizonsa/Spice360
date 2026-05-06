@@ -2,7 +2,7 @@ import React, { createContext, useState, useContext, useEffect } from 'react';
 import { matrixSales } from '@/api/matrixSalesClient';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
-import { supabase } from '@/lib/supabaseClient';
+import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient';
 import { isMatrixSalesAdminEmail } from '@/lib/adminAccess';
 
 const AuthContext = createContext();
@@ -21,6 +21,16 @@ export const AuthProvider = ({ children }) => {
 
   const checkAppState = async () => {
     if (!appParams.appId) {
+      if (!isSupabaseConfigured) {
+        setAuthError({
+          type: 'missing_supabase_config',
+          message: 'Supabase environment variables are missing.'
+        });
+        setIsLoadingAuth(false);
+        setIsLoadingPublicSettings(false);
+        return;
+      }
+
       await checkSupabaseAuth();
       setIsLoadingPublicSettings(false);
       return;
@@ -160,7 +170,7 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setIsAuthenticated(false);
 
-    if (!appParams.appId) {
+    if (!appParams.appId && supabase) {
       supabase.auth.signOut();
       return;
     }
@@ -182,6 +192,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signInWithPassword = async ({ email, password }) => {
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -196,6 +210,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signUpWithPassword = async ({ email, password, fullName }) => {
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,

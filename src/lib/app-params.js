@@ -6,6 +6,13 @@ const toSnakeCase = (str) => {
 	return str.replace(/([A-Z])/g, '_$1').toLowerCase();
 }
 
+const normalizeParamValue = (value) => {
+	if (value === undefined || value === null) return null;
+	const normalized = String(value).trim();
+	if (!normalized || normalized === 'null' || normalized === 'undefined') return null;
+	return normalized;
+}
+
 const getAppParamValue = (paramName, { defaultValue = undefined, removeFromUrl = false } = {}) => {
 	if (isNode) {
 		return defaultValue;
@@ -19,15 +26,17 @@ const getAppParamValue = (paramName, { defaultValue = undefined, removeFromUrl =
 			}${window.location.hash}`;
 		window.history.replaceState({}, document.title, newUrl);
 	}
-	if (searchParam) {
-		storage.setItem(storageKey, searchParam);
-		return searchParam;
+	const normalizedSearchParam = normalizeParamValue(searchParam);
+	if (normalizedSearchParam) {
+		storage.setItem(storageKey, normalizedSearchParam);
+		return normalizedSearchParam;
 	}
-	if (defaultValue) {
-		storage.setItem(storageKey, defaultValue);
-		return defaultValue;
+	const normalizedDefaultValue = normalizeParamValue(defaultValue);
+	if (normalizedDefaultValue) {
+		storage.setItem(storageKey, normalizedDefaultValue);
+		return normalizedDefaultValue;
 	}
-	const storedValue = storage.getItem(storageKey);
+	const storedValue = normalizeParamValue(storage.getItem(storageKey));
 	if (storedValue) {
 		return storedValue;
 	}
