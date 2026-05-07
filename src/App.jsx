@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -11,7 +11,9 @@ import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import LoginScreen from '@/components/LoginScreen';
 import TenantOnboardingWizard, { useTenantReadiness } from '@/components/onboarding/TenantOnboardingWizard';
 import PublicLandingPage from '@/components/PublicLandingPage';
+import AuthConfirmPage from '@/components/AuthConfirmPage';
 import { defaultSubscriptionPlanId, storeSignupPlan } from '@/lib/subscriptionPlans';
+import { isAuthCallbackPath } from '@/lib/authRedirect';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -30,10 +32,14 @@ const AuthenticatedApp = () => {
   const [authScreen, setAuthScreen] = useState('landing');
   const [selectedPlan, setSelectedPlan] = useState(defaultSubscriptionPlanId);
 
-  const enterApp = () => {
+  const enterApp = useCallback(() => {
     sessionStorage.setItem('horizon_entered_app', 'true');
     navigate(`/${mainPageKey}`, { replace: true });
-  };
+  }, [navigate]);
+
+  const backToLogin = useCallback(() => {
+    navigate('/', { replace: true });
+  }, [navigate]);
 
   const openSignupForPlan = (planId) => {
     const nextPlan = planId || defaultSubscriptionPlanId;
@@ -43,6 +49,7 @@ const AuthenticatedApp = () => {
   };
 
   const openLogin = () => setAuthScreen('login');
+  const isAuthCallback = isAuthCallbackPath(location.pathname);
 
   const renderAuthEntry = () => {
     if (authScreen === 'landing') {
@@ -59,6 +66,10 @@ const AuthenticatedApp = () => {
       />
     );
   };
+
+  if (isAuthCallback) {
+    return <AuthConfirmPage onConfirmed={enterApp} onBackToLogin={backToLogin} />;
+  }
 
   // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {

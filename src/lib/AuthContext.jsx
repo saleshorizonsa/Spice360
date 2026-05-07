@@ -5,15 +5,9 @@ import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient';
 import { isMatrixSalesAdminEmail, isMatrixSalesPlatformOwner } from '@/lib/adminAccess';
 import { defaultSubscriptionPlanId, storeSignupPlan } from '@/lib/subscriptionPlans';
+import { getAuthRedirectUrl, isAuthCallbackPath } from '@/lib/authRedirect';
 
 const AuthContext = createContext();
-
-const getSupabaseRedirectUrl = () => {
-  const configuredUrl = import.meta.env.VITE_SUPABASE_AUTH_REDIRECT_URL;
-  if (configuredUrl) return configuredUrl;
-  if (typeof window === 'undefined') return undefined;
-  return window.location.origin;
-};
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -34,7 +28,7 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(true);
         setAuthError(null);
 
-        if (window.location.hash.includes('access_token=')) {
+        if (!isAuthCallbackPath(window.location.pathname) && window.location.hash.includes('access_token=')) {
           window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search}`);
         }
       } else {
@@ -157,7 +151,7 @@ export const AuthProvider = ({ children }) => {
         setIsAuthenticated(true);
         setAuthError(null);
 
-        if (window.location.hash.includes('access_token=')) {
+        if (!isAuthCallbackPath(window.location.pathname) && window.location.hash.includes('access_token=')) {
           window.history.replaceState({}, document.title, `${window.location.pathname}${window.location.search}`);
         }
       } else {
@@ -254,7 +248,7 @@ export const AuthProvider = ({ children }) => {
       email,
       password,
       options: {
-        emailRedirectTo: getSupabaseRedirectUrl(),
+        emailRedirectTo: getAuthRedirectUrl(),
         data: {
           full_name: fullName,
           selected_plan: selectedPlan
@@ -283,7 +277,7 @@ export const AuthProvider = ({ children }) => {
       type: 'signup',
       email: targetEmail,
       options: {
-        emailRedirectTo: getSupabaseRedirectUrl()
+        emailRedirectTo: getAuthRedirectUrl()
       }
     });
 
