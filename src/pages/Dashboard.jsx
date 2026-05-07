@@ -52,6 +52,21 @@ function useEntityList(entityName, queryKey, sort, limit) {
     });
 }
 
+function useOptionalEntityList(entityName, queryKey, sort, limit) {
+    return useQuery({
+        queryKey,
+        queryFn: async () => {
+            try {
+                return await matrixSales.entities[entityName].list(sort, limit);
+            } catch (error) {
+                if (/does not exist|not found|period_close/i.test(error.message || "")) return [];
+                throw error;
+            }
+        },
+        initialData: []
+    });
+}
+
 const ManagementCard = ({ title, value, description, icon: Icon, color = "blue", to }) => {
     const colorMap = {
         blue: "bg-blue-50 text-blue-700 ring-blue-100",
@@ -177,6 +192,137 @@ function OverviewCards() {
                     { title: "Assets", value: activeAssets, description: "Active fixed assets", icon: Package2, color: "emerald", to: "FixedAssets" },
                     { title: "Approvals", value: pendingApprovals, description: "Pending approval requests", icon: Clock, color: "amber", to: "Approvals" },
                     { title: "Admin Center", value: isAdmin ? "Open" : "Restricted", description: "System setup and access", icon: Shield, color: "slate", to: "AdminCenter" }
+                ]}
+            />
+        </div>
+    );
+}
+
+function ControlCenterCards() {
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: approvals = [] } = useEntityList("ApprovalRequest", ["dashboard-control-approvals"], "-request_date");
+    const { data: ar = [] } = useEntityList("AccountsReceivable", ["dashboard-control-ar"], "-due_date");
+    const { data: ap = [] } = useEntityList("AccountsPayable", ["dashboard-control-ap"], "-due_date");
+    const { data: stock = [] } = useEntityList("StockLevel", ["dashboard-control-stock"], "-aging_days");
+    const { data: zatca = [] } = useEntityList("ZATCASubmissionLog", ["dashboard-control-zatca"], "-submission_date");
+    const { data: documentSeries = [] } = useEntityList("DocumentNumberSeries", ["dashboard-control-document-series"]);
+    const { data: periods = [] } = useOptionalEntityList("PeriodClose", ["dashboard-control-period-close"], "-period_start");
+
+    const approvalList = toList(approvals);
+    const arList = toList(ar);
+    const apList = toList(ap);
+    const stockList = toList(stock);
+    const zatcaList = toList(zatca);
+    const seriesList = toList(documentSeries);
+    const periodList = toList(periods);
+
+    const pendingApprovals = approvalList.filter((item) => item.status === "pending").length;
+    const overdueReceivables = arList.filter((item) => {
+        const status = String(item.payment_status || item.status || "").toLowerCase();
+        return status !== "paid" && item.due_date && item.due_date < today;
+    });
+    const overduePayables = apList.filter((item) => {
+        const status = String(item.payment_status || item.status || "").toLowerCase();
+        return status !== "paid" && item.due_date && item.due_date < today;
+    });
+    const lowStock = stockList.filter((item) => {
+        const available = Number(item.available_quantity ?? item.quantity ?? 0);
+        const reorderLevel = Number(item.reorder_level ?? item.minimum_stock ?? 10);
+        return available <= reorderLevel;
+    });
+    const zatcaFailures = zatcaList.filter((item) => {
+        const values = [
+            item.status,
+            item.validation_status,
+            item.clearance_status,
+            item.reporting_status,
+            item.submission_status
+        ].map((value) => String(value || "").toLowerCase());
+        return values.some((value) => ["failed", "fail", "rejected", "error"].includes(value)) || Number(item.response_status_code) >= 400;
+    });
+    const numberingRisks = seriesList.filter((item) => {
+        const status = String(item.status || "").toLowerCase();
+        const current = Number(item.current_number || 0);
+        const ending = Number(item.ending_number || item.max_number || 0);
+        return status === "exhausted" || (ending > 0 && ending - current <= 100);
+    });
+    const closedPeriods = periodList.filter((item) => item.status === "closed").length;
+
+    return (
+        <div className="space-y-4">
+            <Alert className="border-blue-200 bg-blue-50">
+                <Shield className="h-4 w-4 text-blue-700" />
+                <AlertDescription className="text-blue-900">
+                    Management control cards for exceptions that need action before month end, audit review, or compliance filing.
+                </AlertDescription>
+            </Alert>
+
+            <ModuleCards
+                cards={[
+                    {
+                        title: "Pending Approvals",
+                        value: pendingApprovals,
+                        description: "Documents waiting for authorization",
+                        icon: Clock,
+                        color: pendingApprovals > 0 ? "amber" : "emerald",
+                        to: "Approvals"
+                    },
+                    {
+                        title: "Overdue Receivables",
+                        value: formatSar(sumBy(overdueReceivables, "outstanding_amount")),
+                        description: `${overdueReceivables.length} customer balances past due`,
+                        icon: TrendingUp,
+                        color: overdueReceivables.length > 0 ? "red" : "emerald",
+                        to: "Finance"
+                    },
+                    {
+                        title: "Overdue Payables",
+                        value: formatSar(sumBy(overduePayables, "outstanding_amount")),
+                        description: `${overduePayables.length} vendor balances past due`,
+                        icon: TrendingDown,
+                        color: overduePayables.length > 0 ? "amber" : "emerald",
+                        to: "Finance"
+                    },
+                    {
+                        title: "Low Stock Items",
+                        value: lowStock.length,
+                        description: "Materials at or below reorder level",
+                        icon: Warehouse,
+                        color: lowStock.length > 0 ? "red" : "emerald",
+                        to: "Inventory"
+                    },
+                    {
+                        title: "ZATCA Exceptions",
+                        value: zatcaFailures.length,
+                        description: "Failed or rejected e-invoice submissions",
+                        icon: FileCheck,
+                        color: zatcaFailures.length > 0 ? "red" : "emerald",
+                        to: "ZATCA"
+                    },
+                    {
+                        title: "Numbering Risks",
+                        value: numberingRisks.length,
+                        description: "Series exhausted or close to ending",
+                        icon: FileText,
+                        color: numberingRisks.length > 0 ? "amber" : "emerald",
+                        to: "AdminCenter"
+                    },
+                    {
+                        title: "Closed Periods",
+                        value: closedPeriods,
+                        description: "Locked periods active in the system",
+                        icon: Shield,
+                        color: closedPeriods > 0 ? "slate" : "blue",
+                        to: "AdminCenter"
+                    },
+                    {
+                        title: "Audit Trail",
+                        value: "Review",
+                        description: "Monitor critical record changes",
+                        icon: Database,
+                        color: "purple",
+                        to: "AdminCenter"
+                    }
                 ]}
             />
         </div>
@@ -360,6 +506,7 @@ export default function Dashboard() {
     const [activeTab, setActiveTab] = useState("overview");
     const dashboardTabs = useMemo(() => ([
         { value: "overview", label: "Overview", Component: OverviewCards },
+        { value: "controls", label: "Control Center", Component: ControlCenterCards },
         { value: "sales", label: "Sales", Component: SalesCards },
         { value: "inventory", label: "Inventory & Quality", Component: InventoryCards },
         { value: "operations", label: "Operations", Component: OperationsCards },
