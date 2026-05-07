@@ -39,6 +39,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { LanguageProvider, useLanguage } from "@/components/utils/languageContext";
 import { OrganizationProvider } from "@/components/utils/OrganizationContext";
 import OrganizationSwitcher from "@/components/shared/OrganizationSwitcher";
+import GlobalSearch from "@/components/shared/GlobalSearch";
 import NotificationBell from "@/components/notifications/NotificationBell";
 import AIChatButton from "@/components/ai/AIChatButton";
 import MobileBottomNav from "@/components/mobile/MobileBottomNav";
@@ -298,7 +299,7 @@ function LayoutContent({ children, currentPageName }) {
 
             <main className={`lg:pt-0 pt-16 ${isRTL ? 'lg:pr-64' : 'lg:pl-64'}`}>
                 <div className="min-h-screen bg-[#f5f7fb]">
-                    <div className="sticky top-16 z-40 flex items-center justify-between border-b border-slate-200 bg-white/90 px-6 py-3 shadow-sm backdrop-blur lg:top-0">
+                    <div className="sticky top-16 z-40 flex items-center justify-between gap-4 border-b border-slate-200 bg-white/90 px-6 py-3 shadow-sm backdrop-blur lg:top-0">
                         <Button
                             onClick={() => navigate(-1)}
                             variant="outline"
@@ -308,6 +309,7 @@ function LayoutContent({ children, currentPageName }) {
                             <ArrowLeft className="w-4 h-4" />
                             {t('previous')}
                         </Button>
+                        <GlobalSearch />
                         <div className="hidden items-center gap-2 lg:flex">
                             <Button
                                 onClick={toggleLanguage}

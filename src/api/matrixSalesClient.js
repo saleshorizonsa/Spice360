@@ -53,6 +53,166 @@ const organizationScopedEntityExclusions = new Set([
 const shouldScopeEntityToOrganization = (entityName) =>
   !organizationScopedEntityExclusions.has(entityName);
 
+const systemEntityNames = new Set([
+  'AuditTrail',
+  'DocumentNumberSeries',
+  'Notification'
+]);
+
+const auditableEntityNames = new Set([
+  'AccountsPayable',
+  'AccountsReceivable',
+  'ApprovalMatrix',
+  'ApprovalRequest',
+  'AssetAllocation',
+  'AssetDisposal',
+  'AssetMaintenance',
+  'AssetVerificationTask',
+  'BankAccount',
+  'Budget',
+  'CAPA',
+  'CertificateOfAnalysis',
+  'Coil',
+  'CoilSlitting',
+  'Customer',
+  'CycleCount',
+  'Delivery',
+  'Employee',
+  'FixedAsset',
+  'GoodsReceiptNote',
+  'InspectionLot',
+  'Invoice',
+  'JournalEntry',
+  'LeaveRequest',
+  'Material',
+  'Payment',
+  'Plant',
+  'Product',
+  'ProductionOrder',
+  'Project',
+  'PurchaseOrder',
+  'PurchaseRequisition',
+  'Quotation',
+  'RFQ',
+  'Role',
+  'SalesOrder',
+  'SalesReturn',
+  'ServiceOrder',
+  'StockMovement',
+  'StockTransferOrder',
+  'StorageLocation',
+  'User',
+  'Vendor',
+  'VendorInvoice',
+  'WorkOrder',
+  'ZATCASubmissionLog'
+]);
+
+const documentNumberConfig = {
+  Quotation: { type: 'quotation', fields: ['quotation_number'] },
+  SalesOrder: { type: 'sales_order', fields: ['order_number', 'sales_order_number'] },
+  Delivery: { type: 'delivery', fields: ['delivery_number'] },
+  Invoice: { type: 'invoice', fields: ['invoice_number'] },
+  SalesReturn: { type: 'sales_return', fields: ['return_number'] },
+  ServiceOrder: { type: 'service_order', fields: ['service_order_number'] },
+  PurchaseRequisition: { type: 'purchase_requisition', fields: ['requisition_number', 'pr_number'] },
+  RFQ: { type: 'rfq', fields: ['rfq_number'] },
+  PurchaseOrder: { type: 'purchase_order', fields: ['po_number', 'purchase_order_number'] },
+  GoodsReceiptNote: { type: 'grn', fields: ['grn_number', 'receipt_number'] },
+  VendorInvoice: { type: 'vendor_invoice', fields: ['vendor_invoice_number'] },
+  StockMovement: { type: 'stock_movement', fields: ['movement_number'] },
+  StockTransferOrder: { type: 'stock_transfer', fields: ['sto_number'] },
+  CycleCount: { type: 'cycle_count', fields: ['count_number'] },
+  JournalEntry: { type: 'journal_entry', fields: ['journal_number'] },
+  Payment: { type: 'payment', fields: ['payment_number'] },
+  ProductionOrder: { type: 'production_order', fields: ['production_order_number'] },
+  WorkOrder: { type: 'work_order', fields: ['work_order_number'] },
+  Project: { type: 'project', fields: ['project_number'] },
+  ProjectExpense: { type: 'expense', fields: ['expense_number'] },
+  InspectionLot: { type: 'inspection_lot', fields: ['inspection_lot_number'] },
+  NonConformance: { type: 'non_conformance', fields: ['nc_number'] },
+  CertificateOfAnalysis: { type: 'coa', fields: ['coa_number'] },
+  CAPA: { type: 'capa', fields: ['capa_number'] }
+};
+
+const documentPrefixMap = {
+  quotation: 'QT',
+  sales_order: 'SO',
+  delivery: 'DN',
+  invoice: 'INV',
+  sales_return: 'SR',
+  service_order: 'SVC',
+  purchase_requisition: 'PR',
+  rfq: 'RFQ',
+  purchase_order: 'PO',
+  grn: 'GRN',
+  vendor_invoice: 'VINV',
+  stock_movement: 'SM',
+  stock_transfer: 'STO',
+  cycle_count: 'CC',
+  journal_entry: 'JE',
+  payment: 'PAY',
+  production_order: 'PRD',
+  work_order: 'WO',
+  project: 'PRJ',
+  expense: 'EXP',
+  inspection_lot: 'IL',
+  non_conformance: 'NC',
+  coa: 'COA',
+  capa: 'CAPA'
+};
+
+const getDocumentNumberFromRecord = (entityName, record = {}) => {
+  const configuredFields = documentNumberConfig[entityName]?.fields || [];
+  const fallbackFields = [
+    'document_number',
+    'number',
+    'reference_number',
+    'invoice_number',
+    'order_number',
+    'po_number',
+    'journal_number',
+    'payment_number',
+    'asset_number',
+    'employee_number',
+    'customer_code',
+    'vendor_code',
+    'material_code',
+    'product_code'
+  ];
+
+  const field = [...configuredFields, ...fallbackFields].find((key) => record?.[key]);
+  return field ? record[field] : record?.id;
+};
+
+const shouldAutoNumberRecord = (entityName, record = {}) => {
+  const config = documentNumberConfig[entityName];
+  return config && !config.fields.some((field) => record?.[field]);
+};
+
+const getAuditChanges = (beforeData = {}, afterData = {}) => {
+  const fieldsChanged = [];
+  const changes = { before: {}, after: {} };
+  const skippedFields = new Set(['id', 'created_at', 'updated_at', 'created_date', 'updated_date']);
+  const keys = new Set([...Object.keys(beforeData || {}), ...Object.keys(afterData || {})]);
+
+  keys.forEach((key) => {
+    if (skippedFields.has(key)) return;
+    const beforeValue = beforeData?.[key];
+    const afterValue = afterData?.[key];
+    if (JSON.stringify(beforeValue) !== JSON.stringify(afterValue)) {
+      fieldsChanged.push(key);
+      changes.before[key] = beforeValue;
+      changes.after[key] = afterValue;
+    }
+  });
+
+  return {
+    fieldsChanged,
+    changes: fieldsChanged.length ? changes : null
+  };
+};
+
 const getSelectedOrganizationId = () => {
   if (typeof window === 'undefined') return null;
   const selectedId = window.localStorage.getItem('selected_organization_id');
@@ -139,6 +299,138 @@ const getCurrentSupabaseUser = async () => {
   };
 };
 
+const getCurrentSupabaseUserSafe = async () => {
+  try {
+    return await getCurrentSupabaseUser();
+  } catch {
+    return {
+      id: null,
+      email: 'system@horizon.local',
+      full_name: 'System',
+      role: 'system'
+    };
+  }
+};
+
+const getNextSupabaseDocumentNumber = async (entityName, record = {}) => {
+  const config = documentNumberConfig[entityName];
+  if (!config) return null;
+
+  const client = requireSupabase();
+  const documentType = config.type;
+  const branchCode = record.branch_code || record.plant_code || record.organization_key || 'ALL';
+  const fiscalYear = new Date().getFullYear().toString().slice(-2);
+  const prefix = documentPrefixMap[documentType] || 'DOC';
+
+  const { data: existingSeries, error: readError } = await client
+    .from('document_number_series')
+    .select('*')
+    .eq('record->>document_type', documentType)
+    .eq('record->>branch_code', branchCode)
+    .eq('record->>fiscal_year', fiscalYear)
+    .eq('record->>status', 'active')
+    .limit(1);
+
+  if (readError) throw readError;
+
+  let seriesRow = normalizeList(existingSeries)[0];
+  let series = normalizeRow(seriesRow);
+
+  if (!seriesRow) {
+    const payload = {
+      record: {
+        series_id: `${prefix}-${branchCode}-${fiscalYear}`,
+        document_type: documentType,
+        prefix,
+        branch_code: branchCode,
+        fiscal_year: fiscalYear,
+        current_number: 0,
+        starting_number: 1,
+        number_width: 6,
+        format_pattern: '{PREFIX}-{BR}-{FY}-{NNNNNN}',
+        status: 'active',
+        auto_generate: true
+      }
+    };
+
+    const { data: createdSeries, error: createError } = await client
+      .from('document_number_series')
+      .insert(payload)
+      .select('*')
+      .single();
+
+    if (createError) throw createError;
+    seriesRow = createdSeries;
+    series = normalizeRow(createdSeries);
+  }
+
+  const nextNumber = (Number(series.current_number) || 0) + 1;
+  const paddedNumber = String(nextNumber).padStart(Number(series.number_width) || 6, '0');
+  const documentNumber = `${series.prefix || prefix}-${series.branch_code || branchCode}-${series.fiscal_year || fiscalYear}-${paddedNumber}`;
+
+  const { error: updateError } = await client
+    .from('document_number_series')
+    .update({
+      record: {
+        ...(seriesRow.record || {}),
+        current_number: nextNumber,
+        last_generated_number: documentNumber,
+        last_generated_date: new Date().toISOString()
+      }
+    })
+    .eq('id', seriesRow.id);
+
+  if (updateError) throw updateError;
+  return documentNumber;
+};
+
+const logSupabaseAuditTrail = async ({
+  entityName,
+  entityId,
+  actionType,
+  beforeData = null,
+  afterData = null,
+  organizationId = null
+}) => {
+  if (systemEntityNames.has(entityName) || !auditableEntityNames.has(entityName)) return;
+
+  try {
+    const client = requireSupabase();
+    const user = await getCurrentSupabaseUserSafe();
+    const { fieldsChanged, changes } = actionType === 'update'
+      ? getAuditChanges(beforeData, afterData)
+      : { fieldsChanged: [], changes: null };
+
+    const entityType = tableNameForEntity(entityName);
+    const documentNumber = getDocumentNumberFromRecord(entityName, afterData || beforeData || {});
+    const changeSummary = actionType === 'update'
+      ? (fieldsChanged.length ? `Updated ${fieldsChanged.length} field(s): ${fieldsChanged.join(', ')}` : 'Updated record')
+      : `${actionType.charAt(0).toUpperCase() + actionType.slice(1)}d ${entityType.replace(/_/g, ' ')}`;
+
+    await client.from('audit_trail').insert({
+      organization_id: organizationId,
+      record: {
+        audit_id: `AUD-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+        entity_type: entityType,
+        entity_id: entityId,
+        document_number: documentNumber || entityId,
+        action_type: actionType,
+        action_timestamp: new Date().toISOString(),
+        user_email: user.email,
+        user_name: user.full_name || user.email,
+        user_role: user.role || 'user',
+        changes,
+        fields_changed: fieldsChanged,
+        change_summary: changeSummary,
+        severity: actionType === 'delete' ? 'warning' : 'info',
+        is_system_action: user.role === 'system'
+      }
+    });
+  } catch (error) {
+    console.error('Audit trail write failed:', error);
+  }
+};
+
 const createSupabaseEntity = (entityName) => {
   const tableName = tableNameForEntity(entityName);
   const isOrganizationScoped = shouldScopeEntityToOrganization(entityName);
@@ -172,16 +464,30 @@ const createSupabaseEntity = (entityName) => {
   return {
     list: (sort, limit) => listRows({}, sort, limit),
     filter: (filters = {}, sort, limit) => listRows(filters, sort, limit),
-    create: async (data) => {
+    create: async (data = {}) => {
       const client = requireSupabase();
       const selectedOrganizationId = getSelectedOrganizationId();
       const organizationId = data.organization_id || (isOrganizationScoped ? selectedOrganizationId : null);
+      const record = { ...(data || {}) };
+
+      if (shouldAutoNumberRecord(entityName, record)) {
+        try {
+          const documentNumber = await getNextSupabaseDocumentNumber(entityName, record);
+          const primaryField = documentNumberConfig[entityName]?.fields?.[0];
+          if (documentNumber && primaryField) {
+            record[primaryField] = documentNumber;
+          }
+        } catch (error) {
+          console.error(`Document number generation failed for ${entityName}:`, error);
+        }
+      }
+
       const payload = {
-        base44_id: data.base44_id || data.base44Id || null,
+        base44_id: record.base44_id || record.base44Id || null,
         organization_id: organizationId,
-        organization_key: data.organization_key || null,
+        organization_key: record.organization_key || null,
         record: {
-          ...(data || {}),
+          ...record,
           ...(organizationId ? { organization_id: organizationId } : {})
         }
       };
@@ -194,7 +500,15 @@ const createSupabaseEntity = (entityName) => {
 
       if (error) throw error;
       if (entityName === 'Organization') notifyOrganizationsChanged();
-      return normalizeRow(row);
+      const normalized = normalizeRow(row);
+      await logSupabaseAuditTrail({
+        entityName,
+        entityId: row.id,
+        actionType: 'create',
+        afterData: normalized,
+        organizationId
+      });
+      return normalized;
     },
     bulkCreate: async (records = []) => {
       const client = requireSupabase();
@@ -220,7 +534,7 @@ const createSupabaseEntity = (entityName) => {
       if (error) throw error;
       return normalizeList(data).map(normalizeRow);
     },
-    update: async (id, data) => {
+    update: async (id, data = {}) => {
       const client = requireSupabase();
       const selectedOrganizationId = getSelectedOrganizationId();
       const { data: existing, error: readError } = await client
@@ -253,13 +567,40 @@ const createSupabaseEntity = (entityName) => {
 
       if (error) throw error;
       if (entityName === 'Organization') notifyOrganizationsChanged();
-      return normalizeRow(row);
+      const normalized = normalizeRow(row);
+      await logSupabaseAuditTrail({
+        entityName,
+        entityId: id,
+        actionType: 'update',
+        beforeData: normalizeRow(existing),
+        afterData: normalized,
+        organizationId
+      });
+      return normalized;
     },
     delete: async (id) => {
       const client = requireSupabase();
+      let existing = null;
+      try {
+        const { data } = await client
+          .from(tableName)
+          .select('*')
+          .eq('id', id)
+          .single();
+        existing = data;
+      } catch {
+        existing = null;
+      }
       const { error } = await client.from(tableName).delete().eq('id', id);
       if (error) throw error;
       if (entityName === 'Organization') notifyOrganizationsChanged();
+      await logSupabaseAuditTrail({
+        entityName,
+        entityId: id,
+        actionType: 'delete',
+        beforeData: existing ? normalizeRow(existing) : { id },
+        organizationId: existing?.organization_id || null
+      });
       return { id };
     }
   };
