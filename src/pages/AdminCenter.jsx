@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Users, Building, Factory, MapPin, Ruler, Activity, Sparkles, CalendarLock } from "lucide-react";
+import { Shield, Users, Building, Factory, MapPin, Ruler, Activity, Sparkles, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -288,7 +288,7 @@ export default function AdminCenter() {
                         Unit Conversion
                     </TabsTrigger>
                     <TabsTrigger value="period-close">
-                        <CalendarLock className="w-4 h-4 mr-2" />
+                        <Calendar className="w-4 h-4 mr-2" />
                         Period Close
                     </TabsTrigger>
                     <TabsTrigger value="plant">

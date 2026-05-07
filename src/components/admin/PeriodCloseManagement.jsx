@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, CalendarLock, LockKeyhole, RotateCcw } from "lucide-react";
+import { AlertTriangle, Calendar, Lock, RotateCcw } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -161,7 +161,7 @@ export default function PeriodCloseManagement() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                            <CalendarLock className="h-5 w-5 text-red-600" />
+                            <Calendar className="h-5 w-5 text-red-600" />
                             Close Period
                         </CardTitle>
                     </CardHeader>
@@ -206,7 +206,7 @@ export default function PeriodCloseManagement() {
                             disabled={!periodKey || closeMutation.isPending}
                             className="w-full bg-red-600 hover:bg-red-700"
                         >
-                            <LockKeyhole className="mr-2 h-4 w-4" />
+                            <Lock className="mr-2 h-4 w-4" />
                             {closeMutation.isPending ? "Closing..." : "Close Period"}
                         </Button>
                     </CardContent>
