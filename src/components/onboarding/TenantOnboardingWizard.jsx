@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Building2, CheckCircle2, FileCheck, MailCheck, RefreshCw, Settings, ShieldCheck } from "lucide-react";
+import { ArrowRight, Building2, CheckCircle2, FileCheck, RefreshCw, Settings, ShieldCheck } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useAuth } from "@/lib/AuthContext";
 import BrandLogo from "@/components/BrandLogo";
+import { getStoredSignupPlan, getSubscriptionPlan } from "@/lib/subscriptionPlans";
 
 const onboardingStatuses = {
     EMAIL: "email_verification_pending",
@@ -22,7 +23,7 @@ const onboardingStatuses = {
 };
 
 const steps = [
-    { key: "email", label: "Email Verification", icon: MailCheck },
+    { key: "email", label: "Email Verification", icon: CheckCircle2 },
     { key: "company", label: "Company Data", icon: Building2 },
     { key: "zatca", label: "ZATCA Setup", icon: FileCheck },
     { key: "modules", label: "Standard Modules", icon: Settings }
@@ -188,6 +189,40 @@ const seedTenantDefaults = async (organization, user) => {
     });
 };
 
+const createTenantSubscription = async (organization, planId) => {
+    const plan = getSubscriptionPlan(planId);
+    const startDate = new Date();
+    const trialEndDate = new Date(startDate);
+    trialEndDate.setDate(trialEndDate.getDate() + (plan.trialDays || 14));
+    const renewalDate = new Date(trialEndDate);
+    renewalDate.setMonth(renewalDate.getMonth() + 1);
+
+    const payload = {
+        subscription_id: `SUB-${organization.id}`,
+        tenant_id: organization.id,
+        organization_id: organization.id,
+        tenant_name: getOrgName(organization),
+        plan: plan.id,
+        plan_name: plan.name,
+        status: "trialing",
+        start_date: startDate.toISOString().slice(0, 10),
+        trial_end_date: trialEndDate.toISOString().slice(0, 10),
+        renewal_date: renewalDate.toISOString().slice(0, 10),
+        billing_cycle: plan.billingCycle,
+        monthly_price: plan.monthlyPrice,
+        currency: plan.currency,
+        limits: plan.limits,
+        included_modules: plan.modules,
+        support_level: plan.supportLevel
+    };
+
+    const existing = await matrixSales.entities.Subscription.filter({ subscription_id: payload.subscription_id });
+    if (existing.length > 0) {
+        return matrixSales.entities.Subscription.update(existing[0].id, { ...existing[0], ...payload });
+    }
+    return matrixSales.entities.Subscription.create(payload);
+};
+
 function OnboardingShell({ activeStep, children }) {
     const activeIndex = Math.max(0, steps.findIndex((step) => step.key === activeStep));
     const progress = activeStep === "ready" ? 100 : ((activeIndex + 1) / steps.length) * 100;
@@ -256,7 +291,7 @@ function EmailVerificationStep() {
         <Card>
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                    <MailCheck className="h-5 w-5 text-[#24466f]" />
+                    <CheckCircle2 className="h-5 w-5 text-[#24466f]" />
                     Verify your email
                 </CardTitle>
             </CardHeader>
@@ -308,6 +343,7 @@ function CompanyStep({ user, organization, onSaved }) {
                 authorized_user_ids: [user.id],
                 email_verified: true,
                 status: "active",
+                selected_plan: getStoredSignupPlan(),
                 onboarding_status: onboardingStatuses.ZATCA
             };
             const saved = organization
@@ -320,6 +356,7 @@ function CompanyStep({ user, organization, onSaved }) {
                 onboarding_status: onboardingStatuses.ZATCA
             });
             localStorage.setItem("selected_organization_id", tenantReady.id);
+            await createTenantSubscription(tenantReady, getStoredSignupPlan());
             window.dispatchEvent(new CustomEvent("matrixsales:organizations-changed"));
             toast({ title: "Company profile saved", description: "Continue with ZATCA setup." });
             onSaved?.();

@@ -6,17 +6,19 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/lib/AuthContext';
 import BrandLogo from '@/components/BrandLogo';
+import { defaultSubscriptionPlanId, getSubscriptionPlan, storeSignupPlan } from '@/lib/subscriptionPlans';
 
-export default function LoginScreen({ onLogin, onAuthSuccess }) {
+export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = defaultSubscriptionPlanId, initialMode = 'signin', onBackToLanding }) {
   const { authProvider, authError, signInWithPassword, signUpWithPassword } = useAuth();
   const { toast } = useToast();
-  const [mode, setMode] = useState('signin');
+  const [mode, setMode] = useState(initialMode);
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     password: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const plan = getSubscriptionPlan(selectedPlan);
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -45,8 +47,10 @@ export default function LoginScreen({ onLogin, onAuthSuccess }) {
         await signUpWithPassword({
           email: formData.email.trim().toLowerCase(),
           password: formData.password,
-          fullName: formData.fullName.trim()
+          fullName: formData.fullName.trim(),
+          selectedPlan
         });
+        storeSignupPlan(selectedPlan);
         toast({
           title: 'Account created',
           description: 'Check your email if confirmation is required, then sign in.'
@@ -115,7 +119,9 @@ export default function LoginScreen({ onLogin, onAuthSuccess }) {
                 <ShieldCheck className="h-6 w-6 text-[#24466f]" />
               </div>
               <h2 className="text-2xl font-bold tracking-normal text-slate-950">User Login</h2>
-              <p className="mt-2 text-sm leading-6 text-slate-600">Enter your User ID and password to access HORIZON.</p>
+              <p className="mt-2 text-sm leading-6 text-slate-600">
+                {mode === 'signup' ? `Create your account on the ${plan?.name || 'selected'} plan.` : 'Enter your User ID and password to access HORIZON.'}
+              </p>
             </div>
 
             {authProvider === 'supabase' ? (
@@ -127,15 +133,20 @@ export default function LoginScreen({ onLogin, onAuthSuccess }) {
                 )}
 
                 {mode === 'signup' && (
-                  <div className="space-y-2">
-                    <Label htmlFor="full-name">Full Name</Label>
-                    <Input
-                      id="full-name"
-                      value={formData.fullName}
-                      onChange={(event) => handleChange('fullName', event.target.value)}
-                      placeholder="Your full name"
-                    />
-                  </div>
+                  <>
+                    <div className="rounded-lg border border-[#dbe6f3] bg-[#f8fafc] p-3 text-sm text-slate-700">
+                      Selected plan: <strong>{plan?.name}</strong>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="full-name">Full Name</Label>
+                      <Input
+                        id="full-name"
+                        value={formData.fullName}
+                        onChange={(event) => handleChange('fullName', event.target.value)}
+                        placeholder="Your full name"
+                      />
+                    </div>
+                  </>
                 )}
 
                 <div className="space-y-2">
@@ -176,6 +187,11 @@ export default function LoginScreen({ onLogin, onAuthSuccess }) {
                 >
                   {mode === 'signup' ? 'Use an existing account' : 'Create a new account'}
                 </Button>
+                {onBackToLanding && (
+                  <Button type="button" variant="outline" className="w-full" onClick={onBackToLanding}>
+                    Back to plans
+                  </Button>
+                )}
               </form>
             ) : (
               <Button onClick={onLogin} className="h-11 w-full bg-[#24466f] hover:bg-[#193658]">

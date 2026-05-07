@@ -3,7 +3,8 @@ import { matrixSales } from '@/api/matrixSalesClient';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient';
-import { isMatrixSalesAdminEmail } from '@/lib/adminAccess';
+import { isMatrixSalesAdminEmail, isMatrixSalesPlatformOwner } from '@/lib/adminAccess';
+import { defaultSubscriptionPlanId, storeSignupPlan } from '@/lib/subscriptionPlans';
 
 const AuthContext = createContext();
 
@@ -139,7 +140,8 @@ export const AuthProvider = ({ children }) => {
     role: isMatrixSalesAdminEmail(
       supabaseUser.email,
       import.meta.env.VITE_MATRIXSALES_ADMIN_EMAILS || ''
-    ) ? 'admin' : 'user',
+    ) ? (isMatrixSalesPlatformOwner(supabaseUser.email) ? 'owner' : 'admin') : 'user',
+    is_platform_owner: isMatrixSalesPlatformOwner(supabaseUser.email),
     assigned_roles: []
   });
 
@@ -243,7 +245,7 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
-  const signUpWithPassword = async ({ email, password, fullName }) => {
+  const signUpWithPassword = async ({ email, password, fullName, selectedPlan = defaultSubscriptionPlanId }) => {
     if (!supabase) {
       throw new Error('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
     }
@@ -254,12 +256,14 @@ export const AuthProvider = ({ children }) => {
       options: {
         emailRedirectTo: getSupabaseRedirectUrl(),
         data: {
-          full_name: fullName
+          full_name: fullName,
+          selected_plan: selectedPlan
         }
       }
     });
 
     if (error) throw error;
+    storeSignupPlan(selectedPlan);
     if (data.user) {
       setUser(toMatrixSalesUser(data.user));
       setIsAuthenticated(!!data.session);

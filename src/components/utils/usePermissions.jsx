@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { matrixSales } from '@/api/matrixSalesClient';
 import { supabase } from '@/lib/supabaseClient';
 import { isMatrixSalesAdminEmail } from '@/lib/adminAccess';
+import { isPlatformOwnerEmail } from '@/lib/subscriptionPlans';
 
 /**
  * Custom hook to check user permissions
@@ -29,7 +30,8 @@ export function usePermissions() {
                         role: isMatrixSalesAdminEmail(
                             data.user.email,
                             import.meta.env.VITE_MATRIXSALES_ADMIN_EMAILS || ''
-                        ) ? 'admin' : 'user',
+                        ) ? (isPlatformOwnerEmail(data.user.email) ? 'owner' : 'admin') : 'user',
+                        is_platform_owner: isPlatformOwnerEmail(data.user.email),
                         assigned_roles: []
                     } : null;
                 }
@@ -48,7 +50,7 @@ export function usePermissions() {
                     import.meta.env.VITE_MATRIXSALES_ADMIN_EMAILS || ''
                 );
 
-                if (user.role === 'admin' || isConfiguredAdmin) {
+                if (user.role === 'owner' || user.is_platform_owner || user.role === 'admin' || isConfiguredAdmin) {
                     setIsBootstrapAdmin(isConfiguredAdmin);
                     setUserRoles([]);
                     return;
@@ -93,7 +95,7 @@ export function usePermissions() {
      */
     const hasPermission = (module, action) => {
         // Admins have all permissions
-        if (currentUser?.role === 'admin' || isBootstrapAdmin) return true;
+        if (currentUser?.role === 'owner' || currentUser?.is_platform_owner || currentUser?.role === 'admin' || isBootstrapAdmin) return true;
 
         // If no roles assigned, deny access (except admins)
         if (!userRoles || userRoles.length === 0) return false;
@@ -119,7 +121,7 @@ export function usePermissions() {
     /**
      * Check if user is an admin
      */
-    const isAdmin = currentUser?.role === 'admin' || isBootstrapAdmin;
+    const isAdmin = currentUser?.role === 'owner' || currentUser?.is_platform_owner || currentUser?.role === 'admin' || isBootstrapAdmin;
 
     /**
      * Check if user has any permission in a module
@@ -147,6 +149,7 @@ export function usePermissions() {
      * Get user's role names
      */
     const getRoleNames = () => {
+        if (currentUser?.role === 'owner' || currentUser?.is_platform_owner) return ['Platform Owner'];
         if (isAdmin) return ['System Administrator'];
         return userRoles.map(r => r.role_name);
     };
@@ -193,14 +196,15 @@ export async function checkPermission(module, action) {
                 role: isMatrixSalesAdminEmail(
                     data.user.email,
                     import.meta.env.VITE_MATRIXSALES_ADMIN_EMAILS || ''
-                ) ? 'admin' : 'user'
+                ) ? (isPlatformOwnerEmail(data.user.email) ? 'owner' : 'admin') : 'user',
+                is_platform_owner: isPlatformOwnerEmail(data.user.email)
             } : null;
         }
 
         if (!user) return false;
         
         // Admins have all permissions
-        if (user.role === 'admin' || isMatrixSalesAdminEmail(user.email, import.meta.env.VITE_MATRIXSALES_ADMIN_EMAILS || '')) return true;
+        if (user.role === 'owner' || user.is_platform_owner || user.role === 'admin' || isMatrixSalesAdminEmail(user.email, import.meta.env.VITE_MATRIXSALES_ADMIN_EMAILS || '')) return true;
 
         // Fetch user's roles
         if (!user.assigned_roles || user.assigned_roles.length === 0) return false;

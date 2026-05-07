@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -9,6 +10,8 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import LoginScreen from '@/components/LoginScreen';
 import TenantOnboardingWizard, { useTenantReadiness } from '@/components/onboarding/TenantOnboardingWizard';
+import PublicLandingPage from '@/components/PublicLandingPage';
+import { defaultSubscriptionPlanId, storeSignupPlan } from '@/lib/subscriptionPlans';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -19,15 +22,42 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   : <>{children}</>;
 
 const AuthenticatedApp = () => {
-  const { isAuthenticated, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, authProvider } = useAuth();
+  const { user, isAuthenticated, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, authProvider } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const hasEnteredApp = sessionStorage.getItem('horizon_entered_app') === 'true';
   const readiness = useTenantReadiness();
+  const [authScreen, setAuthScreen] = useState('landing');
+  const [selectedPlan, setSelectedPlan] = useState(defaultSubscriptionPlanId);
 
   const enterApp = () => {
     sessionStorage.setItem('horizon_entered_app', 'true');
     navigate(`/${mainPageKey}`, { replace: true });
+  };
+
+  const openSignupForPlan = (planId) => {
+    const nextPlan = planId || defaultSubscriptionPlanId;
+    setSelectedPlan(nextPlan);
+    storeSignupPlan(nextPlan);
+    setAuthScreen('signup');
+  };
+
+  const openLogin = () => setAuthScreen('login');
+
+  const renderAuthEntry = () => {
+    if (authScreen === 'landing') {
+      return <PublicLandingPage onLogin={openLogin} onSelectPlan={openSignupForPlan} />;
+    }
+
+    return (
+      <LoginScreen
+        onLogin={navigateToLogin}
+        onAuthSuccess={enterApp}
+        selectedPlan={selectedPlan}
+        initialMode={authScreen === 'signup' ? 'signup' : 'signin'}
+        onBackToLanding={() => setAuthScreen('landing')}
+      />
+    );
   };
 
   // Show loading spinner while checking app public settings or auth
@@ -44,20 +74,20 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     } else if (authError.type === 'auth_required') {
-      return <LoginScreen onLogin={navigateToLogin} onAuthSuccess={enterApp} />;
+      return renderAuthEntry();
     }
   }
 
   if (!isAuthenticated) {
-    return <LoginScreen onLogin={navigateToLogin} onAuthSuccess={enterApp} />;
+    return renderAuthEntry();
   }
 
-  if (authProvider === 'supabase' && !readiness.ready) {
+  if (authProvider === 'supabase' && !user?.is_platform_owner && !readiness.ready) {
     return <TenantOnboardingWizard onComplete={enterApp} />;
   }
 
   if (location.pathname === '/' && !hasEnteredApp) {
-    return <LoginScreen onLogin={navigateToLogin} onAuthSuccess={enterApp} />;
+    return renderAuthEntry();
   }
 
   // Render the main app

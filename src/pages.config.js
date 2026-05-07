@@ -77,6 +77,7 @@ import ManufacturingReports from './pages/ManufacturingReports';
 import MasterDataManagement from './pages/MasterDataManagement';
 import MobileMenu from './pages/MobileMenu';
 import Notifications from './pages/Notifications';
+import OwnerDashboard from './pages/OwnerDashboard';
 import Production from './pages/Production';
 import Projects from './pages/Projects';
 import Purchasing from './pages/Purchasing';
@@ -123,6 +124,7 @@ export const PAGES = {
     "MasterDataManagement": MasterDataManagement,
     "MobileMenu": MobileMenu,
     "Notifications": Notifications,
+    "OwnerDashboard": OwnerDashboard,
     "Production": Production,
     "Projects": Projects,
     "Purchasing": Purchasing,

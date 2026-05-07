@@ -47,6 +47,7 @@ import QuickActionSheet from "@/components/mobile/QuickActionSheet";
 import OfflineIndicator from "@/components/mobile/OfflineIndicator";
 import { useAuth } from "@/lib/AuthContext";
 import BrandLogo from "@/components/BrandLogo";
+import { isPlatformOwnerEmail } from "@/lib/subscriptionPlans";
 
 function LayoutContent({ children, currentPageName }) {
     const [showQuickAction, setShowQuickAction] = React.useState(false);
@@ -72,11 +73,14 @@ function LayoutContent({ children, currentPageName }) {
         return () => clearInterval(interval);
     }, []);
     const { language, isRTL, toggleLanguage, t } = useLanguage();
-    const { logout } = useAuth();
+    const { user, logout } = useAuth();
     const navigate = useNavigate();
+
+    const isPlatformOwner = user?.is_platform_owner || isPlatformOwnerEmail(user?.email);
 
     const menuItems = [
         { name: t('dashboard'), path: "Dashboard", icon: LayoutDashboard, section: "Overview" },
+        ...(isPlatformOwner ? [{ name: "Owner Dashboard", path: "OwnerDashboard", icon: Shield, section: "Overview" }] : []),
         { name: t('analytics'), path: "Analytics", icon: BarChart3, section: "Overview" },
         { name: "AI Assistant", path: "AIAssistant", icon: Bot, section: "Overview" },
         { name: "KPI Dashboard", path: "KPIDashboard", icon: Target, section: "Overview" },

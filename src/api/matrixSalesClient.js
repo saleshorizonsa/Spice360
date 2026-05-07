@@ -1,6 +1,7 @@
 import { appParams } from '@/lib/app-params';
 import { supabase } from '@/lib/supabaseClient';
-import { isMatrixSalesAdminEmail } from '@/lib/adminAccess';
+import { isMatrixSalesAdminEmail, isMatrixSalesPlatformOwner } from '@/lib/adminAccess';
+import { getSubscriptionPlan } from '@/lib/subscriptionPlans';
 
 const { appId, token, functionsVersion, appBaseUrl } = appParams;
 
@@ -349,6 +350,74 @@ const assertSupabaseRecordCanMutate = async ({
   }
 };
 
+const getActiveTenantSubscription = async (client, organizationId) => {
+  if (!organizationId) return null;
+
+  try {
+    const { data, error } = await client
+      .from('subscription')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .in('record->>status', ['trialing', 'active'])
+      .limit(1);
+
+    if (error) {
+      if (error.code === '42P01' || /subscription/i.test(error.message || '')) return null;
+      throw error;
+    }
+
+    return normalizeList(data).map(normalizeRow)[0] || null;
+  } catch (error) {
+    console.warn('Subscription check skipped:', error);
+    return null;
+  }
+};
+
+const assertSubscriptionAllowsCreate = async ({ client, entityName, organizationId, user }) => {
+  if (!organizationId || user?.is_platform_owner || user?.role === 'owner' || entityName === 'Subscription') return;
+
+  const subscription = await getActiveTenantSubscription(client, organizationId);
+  if (!subscription) return;
+
+  const status = String(subscription.status || '').toLowerCase();
+  if (['past_due', 'cancelled', 'expired'].includes(status)) {
+    throw new Error(`Subscription is ${status}. Update billing before using paid features.`);
+  }
+
+  const plan = getSubscriptionPlan(subscription.plan);
+  const limits = subscription.limits || plan?.limits || {};
+
+  if (entityName === 'Invoice' && limits.invoices_per_month) {
+    const monthKey = new Date().toISOString().slice(0, 7);
+    const { data, error } = await client
+      .from('invoice')
+      .select('id, record')
+      .eq('organization_id', organizationId);
+
+    if (error) throw error;
+    const invoiceCount = normalizeList(data)
+      .map(normalizeRow)
+      .filter((invoice) => String(invoice.invoice_date || invoice.created_at || '').slice(0, 7) === monthKey)
+      .length;
+
+    if (invoiceCount >= Number(limits.invoices_per_month)) {
+      throw new Error(`Invoice limit reached for the ${subscription.plan_name || plan?.name || 'current'} plan.`);
+    }
+  }
+
+  if (entityName === 'User' && limits.users) {
+    const { data, error } = await client
+      .from('user')
+      .select('id')
+      .eq('organization_id', organizationId);
+
+    if (error) throw error;
+    if (normalizeList(data).length >= Number(limits.users)) {
+      throw new Error(`User limit reached for the ${subscription.plan_name || plan?.name || 'current'} plan.`);
+    }
+  }
+};
+
 const shouldAutoNumberRecord = (entityName, record = {}) => {
   const config = documentNumberConfig[entityName];
   return config && !config.fields.some((field) => record?.[field]);
@@ -461,7 +530,8 @@ const getCurrentSupabaseUser = async () => {
     role: isMatrixSalesAdminEmail(
       data.user.email,
       import.meta.env.VITE_MATRIXSALES_ADMIN_EMAILS || ''
-    ) ? 'admin' : 'user',
+    ) ? (isMatrixSalesPlatformOwner(data.user.email) ? 'owner' : 'admin') : 'user',
+    is_platform_owner: isMatrixSalesPlatformOwner(data.user.email),
     assigned_roles: []
   };
 };
@@ -608,10 +678,14 @@ const createSupabaseEntity = (entityName) => {
     let query = client.from(tableName).select('*');
     const selectedOrganizationId = getSelectedOrganizationId();
     const selectedTenantId = getSelectedTenantId();
+    const currentUser = await getCurrentSupabaseUserSafe();
+    const isPlatformOwner = currentUser?.is_platform_owner || currentUser?.role === 'owner';
     const hasOrganizationFilter = Object.prototype.hasOwnProperty.call(filters || {}, 'organization_id');
     const hasTenantFilter = Object.prototype.hasOwnProperty.call(filters || {}, 'tenant_id');
 
-    if (isOrganizationScoped && selectedTenantId && !hasTenantFilter && !hasOrganizationFilter) {
+    if (isOrganizationScoped && isPlatformOwner && !hasTenantFilter && !hasOrganizationFilter) {
+      // Platform owner can inspect all tenants from owner dashboards.
+    } else if (isOrganizationScoped && selectedTenantId && !hasTenantFilter && !hasOrganizationFilter) {
       query = query.eq('organization_id', selectedTenantId);
     } else if (isOrganizationScoped && !selectedTenantId && !hasTenantFilter && !hasOrganizationFilter) {
       return [];
@@ -634,8 +708,7 @@ const createSupabaseEntity = (entityName) => {
     let rows = normalizeList(data).map(normalizeRow);
 
     if (entityName === 'Organization') {
-      const currentUser = await getCurrentSupabaseUserSafe();
-      const isAdmin = currentUser.role === 'admin';
+      const isAdmin = currentUser.role === 'admin' || currentUser.role === 'owner' || currentUser.is_platform_owner;
       if (!isAdmin) {
         rows = rows.filter((org) => {
           const allowedEmails = Array.isArray(org.admin_emails) ? org.admin_emails : [];
@@ -659,6 +732,7 @@ const createSupabaseEntity = (entityName) => {
     filter: (filters = {}, sort, limit) => listRows(filters, sort, limit),
     create: async (data = {}) => {
       const client = requireSupabase();
+      const currentUser = await getCurrentSupabaseUserSafe();
       const selectedOrganizationId = getSelectedOrganizationId();
       const organizationId = data.organization_id || (isOrganizationScoped ? selectedOrganizationId : null);
       if (isOrganizationScoped && !organizationId) {
@@ -684,6 +758,12 @@ const createSupabaseEntity = (entityName) => {
         action: 'create',
         nextRecord: record,
         organizationId
+      });
+      await assertSubscriptionAllowsCreate({
+        client,
+        entityName,
+        organizationId,
+        user: currentUser
       });
 
       const payload = {
@@ -722,6 +802,7 @@ const createSupabaseEntity = (entityName) => {
       const payload = [];
 
       for (const record of records) {
+        const currentUser = await getCurrentSupabaseUserSafe();
         const organizationId = record.organization_id || (isOrganizationScoped ? selectedOrganizationId : null);
         if (isOrganizationScoped && !organizationId) {
           throw new Error('Tenant is required. Complete company onboarding or select a company before creating records.');
@@ -732,6 +813,12 @@ const createSupabaseEntity = (entityName) => {
           action: 'create',
           nextRecord: record,
           organizationId
+        });
+        await assertSubscriptionAllowsCreate({
+          client,
+          entityName,
+          organizationId,
+          user: currentUser
         });
 
         payload.push({
