@@ -30,7 +30,8 @@ import {
     Brain,
     Landmark,
     LogOut,
-    ChevronDown
+    ChevronDown,
+    Shield
 } from "lucide-react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { Button } from "@/components/ui/button";
