@@ -1,9 +1,11 @@
 import React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, BarChart3, CheckCircle2, FileCheck, Lock, Package, Shield, ShoppingCart, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import BrandLogo from "@/components/BrandLogo";
-import { formatPlanPrice, subscriptionPlans } from "@/lib/subscriptionPlans";
+import { matrixSales } from "@/api/matrixSalesClient";
+import { formatPlanPrice, normalizeSubscriptionPlans } from "@/lib/subscriptionPlans";
 
 const benefits = [
   "Run sales, finance, inventory, purchasing, HR, approvals, and reporting in one tenant-safe workspace.",
@@ -24,10 +26,24 @@ const faqs = [
   ["Is HORIZON multi-tenant?", "Yes. Each company is treated as a separate tenant and business data is scoped by tenant."],
   ["Can we start with a trial?", "Yes. Plans include trial days and the selected plan is carried into signup and onboarding."],
   ["Does it support ZATCA?", "The app includes ZATCA setup fields, QR readiness, validation, and submission log workflows."],
-  ["Can pricing change later?", "Yes. Pricing is stored in a central plan configuration and can be moved to database-backed pricing."]
+  ["Can pricing change later?", "Yes. Pricing is database-backed and owner changes are reflected on the public landing page."]
 ];
 
 export default function PublicLandingPage({ onLogin, onSelectPlan }) {
+  const { data: dbPlans = [], isLoading: plansLoading } = useQuery({
+    queryKey: ["public-subscription-plans"],
+    queryFn: async () => {
+      try {
+        return await matrixSales.entities.SubscriptionPlan.list("display_order");
+      } catch (error) {
+        console.warn("Using fallback subscription plans:", error);
+        return [];
+      }
+    },
+    initialData: []
+  });
+  const plans = normalizeSubscriptionPlans(dbPlans);
+
   return (
     <div className="min-h-screen bg-[#f5f7fb] text-slate-950">
       <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
@@ -35,7 +51,7 @@ export default function PublicLandingPage({ onLogin, onSelectPlan }) {
           <BrandLogo imageClassName="h-11" />
           <div className="flex items-center gap-2">
             <Button variant="ghost" onClick={onLogin}>Login</Button>
-            <Button onClick={() => onSelectPlan("professional")} className="bg-[#24466f] hover:bg-[#193658]">
+            <Button onClick={() => onSelectPlan(plans[1]?.id || "professional")} className="bg-[#24466f] hover:bg-[#193658]">
               Start Free Trial
             </Button>
           </div>
@@ -57,7 +73,7 @@ export default function PublicLandingPage({ onLogin, onSelectPlan }) {
                 Launch a tenant-ready business platform with guided onboarding, ZATCA setup, subscription plans, and operational dashboards.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Button onClick={() => onSelectPlan("professional")} className="h-12 bg-[#d68f2b] px-6 text-slate-950 hover:bg-[#efaa42]">
+                <Button onClick={() => onSelectPlan(plans[1]?.id || "professional")} className="h-12 bg-[#d68f2b] px-6 text-slate-950 hover:bg-[#efaa42]">
                   Start Free Trial
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -127,9 +143,10 @@ export default function PublicLandingPage({ onLogin, onSelectPlan }) {
           <div className="mb-8">
             <p className="text-sm font-semibold uppercase text-[#24466f]">Pricing</p>
             <h2 className="mt-2 text-3xl font-bold">Choose a subscription plan</h2>
+            {plansLoading && <p className="mt-2 text-sm text-slate-500">Loading latest pricing...</p>}
           </div>
           <div className="grid gap-5 lg:grid-cols-3">
-            {subscriptionPlans.map((plan) => (
+            {plans.map((plan) => (
               <Card key={plan.id} className={plan.id === "professional" ? "border-[#24466f] shadow-lg" : ""}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between">

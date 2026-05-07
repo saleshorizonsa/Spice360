@@ -43,7 +43,8 @@ const metadataColumns = new Set([
 ]);
 
 const organizationScopedEntityExclusions = new Set([
-  'Organization'
+  'Organization',
+  'SubscriptionPlan'
 ]);
 
 const shouldScopeEntityToOrganization = (entityName) =>

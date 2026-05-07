@@ -60,6 +60,35 @@ export function getSubscriptionPlan(planId = defaultSubscriptionPlanId) {
   return subscriptionPlans.find((plan) => plan.id === planId) || subscriptionPlans.find((plan) => plan.id === defaultSubscriptionPlanId);
 }
 
+export function normalizeSubscriptionPlan(plan = {}) {
+  const fallback = getSubscriptionPlan(plan.plan_id || plan.id);
+  return {
+    ...fallback,
+    ...plan,
+    id: plan.plan_id || plan.id || fallback.id,
+    name: plan.plan_name || plan.name || fallback.name,
+    monthlyPrice: plan.monthly_price ?? plan.monthlyPrice ?? fallback.monthlyPrice,
+    billingCycle: plan.billing_cycle || plan.billingCycle || fallback.billingCycle,
+    trialDays: plan.trial_days ?? plan.trialDays ?? fallback.trialDays,
+    userLimit: plan.user_limit ?? plan.userLimit ?? fallback.userLimit,
+    invoiceLimit: plan.invoice_limit ?? plan.invoiceLimit ?? fallback.invoiceLimit,
+    supportLevel: plan.support_level || plan.supportLevel || fallback.supportLevel,
+    modules: Array.isArray(plan.modules) ? plan.modules : fallback.modules,
+    limits: plan.limits || fallback.limits,
+    currency: plan.currency || fallback.currency,
+    status: plan.status || "active"
+  };
+}
+
+export function normalizeSubscriptionPlans(plans = []) {
+  if (!Array.isArray(plans) || plans.length === 0) return subscriptionPlans;
+  const activePlans = plans
+    .map(normalizeSubscriptionPlan)
+    .filter((plan) => plan.status === "active")
+    .sort((left, right) => (left.display_order ?? 99) - (right.display_order ?? 99));
+  return activePlans.length > 0 ? activePlans : subscriptionPlans;
+}
+
 export function formatPlanPrice(plan) {
   if (!plan) return "";
   if (plan.monthlyPrice === null) return "Custom";

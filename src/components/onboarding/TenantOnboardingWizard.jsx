@@ -12,7 +12,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useAuth } from "@/lib/AuthContext";
 import BrandLogo from "@/components/BrandLogo";
-import { getStoredSignupPlan, getSubscriptionPlan } from "@/lib/subscriptionPlans";
+import { getStoredSignupPlan, getSubscriptionPlan, normalizeSubscriptionPlan } from "@/lib/subscriptionPlans";
 
 const onboardingStatuses = {
     EMAIL: "email_verification_pending",
@@ -190,7 +190,15 @@ const seedTenantDefaults = async (organization, user) => {
 };
 
 const createTenantSubscription = async (organization, planId) => {
-    const plan = getSubscriptionPlan(planId);
+    let plan = getSubscriptionPlan(planId);
+    try {
+        const dbPlans = await matrixSales.entities.SubscriptionPlan.filter({ plan_id: planId });
+        if (dbPlans.length > 0) {
+            plan = normalizeSubscriptionPlan(dbPlans[0]);
+        }
+    } catch (error) {
+        console.warn("Using fallback plan during onboarding:", error);
+    }
     const startDate = new Date();
     const trialEndDate = new Date(startDate);
     trialEndDate.setDate(trialEndDate.getDate() + (plan.trialDays || 14));
