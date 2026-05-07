@@ -9,15 +9,18 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowRight, Printer, Paperclip } from "lucide-react"; 
+import { ArrowRight, Printer, Paperclip } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import DocumentList from "../shared/DocumentList";
+import InvoicePrintPreview from "@/components/printing/InvoicePrintPreview";
+import { getTenantLogoAsset, getTenantPrintingPreferences } from "@/components/printing/invoicePrintService";
 
 export default function InvoiceForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const [activeTab, setActiveTab] = useState("details");
+    const [showPrintPreview, setShowPrintPreview] = useState(false);
     
     const { data: salesOrders = [] } = useQuery({
         queryKey: ['sales'],
@@ -29,6 +32,22 @@ export default function InvoiceForm({ item, onClose }) {
         queryKey: ['deliveries'],
         queryFn: () => matrixSales.entities.Delivery.list('-delivery_date'),
         initialData: []
+    });
+
+    const { data: organizations = [] } = useQuery({
+        queryKey: ['organizations'],
+        queryFn: () => matrixSales.entities.Organization.list(),
+        initialData: []
+    });
+
+    const { data: printingPreference } = useQuery({
+        queryKey: ['tenantPrintingPreferences'],
+        queryFn: getTenantPrintingPreferences
+    });
+
+    const { data: logoAsset } = useQuery({
+        queryKey: ['tenantLogoAsset'],
+        queryFn: getTenantLogoAsset
     });
 
     const [formData, setFormData] = useState({
@@ -448,75 +467,11 @@ export default function InvoiceForm({ item, onClose }) {
                                         <Button 
                                             type="button" 
                                             variant="outline"
-                                            onClick={() => {
-                                                const printWindow = window.open('', '_blank');
-                                                printWindow.document.write(`
-                                                    <html>
-                                                        <head>
-                                                            <title>Invoice ${formData.invoice_number}</title>
-                                                            <style>
-                                                                body { font-family: Arial, sans-serif; padding: 40px; }
-                                                                h1 { color: #059669; }
-                                                                .header { display: flex; justify-content: space-between; margin-bottom: 30px; }
-                                                                table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                                                                th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-                                                                th { background-color: #f3f4f6; font-weight: bold; }
-                                                                .totals { text-align: right; margin-top: 20px; }
-                                                                .total-line { display: flex; justify-content: flex-end; gap: 100px; margin: 5px 0; }
-                                                            </style>
-                                                        </head>
-                                                        <body>
-                                                            <div class="header">
-                                                                <div>
-                                                                    <h1>TAX INVOICE</h1>
-                                                                    <p><strong>Invoice #:</strong> ${formData.invoice_number}</p>
-                                                                    <p><strong>Date:</strong> ${formData.invoice_date}</p>
-                                                                    <p><strong>Due Date:</strong> ${formData.due_date}</p>
-                                                                </div>
-                                                                <div>
-                                                                    <p><strong>Bill To:</strong></p>
-                                                                    <p>${formData.customer_name}</p>
-                                                                    <p>VAT: ${formData.customer_vat_number || 'N/A'}</p>
-                                                                </div>
-                                                            </div>
-                                                            <table>
-                                                                <tr>
-                                                                    <th>Product</th>
-                                                                    <th>Quantity</th>
-                                                                    <th>Unit Price</th>
-                                                                    <th>Amount</th>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td>${formData.product_name}</td>
-                                                                    <td>${formData.quantity}</td>
-                                                                    <td>SAR ${formData.unit_price.toFixed(2)}</td>
-                                                                    <td>SAR ${formData.subtotal.toFixed(2)}</td>
-                                                                </tr>
-                                                            </table>
-                                                            <div class="totals">
-                                                                <div class="total-line">
-                                                                    <span>Subtotal:</span>
-                                                                    <span>SAR ${formData.subtotal.toFixed(2)}</span>
-                                                                </div>
-                                                                <div class="total-line">
-                                                                    <span>Tax (${formData.tax_percent}%):</span>
-                                                                    <span>SAR ${formData.tax_amount.toFixed(2)}</span>
-                                                                </div>
-                                                                <div class="total-line" style="font-size: 18px; font-weight: bold; border-top: 2px solid #000; padding-top: 10px;">
-                                                                    <span>Total Amount:</span>
-                                                                    <span>SAR ${formData.total_amount.toFixed(2)}</span>
-                                                                </div>
-                                                            </div>
-                                                        </body>
-                                                    </html>
-                                                `);
-                                                printWindow.document.close();
-                                                printWindow.print();
-                                            }}
+                                            onClick={() => setShowPrintPreview(true)}
                                             className="gap-2"
                                         >
                                             <Printer className="w-4 h-4" />
-                                            Print Invoice
+                                            ZATCA Print Preview
                                         </Button>
                                     )}
                                 </div>
@@ -548,6 +503,15 @@ export default function InvoiceForm({ item, onClose }) {
                     </TabsContent>
                 </Tabs>
             </DialogContent>
+            {showPrintPreview && (
+                <InvoicePrintPreview
+                    invoice={{ ...formData, id: item?.id }}
+                    organization={organizations[0] || {}}
+                    preferences={printingPreference}
+                    logoAsset={logoAsset}
+                    onClose={() => setShowPrintPreview(false)}
+                />
+            )}
         </Dialog>
     );
 }

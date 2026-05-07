@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Users, Building, Factory, MapPin, Ruler, Activity, Sparkles, Calendar } from "lucide-react";
+import { Shield, Users, Building, Factory, MapPin, Ruler, Activity, Sparkles, Calendar, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -15,6 +15,7 @@ import UserRoleAssignment from "../components/admin/UserRoleAssignment";
 import AuditTrailViewer from "../components/admin/AuditTrailViewer";
 import SystemSetupTemplates from "../components/admin/SystemSetupTemplates";
 import PeriodCloseManagement from "../components/admin/PeriodCloseManagement";
+import PrintingPreferences from "../components/admin/PrintingPreferences";
 import ConfirmDialog from "../components/shared/ConfirmDialog";
 import { usePermissions } from "../components/utils/usePermissions";
 import { Lock } from "lucide-react";
@@ -266,7 +267,7 @@ export default function AdminCenter() {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-9 w-full h-auto">
+                <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-10 w-full h-auto">
                     <TabsTrigger value="setup">
                         <Sparkles className="w-4 h-4 mr-2" />
                         Setup
@@ -290,6 +291,10 @@ export default function AdminCenter() {
                     <TabsTrigger value="period-close">
                         <Calendar className="w-4 h-4 mr-2" />
                         Period Close
+                    </TabsTrigger>
+                    <TabsTrigger value="printing">
+                        <Printer className="w-4 h-4 mr-2" />
+                        Printing
                     </TabsTrigger>
                     <TabsTrigger value="plant">
                         <Factory className="w-4 h-4 mr-2" />
@@ -334,6 +339,10 @@ export default function AdminCenter() {
 
                 <TabsContent value="period-close">
                     <PeriodCloseManagement />
+                </TabsContent>
+
+                <TabsContent value="printing">
+                    <PrintingPreferences />
                 </TabsContent>
 
                 <TabsContent value="plant">
