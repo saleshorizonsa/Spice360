@@ -219,33 +219,6 @@ export default function Approvals() {
                 <p className="text-sm md:text-base text-gray-600 mt-1">Multi-level approval workflow for transactions</p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                    title="Pending My Action"
-                    value={myPending}
-                    icon={Clock}
-                    trend="Requires your approval"
-                    color="amber"
-                />
-                    title="Total Pending"
-                    value={totalPending}
-                    icon={AlertCircle}
-                    trend="All pending approvals"
-                    color="blue"
-                />
-                    title="Approved"
-                    value={totalApproved}
-                    icon={CheckCircle}
-                    trend="Fully approved"
-                    color="emerald"
-                />
-                    title="Rejected"
-                    value={totalRejected}
-                    icon={XCircle}
-                    trend="Rejected requests"
-                    color="red"
-                />
-            </div>
-
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 md:space-y-6">
                 <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full h-auto gap-1">
                     <TabsTrigger value="pending">

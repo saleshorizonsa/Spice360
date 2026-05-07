@@ -271,33 +271,6 @@ export default function Costing() {
                 </Alert>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    title={t('activeProductCosts')}
-                    value={activeProductCosts}
-                    icon={Package}
-                    trend={`${t('avgCost')}: SAR ${avgProductCost.toFixed(2)}/${t('unit')}`}
-                    color="blue"
-                />
-                    title={t('totalActualCosts')}
-                    value={`SAR ${(totalActualCosts / 1000).toFixed(0)}K`}
-                    icon={DollarSign}
-                    trend={`${actualCosts.length} ${t('costRecords')}`}
-                    color="emerald"
-                />
-                    title={t('unfavorableVariances')}
-                    value={unfavorableVariances}
-                    icon={TrendingDown}
-                    trend={`${t('total')}: SAR ${(totalVarianceAmount / 1000).toFixed(0)}K`}
-                    color="red"
-                />
-                    title={t('averageMargin')}
-                    value={`${avgMargin.toFixed(1)}%`}
-                    icon={TrendingUp}
-                    trend={`${t('acrossProducts')} ${productCosts.length} ${t('products')}`}
-                    color="indigo"
-                />
-            </div>
-
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="grid grid-cols-6 w-full">
                     <TabsTrigger value="product_costs" className="flex items-center gap-2">

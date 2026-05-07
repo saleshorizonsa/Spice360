@@ -352,45 +352,6 @@ export default function CRM() {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-                    title="Open Leads"
-                    value={openLeads}
-                    icon={Users}
-                    trend={`${qualifiedLeads} qualified`}
-                    color="blue"
-                />
-                    title="Conversion Rate"
-                    value={`${conversionRate}%`}
-                    icon={TrendingUp}
-                    trend="Lead to Opp"
-                    color="emerald"
-                />
-                    title="Pipeline"
-                    value={`SAR ${(pipelineValue / 1000).toFixed(0)}K`}
-                    icon={Target}
-                    trend={`${openOpportunities} opportunities`}
-                    color="indigo"
-                />
-                    title="Weighted"
-                    value={`SAR ${(weightedPipeline / 1000).toFixed(0)}K`}
-                    icon={TrendingUp}
-                    trend="Probability weighted"
-                    color="purple"
-                />
-                    title="Win Rate"
-                    value={`${winRate}%`}
-                    icon={Target}
-                    trend={`${wonOpportunities}/${closedTotal} closed`}
-                    color="green"
-                />
-                    title="Revenue Won"
-                    value={`SAR ${(wonRevenue / 1000).toFixed(0)}K`}
-                    icon={TrendingUp}
-                    trend={`Avg cycle: ${Math.round(avgCycleDays)} days`}
-                    color="emerald"
-                />
-            </div>
-
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Card>
                     <CardHeader>

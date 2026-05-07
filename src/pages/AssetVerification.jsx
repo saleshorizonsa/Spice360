@@ -166,32 +166,6 @@ export default function AssetVerification() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    title="Tasks Scheduled"
-                    value={tasksScheduled}
-                    icon={ClipboardCheck}
-                    trend={`${tasksInProgress} ${t('inProgress')}`}
-                    color="blue"
-                />
-                    title="Assets Verified"
-                    value={totalVerified}
-                    icon={CheckCircle2}
-                    trend={`${verificationRate}% accuracy rate`}
-                    color="emerald"
-                />
-                    title="Discrepancies"
-                    value={totalDiscrepancies}
-                    icon={AlertTriangle}
-                    trend="Require follow-up"
-                    color="amber"
-                />
-                    title={`${t('overdue')} Tasks`}
-                    value={tasksOverdue}
-                    icon={AlertTriangle}
-                    trend="Need immediate action"
-                    color="red"
-                />
-            </div>
 
             {/* Alerts */}
             {tasksOverdue > 0 && (

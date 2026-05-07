@@ -432,45 +432,6 @@ export default function Sales() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-                    title={t('hitRate')}
-                    value={`${hitRate}%`}
-                    icon={FileText}
-                    trend={`${acceptedQuotations}/${totalQuotations} ${t('quotes')}`}
-                    color="blue"
-                />
-                    title={t('revenue')}
-                    value={`SAR ${(totalRevenue / 1000).toFixed(0)}K`}
-                    icon={Receipt}
-                    trend={`${totalOrders} ${t('orders')}`}
-                    color="emerald"
-                />
-                    title={t('avgMargin')}
-                    value={`${avgMargin}%`}
-                    icon={ShoppingCart}
-                    trend={t('grossMargin')}
-                    color="indigo"
-                />
-                    title={t('otif')}
-                    value={`${otif}%`}
-                    icon={Package}
-                    trend={`${pendingDeliveries} ${t('pending')}`}
-                    color="amber"
-                />
-                    title={t('creditHold')}
-                    value={creditHoldOrders}
-                    icon={AlertTriangle}
-                    trend={t('ordersOnHold')}
-                    color="red"
-                />
-                    title={t('returns')}
-                    value={activeReturns}
-                    icon={RefreshCw}
-                    trend={`${t('active')} ${t('returns')}`}
-                    color="orange"
-                />
-            </div>
-
             {(zatcaPending > 0 || creditHoldOrders > 0 || unpaidInvoices > 5) && (
                 <div className="space-y-2">
                     {zatcaPending > 0 && (

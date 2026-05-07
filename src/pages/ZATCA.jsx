@@ -184,39 +184,6 @@ export default function ZATCA() {
                 </Alert>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    title="Total Invoices"
-                    value={totalInvoices}
-                    icon={FileText}
-                    trend={`${submittedInvoices} submitted`}
-                    color="blue"
-                />
-                    title="Clearance Rate"
-                    value={`${clearanceRate}%`}
-                    icon={CheckCircle}
-                    trend={`${clearedInvoices} cleared`}
-                    color="emerald"
-                />
-                    title="Pending"
-                    value={pendingInvoices}
-                    icon={AlertTriangle}
-                    trend="Not submitted"
-                    color="amber"
-                />
-                    title="Rejected"
-                    value={rejectedInvoices}
-                    icon={XCircle}
-                    trend="Need attention"
-                    color="red"
-                />
-                    title="Submission Rate"
-                    value={`${submissionRate}%`}
-                    icon={Send}
-                    trend="Overall"
-                    color="indigo"
-                />
-            </div>
-
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="grid grid-cols-5 w-full">
                     <TabsTrigger value="dashboard">Dashboard</TabsTrigger>

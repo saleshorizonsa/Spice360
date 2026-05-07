@@ -496,32 +496,6 @@ export default function Inventory() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    title="Total Stock Value"
-                    value={`SAR ${(totalStockValue / 1000).toFixed(0)}K`}
-                    icon={Package}
-                    trend={`${totalStockQty.toLocaleString()} units`}
-                    color="emerald"
-                />
-                    title="Low Stock Items"
-                    value={lowStockCount}
-                    icon={AlertTriangle}
-                    trend="Need reorder"
-                    color="amber"
-                />
-                    title="Slow Moving Stock"
-                    value={slowMovingCount}
-                    icon={TrendingDown}
-                    trend="Over 90 days aging"
-                    color="red"
-                />
-                    title="Today's Movements"
-                    value={totalMovementsToday}
-                    icon={ArrowRightLeft}
-                    trend={`${inTransitSTOs} in transit`}
-                    color="blue"
-                />
-            </div>
 
             {/* Alerts */}
             {(lowStockCount > 0 || slowMovingCount > 0) && (

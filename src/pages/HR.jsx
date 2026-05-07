@@ -251,38 +251,6 @@ export default function HR() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    title="Active Employees"
-                    value={activeEmployees}
-                    icon={Users}
-                    trend={`${employees.length} total`}
-                    color="emerald"
-                />
-                    title="Saudization Rate"
-                    value={`${saudizationRate}%`}
-                    icon={UserCheck}
-                    trend={`${saudiEmployees} Saudi`}
-                    color="blue"
-                />
-                    title="Pending Leaves"
-                    value={pendingLeaves}
-                    icon={Calendar}
-                    trend={`${leaveRequests.length} total`}
-                    color="amber"
-                />
-                    title="Active Loans"
-                    value={activeLoans}
-                    icon={DollarSign}
-                    trend={`${loans.length} total`}
-                    color="indigo"
-                />
-                    title="GOSI Pending"
-                    value={currentMonthGOSI}
-                    icon={Shield}
-                    trend="This month"
-                    color="emerald"
-                />
-            </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="grid grid-cols-6 w-full">

@@ -516,38 +516,6 @@ export default function AssetLifecycle() {
             </Card>
 
             {/* KPIs */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    title="Active Assets"
-                    value={activeAssets}
-                    icon={Package2}
-                    trend="Currently in use"
-                    color="emerald"
-                />
-                    title="Disposed Assets"
-                    value={disposedAssets}
-                    icon={TrendingDown}
-                    trend={`${pendingDisposals} pending approval`}
-                    color="blue"
-                />
-                    title="Disposal Value"
-                    value={`SAR ${(totalDisposalValue / 1000).toFixed(0)}K`}
-                    icon={DollarSign}
-                    trend={`${filteredDisposals.length} transactions`}
-                    color="indigo"
-                />
-                    title="Total Gain/Loss"
-                    value={`SAR ${(totalGainLoss / 1000).toFixed(0)}K`}
-                    icon={totalGainLoss >= 0 ? TrendingUp : TrendingDown}
-                    trend={totalGainLoss >= 0 ? 'Net gain' : 'Net loss'}
-                    color={totalGainLoss >= 0 ? 'emerald' : 'red'}
-                />
-                    title="Average ROI"
-                    value={`${avgROI}%`}
-                    icon={BarChart3}
-                    trend="On disposed assets"
-                    color="amber"
-                />
-            </div>
 
             {/* Charts */}
             <Tabs defaultValue="by-type" className="space-y-4">

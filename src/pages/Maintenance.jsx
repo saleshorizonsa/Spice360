@@ -247,44 +247,6 @@ export default function Maintenance() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-                    title={t('openWorkOrders')}
-                    value={openWorkOrders}
-                    icon={Wrench}
-                    trend={`${totalWorkOrders} ${t('total')}`}
-                    color="amber"
-                />
-                    title={t('pmCompliance')}
-                    value={`${pmCompliance}%`}
-                    icon={Calendar}
-                    trend={`${totalPMPlans} ${t('active')} ${t('plans')}`}
-                    color="blue"
-                />
-                    title={t('mttr')}
-                    value={mttr}
-                    icon={Clock}
-                    trend={t('meanTimeToRepair')}
-                    color="indigo"
-                />
-                    title={t('criticalDown')}
-                    value={criticalEquipmentDown}
-                    icon={AlertTriangle}
-                    trend={t('criticalEquipment')}
-                    color="red"
-                />
-                    title={t('lowStockParts')}
-                    value={lowStockParts}
-                    icon={Package}
-                    trend={t('needReorder')}
-                    color="orange"
-                />
-                    title={t('totalMaintenanceCost')}
-                    value={`SAR ${(totalMaintenanceCost / 1000).toFixed(0)}K`}
-                    icon={BarChart3}
-                    trend={`${completedWorkOrders} ${t('completed')}`}
-                    color="emerald"
-                />
-            </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="grid grid-cols-6 w-full">

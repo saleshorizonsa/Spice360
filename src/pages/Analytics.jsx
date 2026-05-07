@@ -224,32 +224,6 @@ export default function Analytics() {
                 </TabsList>
 
                 <TabsContent value="executive" className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            title={t('totalRevenue')}
-                            value={`SAR ${(totalRevenue / 1000).toFixed(0)}K`}
-                            icon={DollarSign}
-                            trend={`${grossMargin}% ${t('margin')}`}
-                            color="emerald"
-                        />
-                            title={t('grossProfit')}
-                            value={`SAR ${(grossProfit / 1000).toFixed(0)}K`}
-                            icon={TrendingUp}
-                            trend={`${sales.length} ${t('orders')}`}
-                            color="blue"
-                        />
-                            title={t('stockValue')}
-                            value={`SAR ${(totalStockValue / 1000).toFixed(0)}K`}
-                            icon={Package}
-                            trend={`${stockTurnover}x ${t('turnover')}`}
-                            color="indigo"
-                        />
-                            title={t('activeProduction')}
-                            value={activeProduction}
-                            icon={Factory}
-                            trend={`${productionEfficiency}% ${t('efficiency')}`}
-                            color="purple"
-                        />
-                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <Card>
@@ -374,32 +348,6 @@ export default function Analytics() {
                 </TabsContent>
 
                 <TabsContent value="sales" className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            title={t('totalOrders')}
-                            value={sales.length}
-                            icon={ShoppingCart}
-                            trend={`SAR ${(totalRevenue / 1000).toFixed(0)}K ${t('revenue')}`}
-                            color="blue"
-                        />
-                            title={t('avgOrderValue')}
-                            value={`SAR ${sales.length > 0 ? (totalRevenue / sales.length / 1000).toFixed(1) : 0}K`}
-                            icon={DollarSign}
-                            trend={t('perOrder')}
-                            color="emerald"
-                        />
-                            title={t('pendingOrders')}
-                            value={sales.filter(s => s.status === 'pending').length}
-                            icon={Calendar}
-                            trend={t('awaitingConfirmation')}
-                            color="amber"
-                        />
-                            title={t('delivered')}
-                            value={sales.filter(s => s.status === 'delivered').length}
-                            icon={Package}
-                            trend={t('completedOrders')}
-                            color="green"
-                        />
-                    </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <Card>
@@ -462,32 +410,6 @@ export default function Analytics() {
                 </TabsContent>
 
                 <TabsContent value="inventory" className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            title={t('totalStockValue')}
-                            value={`SAR ${(totalStockValue / 1000).toFixed(0)}K`}
-                            icon={Package}
-                            trend={`${stockLevels.length} ${t('items')}`}
-                            color="indigo"
-                        />
-                            title={t('stockTurnover')}
-                            value={`${stockTurnover}x`}
-                            icon={TrendingUp}
-                            trend={t('annualTurnover')}
-                            color="emerald"
-                        />
-                            title={t('slowMoving')}
-                            value={stockLevels.filter(s => (s.aging_days || 0) > 90).length}
-                            icon={TrendingDown}
-                            trend={t('over90Days')}
-                            color="amber"
-                        />
-                            title={t('lowStockItems')}
-                            value={stockLevels.filter(s => (s.available_quantity || 0) < 10).length}
-                            icon={Package}
-                            trend={t('needReorder')}
-                            color="red"
-                        />
-                    </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <Card>
@@ -537,32 +459,6 @@ export default function Analytics() {
                 </TabsContent>
 
                 <TabsContent value="production" className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            title={t('productionOrders')}
-                            value={productions.length}
-                            icon={Factory}
-                            trend={`${activeProduction} ${t('active')}`}
-                            color="purple"
-                        />
-                            title={t('productionEfficiency')}
-                            value={`${productionEfficiency}%`}
-                            icon={TrendingUp}
-                            trend={t('outputVsPlanned')}
-                            color="emerald"
-                        />
-                            title={t('totalProduced')}
-                            value={totalProduced.toLocaleString()}
-                            icon={Package}
-                            trend={t('units')}
-                            color="blue"
-                        />
-                            title={t('qualityRate')}
-                            value={`${qualityRate}%`}
-                            icon={TrendingUp}
-                            trend={t('firstPassYield')}
-                            color="green"
-                        />
-                    </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <Card>
@@ -612,32 +508,6 @@ export default function Analytics() {
                 </TabsContent>
 
                 <TabsContent value="purchasing" className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            title={t('totalPurchases')}
-                            value={`SAR ${(totalCosts / 1000).toFixed(0)}K`}
-                            icon={ShoppingCart}
-                            trend={`${purchases.length} POs`}
-                            color="blue"
-                        />
-                            title={t('avgPOValue')}
-                            value={`SAR ${purchases.length > 0 ? (totalCosts / purchases.length / 1000).toFixed(1) : 0}K`}
-                            icon={DollarSign}
-                            trend={t('perPO')}
-                            color="indigo"
-                        />
-                            title={t('dpo')}
-                            value={`${dpo} ${t('days')}`}
-                            icon={Calendar}
-                            trend={t('payableOutstanding')}
-                            color="purple"
-                        />
-                            title={t('pendingPOs')}
-                            value={purchases.filter(p => p.status === 'pending_approval').length}
-                            icon={Package}
-                            trend={t('awaitingApproval')}
-                            color="amber"
-                        />
-                    </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <Card>
@@ -677,32 +547,6 @@ export default function Analytics() {
                 </TabsContent>
 
                 <TabsContent value="finance" className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            title={t('revenue')}
-                            value={`SAR ${(totalRevenue / 1000).toFixed(0)}K`}
-                            icon={DollarSign}
-                            trend={`${sales.length} ${t('orders')}`}
-                            color="emerald"
-                        />
-                            title={t('grossProfit')}
-                            value={`SAR ${(grossProfit / 1000).toFixed(0)}K`}
-                            icon={TrendingUp}
-                            trend={`${grossMargin}% ${t('margin')}`}
-                            color="green"
-                        />
-                            title={t('dso')}
-                            value={`${dso} ${t('days')}`}
-                            icon={Calendar}
-                            trend={t('salesOutstanding')}
-                            color="blue"
-                        />
-                            title={t('dpo')}
-                            value={`${dpo} ${t('days')}`}
-                            icon={Calendar}
-                            trend={t('payableOutstanding')}
-                            color="indigo"
-                        />
-                    </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <Card>
@@ -802,32 +646,6 @@ export default function Analytics() {
                 </TabsContent>
 
                 <TabsContent value="hr" className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                            title={t('activeEmployees')}
-                            value={activeEmployees}
-                            icon={Users}
-                            trend={`${employees.length} ${t('total')}`}
-                            color="blue"
-                        />
-                            title={t('saudizationRate')}
-                            value={`${saudizationRate}%`}
-                            icon={TrendingUp}
-                            trend={`${saudiEmployees} ${t('saudi')}`}
-                            color="emerald"
-                        />
-                            title={t('activeProjects')}
-                            value={activeProjects}
-                            icon={Factory}
-                            trend={`${projects.length} ${t('total')}`}
-                            color="indigo"
-                        />
-                            title={t('projectMargin')}
-                            value={`${projectMargin}%`}
-                            icon={DollarSign}
-                            trend={t('grossMargin')}
-                            color="purple"
-                        />
-                    </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <Card>

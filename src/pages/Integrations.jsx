@@ -153,29 +153,6 @@ export default function Integrations() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    title="Active Integrations"
-                    value={activeIntegrations}
-                    icon={CheckCircle}
-                    trend="up"
-                />
-                    title="Syncs (24h)"
-                    value={recentSyncs}
-                    icon={RefreshCw}
-                    trend="neutral"
-                />
-                    title="Success Rate"
-                    value={`${successRate}%`}
-                    icon={successRate >= 95 ? CheckCircle : AlertTriangle}
-                    trend={successRate >= 95 ? "up" : "down"}
-                />
-                    title="Failed Syncs"
-                    value={failedSyncs}
-                    icon={XCircle}
-                    trend={failedSyncs > 0 ? "down" : "up"}
-                />
-            </div>
-
             <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList>
                     <TabsTrigger value="overview">Overview</TabsTrigger>

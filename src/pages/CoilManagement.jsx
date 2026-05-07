@@ -119,39 +119,6 @@ export default function CoilManagement() {
                 <p className="text-gray-600 mt-1">{t('trackCoilsDesc')}</p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                    title={t('totalCoils')}
-                    value={totalCoils}
-                    icon={Package}
-                    trend={t('allRegisteredCoils')}
-                    color="blue"
-                />
-                    title={t('available')}
-                    value={availableCoils.length}
-                    icon={CheckCircle}
-                    trend={t('readyToUse')}
-                    color="emerald"
-                />
-                    title={t('totalWeight')}
-                    value={`${totalWeight.toFixed(0)} kg`}
-                    icon={Package}
-                    trend={t('currentStock')}
-                    color="indigo"
-                />
-                    title={t('reserved')}
-                    value={reservedCoils.length}
-                    icon={AlertCircle}
-                    trend={t('forProduction')}
-                    color="amber"
-                />
-                    title={t('qcPending')}
-                    value={qcPending.length}
-                    icon={AlertCircle}
-                    trend={t('awaitingInspection')}
-                    color="red"
-                />
-            </div>
-
             <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="grid grid-cols-3 w-full max-w-xl">
                     <TabsTrigger value="coils">

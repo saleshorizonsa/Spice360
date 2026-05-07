@@ -550,32 +550,6 @@ export default function Quality() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    title={t('firstPassYield')}
-                    value={`${firstPassYield}%`}
-                    icon={CheckCircle2}
-                    trend={`${acceptedLots}/${totalLots} lots`}
-                    color="emerald"
-                />
-                    title={t('rejectedLots')}
-                    value={rejectedLots}
-                    icon={XCircle}
-                    trend="Require disposition"
-                    color="red"
-                />
-                    title={t('openNCs')}
-                    value={openNCs}
-                    icon={AlertCircle}
-                    trend={`${nonConformances.length} total`}
-                    color="amber"
-                />
-                    title={t('coasIssued')}
-                    value={coasIssued}
-                    icon={FileCheck}
-                    trend={`${coas.length} total`}
-                    color="blue"
-                />
-            </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="grid grid-cols-5 w-full">

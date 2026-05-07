@@ -172,32 +172,6 @@ export default function Production() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    title="Active Production"
-                    value={activeProduction}
-                    icon={Factory}
-                    trend={`${productionOrders.length} total orders`}
-                    color="emerald"
-                />
-                    title="Total Produced"
-                    value={`${totalProduced} / ${totalPlanned}`}
-                    icon={Package}
-                    trend={`${avgYield}% yield`}
-                    color="blue"
-                />
-                    title="Available Work Centers"
-                    value={availableWorkCenters}
-                    icon={Settings}
-                    trend={`${workCenters.length} total`}
-                    color="indigo"
-                />
-                    title="Variances Pending"
-                    value={variances.length}
-                    icon={TrendingUp}
-                    trend="Cost analysis"
-                    color="amber"
-                />
-            </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="grid grid-cols-9 w-full">

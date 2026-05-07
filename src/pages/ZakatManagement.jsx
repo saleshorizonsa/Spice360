@@ -210,33 +210,6 @@ export default function ZakatManagement() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    title="Saudi/GCC Ownership"
-                    value={`${saudiGCCOwnership.toFixed(1)}%`}
-                    icon={Users}
-                    trend={`${activeShareholders.filter(s => s.is_saudi_gcc).length} shareholders`}
-                    color="emerald"
-                />
-                    title="GL Accounts Mapped"
-                    value={zakatableAccounts}
-                    icon={FileCheck}
-                    trend={`${unmappedAccounts} unmapped`}
-                    color={unmappedAccounts > 0 ? "amber" : "blue"}
-                />
-                    title="Zakat Rate"
-                    value={`${activeConfig?.zakat_rate || 2.5}%`}
-                    icon={Calculator}
-                    trend={activeConfig?.fiscal_year || "No active config"}
-                    color="indigo"
-                />
-                    title="Latest Zakat Due"
-                    value={latestComputation ? `SAR ${(latestComputation.annual_zakat_due / 1000).toFixed(0)}K` : "N/A"}
-                    icon={Settings}
-                    trend={latestComputation?.computation_status || "Not computed"}
-                    color="emerald"
-                />
-            </div>
-
             {unmappedAccounts > 0 && (
                 <Alert className="bg-amber-50 border-amber-200">
                     <AlertDescription className="text-amber-900">

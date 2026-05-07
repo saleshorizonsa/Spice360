@@ -538,32 +538,6 @@ export default function Purchasing() {
             </div>
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    title={t('pendingPRs')}
-                    value={pendingPRs}
-                    icon={FileText}
-                    trend={`${requisitions.length} total`}
-                    color="blue"
-                />
-                    title={t('activePOs')}
-                    value={activePOs}
-                    icon={ShoppingCart}
-                    trend={`${pos.length} total orders`}
-                    color="emerald"
-                />
-                    title={t('totalSpend')}
-                    value={`SAR ${(totalSpend / 1000).toFixed(0)}K`}
-                    icon={TrendingUp}
-                    trend="This period"
-                    color="indigo"
-                />
-                    title={t('pendingMatches')}
-                    value={pendingMatches}
-                    icon={Receipt}
-                    trend="3-way match required"
-                    color="amber"
-                />
-            </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="grid grid-cols-5 w-full">

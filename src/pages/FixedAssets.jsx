@@ -485,33 +485,6 @@ export default function FixedAssets() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    title={t('totalAssetValue')}
-                    value={`SAR ${(totalAssetValue / 1000000).toFixed(1)}M`}
-                    icon={Package2}
-                    trend={`${activeAssets} ${t('active')} assets`}
-                    color="emerald"
-                />
-                    title={t('netBookValue')}
-                    value={`SAR ${(totalNBV / 1000000).toFixed(1)}M`}
-                    icon={TrendingDown}
-                    trend={`SAR ${(totalAccumulatedDep / 1000000).toFixed(1)}M ${t('depreciated')}`}
-                    color="blue"
-                />
-                    title={t('activeAllocations')}
-                    value={activeAllocations}
-                    icon={UserCheck}
-                    trend={t('assetsInUse')}
-                    color="indigo"
-                />
-                    title={t('aucValue')}
-                    value={`SAR ${(totalAUCValue / 1000000).toFixed(1)}M`}
-                    icon={Construction}
-                    trend={`${aucInProgress} ${t('inProgress')}`}
-                    color="amber"
-                />
-            </div>
-
             {(overdueMaintenance > 0 || underMaintenance > 0) && (
                 <div className="space-y-2">
                     {overdueMaintenance > 0 && (

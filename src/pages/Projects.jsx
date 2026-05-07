@@ -270,45 +270,6 @@ export default function Projects() {
                 </div>
             )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-                    title={t('activeProjects')}
-                    value={activeProjects}
-                    icon={Briefcase}
-                    trend={`${projects.length} ${t('total')}`}
-                    color="emerald"
-                />
-                    title={t('revenue')}
-                    value={`SAR ${(totalRevenue / 1000).toFixed(0)}K`}
-                    icon={DollarSign}
-                    trend={t('invoiced')}
-                    color="blue"
-                />
-                    title={t('unbilled')}
-                    value={`SAR ${(unbilledRevenue / 1000).toFixed(0)}K`}
-                    icon={TrendingUp}
-                    trend={t('toInvoice')}
-                    color="amber"
-                />
-                    title={t('utilization')}
-                    value={`${utilizationRate}%`}
-                    icon={Clock}
-                    trend={`${totalActualHours.toLocaleString()}${t('hoursLogged')}`}
-                    color="indigo"
-                />
-                    title={t('avgMargin')}
-                    value={`${avgMargin}%`}
-                    icon={TrendingUp}
-                    trend={t('grossMargin')}
-                    color="purple"
-                />
-                    title={t('atRisk')}
-                    value={atRiskProjects}
-                    icon={AlertTriangle}
-                    trend={t('needAttention')}
-                    color="red"
-                />
-            </div>
-
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="grid grid-cols-8 w-full">
                     <TabsTrigger value="projects">{t('projects')}</TabsTrigger>

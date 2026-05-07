@@ -316,33 +316,6 @@ export default function Finance() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    title={t('totalAROutstanding')}
-                    value={`SAR ${totalAR.toLocaleString()}`}
-                    icon={Users}
-                    trend={`DSO: ${dso} days`}
-                    color="blue"
-                />
-                    title={t('totalAPOutstanding')}
-                    value={`SAR ${totalAP.toLocaleString()}`}
-                    icon={CreditCard}
-                    trend={`DPO: ${dpo} days`}
-                    color="amber"
-                />
-                    title={t('overdueAR')}
-                    value={overdueAR}
-                    icon={AlertCircle}
-                    trend="Requires attention"
-                    color="red"
-                />
-                    title={t('fixedAssetsNBV')}
-                    value={`SAR ${totalAssetValue.toLocaleString()}`}
-                    icon={Building2}
-                    trend={`${assets.length} assets`}
-                    color="indigo"
-                />
-            </div>
-
             <Alert className="bg-blue-50 border-blue-200">
                 <AlertCircle className="h-4 w-4 text-blue-600" />
                 <AlertDescription className="text-blue-900">

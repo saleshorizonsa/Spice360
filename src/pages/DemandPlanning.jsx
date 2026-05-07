@@ -167,33 +167,6 @@ export default function DemandPlanning() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    title="Total Forecasted"
-                    value={totalForecasted.toLocaleString()}
-                    icon={TrendingUp}
-                    trend={`${forecasts.length} products`}
-                    color="blue"
-                />
-                    title="Actual Demand"
-                    value={totalActual.toLocaleString()}
-                    icon={Package}
-                    trend="YTD"
-                    color="purple"
-                />
-                    title="Avg Accuracy"
-                    value={`${avgAccuracy.toFixed(1)}%`}
-                    icon={Brain}
-                    trend="Confidence level"
-                    color="emerald"
-                />
-                    title="Critical Items"
-                    value={criticalMaterials.length}
-                    icon={AlertCircle}
-                    trend="Below safety stock"
-                    color="red"
-                />
-            </div>
-
             {criticalMaterials.length > 0 && (
                 <Alert className="bg-red-50 border-red-200">
                     <AlertCircle className="h-4 w-4 text-red-600" />

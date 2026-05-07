@@ -251,33 +251,6 @@ export default function BudgetManagement() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    title="Total Budgeted"
-                    value={`SAR ${totalBudgeted.toLocaleString()}`}
-                    icon={Calculator}
-                    trend={`${filteredBudgets.length} budgets`}
-                    color="blue"
-                />
-                    title="Total Actual"
-                    value={`SAR ${totalActual.toLocaleString()}`}
-                    icon={TrendingUp}
-                    trend={`Variance: ${totalVariance.toLocaleString()}`}
-                    color="purple"
-                />
-                    title="Approved Budgets"
-                    value={approvedBudgets}
-                    icon={CheckCircle}
-                    trend={`${filteredBudgets.length} total`}
-                    color="green"
-                />
-                    title="Pending Approvals"
-                    value={pendingApproval}
-                    icon={AlertCircle}
-                    trend="Requires action"
-                    color="amber"
-                />
-            </div>
-
             <Alert className="bg-blue-50 border-blue-200">
                 <AlertCircle className="h-4 w-4 text-blue-600" />
                 <AlertDescription className="text-blue-900">

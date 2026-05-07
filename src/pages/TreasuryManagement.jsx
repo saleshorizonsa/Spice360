@@ -159,33 +159,6 @@ export default function TreasuryManagement() {
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    title="Total Cash"
-                    value={`SAR ${totalCash.toLocaleString()}`}
-                    icon={DollarSign}
-                    trend={`${banks.length} accounts`}
-                    color="green"
-                />
-                    title="Receivables (AR)"
-                    value={`SAR ${totalAR.toLocaleString()}`}
-                    icon={TrendingUp}
-                    trend="Expected inflows"
-                    color="blue"
-                />
-                    title="Payables (AP)"
-                    value={`SAR ${totalAP.toLocaleString()}`}
-                    icon={TrendingDown}
-                    trend="Upcoming outflows"
-                    color="red"
-                />
-                    title="Net Position"
-                    value={`SAR ${netPosition.toLocaleString()}`}
-                    icon={AlertCircle}
-                    trend={netPosition > 0 ? "Healthy" : "At Risk"}
-                    color={netPosition > 0 ? "emerald" : "red"}
-                />
-            </div>
-
             {netPosition < 0 && (
                 <Alert className="bg-red-50 border-red-200">
                     <AlertCircle className="h-4 w-4 text-red-600" />
