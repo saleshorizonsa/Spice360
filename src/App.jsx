@@ -8,6 +8,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import LoginScreen from '@/components/LoginScreen';
+import TenantOnboardingWizard, { useTenantReadiness } from '@/components/onboarding/TenantOnboardingWizard';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -18,10 +19,11 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   : <>{children}</>;
 
 const AuthenticatedApp = () => {
-  const { isAuthenticated, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isAuthenticated, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, authProvider } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const hasEnteredApp = sessionStorage.getItem('horizon_entered_app') === 'true';
+  const readiness = useTenantReadiness();
 
   const enterApp = () => {
     sessionStorage.setItem('horizon_entered_app', 'true');
@@ -48,6 +50,10 @@ const AuthenticatedApp = () => {
 
   if (!isAuthenticated) {
     return <LoginScreen onLogin={navigateToLogin} onAuthSuccess={enterApp} />;
+  }
+
+  if (authProvider === 'supabase' && !readiness.ready) {
+    return <TenantOnboardingWizard onComplete={enterApp} />;
   }
 
   if (location.pathname === '/' && !hasEnteredApp) {

@@ -134,6 +134,7 @@ export const AuthProvider = ({ children }) => {
   const toMatrixSalesUser = (supabaseUser) => ({
     id: supabaseUser.id,
     email: supabaseUser.email,
+    email_verified: Boolean(supabaseUser.email_confirmed_at || supabaseUser.confirmed_at || supabaseUser.user_metadata?.email_verified),
     full_name: supabaseUser.user_metadata?.full_name || supabaseUser.email,
     role: isMatrixSalesAdminEmail(
       supabaseUser.email,
@@ -266,6 +267,26 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
+  const resendVerificationEmail = async (email) => {
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+    }
+
+    const targetEmail = email || user?.email;
+    if (!targetEmail) throw new Error('Email address is required.');
+
+    const { data, error } = await supabase.auth.resend({
+      type: 'signup',
+      email: targetEmail,
+      options: {
+        emailRedirectTo: getSupabaseRedirectUrl()
+      }
+    });
+
+    if (error) throw error;
+    return data;
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -278,6 +299,7 @@ export const AuthProvider = ({ children }) => {
       navigateToLogin,
       signInWithPassword,
       signUpWithPassword,
+      resendVerificationEmail,
       authProvider: appParams.appId ? 'matrixSales' : 'supabase',
       checkAppState
     }}>

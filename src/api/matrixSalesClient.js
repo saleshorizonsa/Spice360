@@ -30,6 +30,7 @@ const tableNameForEntity = (entityName) =>
 const metadataColumns = new Set([
   'id',
   'base44_id',
+  'tenant_id',
   'organization_id',
   'organization_key',
   'status',
@@ -41,13 +42,7 @@ const metadataColumns = new Set([
 ]);
 
 const organizationScopedEntityExclusions = new Set([
-  'Organization',
-  'User',
-  'Role',
-  'AuditTrail',
-  'IntegrationConfig',
-  'IntegrationLog',
-  'DocumentNumberSeries'
+  'Organization'
 ]);
 
 const shouldScopeEntityToOrganization = (entityName) =>
@@ -388,6 +383,8 @@ const getSelectedOrganizationId = () => {
   return selectedId && selectedId !== 'null' && selectedId !== 'undefined' ? selectedId : null;
 };
 
+const getSelectedTenantId = () => getSelectedOrganizationId();
+
 const notifyOrganizationsChanged = () => {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new CustomEvent('matrixsales:organizations-changed'));
@@ -397,6 +394,7 @@ const normalizeRow = (row) => ({
   ...(row?.record || {}),
   id: row?.id,
   base44_id: row?.base44_id,
+  tenant_id: row?.tenant_id ?? row?.organization_id ?? row?.record?.tenant_id,
   organization_id: row?.organization_id,
   organization_key: row?.organization_key,
   status: row?.record?.status ?? row?.status,
@@ -577,6 +575,7 @@ const logSupabaseAuditTrail = async ({
       : `${actionType.charAt(0).toUpperCase() + actionType.slice(1)}d ${entityType.replace(/_/g, ' ')}`;
 
     await client.from('audit_trail').insert({
+      tenant_id: organizationId,
       organization_id: organizationId,
       record: {
         audit_id: `AUD-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
@@ -608,9 +607,15 @@ const createSupabaseEntity = (entityName) => {
     const client = requireSupabase();
     let query = client.from(tableName).select('*');
     const selectedOrganizationId = getSelectedOrganizationId();
+    const selectedTenantId = getSelectedTenantId();
     const hasOrganizationFilter = Object.prototype.hasOwnProperty.call(filters || {}, 'organization_id');
+    const hasTenantFilter = Object.prototype.hasOwnProperty.call(filters || {}, 'tenant_id');
 
-    if (isOrganizationScoped && selectedOrganizationId && !hasOrganizationFilter) {
+    if (isOrganizationScoped && selectedTenantId && !hasTenantFilter && !hasOrganizationFilter) {
+      query = query.eq('organization_id', selectedTenantId);
+    } else if (isOrganizationScoped && !selectedTenantId && !hasTenantFilter && !hasOrganizationFilter) {
+      return [];
+    } else if (isOrganizationScoped && selectedOrganizationId && !hasOrganizationFilter) {
       query = query.eq('organization_id', selectedOrganizationId);
     }
 
@@ -626,7 +631,26 @@ const createSupabaseEntity = (entityName) => {
     const { data, error } = await query;
     if (error) throw error;
 
-    const rows = sortRecords(normalizeList(data).map(normalizeRow), sort);
+    let rows = normalizeList(data).map(normalizeRow);
+
+    if (entityName === 'Organization') {
+      const currentUser = await getCurrentSupabaseUserSafe();
+      const isAdmin = currentUser.role === 'admin';
+      if (!isAdmin) {
+        rows = rows.filter((org) => {
+          const allowedEmails = Array.isArray(org.admin_emails) ? org.admin_emails : [];
+          const allowedUsers = Array.isArray(org.authorized_user_ids) ? org.authorized_user_ids : [];
+          return org.owner_user_id === currentUser.id ||
+            org.created_by_user_id === currentUser.id ||
+            org.owner_email === currentUser.email ||
+            org.created_by_email === currentUser.email ||
+            allowedEmails.includes(currentUser.email) ||
+            allowedUsers.includes(currentUser.id);
+        });
+      }
+    }
+
+    rows = sortRecords(rows, sort);
     return limit ? rows.slice(0, limit) : rows;
   };
 
@@ -637,6 +661,9 @@ const createSupabaseEntity = (entityName) => {
       const client = requireSupabase();
       const selectedOrganizationId = getSelectedOrganizationId();
       const organizationId = data.organization_id || (isOrganizationScoped ? selectedOrganizationId : null);
+      if (isOrganizationScoped && !organizationId) {
+        throw new Error('Tenant is required. Complete company onboarding or select a company before creating records.');
+      }
       const record = { ...(data || {}) };
 
       if (shouldAutoNumberRecord(entityName, record)) {
@@ -661,10 +688,12 @@ const createSupabaseEntity = (entityName) => {
 
       const payload = {
         base44_id: record.base44_id || record.base44Id || null,
+        tenant_id: organizationId,
         organization_id: organizationId,
         organization_key: record.organization_key || null,
         record: {
           ...record,
+          ...(organizationId ? { tenant_id: organizationId } : {}),
           ...(organizationId ? { organization_id: organizationId } : {})
         }
       };
@@ -694,6 +723,9 @@ const createSupabaseEntity = (entityName) => {
 
       for (const record of records) {
         const organizationId = record.organization_id || (isOrganizationScoped ? selectedOrganizationId : null);
+        if (isOrganizationScoped && !organizationId) {
+          throw new Error('Tenant is required. Complete company onboarding or select a company before creating records.');
+        }
         await assertSupabaseRecordCanMutate({
           client,
           entityName,
@@ -704,10 +736,12 @@ const createSupabaseEntity = (entityName) => {
 
         payload.push({
           base44_id: record.base44_id || record.base44Id || null,
+          tenant_id: organizationId,
           organization_id: organizationId,
           organization_key: record.organization_key || null,
           record: {
             ...record,
+            ...(organizationId ? { tenant_id: organizationId } : {}),
             ...(organizationId ? { organization_id: organizationId } : {})
           }
         });
@@ -737,9 +771,16 @@ const createSupabaseEntity = (entityName) => {
         ...(data || {}),
         ...((data?.organization_id || existing?.organization_id || (isOrganizationScoped ? selectedOrganizationId : null))
           ? { organization_id: data?.organization_id || existing?.organization_id || selectedOrganizationId }
+          : {}),
+        ...((data?.tenant_id || data?.organization_id || existing?.tenant_id || existing?.organization_id || (isOrganizationScoped ? selectedOrganizationId : null))
+          ? { tenant_id: data?.tenant_id || data?.organization_id || existing?.tenant_id || existing?.organization_id || selectedOrganizationId }
           : {})
       };
       const organizationId = data?.organization_id || existing?.organization_id || (isOrganizationScoped ? selectedOrganizationId : null);
+      const tenantId = data?.tenant_id || data?.organization_id || existing?.tenant_id || existing?.organization_id || (entityName === 'Organization' ? id : organizationId);
+      if (isOrganizationScoped && !organizationId) {
+        throw new Error('Tenant is required. Select a company before updating records.');
+      }
 
       await assertSupabaseRecordCanMutate({
         client,
@@ -753,6 +794,7 @@ const createSupabaseEntity = (entityName) => {
       const { data: row, error } = await client
         .from(tableName)
         .update({
+          tenant_id: tenantId,
           organization_id: organizationId,
           organization_key: data?.organization_key ?? existing?.organization_key ?? null,
           record
