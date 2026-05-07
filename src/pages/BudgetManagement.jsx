@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Calculator, TrendingUp, AlertCircle, FileText, CheckCircle, XCircle } from "lucide-react";
-import StatCard from "../components/erp/StatCard";
 import DataTable from "../components/erp/DataTable";
 import BudgetManagementForm from "../components/finance/BudgetManagementForm";
 import BudgetVarianceReport from "../components/finance/BudgetVarianceReport";
@@ -253,28 +252,24 @@ export default function BudgetManagement() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
                     title="Total Budgeted"
                     value={`SAR ${totalBudgeted.toLocaleString()}`}
                     icon={Calculator}
                     trend={`${filteredBudgets.length} budgets`}
                     color="blue"
                 />
-                <StatCard
                     title="Total Actual"
                     value={`SAR ${totalActual.toLocaleString()}`}
                     icon={TrendingUp}
                     trend={`Variance: ${totalVariance.toLocaleString()}`}
                     color="purple"
                 />
-                <StatCard
                     title="Approved Budgets"
                     value={approvedBudgets}
                     icon={CheckCircle}
                     trend={`${filteredBudgets.length} total`}
                     color="green"
                 />
-                <StatCard
                     title="Pending Approvals"
                     value={pendingApproval}
                     icon={AlertCircle}

@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus, Calculator, TrendingUp, TrendingDown, DollarSign, Activity, AlertTriangle, Package } from "lucide-react";
-import StatCard from "../components/erp/StatCard";
 import DataTable from "../components/erp/DataTable";
 import ProductCostForm from "../components/costing/ProductCostForm";
 import CostPoolForm from "../components/costing/CostPoolForm";
@@ -273,28 +272,24 @@ export default function Costing() {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
                     title={t('activeProductCosts')}
                     value={activeProductCosts}
                     icon={Package}
                     trend={`${t('avgCost')}: SAR ${avgProductCost.toFixed(2)}/${t('unit')}`}
                     color="blue"
                 />
-                <StatCard
                     title={t('totalActualCosts')}
                     value={`SAR ${(totalActualCosts / 1000).toFixed(0)}K`}
                     icon={DollarSign}
                     trend={`${actualCosts.length} ${t('costRecords')}`}
                     color="emerald"
                 />
-                <StatCard
                     title={t('unfavorableVariances')}
                     value={unfavorableVariances}
                     icon={TrendingDown}
                     trend={`${t('total')}: SAR ${(totalVarianceAmount / 1000).toFixed(0)}K`}
                     color="red"
                 />
-                <StatCard
                     title={t('averageMargin')}
                     value={`${avgMargin.toFixed(1)}%`}
                     icon={TrendingUp}

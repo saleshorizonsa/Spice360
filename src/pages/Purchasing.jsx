@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus, FileText, ShoppingCart, Receipt, TrendingUp } from "lucide-react";
-import StatCard from "@/components/erp/StatCard";
 import DataTable from "@/components/erp/DataTable";
 import PurchaseRequisitionForm from "@/components/purchasing/PurchaseRequisitionForm";
 import RFQForm from "@/components/purchasing/RFQForm";
@@ -540,28 +539,24 @@ export default function Purchasing() {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
                     title={t('pendingPRs')}
                     value={pendingPRs}
                     icon={FileText}
                     trend={`${requisitions.length} total`}
                     color="blue"
                 />
-                <StatCard
                     title={t('activePOs')}
                     value={activePOs}
                     icon={ShoppingCart}
                     trend={`${pos.length} total orders`}
                     color="emerald"
                 />
-                <StatCard
                     title={t('totalSpend')}
                     value={`SAR ${(totalSpend / 1000).toFixed(0)}K`}
                     icon={TrendingUp}
                     trend="This period"
                     color="indigo"
                 />
-                <StatCard
                     title={t('pendingMatches')}
                     value={pendingMatches}
                     icon={Receipt}

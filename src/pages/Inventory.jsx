@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus, Package, MapPin, ArrowRightLeft, AlertTriangle, TrendingDown, Bell, Calculator } from "lucide-react";
-import StatCard from "@/components/erp/StatCard";
 import DataTable from "@/components/erp/DataTable";
 import StockMovementForm from "@/components/inventory/StockMovementForm";
 import CycleCountForm from "@/components/inventory/CycleCountForm";
@@ -498,28 +497,24 @@ export default function Inventory() {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
                     title="Total Stock Value"
                     value={`SAR ${(totalStockValue / 1000).toFixed(0)}K`}
                     icon={Package}
                     trend={`${totalStockQty.toLocaleString()} units`}
                     color="emerald"
                 />
-                <StatCard
                     title="Low Stock Items"
                     value={lowStockCount}
                     icon={AlertTriangle}
                     trend="Need reorder"
                     color="amber"
                 />
-                <StatCard
                     title="Slow Moving Stock"
                     value={slowMovingCount}
                     icon={TrendingDown}
                     trend="Over 90 days aging"
                     color="red"
                 />
-                <StatCard
                     title="Today's Movements"
                     value={totalMovementsToday}
                     icon={ArrowRightLeft}

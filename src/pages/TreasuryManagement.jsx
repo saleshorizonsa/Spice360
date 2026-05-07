@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, TrendingUp, TrendingDown, DollarSign, AlertCircle, Calendar } from "lucide-react";
-import StatCard from "../components/erp/StatCard";
 import DataTable from "../components/erp/DataTable";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -161,28 +160,24 @@ export default function TreasuryManagement() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
                     title="Total Cash"
                     value={`SAR ${totalCash.toLocaleString()}`}
                     icon={DollarSign}
                     trend={`${banks.length} accounts`}
                     color="green"
                 />
-                <StatCard
                     title="Receivables (AR)"
                     value={`SAR ${totalAR.toLocaleString()}`}
                     icon={TrendingUp}
                     trend="Expected inflows"
                     color="blue"
                 />
-                <StatCard
                     title="Payables (AP)"
                     value={`SAR ${totalAP.toLocaleString()}`}
                     icon={TrendingDown}
                     trend="Upcoming outflows"
                     color="red"
                 />
-                <StatCard
                     title="Net Position"
                     value={`SAR ${netPosition.toLocaleString()}`}
                     icon={AlertCircle}

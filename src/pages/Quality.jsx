@@ -7,7 +7,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus, CheckCircle2, XCircle, AlertCircle, FileCheck } from "lucide-react";
 import DataTable from "../components/erp/DataTable";
-import StatCard from "../components/erp/StatCard";
 import InspectionLotForm from "../components/quality/InspectionLotForm";
 import NonConformanceForm from "../components/quality/NonConformanceForm";
 import CAPAForm from "../components/quality/CAPAForm";
@@ -552,28 +551,24 @@ export default function Quality() {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
                     title={t('firstPassYield')}
                     value={`${firstPassYield}%`}
                     icon={CheckCircle2}
                     trend={`${acceptedLots}/${totalLots} lots`}
                     color="emerald"
                 />
-                <StatCard
                     title={t('rejectedLots')}
                     value={rejectedLots}
                     icon={XCircle}
                     trend="Require disposition"
                     color="red"
                 />
-                <StatCard
                     title={t('openNCs')}
                     value={openNCs}
                     icon={AlertCircle}
                     trend={`${nonConformances.length} total`}
                     color="amber"
                 />
-                <StatCard
                     title={t('coasIssued')}
                     value={coasIssued}
                     icon={FileCheck}

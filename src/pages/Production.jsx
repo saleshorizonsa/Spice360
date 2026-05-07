@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Factory, Settings, Package, TrendingUp, Plus, Sparkles, AlertTriangle, LineChart } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import StatCard from "../components/erp/StatCard";
 import DataTable from "../components/erp/DataTable";
 import ProductionOrderForm from "../components/production/ProductionOrderForm";
 import BOMForm from "../components/production/BOMForm";
@@ -174,28 +173,24 @@ export default function Production() {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
                     title="Active Production"
                     value={activeProduction}
                     icon={Factory}
                     trend={`${productionOrders.length} total orders`}
                     color="emerald"
                 />
-                <StatCard
                     title="Total Produced"
                     value={`${totalProduced} / ${totalPlanned}`}
                     icon={Package}
                     trend={`${avgYield}% yield`}
                     color="blue"
                 />
-                <StatCard
                     title="Available Work Centers"
                     value={availableWorkCenters}
                     icon={Settings}
                     trend={`${workCenters.length} total`}
                     color="indigo"
                 />
-                <StatCard
                     title="Variances Pending"
                     value={variances.length}
                     icon={TrendingUp}

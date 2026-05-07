@@ -6,8 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, TrendingDown, Target, AlertCircle, CheckCircle } from "lucide-react";
-import StatCard from "../components/erp/StatCard";
+import { Plus } from "lucide-react";
 import DataTable from "../components/erp/DataTable";
 import { useToast } from "@/components/ui/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -31,13 +30,6 @@ export default function KPIDashboard() {
     const filteredKPIs = filterCategory === 'all' 
         ? kpis 
         : kpis.filter(k => k.kpi_category === filterCategory);
-
-    const onTarget = filteredKPIs.filter(k => k.status === 'on_target').length;
-    const atRisk = filteredKPIs.filter(k => k.status === 'at_risk').length;
-    const offTarget = filteredKPIs.filter(k => k.status === 'off_target').length;
-    const avgAchievement = filteredKPIs.length > 0
-        ? (filteredKPIs.reduce((sum, k) => sum + ((k.actual_value / k.target_value) * 100), 0) / filteredKPIs.length)
-        : 0;
 
     const kpiColumns = [
         { header: "KPI Name", key: "kpi_name" },
@@ -95,37 +87,6 @@ export default function KPIDashboard() {
                     <Plus className="w-4 h-4 mr-2" />
                     {t('addKPI')}
                 </Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
-                    title={t('onTarget')}
-                    value={onTarget}
-                    icon={Target}
-                    trend={`${((onTarget / filteredKPIs.length) * 100).toFixed(0)}% ${t('ofKPIs')}`}
-                    color="green"
-                />
-                <StatCard
-                    title={t('atRisk')}
-                    value={atRisk}
-                    icon={AlertCircle}
-                    trend={t('needsAttention')}
-                    color="yellow"
-                />
-                <StatCard
-                    title={t('offTarget')}
-                    value={offTarget}
-                    icon={TrendingDown}
-                    trend={t('requiresAction')}
-                    color="red"
-                />
-                <StatCard
-                    title={t('avgAchievement')}
-                    value={`${avgAchievement.toFixed(1)}%`}
-                    icon={CheckCircle}
-                    trend={t('overallPerformance')}
-                    color="blue"
-                />
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">

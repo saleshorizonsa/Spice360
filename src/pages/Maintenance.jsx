@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus, Wrench, Calendar, Package, AlertTriangle, BarChart3, Clock } from "lucide-react";
-import StatCard from "@/components/erp/StatCard";
 import DataTable from "@/components/erp/DataTable";
 import WorkOrderForm from "@/components/maintenance/WorkOrderForm";
 import PMPlanForm from "@/components/maintenance/PMPlanForm";
@@ -249,42 +248,36 @@ export default function Maintenance() {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-                <StatCard
                     title={t('openWorkOrders')}
                     value={openWorkOrders}
                     icon={Wrench}
                     trend={`${totalWorkOrders} ${t('total')}`}
                     color="amber"
                 />
-                <StatCard
                     title={t('pmCompliance')}
                     value={`${pmCompliance}%`}
                     icon={Calendar}
                     trend={`${totalPMPlans} ${t('active')} ${t('plans')}`}
                     color="blue"
                 />
-                <StatCard
                     title={t('mttr')}
                     value={mttr}
                     icon={Clock}
                     trend={t('meanTimeToRepair')}
                     color="indigo"
                 />
-                <StatCard
                     title={t('criticalDown')}
                     value={criticalEquipmentDown}
                     icon={AlertTriangle}
                     trend={t('criticalEquipment')}
                     color="red"
                 />
-                <StatCard
                     title={t('lowStockParts')}
                     value={lowStockParts}
                     icon={Package}
                     trend={t('needReorder')}
                     color="orange"
                 />
-                <StatCard
                     title={t('totalMaintenanceCost')}
                     value={`SAR ${(totalMaintenanceCost / 1000).toFixed(0)}K`}
                     icon={BarChart3}

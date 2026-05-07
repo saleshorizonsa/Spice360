@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus, Briefcase, Clock, DollarSign, TrendingUp, AlertTriangle } from "lucide-react";
-import StatCard from "../components/erp/StatCard";
 import DataTable from "../components/erp/DataTable";
 import ProjectForm from "../components/projects/ProjectForm";
 import TimesheetForm from "../components/projects/TimesheetForm";
@@ -272,42 +271,36 @@ export default function Projects() {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-                <StatCard
                     title={t('activeProjects')}
                     value={activeProjects}
                     icon={Briefcase}
                     trend={`${projects.length} ${t('total')}`}
                     color="emerald"
                 />
-                <StatCard
                     title={t('revenue')}
                     value={`SAR ${(totalRevenue / 1000).toFixed(0)}K`}
                     icon={DollarSign}
                     trend={t('invoiced')}
                     color="blue"
                 />
-                <StatCard
                     title={t('unbilled')}
                     value={`SAR ${(unbilledRevenue / 1000).toFixed(0)}K`}
                     icon={TrendingUp}
                     trend={t('toInvoice')}
                     color="amber"
                 />
-                <StatCard
                     title={t('utilization')}
                     value={`${utilizationRate}%`}
                     icon={Clock}
                     trend={`${totalActualHours.toLocaleString()}${t('hoursLogged')}`}
                     color="indigo"
                 />
-                <StatCard
                     title={t('avgMargin')}
                     value={`${avgMargin}%`}
                     icon={TrendingUp}
                     trend={t('grossMargin')}
                     color="purple"
                 />
-                <StatCard
                     title={t('atRisk')}
                     value={atRiskProjects}
                     icon={AlertTriangle}

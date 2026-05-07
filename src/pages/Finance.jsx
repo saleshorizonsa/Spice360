@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus, Users, CreditCard, Building2, AlertCircle, Clock, CheckCircle, Receipt } from "lucide-react";
-import StatCard from "@/components/erp/StatCard";
 import DataTable from "@/components/erp/DataTable";
 import JournalEntryForm from "@/components/finance/JournalEntryForm";
 import ARForm from "@/components/finance/ARForm";
@@ -318,28 +317,24 @@ export default function Finance() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
                     title={t('totalAROutstanding')}
                     value={`SAR ${totalAR.toLocaleString()}`}
                     icon={Users}
                     trend={`DSO: ${dso} days`}
                     color="blue"
                 />
-                <StatCard
                     title={t('totalAPOutstanding')}
                     value={`SAR ${totalAP.toLocaleString()}`}
                     icon={CreditCard}
                     trend={`DPO: ${dpo} days`}
                     color="amber"
                 />
-                <StatCard
                     title={t('overdueAR')}
                     value={overdueAR}
                     icon={AlertCircle}
                     trend="Requires attention"
                     color="red"
                 />
-                <StatCard
                     title={t('fixedAssetsNBV')}
                     value={`SAR ${totalAssetValue.toLocaleString()}`}
                     icon={Building2}

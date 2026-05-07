@@ -15,7 +15,6 @@ import {
     Settings,
     Send
 } from "lucide-react";
-import StatCard from "../components/erp/StatCard";
 import DataTable from "../components/erp/DataTable";
 import ZATCAConfigForm from "../components/zatca/ZATCAConfigForm";
 import VATReturnDashboard from "../components/zatca/VATReturnDashboard";
@@ -186,35 +185,30 @@ export default function ZATCA() {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                <StatCard
                     title="Total Invoices"
                     value={totalInvoices}
                     icon={FileText}
                     trend={`${submittedInvoices} submitted`}
                     color="blue"
                 />
-                <StatCard
                     title="Clearance Rate"
                     value={`${clearanceRate}%`}
                     icon={CheckCircle}
                     trend={`${clearedInvoices} cleared`}
                     color="emerald"
                 />
-                <StatCard
                     title="Pending"
                     value={pendingInvoices}
                     icon={AlertTriangle}
                     trend="Not submitted"
                     color="amber"
                 />
-                <StatCard
                     title="Rejected"
                     value={rejectedInvoices}
                     icon={XCircle}
                     trend="Need attention"
                     color="red"
                 />
-                <StatCard
                     title="Submission Rate"
                     value={`${submissionRate}%`}
                     icon={Send}

@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus, Users, Target, TrendingUp, Phone, AlertCircle } from "lucide-react";
-import StatCard from "../components/erp/StatCard";
 import DataTable from "../components/erp/DataTable";
 import LeadForm from "../components/crm/LeadForm";
 import OpportunityForm from "../components/crm/OpportunityForm";
@@ -354,42 +353,36 @@ export default function CRM() {
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-                <StatCard
                     title="Open Leads"
                     value={openLeads}
                     icon={Users}
                     trend={`${qualifiedLeads} qualified`}
                     color="blue"
                 />
-                <StatCard
                     title="Conversion Rate"
                     value={`${conversionRate}%`}
                     icon={TrendingUp}
                     trend="Lead to Opp"
                     color="emerald"
                 />
-                <StatCard
                     title="Pipeline"
                     value={`SAR ${(pipelineValue / 1000).toFixed(0)}K`}
                     icon={Target}
                     trend={`${openOpportunities} opportunities`}
                     color="indigo"
                 />
-                <StatCard
                     title="Weighted"
                     value={`SAR ${(weightedPipeline / 1000).toFixed(0)}K`}
                     icon={TrendingUp}
                     trend="Probability weighted"
                     color="purple"
                 />
-                <StatCard
                     title="Win Rate"
                     value={`${winRate}%`}
                     icon={Target}
                     trend={`${wonOpportunities}/${closedTotal} closed`}
                     color="green"
                 />
-                <StatCard
                     title="Revenue Won"
                     value={`SAR ${(wonRevenue / 1000).toFixed(0)}K`}
                     icon={TrendingUp}

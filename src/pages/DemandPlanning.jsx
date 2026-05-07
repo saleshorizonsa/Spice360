@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TrendingUp, Brain, Package, AlertCircle } from "lucide-react";
-import StatCard from "../components/erp/StatCard";
 import DataTable from "../components/erp/DataTable";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -169,28 +168,24 @@ export default function DemandPlanning() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
                     title="Total Forecasted"
                     value={totalForecasted.toLocaleString()}
                     icon={TrendingUp}
                     trend={`${forecasts.length} products`}
                     color="blue"
                 />
-                <StatCard
                     title="Actual Demand"
                     value={totalActual.toLocaleString()}
                     icon={Package}
                     trend="YTD"
                     color="purple"
                 />
-                <StatCard
                     title="Avg Accuracy"
                     value={`${avgAccuracy.toFixed(1)}%`}
                     icon={Brain}
                     trend="Confidence level"
                     color="emerald"
                 />
-                <StatCard
                     title="Critical Items"
                     value={criticalMaterials.length}
                     icon={AlertCircle}

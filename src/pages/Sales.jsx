@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus, FileText, ShoppingCart, Package, Receipt, RefreshCw, AlertTriangle, Clock, CheckCircle, CreditCard } from "lucide-react";
-import StatCard from "@/components/erp/StatCard";
 import DataTable from "@/components/erp/DataTable";
 import QuotationForm from "@/components/sales/QuotationForm";
 import SalesOrderForm from "@/components/sales/SalesOrderForm";
@@ -434,42 +433,36 @@ export default function Sales() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
-                <StatCard
                     title={t('hitRate')}
                     value={`${hitRate}%`}
                     icon={FileText}
                     trend={`${acceptedQuotations}/${totalQuotations} ${t('quotes')}`}
                     color="blue"
                 />
-                <StatCard
                     title={t('revenue')}
                     value={`SAR ${(totalRevenue / 1000).toFixed(0)}K`}
                     icon={Receipt}
                     trend={`${totalOrders} ${t('orders')}`}
                     color="emerald"
                 />
-                <StatCard
                     title={t('avgMargin')}
                     value={`${avgMargin}%`}
                     icon={ShoppingCart}
                     trend={t('grossMargin')}
                     color="indigo"
                 />
-                <StatCard
                     title={t('otif')}
                     value={`${otif}%`}
                     icon={Package}
                     trend={`${pendingDeliveries} ${t('pending')}`}
                     color="amber"
                 />
-                <StatCard
                     title={t('creditHold')}
                     value={creditHoldOrders}
                     icon={AlertTriangle}
                     trend={t('ordersOnHold')}
                     color="red"
                 />
-                <StatCard
                     title={t('returns')}
                     value={activeReturns}
                     icon={RefreshCw}

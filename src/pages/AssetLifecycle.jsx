@@ -20,7 +20,6 @@ import {
     BarChart3,
     PieChart as PieChartIcon
 } from "lucide-react";
-import StatCard from "../components/erp/StatCard";
 import DataTable from "../components/erp/DataTable";
 import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from "../components/utils/languageContext";
@@ -518,35 +517,30 @@ export default function AssetLifecycle() {
 
             {/* KPIs */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                <StatCard
                     title="Active Assets"
                     value={activeAssets}
                     icon={Package2}
                     trend="Currently in use"
                     color="emerald"
                 />
-                <StatCard
                     title="Disposed Assets"
                     value={disposedAssets}
                     icon={TrendingDown}
                     trend={`${pendingDisposals} pending approval`}
                     color="blue"
                 />
-                <StatCard
                     title="Disposal Value"
                     value={`SAR ${(totalDisposalValue / 1000).toFixed(0)}K`}
                     icon={DollarSign}
                     trend={`${filteredDisposals.length} transactions`}
                     color="indigo"
                 />
-                <StatCard
                     title="Total Gain/Loss"
                     value={`SAR ${(totalGainLoss / 1000).toFixed(0)}K`}
                     icon={totalGainLoss >= 0 ? TrendingUp : TrendingDown}
                     trend={totalGainLoss >= 0 ? 'Net gain' : 'Net loss'}
                     color={totalGainLoss >= 0 ? 'emerald' : 'red'}
                 />
-                <StatCard
                     title="Average ROI"
                     value={`${avgROI}%`}
                     icon={BarChart3}

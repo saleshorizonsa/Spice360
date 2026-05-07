@@ -8,7 +8,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { CheckCircle, XCircle, Clock, AlertCircle, FileText, ChevronRight } from "lucide-react";
-import StatCard from "../components/erp/StatCard";
 import DataTable from "../components/erp/DataTable";
 import ApprovalMatrixForm from "../components/approvals/ApprovalMatrixForm";
 import DocumentList from "../components/shared/DocumentList";
@@ -221,28 +220,24 @@ export default function Approvals() {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-                <StatCard
                     title="Pending My Action"
                     value={myPending}
                     icon={Clock}
                     trend="Requires your approval"
                     color="amber"
                 />
-                <StatCard
                     title="Total Pending"
                     value={totalPending}
                     icon={AlertCircle}
                     trend="All pending approvals"
                     color="blue"
                 />
-                <StatCard
                     title="Approved"
                     value={totalApproved}
                     icon={CheckCircle}
                     trend="Fully approved"
                     color="emerald"
                 />
-                <StatCard
                     title="Rejected"
                     value={totalRejected}
                     icon={XCircle}

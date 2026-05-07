@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus, Users, Calendar, DollarSign, UserCheck, Shield, Calculator } from "lucide-react";
-import StatCard from "@/components/erp/StatCard";
 import DataTable from "@/components/erp/DataTable";
 import { useToast } from "@/components/ui/use-toast";
 import EmployeeForm from "@/components/hr/EmployeeForm";
@@ -253,35 +252,30 @@ export default function HR() {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                <StatCard
                     title="Active Employees"
                     value={activeEmployees}
                     icon={Users}
                     trend={`${employees.length} total`}
                     color="emerald"
                 />
-                <StatCard
                     title="Saudization Rate"
                     value={`${saudizationRate}%`}
                     icon={UserCheck}
                     trend={`${saudiEmployees} Saudi`}
                     color="blue"
                 />
-                <StatCard
                     title="Pending Leaves"
                     value={pendingLeaves}
                     icon={Calendar}
                     trend={`${leaveRequests.length} total`}
                     color="amber"
                 />
-                <StatCard
                     title="Active Loans"
                     value={activeLoans}
                     icon={DollarSign}
                     trend={`${loans.length} total`}
                     color="indigo"
                 />
-                <StatCard
                     title="GOSI Pending"
                     value={currentMonthGOSI}
                     icon={Shield}

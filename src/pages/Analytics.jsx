@@ -35,7 +35,6 @@ import {
     Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import StatCard from "../components/erp/StatCard";
 import { useLanguage } from "../components/utils/languageContext";
 
 export default function Analytics() {
@@ -226,28 +225,24 @@ export default function Analytics() {
 
                 <TabsContent value="executive" className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <StatCard
                             title={t('totalRevenue')}
                             value={`SAR ${(totalRevenue / 1000).toFixed(0)}K`}
                             icon={DollarSign}
                             trend={`${grossMargin}% ${t('margin')}`}
                             color="emerald"
                         />
-                        <StatCard
                             title={t('grossProfit')}
                             value={`SAR ${(grossProfit / 1000).toFixed(0)}K`}
                             icon={TrendingUp}
                             trend={`${sales.length} ${t('orders')}`}
                             color="blue"
                         />
-                        <StatCard
                             title={t('stockValue')}
                             value={`SAR ${(totalStockValue / 1000).toFixed(0)}K`}
                             icon={Package}
                             trend={`${stockTurnover}x ${t('turnover')}`}
                             color="indigo"
                         />
-                        <StatCard
                             title={t('activeProduction')}
                             value={activeProduction}
                             icon={Factory}
@@ -380,28 +375,24 @@ export default function Analytics() {
 
                 <TabsContent value="sales" className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <StatCard
                             title={t('totalOrders')}
                             value={sales.length}
                             icon={ShoppingCart}
                             trend={`SAR ${(totalRevenue / 1000).toFixed(0)}K ${t('revenue')}`}
                             color="blue"
                         />
-                        <StatCard
                             title={t('avgOrderValue')}
                             value={`SAR ${sales.length > 0 ? (totalRevenue / sales.length / 1000).toFixed(1) : 0}K`}
                             icon={DollarSign}
                             trend={t('perOrder')}
                             color="emerald"
                         />
-                        <StatCard
                             title={t('pendingOrders')}
                             value={sales.filter(s => s.status === 'pending').length}
                             icon={Calendar}
                             trend={t('awaitingConfirmation')}
                             color="amber"
                         />
-                        <StatCard
                             title={t('delivered')}
                             value={sales.filter(s => s.status === 'delivered').length}
                             icon={Package}
@@ -472,28 +463,24 @@ export default function Analytics() {
 
                 <TabsContent value="inventory" className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <StatCard
                             title={t('totalStockValue')}
                             value={`SAR ${(totalStockValue / 1000).toFixed(0)}K`}
                             icon={Package}
                             trend={`${stockLevels.length} ${t('items')}`}
                             color="indigo"
                         />
-                        <StatCard
                             title={t('stockTurnover')}
                             value={`${stockTurnover}x`}
                             icon={TrendingUp}
                             trend={t('annualTurnover')}
                             color="emerald"
                         />
-                        <StatCard
                             title={t('slowMoving')}
                             value={stockLevels.filter(s => (s.aging_days || 0) > 90).length}
                             icon={TrendingDown}
                             trend={t('over90Days')}
                             color="amber"
                         />
-                        <StatCard
                             title={t('lowStockItems')}
                             value={stockLevels.filter(s => (s.available_quantity || 0) < 10).length}
                             icon={Package}
@@ -551,28 +538,24 @@ export default function Analytics() {
 
                 <TabsContent value="production" className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <StatCard
                             title={t('productionOrders')}
                             value={productions.length}
                             icon={Factory}
                             trend={`${activeProduction} ${t('active')}`}
                             color="purple"
                         />
-                        <StatCard
                             title={t('productionEfficiency')}
                             value={`${productionEfficiency}%`}
                             icon={TrendingUp}
                             trend={t('outputVsPlanned')}
                             color="emerald"
                         />
-                        <StatCard
                             title={t('totalProduced')}
                             value={totalProduced.toLocaleString()}
                             icon={Package}
                             trend={t('units')}
                             color="blue"
                         />
-                        <StatCard
                             title={t('qualityRate')}
                             value={`${qualityRate}%`}
                             icon={TrendingUp}
@@ -630,28 +613,24 @@ export default function Analytics() {
 
                 <TabsContent value="purchasing" className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <StatCard
                             title={t('totalPurchases')}
                             value={`SAR ${(totalCosts / 1000).toFixed(0)}K`}
                             icon={ShoppingCart}
                             trend={`${purchases.length} POs`}
                             color="blue"
                         />
-                        <StatCard
                             title={t('avgPOValue')}
                             value={`SAR ${purchases.length > 0 ? (totalCosts / purchases.length / 1000).toFixed(1) : 0}K`}
                             icon={DollarSign}
                             trend={t('perPO')}
                             color="indigo"
                         />
-                        <StatCard
                             title={t('dpo')}
                             value={`${dpo} ${t('days')}`}
                             icon={Calendar}
                             trend={t('payableOutstanding')}
                             color="purple"
                         />
-                        <StatCard
                             title={t('pendingPOs')}
                             value={purchases.filter(p => p.status === 'pending_approval').length}
                             icon={Package}
@@ -699,28 +678,24 @@ export default function Analytics() {
 
                 <TabsContent value="finance" className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <StatCard
                             title={t('revenue')}
                             value={`SAR ${(totalRevenue / 1000).toFixed(0)}K`}
                             icon={DollarSign}
                             trend={`${sales.length} ${t('orders')}`}
                             color="emerald"
                         />
-                        <StatCard
                             title={t('grossProfit')}
                             value={`SAR ${(grossProfit / 1000).toFixed(0)}K`}
                             icon={TrendingUp}
                             trend={`${grossMargin}% ${t('margin')}`}
                             color="green"
                         />
-                        <StatCard
                             title={t('dso')}
                             value={`${dso} ${t('days')}`}
                             icon={Calendar}
                             trend={t('salesOutstanding')}
                             color="blue"
                         />
-                        <StatCard
                             title={t('dpo')}
                             value={`${dpo} ${t('days')}`}
                             icon={Calendar}
@@ -828,28 +803,24 @@ export default function Analytics() {
 
                 <TabsContent value="hr" className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <StatCard
                             title={t('activeEmployees')}
                             value={activeEmployees}
                             icon={Users}
                             trend={`${employees.length} ${t('total')}`}
                             color="blue"
                         />
-                        <StatCard
                             title={t('saudizationRate')}
                             value={`${saudizationRate}%`}
                             icon={TrendingUp}
                             trend={`${saudiEmployees} ${t('saudi')}`}
                             color="emerald"
                         />
-                        <StatCard
                             title={t('activeProjects')}
                             value={activeProjects}
                             icon={Factory}
                             trend={`${projects.length} ${t('total')}`}
                             color="indigo"
                         />
-                        <StatCard
                             title={t('projectMargin')}
                             value={`${projectMargin}%`}
                             icon={DollarSign}

@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus, ClipboardCheck, CheckCircle2, AlertTriangle, FileText, Scan } from "lucide-react";
-import StatCard from "../components/erp/StatCard";
 import DataTable from "../components/erp/DataTable";
 import AssetVerificationTaskForm from "../components/assets/AssetVerificationTaskForm";
 import AssetVerificationInterface from "../components/assets/AssetVerificationInterface";
@@ -168,28 +167,24 @@ export default function AssetVerification() {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
                     title="Tasks Scheduled"
                     value={tasksScheduled}
                     icon={ClipboardCheck}
                     trend={`${tasksInProgress} ${t('inProgress')}`}
                     color="blue"
                 />
-                <StatCard
                     title="Assets Verified"
                     value={totalVerified}
                     icon={CheckCircle2}
                     trend={`${verificationRate}% accuracy rate`}
                     color="emerald"
                 />
-                <StatCard
                     title="Discrepancies"
                     value={totalDiscrepancies}
                     icon={AlertTriangle}
                     trend="Require follow-up"
                     color="amber"
                 />
-                <StatCard
                     title={`${t('overdue')} Tasks`}
                     value={tasksOverdue}
                     icon={AlertTriangle}

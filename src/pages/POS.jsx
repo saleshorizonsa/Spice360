@@ -14,7 +14,6 @@ import {
     Zap, FileText, Boxes, ChevronRight, Tag
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import StatCard from "@/components/erp/StatCard";
 import DataTable from "@/components/erp/DataTable";
 
 const VAT_RATE = 0.15;
@@ -538,10 +537,6 @@ export default function POS() {
                     ══════════════════════════════════════ */}
                 <TabsContent value="summary" className="p-4 m-0 overflow-auto h-full space-y-4">
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <StatCard title="Today's Sales" value={`SAR ${todaySales.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} icon={TrendingUp} color="emerald" trend={`${todayTx.length} transactions`} />
-                        <StatCard title="Month Sales" value={`SAR ${monthSales.toLocaleString('en', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`} icon={BarChart3} color="blue" trend={`${monthTx.length} transactions`} />
-                        <StatCard title="Total Transactions" value={transactions.length} icon={Receipt} color="indigo" trend="All time" />
-                        <StatCard title="Total VAT Collected" value={`SAR ${totalVAT.toFixed(2)}`} icon={FileText} color="amber" trend="Linked to ZATCA" />
                     </div>
 
                     {/* Integration shortcuts */}

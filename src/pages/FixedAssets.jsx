@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Package2, UserCheck, Wrench, Construction, TrendingDown, Calculator, AlertTriangle, QrCode, Scan, Calendar, FileText, Lock } from "lucide-react";
-import StatCard from "../components/erp/StatCard";
 import DataTable from "../components/erp/DataTable";
 import FixedAssetForm from "../components/finance/FixedAssetForm";
 import AssetAllocationForm from "../components/assets/AssetAllocationForm";
@@ -487,28 +486,24 @@ export default function FixedAssets() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
                     title={t('totalAssetValue')}
                     value={`SAR ${(totalAssetValue / 1000000).toFixed(1)}M`}
                     icon={Package2}
                     trend={`${activeAssets} ${t('active')} assets`}
                     color="emerald"
                 />
-                <StatCard
                     title={t('netBookValue')}
                     value={`SAR ${(totalNBV / 1000000).toFixed(1)}M`}
                     icon={TrendingDown}
                     trend={`SAR ${(totalAccumulatedDep / 1000000).toFixed(1)}M ${t('depreciated')}`}
                     color="blue"
                 />
-                <StatCard
                     title={t('activeAllocations')}
                     value={activeAllocations}
                     icon={UserCheck}
                     trend={t('assetsInUse')}
                     color="indigo"
                 />
-                <StatCard
                     title={t('aucValue')}
                     value={`SAR ${(totalAUCValue / 1000000).toFixed(1)}M`}
                     icon={Construction}

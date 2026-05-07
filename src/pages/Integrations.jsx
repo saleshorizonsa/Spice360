@@ -14,7 +14,6 @@ import {
     AlertTriangle,
     Upload
 } from "lucide-react";
-import StatCard from "../components/erp/StatCard";
 import DataTable from "../components/erp/DataTable";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -155,25 +154,21 @@ export default function Integrations() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
                     title="Active Integrations"
                     value={activeIntegrations}
                     icon={CheckCircle}
                     trend="up"
                 />
-                <StatCard
                     title="Syncs (24h)"
                     value={recentSyncs}
                     icon={RefreshCw}
                     trend="neutral"
                 />
-                <StatCard
                     title="Success Rate"
                     value={`${successRate}%`}
                     icon={successRate >= 95 ? CheckCircle : AlertTriangle}
                     trend={successRate >= 95 ? "up" : "down"}
                 />
-                <StatCard
                     title="Failed Syncs"
                     value={failedSyncs}
                     icon={XCircle}

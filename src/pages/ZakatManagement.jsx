@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus, Calculator, FileCheck, Users, Settings, Lock, Download } from "lucide-react";
-import StatCard from "../components/erp/StatCard";
 import DataTable from "../components/erp/DataTable";
 import ZakatConfigForm from "../components/finance/ZakatConfigForm";
 import ZakatComputationForm from "../components/finance/ZakatComputationForm";
@@ -212,28 +211,24 @@ export default function ZakatManagement() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
                     title="Saudi/GCC Ownership"
                     value={`${saudiGCCOwnership.toFixed(1)}%`}
                     icon={Users}
                     trend={`${activeShareholders.filter(s => s.is_saudi_gcc).length} shareholders`}
                     color="emerald"
                 />
-                <StatCard
                     title="GL Accounts Mapped"
                     value={zakatableAccounts}
                     icon={FileCheck}
                     trend={`${unmappedAccounts} unmapped`}
                     color={unmappedAccounts > 0 ? "amber" : "blue"}
                 />
-                <StatCard
                     title="Zakat Rate"
                     value={`${activeConfig?.zakat_rate || 2.5}%`}
                     icon={Calculator}
                     trend={activeConfig?.fiscal_year || "No active config"}
                     color="indigo"
                 />
-                <StatCard
                     title="Latest Zakat Due"
                     value={latestComputation ? `SAR ${(latestComputation.annual_zakat_due / 1000).toFixed(0)}K` : "N/A"}
                     icon={Settings}

@@ -6,7 +6,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Package, Scissors, History, AlertCircle, CheckCircle } from "lucide-react";
-import StatCard from "@/components/erp/StatCard";
 import DataTable from "@/components/erp/DataTable";
 import CoilForm from "@/components/inventory/CoilForm";
 import CoilSlittingForm from "@/components/inventory/CoilSlittingForm";
@@ -121,35 +120,30 @@ export default function CoilManagement() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-                <StatCard
                     title={t('totalCoils')}
                     value={totalCoils}
                     icon={Package}
                     trend={t('allRegisteredCoils')}
                     color="blue"
                 />
-                <StatCard
                     title={t('available')}
                     value={availableCoils.length}
                     icon={CheckCircle}
                     trend={t('readyToUse')}
                     color="emerald"
                 />
-                <StatCard
                     title={t('totalWeight')}
                     value={`${totalWeight.toFixed(0)} kg`}
                     icon={Package}
                     trend={t('currentStock')}
                     color="indigo"
                 />
-                <StatCard
                     title={t('reserved')}
                     value={reservedCoils.length}
                     icon={AlertCircle}
                     trend={t('forProduction')}
                     color="amber"
                 />
-                <StatCard
                     title={t('qcPending')}
                     value={qcPending.length}
                     icon={AlertCircle}
