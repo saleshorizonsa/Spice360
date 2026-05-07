@@ -635,6 +635,12 @@ export default function TenantOnboardingWizard({ onComplete }) {
 
     const activeStep = useMemo(() => readiness.activeStep, [readiness.activeStep]);
 
+    React.useEffect(() => {
+        if (activeStep === "ready") {
+            onComplete?.();
+        }
+    }, [activeStep, onComplete]);
+
     if (readiness.isLoading) {
         return (
             <div className="fixed inset-0 flex items-center justify-center bg-[#f5f7fb]">
@@ -642,12 +648,6 @@ export default function TenantOnboardingWizard({ onComplete }) {
             </div>
         );
     }
-
-    React.useEffect(() => {
-        if (activeStep === "ready") {
-            onComplete?.();
-        }
-    }, [activeStep, onComplete]);
 
     if (activeStep === "ready") return null;
 
