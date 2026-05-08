@@ -8,7 +8,7 @@ import InvoicePrintPreview from "@/components/printing/InvoicePrintPreview";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useToast } from "@/components/ui/use-toast";
 import { getTenantLogoAsset, getTenantPrintingPreferences } from "@/components/printing/invoicePrintService";
-import { calculateServiceBusinessKpis, generateRecurringInvoices, isMissingRecurringBillingRunTableError } from "@/lib/serviceBilling";
+import { calculateServiceBusinessKpis, generateRecurringInvoices, isMissingRecurringBillingRunTableError, isServiceInvoice } from "@/lib/serviceBilling";
 import { createNotification } from "@/components/utils/notificationService";
 import { CalendarClock, FilePlus2, Plus, Printer, RefreshCw } from "lucide-react";
 
@@ -43,6 +43,11 @@ export default function ServiceContractsPanel({ invoices = [] }) {
   });
 
   const kpis = calculateServiceBusinessKpis(contracts, invoices);
+  const recentServiceInvoices = invoices
+    .filter(isServiceInvoice)
+    .sort((a, b) => String(b.invoice_date || "").localeCompare(String(a.invoice_date || "")))
+    .slice(0, 5);
+  const printableInvoices = generatedInvoices.length > 0 ? generatedInvoices : recentServiceInvoices;
 
   const generateMutation = useMutation({
     mutationFn: async () => {
@@ -73,8 +78,10 @@ export default function ServiceContractsPanel({ invoices = [] }) {
       queryClient.invalidateQueries({ queryKey: ["serviceContracts"] });
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
       toast({
-        title: "Recurring billing complete",
-        description: `${generated.length} service invoice(s) generated.`
+        title: generated.length > 0 ? "Recurring billing complete" : "No due invoices",
+        description: generated.length > 0
+          ? `${generated.length} service invoice(s) generated.`
+          : "No active contracts are due for billing today."
       });
     },
     onError: (error) => {
@@ -103,26 +110,28 @@ export default function ServiceContractsPanel({ invoices = [] }) {
         <Card><CardContent className="p-4"><p className="text-sm text-slate-500">Overdue Invoices</p><p className="text-xl font-bold">{kpis.overdueInvoices}</p></CardContent></Card>
       </div>
 
-      {generatedInvoices.length > 0 && (
+      {printableInvoices.length > 0 && (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="font-semibold text-emerald-950">Generated invoices ready to print</p>
+              <p className="font-semibold text-emerald-950">
+                {generatedInvoices.length > 0 ? "Generated invoices ready to print" : "Recent service invoices ready to print"}
+              </p>
               <p className="text-sm text-emerald-800">Open the ZATCA print preview, download PDF, email, or share by WhatsApp.</p>
             </div>
-            {generatedInvoices.length === 1 && (
+            {printableInvoices.length === 1 && (
               <Button
                 className="bg-emerald-600 hover:bg-emerald-700"
-                onClick={() => setPrintInvoice(generatedInvoices[0])}
+                onClick={() => setPrintInvoice(printableInvoices[0])}
               >
                 <Printer className="mr-2 h-4 w-4" />
                 Print Preview
               </Button>
             )}
           </div>
-          {generatedInvoices.length > 1 && (
+          {printableInvoices.length > 1 && (
             <div className="mt-3 grid gap-2 md:grid-cols-2">
-              {generatedInvoices.map((invoice) => (
+              {printableInvoices.map((invoice) => (
                 <div key={invoice.id || invoice.invoice_number} className="flex items-center justify-between gap-3 rounded-md border bg-white px-3 py-2">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{invoice.invoice_number || "Generated invoice"}</p>
