@@ -16,7 +16,7 @@ import {
   isServiceInvoice
 } from "@/lib/serviceBilling";
 import { createNotification } from "@/components/utils/notificationService";
-import { CalendarClock, FilePlus2, Plus, Printer, RefreshCw } from "lucide-react";
+import { CalendarClock, Edit, FilePlus2, Plus, Printer, RefreshCw } from "lucide-react";
 
 export default function ServiceContractsPanel({ invoices = [] }) {
   const queryClient = useQueryClient();
@@ -132,7 +132,7 @@ export default function ServiceContractsPanel({ invoices = [] }) {
 
   return (
     <div className="space-y-4">
-      <div className="grid gap-3 md:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         <Card><CardContent className="p-4"><p className="text-sm text-slate-500">MRR</p><p className="text-xl font-bold">SAR {kpis.monthlyRecurringRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-sm text-slate-500">ARR</p><p className="text-xl font-bold">SAR {kpis.annualRecurringRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-sm text-slate-500">Active Contracts</p><p className="text-xl font-bold">{kpis.activeContracts}</p></CardContent></Card>
@@ -160,14 +160,14 @@ export default function ServiceContractsPanel({ invoices = [] }) {
             )}
           </div>
           {printableInvoices.length > 1 && (
-            <div className="mt-3 grid gap-2 md:grid-cols-2">
+            <div className="mt-3 grid gap-2 lg:grid-cols-2">
               {printableInvoices.map((invoice) => (
-                <div key={invoice.id || invoice.invoice_number} className="flex items-center justify-between gap-3 rounded-md border bg-white px-3 py-2">
+                <div key={invoice.id || invoice.invoice_number} className="flex flex-col gap-3 rounded-md border bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{invoice.invoice_number || "Generated invoice"}</p>
                     <p className="truncate text-xs text-slate-500">{invoice.customer_name} · SAR {Number(invoice.total_amount || 0).toLocaleString()}</p>
                   </div>
-                  <Button size="sm" variant="outline" onClick={() => setPrintInvoice(invoice)}>
+                  <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={() => setPrintInvoice(invoice)}>
                     <Printer className="mr-2 h-4 w-4" />
                     Print
                   </Button>
@@ -178,33 +178,96 @@ export default function ServiceContractsPanel({ invoices = [] }) {
         </div>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
           <h3 className="text-lg font-semibold">Service Contracts & Recurring Billing</h3>
           <p className="text-sm text-slate-500">Managed services, cloud subscriptions, AMC/SLA, consulting, and support retainers.</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => generateMutation.mutate()} disabled={generateMutation.isPending}>
+        <div className="grid gap-2 sm:flex sm:justify-end">
+          <Button variant="outline" className="w-full sm:w-auto" onClick={() => generateMutation.mutate()} disabled={generateMutation.isPending}>
             <RefreshCw className={`mr-2 h-4 w-4 ${generateMutation.isPending ? "animate-spin" : ""}`} />
             Generate Due Invoices
           </Button>
-          <Button className="bg-emerald-600 hover:bg-emerald-700" onClick={() => { setEditingContract(null); setShowForm(true); }}>
+          <Button className="w-full bg-emerald-600 hover:bg-emerald-700 sm:w-auto" onClick={() => { setEditingContract(null); setShowForm(true); }}>
             <Plus className="mr-2 h-4 w-4" />
             New Contract
           </Button>
         </div>
       </div>
 
-      <DataTable
-        data={contracts}
-        columns={columns}
-        searchFields={["contract_number", "customer_name", "service_type"]}
-        onPrint={(contract) => generateAndPrintMutation.mutate(contract)}
-        getPrintTitle={(contract) => findInvoiceForContract(contract) ? "Print latest invoice" : "Generate invoice and print"}
-        onEdit={(contract) => { setEditingContract(contract); setShowForm(true); }}
-      />
+      <div className="hidden md:block">
+        <DataTable
+          data={contracts}
+          columns={columns}
+          searchFields={["contract_number", "customer_name", "service_type"]}
+          onPrint={(contract) => generateAndPrintMutation.mutate(contract)}
+          getPrintTitle={(contract) => findInvoiceForContract(contract) ? "Print latest invoice" : "Generate invoice and print"}
+          onEdit={(contract) => { setEditingContract(contract); setShowForm(true); }}
+        />
+      </div>
 
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="space-y-3 md:hidden">
+        {contracts.length === 0 ? (
+          <div className="rounded-lg border bg-white p-6 text-center text-sm text-slate-500">
+            No service contracts found.
+          </div>
+        ) : (
+          contracts.map((contract) => (
+            <div key={contract.id || contract.contract_number} className="rounded-lg border bg-white p-4 shadow-sm">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">{contract.contract_number || "Service contract"}</p>
+                  <p className="mt-1 text-sm text-slate-600">{contract.customer_name || "-"}</p>
+                </div>
+                <span className="rounded-full bg-slate-900 px-2.5 py-1 text-xs font-medium text-white">
+                  {contract.status || "active"}
+                </span>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <p className="text-xs text-slate-500">Service</p>
+                  <p className="font-medium">{contract.service_type || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Cycle</p>
+                  <p className="font-medium">{contract.billing_cycle || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Amount</p>
+                  <p className="font-medium">SAR {Number(contract.monthly_amount || 0).toLocaleString()}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500">Next billing</p>
+                  <p className="font-medium">{contract.next_billing_date || "-"}</p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => generateAndPrintMutation.mutate(contract)}
+                  disabled={generateAndPrintMutation.isPending}
+                >
+                  <Printer className="mr-2 h-4 w-4" />
+                  Print
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => { setEditingContract(contract); setShowForm(true); }}
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </Button>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-3">
         <div className="rounded-lg border bg-slate-50 p-4">
           <FilePlus2 className="mb-2 h-5 w-5 text-[#24466f]" />
           <p className="font-semibold">Service-only invoices</p>
