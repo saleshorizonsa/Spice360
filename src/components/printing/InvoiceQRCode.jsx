@@ -1,51 +1,61 @@
-import React from "react";
-
-const hashText = (value = "") => {
-  let hash = 0;
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash << 5) - hash + value.charCodeAt(index);
-    hash |= 0;
-  }
-  return Math.abs(hash);
-};
+import React, { useEffect, useState } from "react";
+import QRCode from "qrcode";
 
 export default function InvoiceQRCode({ payload = "", label }) {
-  const seed = hashText(payload);
-  const cells = Array.from({ length: 21 * 21 }, (_, index) => {
-    const row = Math.floor(index / 21);
-    const col = index % 21;
-    const finder =
-      (row < 7 && col < 7) ||
-      (row < 7 && col > 13) ||
-      (row > 13 && col < 7);
-    if (finder) {
-      const localRow = row < 7 ? row : row - 14;
-      const localCol = col < 7 ? col : col - 14;
-      return (
-        localRow === 0 ||
-        localRow === 6 ||
-        localCol === 0 ||
-        localCol === 6 ||
-        (localRow >= 2 && localRow <= 4 && localCol >= 2 && localCol <= 4)
-      );
+  const [qrDataUrl, setQrDataUrl] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+
+    if (!payload) {
+      setQrDataUrl("");
+      setError("QR payload is missing.");
+      return () => {
+        active = false;
+      };
     }
-    return ((seed + row * 17 + col * 31 + row * col) % 5) < 2;
-  });
+
+    QRCode.toDataURL(payload, {
+      errorCorrectionLevel: "M",
+      margin: 2,
+      width: 180,
+      color: {
+        dark: "#020617",
+        light: "#ffffff"
+      }
+    })
+      .then((dataUrl) => {
+        if (!active) return;
+        setQrDataUrl(dataUrl);
+        setError("");
+      })
+      .catch((generationError) => {
+        if (!active) return;
+        setQrDataUrl("");
+        setError(generationError.message || "Unable to generate QR code.");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [payload]);
 
   return (
     <div className="inline-flex flex-col items-center gap-2 rounded-md border border-slate-300 bg-white p-3">
       {label && <p className="text-[10px] font-medium text-slate-600">{label}</p>}
-      <div
-        className="grid h-32 w-32 bg-white"
-        style={{ gridTemplateColumns: "repeat(21, minmax(0, 1fr))" }}
-        aria-label="ZATCA QR code"
-        title={payload}
-      >
-        {cells.map((filled, index) => (
-          <span key={index} className={filled ? "bg-slate-950" : "bg-white"} />
-        ))}
-      </div>
+      {qrDataUrl ? (
+        <img
+          src={qrDataUrl}
+          alt="ZATCA QR code"
+          className="h-36 w-36"
+          title={payload}
+        />
+      ) : (
+        <div className="flex h-36 w-36 items-center justify-center border border-dashed border-slate-300 p-3 text-center text-xs text-slate-500">
+          {error || "Generating QR..."}
+        </div>
+      )}
     </div>
   );
 }
-
