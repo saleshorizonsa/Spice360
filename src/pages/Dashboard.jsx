@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -38,6 +38,9 @@ import { createPageUrl } from "@/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { usePermissions } from "@/components/utils/usePermissions";
 import { useLanguage } from "@/components/utils/languageContext";
+import { useOrganization } from "@/components/utils/OrganizationContext";
+import { getBusinessTypeLabel, getEnabledModulesForOrganization } from "@/lib/tenantModules";
+import { calculateServiceBusinessKpis, isServiceInvoice } from "@/lib/serviceBilling";
 
 const toList = (value) => (Array.isArray(value) ? value : []);
 const sumBy = (items, key) => items.reduce((sum, item) => sum + (Number(item?.[key]) || 0), 0);
@@ -114,6 +117,56 @@ const ModuleCards = ({ cards }) => (
         ))}
     </div>
 );
+
+function ServiceBusinessSummary({ modules }) {
+    const { currentOrg } = useOrganization();
+    const { data: contracts = [] } = useEntityList("ServiceContract", ["dashboard-service-contracts"], "-next_billing_date");
+    const { data: invoices = [] } = useEntityList("Invoice", ["dashboard-service-invoices"], "-invoice_date");
+    const contractList = toList(contracts);
+    const invoiceList = toList(invoices);
+    const serviceInvoices = invoiceList.filter(isServiceInvoice);
+    const kpis = calculateServiceBusinessKpis(contractList, serviceInvoices);
+    const nextContract = contractList
+        .filter((contract) => contract.status !== "paused" && contract.next_billing_date)
+        .sort((a, b) => String(a.next_billing_date).localeCompare(String(b.next_billing_date)))[0];
+
+    if (!modules?.contracts && !modules?.recurring_billing) return null;
+
+    return (
+        <Card className="border-emerald-200 bg-emerald-50/70 shadow-sm">
+            <CardContent className="space-y-4 p-4 md:p-5">
+                <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Badge className="bg-emerald-600">Saudi IT Services</Badge>
+                            <Badge variant="outline">{getBusinessTypeLabel(currentOrg?.business_type || "it_services")}</Badge>
+                        </div>
+                        <h2 className="mt-2 text-xl font-bold text-slate-950">Recurring billing command center</h2>
+                        <p className="text-sm text-emerald-900">
+                            Service contracts, ZATCA-ready invoices, WhatsApp sharing, and renewal follow-up stay at the front of the workspace.
+                        </p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 sm:flex">
+                        <Link to={createPageUrl("Sales")} className="rounded-lg bg-emerald-600 px-3 py-2 text-center text-sm font-semibold text-white hover:bg-emerald-700">
+                            Contracts
+                        </Link>
+                        <Link to={createPageUrl("ZATCA")} className="rounded-lg border border-emerald-200 bg-white px-3 py-2 text-center text-sm font-semibold text-emerald-800 hover:bg-emerald-50">
+                            ZATCA
+                        </Link>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+                    <StatCard title="MRR" value={formatSar(kpis.monthlyRecurringRevenue)} icon={Receipt} trend="Monthly recurring revenue" color="emerald" />
+                    <StatCard title="ARR" value={formatSar(kpis.annualRecurringRevenue)} icon={TrendingUp} trend="Annualized recurring revenue" color="blue" />
+                    <StatCard title="Active Contracts" value={kpis.activeContracts} icon={Briefcase} trend="Live service agreements" color="indigo" />
+                    <StatCard title="Renewals 30d" value={kpis.upcomingRenewals} icon={Clock} trend={nextContract?.next_billing_date ? `Next ${nextContract.next_billing_date}` : "No upcoming renewal"} color="amber" />
+                    <StatCard title="Overdue Invoices" value={kpis.overdueInvoices} icon={AlertTriangle} trend="Needs collection action" color="red" />
+                </div>
+            </CardContent>
+        </Card>
+    );
+}
 
 function OverviewCards() {
     const { isAdmin, hasPermission, getRoleNames } = usePermissions();
@@ -503,22 +556,33 @@ function AdministrationCards() {
 
 export default function Dashboard() {
     const { t } = useLanguage();
+    const { currentOrg } = useOrganization();
     const [activeTab, setActiveTab] = useState("overview");
-    const dashboardTabs = useMemo(() => ([
-        { value: "overview", label: "Overview", Component: OverviewCards },
-        { value: "controls", label: "Control Center", Component: ControlCenterCards },
-        { value: "sales", label: "Sales", Component: SalesCards },
-        { value: "inventory", label: "Inventory & Quality", Component: InventoryCards },
-        { value: "operations", label: "Operations", Component: OperationsCards },
-        { value: "supply-chain", label: "Supply Chain", Component: SupplyChainCards },
-        { value: "finance", label: "Finance", Component: FinanceCards },
-        { value: "projects", label: "Projects", Component: ProjectCards },
-        { value: "hr", label: "HR", Component: HRCards },
-        { value: "compliance", label: "Compliance", Component: ComplianceCards },
-        { value: "reports", label: "Reports", Component: ReportsCards },
-        { value: "workflow", label: "Workflow", Component: WorkflowCards },
-        { value: "administration", label: "Administration", Component: AdministrationCards }
-    ]), []);
+    const enabledModules = useMemo(() => getEnabledModulesForOrganization(currentOrg), [currentOrg]);
+    const dashboardTabs = useMemo(() => {
+        const tabs = [
+            { value: "overview", label: "Overview", Component: OverviewCards, modules: ["crm", "finance", "contracts", "reports"] },
+            { value: "controls", label: "Control Center", Component: ControlCenterCards, modules: ["finance", "zatca", "approvals"] },
+            { value: "sales", label: "Sales", Component: SalesCards, modules: ["sales", "contracts", "recurring_billing"] },
+            { value: "inventory", label: "Inventory & Quality", Component: InventoryCards, modules: ["inventory"] },
+            { value: "operations", label: "Operations", Component: OperationsCards, modules: ["manufacturing", "assets"] },
+            { value: "supply-chain", label: "Supply Chain", Component: SupplyChainCards, modules: ["supply_chain", "purchasing"] },
+            { value: "finance", label: "Finance", Component: FinanceCards, modules: ["finance"] },
+            { value: "projects", label: "Projects", Component: ProjectCards, modules: ["projects"] },
+            { value: "hr", label: "HR", Component: HRCards, modules: ["hr"] },
+            { value: "compliance", label: "Compliance", Component: ComplianceCards, modules: ["zatca"] },
+            { value: "reports", label: "Reports", Component: ReportsCards, modules: ["reports"] },
+            { value: "workflow", label: "Workflow", Component: WorkflowCards, modules: ["approvals"] },
+            { value: "administration", label: "Administration", Component: AdministrationCards, modules: ["admin"] }
+        ];
+        return tabs.filter((tab) => tab.modules.some((moduleKey) => enabledModules[moduleKey]));
+    }, [enabledModules]);
+
+    useEffect(() => {
+        if (!dashboardTabs.some((tab) => tab.value === activeTab)) {
+            setActiveTab(dashboardTabs[0]?.value || "overview");
+        }
+    }, [activeTab, dashboardTabs]);
 
     const activeModule = dashboardTabs.find(tab => tab.value === activeTab) || dashboardTabs[0];
     const ActiveComponent = activeModule.Component;
@@ -528,9 +592,11 @@ export default function Dashboard() {
             <div>
                 <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">{t("dashboard")}</h1>
                 <p className="mt-1 text-sm text-gray-600 md:text-base">
-                    Management overview by module. Use the cards to review status and open the working screens when needed.
+                    The easiest ZATCA-compliant recurring billing platform for Saudi IT service companies.
                 </p>
             </div>
+
+            <ServiceBusinessSummary modules={enabledModules} />
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">
                 <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white p-2 shadow-sm">

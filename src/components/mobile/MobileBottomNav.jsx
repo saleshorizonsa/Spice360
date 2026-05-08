@@ -9,12 +9,20 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "../utils/languageContext";
+import { filterItemsByModules } from "@/lib/tenantModules";
 
-export default function MobileBottomNav({ pendingApprovals = 0, unreadNotifications = 0, onQuickActionClick, createPageUrl }) {
+export default function MobileBottomNav({
+    pendingApprovals = 0,
+    unreadNotifications = 0,
+    onQuickActionClick,
+    createPageUrl,
+    enabledModules,
+    isPlatformOwner = false
+}) {
     const location = useLocation();
     const { t } = useLanguage();
     
-    const navItems = [
+    const navItems = filterItemsByModules([
         { 
             name: t('dashboard'), 
             path: "Dashboard", 
@@ -43,7 +51,7 @@ export default function MobileBottomNav({ pendingApprovals = 0, unreadNotificati
             path: "MobileMenu", 
             icon: Menu 
         }
-    ];
+    ], enabledModules, isPlatformOwner);
 
     const isActive = (path) => {
         return location.pathname.includes(path);

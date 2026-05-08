@@ -16,6 +16,7 @@ import EmailVerificationPendingPage from '@/components/EmailVerificationPendingP
 import { defaultSubscriptionPlanId, storeSignupPlan } from '@/lib/subscriptionPlans';
 import { isAuthCallbackPath } from '@/lib/authRedirect';
 import { canAccessPathForEmailVerification } from '@/lib/emailVerificationGate';
+import { getEnabledModulesForOrganization, isPageEnabledForModules } from '@/lib/tenantModules';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -116,6 +117,20 @@ const AuthenticatedApp = () => {
     return renderAuthEntry();
   }
 
+  const enabledModules = getEnabledModulesForOrganization(readiness.data?.organization);
+  const isPlatformOwner = Boolean(user?.is_platform_owner);
+  const renderProtectedPage = (path, Page) => {
+    if (!isPageEnabledForModules(path, enabledModules, isPlatformOwner)) {
+      return <Navigate to="/Dashboard" replace />;
+    }
+
+    return (
+      <LayoutWrapper currentPageName={path}>
+        <Page />
+      </LayoutWrapper>
+    );
+  };
+
   // Render the main app
   return (
     <Routes>
@@ -128,11 +143,7 @@ const AuthenticatedApp = () => {
         <Route
           key={path}
           path={`/${path}`}
-          element={
-            <LayoutWrapper currentPageName={path}>
-              <Page />
-            </LayoutWrapper>
-          }
+          element={renderProtectedPage(path, Page)}
         />
       ))}
       <Route path="*" element={<PageNotFound />} />

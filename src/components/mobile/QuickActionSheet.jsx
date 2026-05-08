@@ -11,22 +11,32 @@ import {
     ShoppingCart, 
     Package, 
     DollarSign, 
-    Wrench,
     ClipboardList,
+    MessageCircle,
+    Repeat2,
     Truck,
     Receipt,
     UserPlus
 } from "lucide-react";
 import { useLanguage } from "../utils/languageContext";
+import { isPageEnabledForModules } from "@/lib/tenantModules";
 
-export default function QuickActionSheet({ open, onOpenChange, createPageUrl }) {
-    const { t, isRTL } = useLanguage();
+export default function QuickActionSheet({ open, onOpenChange, createPageUrl, enabledModules, isPlatformOwner = false }) {
+    const { t } = useLanguage();
     
     const quickActions = [
         {
+            category: "Service Revenue",
+            items: [
+                { name: "Service Contract", icon: Repeat2, page: "Sales", params: "tab=services&action=new-contract", color: "bg-emerald-100 text-emerald-600" },
+                { name: "Service Invoice", icon: Receipt, page: "Sales", params: "tab=invoices&mode=service", color: "bg-pink-100 text-pink-600" },
+                { name: t('quotation'), icon: FileText, page: "Sales", params: "action=new-quotation", color: "bg-blue-100 text-blue-600" },
+                { name: "WhatsApp Reminder", icon: MessageCircle, page: "Sales", params: "action=whatsapp-reminder", color: "bg-green-100 text-green-600" },
+            ]
+        },
+        {
             category: t('sales'),
             items: [
-                { name: t('quotation'), icon: FileText, page: "Sales", params: "action=new-quotation", color: "bg-blue-100 text-blue-600" },
                 { name: t('salesOrder'), icon: ShoppingCart, page: "Sales", params: "action=new-order", color: "bg-emerald-100 text-emerald-600" },
                 { name: t('delivery'), icon: Truck, page: "Sales", params: "action=new-delivery", color: "bg-purple-100 text-purple-600" },
             ]
@@ -46,18 +56,17 @@ export default function QuickActionSheet({ open, onOpenChange, createPageUrl }) 
             ]
         },
         {
-            category: t('maintenance'),
-            items: [
-                { name: "Work Order", icon: Wrench, page: "Maintenance", params: "action=new-workorder", color: "bg-amber-100 text-amber-600" },
-            ]
-        },
-        {
             category: t('hr'),
             items: [
                 { name: "Leave Request", icon: UserPlus, page: "HR", params: "action=new-leave", color: "bg-teal-100 text-teal-600" },
             ]
         }
-    ];
+    ]
+        .map((category) => ({
+            ...category,
+            items: category.items.filter((item) => isPageEnabledForModules(item.page, enabledModules, isPlatformOwner))
+        }))
+        .filter((category) => category.items.length > 0);
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>

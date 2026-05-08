@@ -1,6 +1,6 @@
 import React from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, BarChart3, CheckCircle2, FileCheck, Lock, Package, Shield, ShoppingCart, Users } from "lucide-react";
+import { ArrowRight, BarChart3, CheckCircle2, FileCheck, MessageCircle, Receipt, Repeat2, ShoppingCart, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import BrandLogo from "@/components/BrandLogo";
@@ -8,24 +8,24 @@ import { matrixSales } from "@/api/matrixSalesClient";
 import { formatPlanPrice, normalizeSubscriptionPlans } from "@/lib/subscriptionPlans";
 
 const benefits = [
-  "Run sales, finance, inventory, purchasing, HR, approvals, and reporting in one tenant-safe workspace.",
-  "Guide new companies through verified onboarding, company profile setup, and ZATCA readiness.",
-  "Give management live exception cards for approvals, receivables, payables, stock, and compliance."
+  "Create recurring invoices from IT service contracts without inventory or warehouse complexity.",
+  "Send ZATCA-ready bilingual invoice PDFs and reminders through email and WhatsApp workflows.",
+  "Track MRR, ARR, active contracts, renewals, overdue invoices, VAT, and customer growth in one tenant-safe workspace."
 ];
 
 const modules = [
-  { title: "Sales & Invoicing", icon: ShoppingCart, description: "Quotations, orders, delivery, invoices, returns, POS, and ZATCA invoice flow." },
-  { title: "Finance", icon: BarChart3, description: "AR, AP, journal entries, payments, assets, reports, and period close controls." },
-  { title: "Inventory", icon: Package, description: "Stock levels, movements, transfers, cycle counts, warehouse bins, and valuation." },
-  { title: "HR & Projects", icon: Users, description: "Employees, payroll, leave, loans, project expenses, milestones, and timesheets." },
-  { title: "ZATCA Compliance", icon: FileCheck, description: "Phase 1 QR readiness, Phase 2 setup fields, submission logs, and validation controls." },
-  { title: "Security", icon: Shield, description: "Tenant isolation, owner dashboard, roles, approvals, and audit trail controls." }
+  { title: "Recurring Billing", icon: Repeat2, description: "Monthly, annual, and contract-linked invoices for AMC, SLA, cloud, Microsoft 365, consulting, and support retainers." },
+  { title: "Service Contracts", icon: ShoppingCart, description: "Manage contract periods, renewal alerts, SLA details, service lines, auto-renewal, and pause/resume billing." },
+  { title: "ZATCA Compliance", icon: FileCheck, description: "Standard and simplified tax invoice workflows with QR code, VAT validation, Arabic support, and Phase 2 readiness." },
+  { title: "WhatsApp Workflows", icon: MessageCircle, description: "Share invoices, quotations, payment reminders, and renewal messages with bilingual templates." },
+  { title: "Customer Portal", icon: Users, description: "Let customers view invoices, approve quotes, download PDFs, open tickets, and review payment history." },
+  { title: "Service KPIs", icon: BarChart3, description: "Track MRR, ARR, active contracts, renewal pipeline, overdue invoices, VAT collected, and revenue by service type." }
 ];
 
 const faqs = [
   ["Is HORIZON multi-tenant?", "Yes. Each company is treated as a separate tenant and business data is scoped by tenant."],
   ["Can we start with a trial?", "Yes. Plans include trial days and the selected plan is carried into signup and onboarding."],
-  ["Does it support ZATCA?", "The app includes ZATCA setup fields, QR readiness, validation, and submission log workflows."],
+  ["Does it support ZATCA?", "The app includes ZATCA setup fields, QR readiness, validation, bilingual invoice templates, and submission log workflows."],
   ["Can pricing change later?", "Yes. Pricing is database-backed and owner changes are reflected on the public landing page."]
 ];
 
@@ -64,13 +64,13 @@ export default function PublicLandingPage({ onLogin, onSelectPlan }) {
           <div className="relative mx-auto grid max-w-7xl gap-10 px-5 py-20 lg:grid-cols-[1.1fr_0.9fr] lg:py-28">
             <div className="space-y-7">
               <div className="inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white/90">
-                ERP, compliance, and management control for Saudi businesses
+                ZATCA recurring billing for Saudi IT service companies
               </div>
               <h1 className="max-w-4xl text-5xl font-bold leading-tight md:text-6xl">
                 HORIZON
               </h1>
               <p className="max-w-2xl text-xl leading-9 text-white/82">
-                Launch a tenant-ready business platform with guided onboarding, ZATCA setup, subscription plans, and operational dashboards.
+                The easiest ZATCA-compliant recurring billing platform for managed IT services, AMC/SLA contracts, cloud services, subscriptions, and support retainers.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Button onClick={() => onSelectPlan(plans[1]?.id || "professional")} className="h-12 bg-[#d68f2b] px-6 text-slate-950 hover:bg-[#efaa42]">
@@ -98,13 +98,13 @@ export default function PublicLandingPage({ onLogin, onSelectPlan }) {
         <section className="mx-auto max-w-7xl px-5 py-16">
           <div className="mb-8">
             <p className="text-sm font-semibold uppercase text-[#24466f]">Product benefits</p>
-            <h2 className="mt-2 text-3xl font-bold">Built for control, compliance, and scale</h2>
+            <h2 className="mt-2 text-3xl font-bold">Built for recurring service revenue</h2>
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {benefits.map((benefit) => (
               <Card key={benefit}>
                 <CardContent className="p-5">
-                  <Lock className="mb-3 h-5 w-5 text-[#24466f]" />
+                  <Receipt className="mb-3 h-5 w-5 text-[#24466f]" />
                   <p className="text-sm leading-6 text-slate-600">{benefit}</p>
                 </CardContent>
               </Card>

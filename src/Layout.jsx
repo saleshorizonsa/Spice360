@@ -3,14 +3,12 @@ import { Link, useNavigate } from "react-router-dom";
 import { createPageUrl } from "./utils";
 import { 
     LayoutDashboard, 
-    Factory, 
     Package, 
     CheckCircle2, 
     ShoppingCart, 
     FileText,
     TrendingUp,
     DollarSign,
-    Wrench,
     Menu,
     Settings,
     Users,
@@ -49,6 +47,8 @@ import OfflineIndicator from "@/components/mobile/OfflineIndicator";
 import { useAuth } from "@/lib/AuthContext";
 import BrandLogo from "@/components/BrandLogo";
 import { isPlatformOwnerEmail } from "@/lib/subscriptionPlans";
+import { useOrganization } from "@/components/utils/OrganizationContext";
+import { filterItemsByModules, getEnabledModulesForOrganization } from "@/lib/tenantModules";
 
 function LayoutContent({ children, currentPageName }) {
     const [showQuickAction, setShowQuickAction] = React.useState(false);
@@ -75,11 +75,16 @@ function LayoutContent({ children, currentPageName }) {
     }, []);
     const { language, isRTL, toggleLanguage, t } = useLanguage();
     const { user, logout } = useAuth();
+    const { currentOrg } = useOrganization();
     const navigate = useNavigate();
 
     const isPlatformOwner = user?.is_platform_owner || isPlatformOwnerEmail(user?.email);
+    const enabledModules = React.useMemo(
+        () => getEnabledModulesForOrganization(currentOrg),
+        [currentOrg]
+    );
 
-    const menuItems = [
+    const allMenuItems = [
         { name: t('dashboard'), path: "Dashboard", icon: LayoutDashboard, section: "Overview" },
         ...(isPlatformOwner ? [{ name: "Owner Dashboard", path: "OwnerDashboard", icon: Shield, section: "Overview" }] : []),
         { name: t('analytics'), path: "Analytics", icon: BarChart3, section: "Overview" },
@@ -108,6 +113,7 @@ function LayoutContent({ children, currentPageName }) {
         { name: t('masterData'), path: "MasterDataManagement", icon: Database, section: "Administration" },
         { name: t('adminCenter'), path: "AdminCenter", icon: Settings, section: "Administration" }
     ];
+    const menuItems = filterItemsByModules(allMenuItems, enabledModules, isPlatformOwner);
 
     const groupedMenuItems = menuItems.reduce((acc, item) => {
         if (!acc[item.section]) {
@@ -354,6 +360,8 @@ function LayoutContent({ children, currentPageName }) {
                 unreadNotifications={unreadNotifications}
                 onQuickActionClick={() => setShowQuickAction(true)}
                 createPageUrl={createPageUrl}
+                enabledModules={enabledModules}
+                isPlatformOwner={isPlatformOwner}
             />
 
             {/* Quick Action Sheet */}
@@ -361,6 +369,8 @@ function LayoutContent({ children, currentPageName }) {
                 open={showQuickAction} 
                 onOpenChange={setShowQuickAction}
                 createPageUrl={createPageUrl}
+                enabledModules={enabledModules}
+                isPlatformOwner={isPlatformOwner}
             />
 
             {/* Offline Indicator */}
