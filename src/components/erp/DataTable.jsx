@@ -12,6 +12,7 @@ export default function DataTable({
     onEdit, 
     onDelete, 
     onPrint,
+    getPrintTitle,
     onBulkDelete,
     onBulkStatusChange,
     getBadgeColor,
@@ -247,7 +248,7 @@ export default function DataTable({
                                                             variant="ghost"
                                                             size="icon"
                                                             onClick={() => onPrint(row)}
-                                                            title="Print"
+                                                            title={getPrintTitle ? getPrintTitle(row) : "Print"}
                                                         >
                                                             <Printer className="w-4 h-4 text-blue-600" />
                                                         </Button>

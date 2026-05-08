@@ -8,7 +8,13 @@ import InvoicePrintPreview from "@/components/printing/InvoicePrintPreview";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useToast } from "@/components/ui/use-toast";
 import { getTenantLogoAsset, getTenantPrintingPreferences } from "@/components/printing/invoicePrintService";
-import { calculateServiceBusinessKpis, generateRecurringInvoices, isMissingRecurringBillingRunTableError, isServiceInvoice } from "@/lib/serviceBilling";
+import {
+  buildServiceInvoiceFromContract,
+  calculateServiceBusinessKpis,
+  generateRecurringInvoices,
+  isMissingRecurringBillingRunTableError,
+  isServiceInvoice
+} from "@/lib/serviceBilling";
 import { createNotification } from "@/components/utils/notificationService";
 import { CalendarClock, FilePlus2, Plus, Printer, RefreshCw } from "lucide-react";
 
@@ -86,6 +92,30 @@ export default function ServiceContractsPanel({ invoices = [] }) {
     },
     onError: (error) => {
       toast({ title: "Recurring billing failed", description: error.message || "Please try again.", variant: "destructive" });
+    }
+  });
+
+  const findInvoiceForContract = (contract) =>
+    invoices
+      .filter((invoice) => invoice.service_contract_id === contract.id && isServiceInvoice(invoice))
+      .sort((a, b) => String(b.invoice_date || "").localeCompare(String(a.invoice_date || "")))[0];
+
+  const generateAndPrintMutation = useMutation({
+    mutationFn: async (contract) => {
+      const existingInvoice = findInvoiceForContract(contract);
+      if (existingInvoice) return existingInvoice;
+
+      const invoice = buildServiceInvoiceFromContract(contract, new Date());
+      const savedInvoice = await matrixSales.entities.Invoice.create(invoice);
+      setGeneratedInvoices((prev) => [savedInvoice, ...prev]);
+      return savedInvoice;
+    },
+    onSuccess: (invoice) => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      setPrintInvoice(invoice);
+    },
+    onError: (error) => {
+      toast({ title: "Unable to open invoice print", description: error.message || "Please try again.", variant: "destructive" });
     }
   });
 
@@ -169,6 +199,8 @@ export default function ServiceContractsPanel({ invoices = [] }) {
         data={contracts}
         columns={columns}
         searchFields={["contract_number", "customer_name", "service_type"]}
+        onPrint={(contract) => generateAndPrintMutation.mutate(contract)}
+        getPrintTitle={(contract) => findInvoiceForContract(contract) ? "Print latest invoice" : "Generate invoice and print"}
         onEdit={(contract) => { setEditingContract(contract); setShowForm(true); }}
       />
 
