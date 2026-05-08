@@ -20,9 +20,9 @@ export default function QuotationForm({ item, onClose }) {
     const { currentOrg } = useOrganization();
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
 
-    const { data: products = [] } = useQuery({
-        queryKey: ['products', currentOrg?.id],
-        queryFn: () => matrixSales.entities.Product.list(),
+    const { data: materials = [] } = useQuery({
+        queryKey: ['materials', currentOrg?.id],
+        queryFn: () => matrixSales.entities.Material.list(),
         initialData: []
     });
 
@@ -274,8 +274,8 @@ export default function QuotationForm({ item, onClose }) {
                     <LineItemsTable
                         lineItems={lineItems}
                         onLineItemsChange={setLineItems}
-                        availableItems={products}
-                        itemType="product"
+                        availableItems={materials}
+                        itemType="sales_item"
                     />
 
                     {/* Totals */}

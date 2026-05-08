@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Check } from "lucide-react";
+import { Check, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,12 @@ export default function SearchableSelect({
     onValueChange, 
     options = [],
     placeholder = "Select an option...",
-    searchPlaceholder = "Search..."
+    searchPlaceholder = "Search...",
+    emptyMessage = "No results found.",
+    noResultsMessage = "No results found.",
+    createOptionLabel = "Create Item",
+    showCreateOption = false,
+    onCreateOption
 }) {
     const [open, setOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -66,8 +71,31 @@ export default function SearchableSelect({
                             />
                             <CommandList>
                                 {filteredOptions.length === 0 ? (
-                                    <CommandEmpty>No results found.</CommandEmpty>
+                                    <CommandEmpty>
+                                        <div className="space-y-2 py-2 text-center">
+                                            <p className="text-sm text-slate-500">
+                                                {options.length === 0 ? emptyMessage : noResultsMessage}
+                                            </p>
+                                            {showCreateOption && onCreateOption && (
+                                                <Button
+                                                    type="button"
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="mx-auto text-emerald-700 hover:text-emerald-800"
+                                                    onClick={() => {
+                                                        onCreateOption(searchQuery);
+                                                        setOpen(false);
+                                                        setSearchQuery("");
+                                                    }}
+                                                >
+                                                    <Plus className="mr-2 h-4 w-4" />
+                                                    {createOptionLabel}
+                                                </Button>
+                                            )}
+                                        </div>
+                                    </CommandEmpty>
                                 ) : (
+                                    <>
                                     <CommandGroup>
                                         {filteredOptions.map((option) => (
                                             <CommandItem
@@ -87,6 +115,22 @@ export default function SearchableSelect({
                                             </CommandItem>
                                         ))}
                                     </CommandGroup>
+                                    {showCreateOption && onCreateOption && (
+                                        <CommandGroup>
+                                            <CommandItem
+                                                onSelect={() => {
+                                                    onCreateOption(searchQuery);
+                                                    setOpen(false);
+                                                    setSearchQuery("");
+                                                }}
+                                                className="text-emerald-700"
+                                            >
+                                                <Plus className="mr-2 h-4 w-4" />
+                                                {createOptionLabel}
+                                            </CommandItem>
+                                        </CommandGroup>
+                                    )}
+                                    </>
                                 )}
                             </CommandList>
                         </Command>

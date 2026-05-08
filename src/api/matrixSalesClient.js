@@ -460,6 +460,28 @@ const notifyOrganizationsChanged = () => {
   window.dispatchEvent(new CustomEvent('matrixsales:organizations-changed'));
 };
 
+const assertUniqueMaterialCode = async ({ client, tableName, record = {}, organizationId = null, currentId = null }) => {
+  const materialCode = String(record.material_code || '').trim().toUpperCase();
+  if (!materialCode) return;
+
+  let query = client
+    .from(tableName)
+    .select('id')
+    .eq('record->>material_code', materialCode);
+
+  if (organizationId) {
+    query = query.eq('organization_id', organizationId);
+  }
+
+  const { data, error } = await query.limit(1);
+  if (error) throw error;
+
+  const duplicate = normalizeList(data).find((row) => row.id !== currentId);
+  if (duplicate) {
+    throw new Error(`Material code ${materialCode} already exists for this tenant.`);
+  }
+};
+
 const normalizeTenantUserRecord = (row) => {
   if (!row) return null;
   return {
@@ -829,6 +851,9 @@ const createSupabaseEntity = (entityName) => {
         organizationId,
         user: currentUser
       });
+      if (entityName === 'Material') {
+        await assertUniqueMaterialCode({ client, tableName, record, organizationId });
+      }
 
       const payload = {
         base44_id: record.base44_id || record.base44Id || null,
@@ -949,6 +974,9 @@ const createSupabaseEntity = (entityName) => {
         nextRecord: record,
         organizationId
       });
+      if (entityName === 'Material') {
+        await assertUniqueMaterialCode({ client, tableName, record, organizationId, currentId: id });
+      }
 
       const { data: row, error } = await client
         .from(tableName)

@@ -44,9 +44,9 @@ export default function SalesOrderForm({ order, onClose }) {
         initialData: []
     });
 
-    const { data: products = [] } = useQuery({
-        queryKey: ['products', currentOrg?.id],
-        queryFn: () => matrixSales.entities.Product.list(),
+    const { data: materials = [] } = useQuery({
+        queryKey: ['materials', currentOrg?.id],
+        queryFn: () => matrixSales.entities.Material.list(),
         initialData: []
     });
 
@@ -472,8 +472,8 @@ export default function SalesOrderForm({ order, onClose }) {
                         <LineItemsTable
                             lineItems={lineItems}
                             onLineItemsChange={setLineItems}
-                            availableItems={products}
-                            itemType="product"
+                            availableItems={materials}
+                            itemType="sales_item"
                         />
                         <div className="bg-gray-50 p-4 rounded-lg flex justify-between items-center">
                             <Label className="text-lg">Total Amount</Label>
