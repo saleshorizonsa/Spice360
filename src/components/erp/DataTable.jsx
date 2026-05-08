@@ -117,6 +117,19 @@ export default function DataTable({
 
     const allSelected = currentData.length > 0 && selectedRows.length === currentData.length;
     const someSelected = selectedRows.length > 0 && selectedRows.length < currentData.length;
+    const renderCellValue = (row, col) => {
+        if (col.isBadge) {
+            return (
+                <Badge className={getBadgeColor ? getBadgeColor(row[col.key]) : ""}>
+                    {row[col.key]}
+                </Badge>
+            );
+        }
+        return col.render ? col.render(row[col.key], row) : row[col.key];
+    };
+    const renderWithFallback = (value) =>
+        value === null || value === undefined || value === "" ? "-" : value;
+    const actionButtonClass = "min-h-10 flex-1 gap-2";
 
     return (
         <div className="space-y-4">
@@ -131,11 +144,11 @@ export default function DataTable({
             )}
 
             {enableBulkActions && selectedRows.length > 0 && (
-                <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex flex-col gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg sm:flex-row sm:items-center">
                     <span className="text-sm font-medium text-blue-900">
                         {selectedRows.length} item{selectedRows.length > 1 ? 's' : ''} selected
                     </span>
-                    <div className="flex gap-2 ml-auto">
+                    <div className="grid gap-2 sm:ml-auto sm:flex">
                         {onBulkStatusChange && (
                             <>
                                 <Button
@@ -173,7 +186,7 @@ export default function DataTable({
                 </div>
             )}
 
-            <div className="rounded-lg border bg-white overflow-hidden">
+            <div className="hidden rounded-lg border bg-white overflow-hidden md:block">
                 <div className="overflow-x-auto">
                     <Table>
                         <TableHeader>
@@ -229,15 +242,7 @@ export default function DataTable({
                                         )}
                                         {columns.map((col, colIdx) => (
                                             <TableCell key={colIdx} className="whitespace-nowrap">
-                                                {col.isBadge ? (
-                                                    <Badge className={getBadgeColor ? getBadgeColor(row[col.key]) : ""}>
-                                                        {row[col.key]}
-                                                    </Badge>
-                                                ) : col.render ? (
-                                                    col.render(row[col.key], row)
-                                                ) : (
-                                                    row[col.key]
-                                                )}
+                                                {renderCellValue(row, col)}
                                             </TableCell>
                                         ))}
                                         {(onEdit || onDelete || onPrint) && (
@@ -337,6 +342,129 @@ export default function DataTable({
                                 Next
                                 <ChevronRight className="w-4 h-4" />
                             </Button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            <div className="space-y-3 md:hidden">
+                {currentData.length === 0 ? (
+                    <div className="rounded-lg border bg-white p-6 text-center text-sm text-gray-500">
+                        {filteredData?.length === 0 && data?.length > 0
+                            ? "No matching records found"
+                            : "No data available"}
+                    </div>
+                ) : (
+                    currentData.map((row, idx) => {
+                        const primaryColumn = columns[0];
+                        const secondaryColumn = columns[1];
+                        const detailColumns = columns.slice(2);
+
+                        return (
+                            <div key={row.id || idx} className="rounded-lg border bg-white p-4 shadow-sm">
+                                <div className="flex items-start gap-3">
+                                    {enableBulkActions && (
+                                        <Checkbox
+                                            checked={selectedRows.includes(row.id)}
+                                            onCheckedChange={(checked) => handleSelectRow(row.id, checked)}
+                                            aria-label={`Select row ${idx + 1}`}
+                                            className="mt-1 shrink-0"
+                                        />
+                                    )}
+                                    <div className="min-w-0 flex-1">
+                                        {primaryColumn && (
+                                            <div className="text-sm font-semibold text-gray-950">
+                                                {renderWithFallback(renderCellValue(row, primaryColumn))}
+                                            </div>
+                                        )}
+                                        {secondaryColumn && (
+                                            <div className="mt-1 text-sm text-gray-600">
+                                                {renderWithFallback(renderCellValue(row, secondaryColumn))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {detailColumns.length > 0 && (
+                                    <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+                                        {detailColumns.map((col, colIdx) => (
+                                            <div key={colIdx} className="min-w-0">
+                                                <p className="text-xs font-medium text-gray-500">{col.header}</p>
+                                                <div className="mt-1 break-words text-gray-900">
+                                                    {renderWithFallback(renderCellValue(row, col))}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {(onEdit || onDelete || onPrint) && (
+                                    <div className="mt-4 flex gap-2">
+                                        {onPrint && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className={actionButtonClass}
+                                                onClick={() => onPrint(row)}
+                                                title={getPrintTitle ? getPrintTitle(row) : "Print"}
+                                            >
+                                                <Printer className="h-4 w-4 text-blue-600" />
+                                                Print
+                                            </Button>
+                                        )}
+                                        {onEdit && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className={actionButtonClass}
+                                                onClick={() => onEdit(row)}
+                                                title="Edit"
+                                            >
+                                                <Pencil className="h-4 w-4" />
+                                                Edit
+                                            </Button>
+                                        )}
+                                        {onDelete && (
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className={`${actionButtonClass} text-red-600 hover:text-red-700`}
+                                                onClick={() => onDelete(row)}
+                                                title="Delete"
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                                Delete
+                                            </Button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })
+                )}
+
+                {totalPages > 1 && (
+                    <div className="grid grid-cols-2 gap-2 rounded-lg border bg-gray-50 p-3">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => goToPage(currentPage - 1)}
+                            disabled={currentPage === 1}
+                        >
+                            <ChevronLeft className="w-4 h-4" />
+                            Previous
+                        </Button>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => goToPage(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                        >
+                            Next
+                            <ChevronRight className="w-4 h-4" />
+                        </Button>
+                        <div className="col-span-2 text-center text-xs text-gray-600">
+                            Page {currentPage} of {totalPages}
                         </div>
                     </div>
                 )}

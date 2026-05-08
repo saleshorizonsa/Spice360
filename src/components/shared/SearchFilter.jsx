@@ -107,7 +107,7 @@ export default function SearchFilter({
 
     return (
         <div className="space-y-4">
-            <div className="flex gap-3 items-center">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                 {/* Main Search Input */}
                 <div className="flex-1 relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -133,7 +133,7 @@ export default function SearchFilter({
                         type="button"
                         variant="outline"
                         onClick={() => setShowFilters(!showFilters)}
-                        className="relative"
+                        className="relative w-full sm:w-auto"
                     >
                         <Filter className="w-4 h-4 mr-2" />
                         Filters
@@ -152,7 +152,7 @@ export default function SearchFilter({
                         type="button"
                         variant="ghost"
                         onClick={handleClearSearch}
-                        className="text-gray-600 hover:text-gray-900"
+                        className="w-full text-gray-600 hover:text-gray-900 sm:w-auto"
                     >
                         <X className="w-4 h-4 mr-2" />
                         Clear
