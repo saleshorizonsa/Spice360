@@ -63,6 +63,17 @@ try {
     } elseif (preg_match('#^/entities/([A-Za-z0-9]+)/([A-Za-z0-9_-]+)$#', $path, $m) && $method === 'DELETE') {
         echo json_encode(deleteEntity($m[1], $m[2], requireAuth()));
 
+    // ── Public (no auth required) ─────────────────────────────────────────
+    } elseif ($path === '/public/plans' && $method === 'GET') {
+        $tableName = sanitizeTableName('SubscriptionPlan');
+        ensureEntityTable($tableName);
+        $stmt = getDB()->query(
+            "SELECT * FROM `{$tableName}`
+             ORDER BY CAST(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(record,'$.display_order')),'99') AS UNSIGNED) ASC,
+                      created_at ASC"
+        );
+        echo json_encode(array_map('normalizeRow', $stmt->fetchAll()));
+
     // ── Owner ─────────────────────────────────────────────────────────────
     } elseif ($path === '/owner/tenants' && $method === 'GET') {
         echo json_encode(ownerListTenants(requireAuth()));

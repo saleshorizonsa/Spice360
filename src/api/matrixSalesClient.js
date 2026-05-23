@@ -1160,6 +1160,11 @@ const phpApiMatrixSales = {
     addMessage:            async () => null,
     subscribeToConversation: () => () => {}
   },
+  publicPlans: () =>
+    fetch(`${phpApiUrl}/public/plans`, { headers: { 'Content-Type': 'application/json' } })
+      .then((r) => r.json())
+      .then((d) => (Array.isArray(d) ? d : []))
+      .catch(() => []),
   owner: {
     listTenants: () => apiFetch('/owner/tenants'),
     updateSubscription: (orgId, data) =>

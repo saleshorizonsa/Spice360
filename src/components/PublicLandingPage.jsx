@@ -34,12 +34,16 @@ export default function PublicLandingPage({ onLogin, onSelectPlan }) {
     queryKey: ["public-subscription-plans"],
     queryFn: async () => {
       try {
+        if (typeof matrixSales.publicPlans === "function") {
+          return await matrixSales.publicPlans();
+        }
         return await matrixSales.entities.SubscriptionPlan.list("display_order");
       } catch (error) {
         console.warn("Using fallback subscription plans:", error);
         return [];
       }
     },
+    staleTime: 60_000,
     initialData: []
   });
   const plans = normalizeSubscriptionPlans(dbPlans);

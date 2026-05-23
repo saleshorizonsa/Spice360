@@ -269,10 +269,11 @@ export default function OwnerDashboard() {
       if (existing.length > 0) return matrixSales.entities.SubscriptionPlan.update(existing[0].id, { ...existing[0], ...payload });
       return matrixSales.entities.SubscriptionPlan.create(payload);
     },
-    onSuccess: (_, plan) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["owner-subscription-plans"] });
+      queryClient.invalidateQueries({ queryKey: ["public-subscription-plans"] });
       setIsNewPlan(false);
-      toast({ title: isNewPlan ? "Plan created" : "Plan saved", description: "The plan is now available in the subscription selector." });
+      toast({ title: isNewPlan ? "Plan created" : "Plan saved", description: "The plan is now live on the public pricing page." });
     },
     onError: (err) => toast({ title: "Unable to save plan", description: err.message, variant: "destructive" })
   });
