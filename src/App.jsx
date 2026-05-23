@@ -4,7 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
-import { BrowserRouter as Router, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -12,8 +12,10 @@ import LoginScreen from '@/components/LoginScreen';
 import TenantOnboardingWizard, { useTenantReadiness } from '@/components/onboarding/TenantOnboardingWizard';
 import PublicLandingPage from '@/components/PublicLandingPage';
 import AuthConfirmPage from '@/components/AuthConfirmPage';
+import EmailVerificationPendingPage from '@/components/EmailVerificationPendingPage';
 import { defaultSubscriptionPlanId, storeSignupPlan } from '@/lib/subscriptionPlans';
 import { isAuthCallbackPath } from '@/lib/authRedirect';
+import { canAccessPathForEmailVerification } from '@/lib/emailVerificationGate';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -50,6 +52,7 @@ const AuthenticatedApp = () => {
 
   const openLogin = () => setAuthScreen('login');
   const isAuthCallback = isAuthCallbackPath(location.pathname);
+  const isEmailVerificationPendingPath = location.pathname === '/email-verification-pending';
 
   const renderAuthEntry = () => {
     if (authScreen === 'landing') {
@@ -60,6 +63,7 @@ const AuthenticatedApp = () => {
       <LoginScreen
         onLogin={navigateToLogin}
         onAuthSuccess={enterApp}
+        onSignupPending={(email) => navigate(`/email-verification-pending?email=${encodeURIComponent(email)}`, { replace: true })}
         selectedPlan={selectedPlan}
         initialMode={authScreen === 'signup' ? 'signup' : 'signin'}
         onBackToLanding={() => setAuthScreen('landing')}
@@ -68,7 +72,11 @@ const AuthenticatedApp = () => {
   };
 
   if (isAuthCallback) {
-    return <AuthConfirmPage onConfirmed={enterApp} onBackToLogin={backToLogin} />;
+    return <AuthConfirmPage onConfirmed={() => navigate('/', { replace: true })} onBackToLogin={backToLogin} />;
+  }
+
+  if (isEmailVerificationPendingPath) {
+    return <EmailVerificationPendingPage onBackToLogin={backToLogin} />;
   }
 
   // Show loading spinner while checking app public settings or auth
@@ -91,6 +99,13 @@ const AuthenticatedApp = () => {
 
   if (!isAuthenticated) {
     return renderAuthEntry();
+  }
+
+  if (authProvider === 'supabase' && !user?.is_platform_owner && !user?.email_verified) {
+    if (!canAccessPathForEmailVerification(location.pathname, user)) {
+      return <Navigate to="/email-verification-pending" replace />;
+    }
+    return <EmailVerificationPendingPage onBackToLogin={backToLogin} />;
   }
 
   if (authProvider === 'supabase' && !user?.is_platform_owner && !readiness.ready) {

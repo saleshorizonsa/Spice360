@@ -1,17 +1,32 @@
-import React, { useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Trash2, Search } from "lucide-react";
 import SearchableSelect from "./SearchableSelect";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import MaterialForm from "@/components/admin/MaterialForm";
+import { usePermissions } from "@/components/utils/usePermissions";
+import { useOrganization } from "@/components/utils/OrganizationContext";
+import { useQueryClient } from "@tanstack/react-query";
+import { getItemCode, itemToSelectOption, materialToSalesLinePatch, normalizeItemCode } from "@/lib/itemSelection";
 
 export default function LineItemsTable({ 
     lineItems = [], 
     onLineItemsChange,
     availableItems = [], // Products/Materials to select from
-    itemType = "product" // "product" or "material"
+    itemType = "product" // "product", "material", or "sales_item"
 }) {
     const [editingLines, setEditingLines] = useState(lineItems);
+    const [createdItems, setCreatedItems] = useState([]);
+    const [createDialog, setCreateDialog] = useState({ open: false, lineIndex: null, search: "" });
+    const { hasPermission, isAdmin, loading: permissionsLoading } = usePermissions();
+    const { currentOrg } = useOrganization();
+    const queryClient = useQueryClient();
+
+    useEffect(() => {
+        setEditingLines(lineItems);
+    }, [lineItems]);
 
     const handleAddLine = () => {
         const newLine = {
@@ -64,10 +79,20 @@ export default function LineItemsTable({
         onLineItemsChange(updated);
     };
 
-    const handleItemSelect = (index, itemCode) => {
-        const selectedItem = availableItems.find(item => 
-            (itemType === "product" ? item.product_code : item.material_code) === itemCode
-        );
+    const allAvailableItems = useMemo(() => {
+        const map = new Map();
+        [...availableItems, ...createdItems].forEach((item) => {
+            const code = getItemCode(item);
+            if (code) map.set(code, item);
+        });
+        return Array.from(map.values());
+    }, [availableItems, createdItems]);
+
+    const handleItemSelect = (index, itemCode, itemOverride = null) => {
+        const selectedItem = itemOverride || allAvailableItems.find(item => {
+            const code = itemType === "product" ? item.product_code : getItemCode(item);
+            return code === itemCode;
+        });
 
         if (selectedItem) {
             const updated = [...editingLines];
@@ -77,10 +102,15 @@ export default function LineItemsTable({
                 updated[index].unit_price = selectedItem.unit_price || 0;
                 updated[index].unit_of_measure = selectedItem.unit_of_measure || 'piece';
                 updated[index].description = selectedItem.specifications || '';
+            } else if (itemType === "sales_item") {
+                updated[index] = {
+                    ...updated[index],
+                    ...materialToSalesLinePatch(selectedItem)
+                };
             } else {
                 updated[index].material_code = selectedItem.material_code;
                 updated[index].material_name = selectedItem.material_name;
-                updated[index].unit_price = selectedItem.unit_cost || 0;
+                updated[index].unit_price = selectedItem.unit_price || selectedItem.unit_cost || 0;
                 updated[index].unit_of_measure = selectedItem.unit_of_measure || 'kg';
                 updated[index].description = selectedItem.material_type || '';
             }
@@ -100,10 +130,80 @@ export default function LineItemsTable({
     };
 
     // Prepare options for SearchableSelect
-    const itemOptions = availableItems.map(item => ({
-        value: itemType === "product" ? item.product_code : item.material_code,
-        label: `${itemType === "product" ? item.product_code : item.material_code} - ${itemType === "product" ? item.product_name : item.material_name}`
-    }));
+    const itemOptions = allAvailableItems.map(item => (
+        itemType === "product"
+            ? {
+                value: item.product_code,
+                label: `${item.product_code} - ${item.product_name}`
+            }
+            : itemToSelectOption(item)
+    ));
+
+    const canCreateItems = permissionsLoading || isAdmin || hasPermission('master_data.material', 'create');
+    const selectorLabel = itemType === "material" ? "material" : "item";
+
+    const openCreateItem = (lineIndex, search = "") => {
+        setCreateDialog({ open: true, lineIndex, search });
+    };
+
+    const closeCreateItem = () => {
+        setCreateDialog({ open: false, lineIndex: null, search: "" });
+    };
+
+    const getInitialMaterialValues = () => {
+        const search = createDialog.search?.trim() || "";
+        const looksLikeCode = /^[a-z0-9-_]+$/i.test(search) && !search.includes(" ");
+        return {
+            material_code: looksLikeCode ? normalizeItemCode(search) : "",
+            material_name: looksLikeCode ? "" : search,
+            material_type: "finished_product",
+            unit_of_measure: "piece",
+            organization_id: currentOrg?.id,
+            tenant_id: currentOrg?.id,
+            status: "active",
+            inventory_tracking_enabled: true,
+            vat_rate: 15
+        };
+    };
+
+    const handleCreatedItem = (item) => {
+        if (!item) return;
+        setCreatedItems(prev => [item, ...prev.filter(existing => getItemCode(existing) !== getItemCode(item))]);
+        queryClient.setQueryData(['materials'], (old = []) => {
+            const list = Array.isArray(old) ? old : [];
+            return [item, ...list.filter(existing => getItemCode(existing) !== getItemCode(item))];
+        });
+        if (currentOrg?.id) {
+            queryClient.setQueryData(['materials', currentOrg.id], (old = []) => {
+                const list = Array.isArray(old) ? old : [];
+                return [item, ...list.filter(existing => getItemCode(existing) !== getItemCode(item))];
+            });
+        }
+        queryClient.invalidateQueries({ queryKey: ['materials'] });
+
+        if (createDialog.lineIndex !== null) {
+            handleItemSelect(createDialog.lineIndex, getItemCode(item), item);
+        } else {
+            const newLine = {
+                line_number: editingLines.length + 1,
+                product_code: '',
+                product_name: '',
+                description: '',
+                quantity: 1,
+                unit_of_measure: 'piece',
+                unit_price: 0,
+                discount_percent: 0,
+                discount_amount: 0,
+                line_total: 0,
+                ...materialToSalesLinePatch(item)
+            };
+            const subtotal = (parseFloat(newLine.quantity) || 0) * (parseFloat(newLine.unit_price) || 0);
+            newLine.line_total = subtotal;
+            const updated = [...editingLines, newLine];
+            setEditingLines(updated);
+            onLineItemsChange(updated);
+        }
+    };
 
     // Calculate totals
     const totalQuantity = editingLines.reduce((sum, line) => sum + (parseFloat(line.quantity) || 0), 0);
@@ -113,10 +213,18 @@ export default function LineItemsTable({
         <div className="space-y-4">
             <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-lg">Line Items</h3>
-                <Button type="button" onClick={handleAddLine} variant="outline" size="sm">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add Line
-                </Button>
+                <div className="flex items-center gap-2">
+                    {canCreateItems && (
+                        <Button type="button" onClick={() => openCreateItem(null, "")} variant="outline" size="sm">
+                            <Plus className="w-4 h-4 mr-2" />
+                            Create Item
+                        </Button>
+                    )}
+                    <Button type="button" onClick={handleAddLine} variant="outline" size="sm">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Add Line
+                    </Button>
+                </div>
             </div>
 
             <div className="border rounded-lg">
@@ -126,7 +234,7 @@ export default function LineItemsTable({
                         <TableHeader className="bg-gray-50 sticky top-0 z-10">
                             <TableRow>
                                 <TableHead className="w-12">#</TableHead>
-                                <TableHead className="min-w-[250px]">{itemType === "product" ? "Product" : "Material"}</TableHead>
+                                <TableHead className="min-w-[250px]">{itemType === "material" ? "Material" : "Item"}</TableHead>
                                 <TableHead className="min-w-[200px]">Description</TableHead>
                                 <TableHead className="w-28">Quantity</TableHead>
                                 <TableHead className="w-28">Unit Price</TableHead>
@@ -154,11 +262,16 @@ export default function LineItemsTable({
                                         <TableCell className="w-12">{line.line_number}</TableCell>
                                         <TableCell className="min-w-[250px]">
                                             <SearchableSelect
-                                                value={itemType === "product" ? line.product_code : line.material_code}
+                                                value={itemType === "product" ? line.product_code : (line.material_code || line.product_code)}
                                                 onValueChange={(value) => handleItemSelect(index, value)}
                                                 options={itemOptions}
-                                                placeholder={`Select ${itemType}...`}
-                                                searchPlaceholder={`Search ${itemType}s...`}
+                                                placeholder={`Select ${selectorLabel}...`}
+                                                searchPlaceholder={`Search ${selectorLabel}s...`}
+                                                emptyMessage={canCreateItems ? "No items found. Create an item." : "No items found."}
+                                                noResultsMessage={canCreateItems ? "No matching item found. Create new item." : "No matching item found."}
+                                                createOptionLabel="Create Item"
+                                                showCreateOption={canCreateItems}
+                                                onCreateOption={(search) => openCreateItem(index, search)}
                                             />
                                         </TableCell>
                                         <TableCell className="min-w-[200px]">
@@ -247,6 +360,19 @@ export default function LineItemsTable({
                     <p className="text-blue-700 text-sm mt-1">Click "Add Line" button to add items to this document</p>
                 </div>
             )}
+
+            <Dialog open={createDialog.open} onOpenChange={(open) => !open && closeCreateItem()}>
+                <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Create Item</DialogTitle>
+                    </DialogHeader>
+                    <MaterialForm
+                        initialValues={getInitialMaterialValues()}
+                        onClose={closeCreateItem}
+                        onSaved={handleCreatedItem}
+                    />
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

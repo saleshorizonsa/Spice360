@@ -11,6 +11,7 @@ import { matrixSales } from "@/api/matrixSalesClient";
 const usePhpApi = !!import.meta.env.VITE_API_URL;
 import { useAuth } from "@/lib/AuthContext";
 import { getAuthErrorMessage, resolveAuthConfirmationMethod } from "@/lib/authRedirect";
+import { markEmailVerifiedForOnboarding } from "@/lib/supabaseOnboarding";
 
 const parseAuthParams = () => {
   const url = new URL(window.location.href);
@@ -112,9 +113,11 @@ export default function AuthConfirmPage({ onConfirmed, onBackToLogin }) {
           throw new Error("Email confirmation was not completed. Request a new confirmation email and try again.");
         }
 
+        await markEmailVerifiedForOnboarding(supabase, userData.user);
+
         if (!isMounted) return;
         setStatus("success");
-        setMessage("Email confirmed. Opening your onboarding flow...");
+        setMessage("Email confirmed. Opening company setup...");
         window.history.replaceState({}, document.title, "/auth/confirm");
         await checkAppState();
         setTimeout(() => {

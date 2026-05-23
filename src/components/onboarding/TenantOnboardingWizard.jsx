@@ -13,14 +13,7 @@ import { matrixSales } from "@/api/matrixSalesClient";
 import { useAuth } from "@/lib/AuthContext";
 import BrandLogo from "@/components/BrandLogo";
 import { getStoredSignupPlan, getSubscriptionPlan, normalizeSubscriptionPlan } from "@/lib/subscriptionPlans";
-
-const onboardingStatuses = {
-    EMAIL: "email_verification_pending",
-    COMPANY: "company_profile_pending",
-    ZATCA: "zatca_setup_pending",
-    MODULES: "modules_configuration_pending",
-    READY: "ready_to_use"
-};
+import { onboardingStatuses } from "@/lib/emailVerificationGate";
 
 const steps = [
     { key: "email", label: "Email Verification", icon: CheckCircle2 },

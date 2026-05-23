@@ -5,7 +5,7 @@ import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 import { isSupabaseConfigured, supabase } from '@/lib/supabaseClient';
 import { isMatrixSalesAdminEmail, isMatrixSalesPlatformOwner } from '@/lib/adminAccess';
 import { defaultSubscriptionPlanId, storeSignupPlan } from '@/lib/subscriptionPlans';
-import { getAuthRedirectUrl, isAuthCallbackPath } from '@/lib/authRedirect';
+import { createSignupVerificationOptions, getAuthRedirectUrl, isAuthCallbackPath } from '@/lib/authRedirect';
 
 const AuthContext = createContext();
 
@@ -290,17 +290,21 @@ export const AuthProvider = ({ children }) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        emailRedirectTo: getAuthRedirectUrl(),
-        data: { full_name: fullName, selected_plan: selectedPlan }
-      }
+      options: createSignupVerificationOptions({ fullName, selectedPlan })
     });
 
     if (error) throw error;
     storeSignupPlan(selectedPlan);
     if (data.user) {
-      setUser(toMatrixSalesUser(data.user));
-      setIsAuthenticated(!!data.session);
+      const nextUser = toMatrixSalesUser(data.user);
+      if (nextUser.email_verified) {
+        await supabase.auth.signOut();
+        setUser(null);
+        setIsAuthenticated(false);
+        throw new Error('Email confirmation is disabled in Supabase. Enable Confirm email in Authentication settings before accepting new signups.');
+      }
+      setUser(nextUser);
+      setIsAuthenticated(Boolean(data.session));
     }
     return data;
   };

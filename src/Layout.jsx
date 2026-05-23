@@ -302,14 +302,14 @@ function LayoutContent({ children, currentPageName }) {
                 </div>
             </div>
 
-            <main className={`lg:pt-0 pt-16 ${isRTL ? 'lg:pr-64' : 'lg:pl-64'}`}>
-                <div className="min-h-screen bg-[#f5f7fb]">
-                    <div className="sticky top-16 z-40 flex items-center justify-between gap-4 border-b border-slate-200 bg-white/90 px-6 py-3 shadow-sm backdrop-blur lg:top-0">
+            <main className={`min-w-0 overflow-x-hidden lg:pt-0 pt-16 ${isRTL ? 'lg:pr-64' : 'lg:pl-64'}`}>
+                <div className="min-h-screen min-w-0 overflow-x-hidden bg-[#f5f7fb]">
+                    <div className="sticky top-16 z-40 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/90 px-3 py-3 shadow-sm backdrop-blur sm:px-6 lg:top-0">
                         <Button
                             onClick={() => navigate(-1)}
                             variant="outline"
                             size="sm"
-                            className="gap-2"
+                            className="shrink-0 gap-2"
                         >
                             <ArrowLeft className="w-4 h-4" />
                             {t('previous')}
@@ -340,7 +340,7 @@ function LayoutContent({ children, currentPageName }) {
                         </div>
                     </div>
                     {/* Add bottom padding on mobile for bottom nav */}
-                    <div className="pb-20 lg:pb-0">
+                    <div className="min-w-0 overflow-x-hidden pb-20 lg:pb-0">
                         {children}
                     </div>
                     </div>
@@ -416,6 +416,20 @@ function LayoutContent({ children, currentPageName }) {
                     display: inline-block;
                 }
 
+                html, body, #root {
+                    width: 100%;
+                    min-height: 100%;
+                    overflow-x: hidden;
+                }
+
+                img, svg, canvas, video {
+                    max-width: 100%;
+                }
+
+                [role="dialog"] {
+                    max-width: calc(100vw - 1rem);
+                }
+
                 /* Mobile optimizations */
                 @media (max-width: 1024px) {
                     .safe-area-inset-bottom {
@@ -440,6 +454,44 @@ function LayoutContent({ children, currentPageName }) {
                     /* Smooth scrolling */
                     * {
                         -webkit-overflow-scrolling: touch;
+                    }
+                }
+
+                @media (max-width: 640px) {
+                    [role="tablist"] {
+                        display: flex !important;
+                        height: auto !important;
+                        max-width: 100%;
+                        justify-content: flex-start !important;
+                        overflow-x: auto;
+                        scrollbar-width: none;
+                    }
+
+                    [role="tablist"]::-webkit-scrollbar {
+                        display: none;
+                    }
+
+                    [role="tab"] {
+                        flex: 0 0 auto;
+                    }
+
+                    [role="dialog"] .grid-cols-2,
+                    [role="dialog"] .grid-cols-3,
+                    [role="dialog"] .grid-cols-4,
+                    [role="dialog"] .grid-cols-5,
+                    [role="dialog"] .grid-cols-6 {
+                        grid-template-columns: minmax(0, 1fr) !important;
+                    }
+
+                    [role="dialog"] .w-96,
+                    [role="dialog"] .w-80,
+                    [role="dialog"] .w-72 {
+                        width: 100% !important;
+                    }
+
+                    .recharts-wrapper,
+                    .recharts-surface {
+                        max-width: 100% !important;
                     }
                 }
                 `}</style>

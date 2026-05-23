@@ -7,15 +7,24 @@ export const authCallbackPaths = new Set([
 export const isAuthCallbackPath = (path = "") => authCallbackPaths.has(path);
 
 export const getAuthRedirectUrl = () => {
-  const configuredUrl = import.meta.env.VITE_SUPABASE_AUTH_REDIRECT_URL;
+  const env = import.meta.env || {};
+  const configuredUrl = env.VITE_SUPABASE_AUTH_REDIRECT_URL;
   if (configuredUrl) return configuredUrl;
 
-  const configuredAppUrl = import.meta.env.VITE_APP_URL || import.meta.env.VITE_PUBLIC_APP_URL;
+  const configuredAppUrl = env.VITE_APP_URL || env.VITE_PUBLIC_APP_URL;
   const origin = configuredAppUrl || (typeof window !== "undefined" ? window.location.origin : "");
   if (!origin) return undefined;
 
   return `${origin.replace(/\/$/, "")}/auth/confirm`;
 };
+
+export const createSignupVerificationOptions = ({ fullName, selectedPlan } = {}) => ({
+  emailRedirectTo: getAuthRedirectUrl(),
+  data: {
+    full_name: fullName,
+    selected_plan: selectedPlan
+  }
+});
 
 export const getAuthErrorMessage = (error) => {
   const message = error?.message || String(error || "");

@@ -11,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/use-toast";
 import { Calculator } from "lucide-react";
 
-export default function UnitConversionForm({ item, materialCode, onClose }) {
+export default function UnitConversionForm({ item, materialCode, onClose = () => {}, open = true }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
@@ -111,7 +111,7 @@ export default function UnitConversionForm({ item, materialCode, onClose }) {
     ];
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
+        <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">

@@ -95,6 +95,7 @@ const auditableEntityNames = new Set([
   'Role',
   'SalesOrder',
   'SalesReturn',
+  'ServiceContract',
   'ServiceOrder',
   'StockMovement',
   'StockTransferOrder',
@@ -172,6 +173,7 @@ const documentNumberConfig = {
   Delivery: { type: 'delivery', fields: ['delivery_number'] },
   Invoice: { type: 'invoice', fields: ['invoice_number'] },
   SalesReturn: { type: 'sales_return', fields: ['return_number'] },
+  ServiceContract: { type: 'service_contract', fields: ['contract_number'] },
   ServiceOrder: { type: 'service_order', fields: ['service_order_number'] },
   PurchaseRequisition: { type: 'purchase_requisition', fields: ['requisition_number', 'pr_number'] },
   RFQ: { type: 'rfq', fields: ['rfq_number'] },
@@ -200,6 +202,7 @@ const documentPrefixMap = {
   invoice: 'INV',
   sales_return: 'SR',
   service_order: 'SVC',
+  service_contract: 'CTR',
   purchase_requisition: 'PR',
   rfq: 'RFQ',
   purchase_order: 'PO',
@@ -460,6 +463,70 @@ const notifyOrganizationsChanged = () => {
   window.dispatchEvent(new CustomEvent('matrixsales:organizations-changed'));
 };
 
+const assertUniqueMaterialCode = async ({ client, tableName, record = {}, organizationId = null, currentId = null }) => {
+  const materialCode = String(record.material_code || '').trim().toUpperCase();
+  if (!materialCode) return;
+
+  let query = client
+    .from(tableName)
+    .select('id')
+    .eq('record->>material_code', materialCode);
+
+  if (organizationId) {
+    query = query.eq('organization_id', organizationId);
+  }
+
+  const { data, error } = await query.limit(1);
+  if (error) throw error;
+
+  const duplicate = normalizeList(data).find((row) => row.id !== currentId);
+  if (duplicate) {
+    throw new Error(`Material code ${materialCode} already exists for this tenant.`);
+  }
+};
+
+const normalizeTenantUserRecord = (row) => {
+  if (!row) return null;
+  return {
+    id: row.id,
+    ...(row.record || {}),
+    tenant_id: row.tenant_id ?? row.organization_id ?? row.record?.tenant_id,
+    organization_id: row.organization_id ?? row.tenant_id ?? row.record?.organization_id
+  };
+};
+
+const getTenantUserProfileForAuthUser = async (client, authUser) => {
+  if (!authUser?.email) return null;
+
+  try {
+    const selectedOrganizationId = getSelectedOrganizationId();
+    let query = client
+      .from('user')
+      .select('*')
+      .eq('record->>email', authUser.email);
+
+    if (selectedOrganizationId) {
+      query = query.or(`organization_id.eq.${selectedOrganizationId},tenant_id.eq.${selectedOrganizationId}`);
+    }
+
+    const { data, error } = await query.limit(1);
+    if (error) throw error;
+    if (data?.[0]) return normalizeTenantUserRecord(data[0]);
+
+    const fallback = await client
+      .from('user')
+      .select('*')
+      .eq('record->>email', authUser.email)
+      .limit(1);
+
+    if (fallback.error) throw fallback.error;
+    return normalizeTenantUserRecord(fallback.data?.[0]);
+  } catch (error) {
+    console.warn('Unable to load tenant user profile:', error.message || error);
+    return null;
+  }
+};
+
 const normalizeRow = (row) => ({
   ...(row?.record || {}),
   id: row?.id,
@@ -524,16 +591,31 @@ const getCurrentSupabaseUser = async () => {
   if (error) throw error;
   if (!data.user) throw new Error('Authentication required');
 
+  const tenantUser = await getTenantUserProfileForAuthUser(client, data.user);
+  const assignedRoles = tenantUser?.assigned_roles || [];
+  const tenantRole = tenantUser?.role;
+  const isTenantAdmin =
+    tenantRole === 'admin' ||
+    tenantRole === 'owner' ||
+    assignedRoles.includes('TENANT_ADMIN');
+  const configuredRole = isMatrixSalesAdminEmail(
+    data.user.email,
+    import.meta.env.VITE_MATRIXSALES_ADMIN_EMAILS || ''
+  ) ? (isMatrixSalesPlatformOwner(data.user.email) ? 'owner' : 'admin') : null;
+  const effectiveRole = configuredRole || (isTenantAdmin ? 'admin' : tenantRole || 'user');
+
   return {
     id: data.user.id,
     email: data.user.email,
+    email_verified: Boolean(data.user.email_confirmed_at || data.user.confirmed_at),
     full_name: data.user.user_metadata?.full_name || data.user.email,
-    role: isMatrixSalesAdminEmail(
-      data.user.email,
-      import.meta.env.VITE_MATRIXSALES_ADMIN_EMAILS || ''
-    ) ? (isMatrixSalesPlatformOwner(data.user.email) ? 'owner' : 'admin') : 'user',
+    role: effectiveRole,
+    tenant_role: tenantRole || null,
+    tenant_user_id: tenantUser?.id || null,
+    tenant_id: tenantUser?.tenant_id || null,
+    organization_id: tenantUser?.organization_id || null,
     is_platform_owner: isMatrixSalesPlatformOwner(data.user.email),
-    assigned_roles: []
+    assigned_roles: assignedRoles
   };
 };
 
@@ -680,6 +762,9 @@ const createSupabaseEntity = (entityName) => {
     const selectedOrganizationId = getSelectedOrganizationId();
     const selectedTenantId = getSelectedTenantId();
     const currentUser = await getCurrentSupabaseUserSafe();
+    if (currentUser?.id && !currentUser.email_verified && entityName !== 'SubscriptionPlan') {
+      throw new Error('Email verification is required before accessing tenant data.');
+    }
     const isPlatformOwner = currentUser?.is_platform_owner || currentUser?.role === 'owner';
     const hasOrganizationFilter = Object.prototype.hasOwnProperty.call(filters || {}, 'organization_id');
     const hasTenantFilter = Object.prototype.hasOwnProperty.call(filters || {}, 'tenant_id');
@@ -734,6 +819,9 @@ const createSupabaseEntity = (entityName) => {
     create: async (data = {}) => {
       const client = requireSupabase();
       const currentUser = await getCurrentSupabaseUserSafe();
+      if (currentUser?.id && !currentUser.email_verified && entityName !== 'SubscriptionPlan') {
+        throw new Error('Email verification is required before creating tenant data.');
+      }
       const selectedOrganizationId = getSelectedOrganizationId();
       const organizationId = data.organization_id || (isOrganizationScoped ? selectedOrganizationId : null);
       if (isOrganizationScoped && !organizationId) {
@@ -766,6 +854,9 @@ const createSupabaseEntity = (entityName) => {
         organizationId,
         user: currentUser
       });
+      if (entityName === 'Material') {
+        await assertUniqueMaterialCode({ client, tableName, record, organizationId });
+      }
 
       const payload = {
         base44_id: record.base44_id || record.base44Id || null,
@@ -799,6 +890,10 @@ const createSupabaseEntity = (entityName) => {
     },
     bulkCreate: async (records = []) => {
       const client = requireSupabase();
+      const currentSessionUser = await getCurrentSupabaseUserSafe();
+      if (currentSessionUser?.id && !currentSessionUser.email_verified && entityName !== 'SubscriptionPlan') {
+        throw new Error('Email verification is required before creating tenant data.');
+      }
       const selectedOrganizationId = getSelectedOrganizationId();
       const payload = [];
 
@@ -845,6 +940,10 @@ const createSupabaseEntity = (entityName) => {
     },
     update: async (id, data = {}) => {
       const client = requireSupabase();
+      const currentUser = await getCurrentSupabaseUserSafe();
+      if (currentUser?.id && !currentUser.email_verified && entityName !== 'SubscriptionPlan') {
+        throw new Error('Email verification is required before updating tenant data.');
+      }
       const selectedOrganizationId = getSelectedOrganizationId();
       const { data: existing, error: readError } = await client
         .from(tableName)
@@ -878,6 +977,9 @@ const createSupabaseEntity = (entityName) => {
         nextRecord: record,
         organizationId
       });
+      if (entityName === 'Material') {
+        await assertUniqueMaterialCode({ client, tableName, record, organizationId, currentId: id });
+      }
 
       const { data: row, error } = await client
         .from(tableName)
@@ -906,6 +1008,10 @@ const createSupabaseEntity = (entityName) => {
     },
     delete: async (id) => {
       const client = requireSupabase();
+      const currentUser = await getCurrentSupabaseUserSafe();
+      if (currentUser?.id && !currentUser.email_verified && entityName !== 'SubscriptionPlan') {
+        throw new Error('Email verification is required before deleting tenant data.');
+      }
       let existing = null;
       try {
         const { data } = await client

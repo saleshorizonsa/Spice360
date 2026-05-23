@@ -13,6 +13,7 @@ import InvoiceForm from "@/components/sales/InvoiceForm";
 import SalesReturnForm from "@/components/sales/SalesReturnForm";
 import ServiceOrderForm from "@/components/sales/ServiceOrderForm";
 import CreditLimitManager from "@/components/sales/CreditLimitManager";
+import ServiceContractsPanel from "@/components/sales/ServiceContractsPanel";
 import DocumentPrintPreview from "@/components/shared/DocumentPrintPreview";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -617,9 +618,11 @@ export default function Sales() {
                 </TabsContent>
 
                 <TabsContent value="services">
-                    <Card>
+                    <ServiceContractsPanel invoices={invoices} />
+
+                    <Card className="mt-6">
                         <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle>{t('serviceOrdersAndMilestoneBilling')}</CardTitle>
+                            <CardTitle>Legacy {t('serviceOrdersAndMilestoneBilling')}</CardTitle>
                             <Button 
                                 onClick={() => handleCreate('services')}
                                 className="bg-emerald-600 hover:bg-emerald-700"

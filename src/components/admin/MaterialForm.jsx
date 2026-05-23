@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { X, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { validateDuplicateItemCode } from "@/lib/itemSelection";
 
-export default function MaterialForm({ material, onClose }) {
+export default function MaterialForm({ material, initialValues = {}, onClose, onSaved }) {
     const [formData, setFormData] = useState(material || {
         material_code: "",
         material_name: "",
@@ -28,8 +29,11 @@ export default function MaterialForm({ material, onClose }) {
         supplier_name: "",
         lead_time_days: 0,
         specifications: "",
+        vat_rate: 15,
+        inventory_tracking_enabled: true,
         status: "active"
     });
+    const [validationErrors, setValidationErrors] = useState({});
 
     const { toast } = useToast();
     const queryClient = useQueryClient();
@@ -46,6 +50,18 @@ export default function MaterialForm({ material, onClose }) {
         initialData: []
     });
 
+    const { data: materials = [] } = useQuery({
+        queryKey: ['materials'],
+        queryFn: () => matrixSales.entities.Material.list(),
+        initialData: []
+    });
+
+    React.useEffect(() => {
+        if (!material && Object.keys(initialValues || {}).length > 0) {
+            setFormData(prev => ({ ...prev, ...initialValues }));
+        }
+    }, [initialValues, material]);
+
     const saveMutation = useMutation({
         mutationFn: async (data) => {
             if (material?.id) {
@@ -54,12 +70,13 @@ export default function MaterialForm({ material, onClose }) {
                 return matrixSales.entities.Material.create(data);
             }
         },
-        onSuccess: () => {
+        onSuccess: (savedMaterial) => {
             queryClient.invalidateQueries({ queryKey: ['materials'] });
             toast({
                 title: "Success",
                 description: `Material ${material?.id ? 'updated' : 'created'} successfully`,
             });
+            onSaved?.(savedMaterial);
             onClose();
         },
         onError: (error) => {
@@ -73,6 +90,18 @@ export default function MaterialForm({ material, onClose }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        const errors = {};
+
+        if (!formData.material_code?.trim()) errors.material_code = "Material code is required.";
+        if (!formData.material_name?.trim()) errors.material_name = "Material name is required.";
+        if (!formData.unit_of_measure) errors.unit_of_measure = "Unit of measure is required.";
+        if (validateDuplicateItemCode(materials, formData.material_code, material?.id)) {
+            errors.material_code = "This item code already exists for this tenant.";
+        }
+
+        setValidationErrors(errors);
+        if (Object.keys(errors).length > 0) return;
+
         saveMutation.mutate(formData);
     };
 
@@ -102,6 +131,9 @@ export default function MaterialForm({ material, onClose }) {
                                 required
                                 disabled={!!material?.id}
                             />
+                            {validationErrors.material_code && (
+                                <p className="mt-1 text-xs text-red-600">{validationErrors.material_code}</p>
+                            )}
                         </div>
                         <div>
                             <Label>Material Name *</Label>
@@ -111,6 +143,9 @@ export default function MaterialForm({ material, onClose }) {
                                 placeholder="PVC Pipe 50mm"
                                 required
                             />
+                            {validationErrors.material_name && (
+                                <p className="mt-1 text-xs text-red-600">{validationErrors.material_name}</p>
+                            )}
                         </div>
                     </div>
 
@@ -147,6 +182,9 @@ export default function MaterialForm({ material, onClose }) {
                                     <SelectItem value="pallet">Pallet</SelectItem>
                                 </SelectContent>
                             </Select>
+                            {validationErrors.unit_of_measure && (
+                                <p className="mt-1 text-xs text-red-600">{validationErrors.unit_of_measure}</p>
+                            )}
                         </div>
                     </div>
 
@@ -177,6 +215,33 @@ export default function MaterialForm({ material, onClose }) {
                                 value={formData.current_stock}
                                 onChange={(e) => handleChange('current_stock', parseFloat(e.target.value))}
                             />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <Label>VAT Rate (%)</Label>
+                            <Input
+                                type="number"
+                                step="0.01"
+                                value={formData.vat_rate}
+                                onChange={(e) => handleChange('vat_rate', parseFloat(e.target.value) || 0)}
+                            />
+                        </div>
+                        <div>
+                            <Label>Inventory Tracking</Label>
+                            <Select
+                                value={formData.inventory_tracking_enabled ? "enabled" : "disabled"}
+                                onValueChange={(val) => handleChange('inventory_tracking_enabled', val === "enabled")}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="enabled">Enabled</SelectItem>
+                                    <SelectItem value="disabled">Disabled</SelectItem>
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
 

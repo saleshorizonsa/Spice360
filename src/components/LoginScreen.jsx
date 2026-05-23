@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/AuthContext';
 import BrandLogo from '@/components/BrandLogo';
 import { defaultSubscriptionPlanId, getSubscriptionPlan, storeSignupPlan } from '@/lib/subscriptionPlans';
 
-export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = defaultSubscriptionPlanId, initialMode = 'signin', onBackToLanding }) {
+export default function LoginScreen({ onLogin, onAuthSuccess, onSignupPending, selectedPlan = defaultSubscriptionPlanId, initialMode = 'signin', onBackToLanding }) {
   const { authProvider, authError, signInWithPassword, signUpWithPassword } = useAuth();
   const { toast } = useToast();
   const [mode, setMode] = useState(initialMode);
@@ -52,10 +52,10 @@ export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = def
         });
         storeSignupPlan(selectedPlan);
         toast({
-          title: 'Account created',
-          description: 'Check your email if confirmation is required, then sign in.'
+          title: 'Verification email sent',
+          description: 'Open the verification link before continuing to company setup.'
         });
-        setMode('signin');
+        onSignupPending?.(formData.email.trim().toLowerCase());
       } else {
         await signInWithPassword({
           email: formData.email.trim().toLowerCase(),
