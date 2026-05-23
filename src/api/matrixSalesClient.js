@@ -1159,6 +1159,12 @@ const phpApiMatrixSales = {
     createConversation:    async () => null,
     addMessage:            async () => null,
     subscribeToConversation: () => () => {}
+  },
+  owner: {
+    listTenants: () => apiFetch('/owner/tenants'),
+    updateSubscription: (orgId, data) =>
+      apiFetch(`/owner/tenants/${orgId}/subscription`, { method: 'POST', body: JSON.stringify(data) }),
+    listTenantUsers: (orgId) => apiFetch(`/owner/tenants/${orgId}/users`)
   }
 };
 

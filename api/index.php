@@ -17,6 +17,7 @@ require_once __DIR__ . '/config/jwt.php';
 require_once __DIR__ . '/middleware/auth.php';
 require_once __DIR__ . '/handlers/auth.php';
 require_once __DIR__ . '/handlers/entities.php';
+require_once __DIR__ . '/handlers/owner.php';
 
 $path   = rtrim(preg_replace('#^/?api#', '', parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH)), '/') ?: '/';
 $method = $_SERVER['REQUEST_METHOD'];
@@ -61,6 +62,16 @@ try {
 
     } elseif (preg_match('#^/entities/([A-Za-z0-9]+)/([A-Za-z0-9_-]+)$#', $path, $m) && $method === 'DELETE') {
         echo json_encode(deleteEntity($m[1], $m[2], requireAuth()));
+
+    // ── Owner ─────────────────────────────────────────────────────────────
+    } elseif ($path === '/owner/tenants' && $method === 'GET') {
+        echo json_encode(ownerListTenants(requireAuth()));
+
+    } elseif (preg_match('#^/owner/tenants/([A-Za-z0-9_-]+)/subscription$#', $path, $m) && $method === 'POST') {
+        echo json_encode(ownerUpdateSubscription($m[1], $body, requireAuth()));
+
+    } elseif (preg_match('#^/owner/tenants/([A-Za-z0-9_-]+)/users$#', $path, $m) && $method === 'GET') {
+        echo json_encode(ownerListTenantUsers($m[1], requireAuth()));
 
     } else {
         http_response_code(404);
