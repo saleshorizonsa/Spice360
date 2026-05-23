@@ -60,6 +60,8 @@ export const AuthProvider = ({ children }) => {
       setIsAuthenticated(false);
     } finally {
       setIsLoadingAuth(false);
+      // Ensure no supabase-related errors bleed into the phpApi path
+      setAuthError((prev) => (prev?.type === 'missing_supabase_config' ? null : prev));
     }
   };
 
