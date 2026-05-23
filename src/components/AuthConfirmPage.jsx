@@ -6,6 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import BrandLogo from "@/components/BrandLogo";
 import { supabase } from "@/lib/supabaseClient";
+import { matrixSales } from "@/api/matrixSalesClient";
+
+const usePhpApi = !!import.meta.env.VITE_API_URL;
 import { useAuth } from "@/lib/AuthContext";
 import { getAuthErrorMessage, resolveAuthConfirmationMethod } from "@/lib/authRedirect";
 
@@ -45,6 +48,30 @@ export default function AuthConfirmPage({ onConfirmed, onBackToLogin }) {
     const confirmEmail = async () => {
       if (hasStartedConfirmation.current) return;
       hasStartedConfirmation.current = true;
+
+      if (usePhpApi) {
+        const token = params.token || new URLSearchParams(window.location.search).get('token');
+        if (!token) {
+          setStatus("error");
+          setMessage("Confirmation token is missing from the link. Request a new one.");
+          return;
+        }
+        try {
+          await matrixSales.auth.confirmEmail(token);
+          if (!isMounted) return;
+          setStatus("success");
+          setMessage("Email confirmed. Opening your app...");
+          window.history.replaceState({}, document.title, "/auth/confirm");
+          await checkAppState();
+          setTimeout(() => { onConfirmed?.(); }, 900);
+        } catch (error) {
+          if (!isMounted) return;
+          setStatus("error");
+          setMessage(error.message || "Confirmation failed. Request a new link.");
+          window.history.replaceState({}, document.title, "/auth/confirm");
+        }
+        return;
+      }
 
       if (!supabase) {
         setStatus("error");

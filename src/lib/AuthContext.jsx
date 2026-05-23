@@ -9,6 +9,8 @@ import { getAuthRedirectUrl, isAuthCallbackPath } from '@/lib/authRedirect';
 
 const AuthContext = createContext();
 
+const usePhpApi = !appParams.appId && !!import.meta.env.VITE_API_URL;
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -20,7 +22,7 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     checkAppState();
 
-    if (appParams.appId || !supabase) return undefined;
+    if (appParams.appId || usePhpApi || !supabase) return undefined;
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
@@ -40,8 +42,35 @@ export const AuthProvider = ({ children }) => {
     return () => listener?.subscription?.unsubscribe();
   }, []);
 
+  const checkPhpApiAuth = async () => {
+    try {
+      setIsLoadingAuth(true);
+      if (!localStorage.getItem('auth_token')) {
+        setUser(null);
+        setIsAuthenticated(false);
+        return;
+      }
+      const currentUser = await matrixSales.auth.me();
+      setUser(currentUser);
+      setIsAuthenticated(true);
+      setAuthError(null);
+    } catch {
+      localStorage.removeItem('auth_token');
+      setUser(null);
+      setIsAuthenticated(false);
+    } finally {
+      setIsLoadingAuth(false);
+    }
+  };
+
   const checkAppState = async () => {
     if (!appParams.appId) {
+      if (usePhpApi) {
+        await checkPhpApiAuth();
+        setIsLoadingPublicSettings(false);
+        return;
+      }
+
       if (!isSupabaseConfigured) {
         setAuthError({
           type: 'missing_supabase_config',
@@ -199,6 +228,11 @@ export const AuthProvider = ({ children }) => {
     setIsAuthenticated(false);
     sessionStorage.removeItem('horizon_entered_app');
 
+    if (usePhpApi) {
+      matrixSales.auth.logout();
+      return;
+    }
+
     if (!appParams.appId && supabase) {
       await supabase.auth.signOut();
       window.history.replaceState({}, document.title, window.location.pathname);
@@ -222,15 +256,19 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signInWithPassword = async ({ email, password }) => {
+    if (usePhpApi) {
+      const data = await matrixSales.auth.login(email, password);
+      setUser(data.user);
+      setIsAuthenticated(true);
+      setAuthError(null);
+      return data;
+    }
+
     if (!supabase) {
       throw new Error('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
     }
 
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw error;
     if (data.user) {
       setUser(toMatrixSalesUser(data.user));
@@ -240,6 +278,11 @@ export const AuthProvider = ({ children }) => {
   };
 
   const signUpWithPassword = async ({ email, password, fullName, selectedPlan = defaultSubscriptionPlanId }) => {
+    if (usePhpApi) {
+      storeSignupPlan(selectedPlan);
+      return matrixSales.auth.signup(email, password, { full_name: fullName, selected_plan: selectedPlan });
+    }
+
     if (!supabase) {
       throw new Error('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
     }
@@ -249,10 +292,7 @@ export const AuthProvider = ({ children }) => {
       password,
       options: {
         emailRedirectTo: getAuthRedirectUrl(),
-        data: {
-          full_name: fullName,
-          selected_plan: selectedPlan
-        }
+        data: { full_name: fullName, selected_plan: selectedPlan }
       }
     });
 
@@ -266,6 +306,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const resendVerificationEmail = async (email) => {
+    if (usePhpApi) {
+      const targetEmail = email || user?.email;
+      if (!targetEmail) throw new Error('Email address is required.');
+      return matrixSales.auth.resend(targetEmail);
+    }
+
     if (!supabase) {
       throw new Error('Supabase is not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
     }
@@ -276,9 +322,7 @@ export const AuthProvider = ({ children }) => {
     const { data, error } = await supabase.auth.resend({
       type: 'signup',
       email: targetEmail,
-      options: {
-        emailRedirectTo: getAuthRedirectUrl()
-      }
+      options: { emailRedirectTo: getAuthRedirectUrl() }
     });
 
     if (error) throw error;
@@ -298,7 +342,7 @@ export const AuthProvider = ({ children }) => {
       signInWithPassword,
       signUpWithPassword,
       resendVerificationEmail,
-      authProvider: appParams.appId ? 'matrixSales' : 'supabase',
+      authProvider: appParams.appId ? 'matrixSales' : usePhpApi ? 'phpApi' : 'supabase',
       checkAppState
     }}>
       {children}

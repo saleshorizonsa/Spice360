@@ -971,6 +971,93 @@ const supabaseMatrixSales = {
   }
 };
 
+// ─── PHP API implementation ──────────────────────────────────────────────────
+
+const phpApiUrl = import.meta.env.VITE_API_URL;
+
+const getAuthToken = () => localStorage.getItem('auth_token');
+
+const apiFetch = async (path, options = {}) => {
+  const token = getAuthToken();
+  const res = await fetch(`${phpApiUrl}${path}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers
+    }
+  });
+  if (res.status === 401) {
+    localStorage.removeItem('auth_token');
+    throw new Error('Session expired. Please log in again.');
+  }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+  return data;
+};
+
+const createPhpApiEntity = (entityName) => ({
+  list: (sort, limit) => {
+    const params = new URLSearchParams();
+    if (sort)  params.set('sort', sort);
+    if (limit) params.set('limit', limit);
+    const qs = params.toString();
+    return apiFetch(`/entities/${entityName}${qs ? '?' + qs : ''}`);
+  },
+  filter: (filters = {}, sort, limit) =>
+    apiFetch(`/entities/${entityName}/filter`, {
+      method: 'POST',
+      body: JSON.stringify({ filters, sort, limit })
+    }),
+  create: (data) =>
+    apiFetch(`/entities/${entityName}`, { method: 'POST', body: JSON.stringify(data) }),
+  bulkCreate: (records) =>
+    apiFetch(`/entities/${entityName}/bulk`, { method: 'POST', body: JSON.stringify({ records }) }),
+  update: (id, data) =>
+    apiFetch(`/entities/${entityName}/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id) =>
+    apiFetch(`/entities/${entityName}/${id}`, { method: 'DELETE' })
+});
+
+const phpApiEntities = new Proxy({}, {
+  get: (_target, entityName) => createPhpApiEntity(String(entityName))
+});
+
+const phpApiMatrixSales = {
+  auth: {
+    me: () => apiFetch('/auth/me'),
+    login: (email, password) =>
+      apiFetch('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }).then((data) => {
+        if (data.token) localStorage.setItem('auth_token', data.token);
+        return data;
+      }),
+    signup: (email, password, options = {}) =>
+      apiFetch('/auth/signup', { method: 'POST', body: JSON.stringify({ email, password, ...options }) }),
+    logout: () => { localStorage.removeItem('auth_token'); },
+    resend: (email) =>
+      apiFetch('/auth/resend', { method: 'POST', body: JSON.stringify({ email }) }),
+    confirmEmail: (token) =>
+      apiFetch(`/auth/confirm?token=${encodeURIComponent(token)}`),
+    redirectToLogin: () => {}
+  },
+  entities: phpApiEntities,
+  appLogs: { logUserInApp: async () => {} },
+  integrations: {
+    Core: {
+      UploadFile: async () => { throw new Error('File upload not configured for self-hosted deployment.'); }
+    },
+    InvokeLLM: async () => { throw new Error('AI integrations not configured for self-hosted deployment.'); }
+  },
+  agents: {
+    listConversations:     async () => [],
+    createConversation:    async () => null,
+    addMessage:            async () => null,
+    subscribeToConversation: () => () => {}
+  }
+};
+
+// ─── Base44 implementation ───────────────────────────────────────────────────
+
 const createBaseEntity = (entityName) => ({
   list: async (...args) => normalizeList(await (await getBaseClient()).entities[entityName].list(...args)),
   filter: async (...args) => normalizeList(await (await getBaseClient()).entities[entityName].filter(...args)),
@@ -1010,4 +1097,6 @@ const baseMatrixSales = {
   })
 };
 
-export const matrixSales = appId ? baseMatrixSales : supabaseMatrixSales;
+export const matrixSales = appId      ? baseMatrixSales
+  : phpApiUrl   ? phpApiMatrixSales
+  : supabaseMatrixSales;
