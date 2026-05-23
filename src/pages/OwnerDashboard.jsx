@@ -221,6 +221,7 @@ export default function OwnerDashboard() {
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [showManage, setShowManage] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
+  const [isNewPlan, setIsNewPlan] = useState(false);
   const isOwner = user?.is_platform_owner || isPlatformOwnerEmail(user?.email);
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -247,13 +248,15 @@ export default function OwnerDashboard() {
   }))).map(normalizeSubscriptionPlan);
 
   useEffect(() => {
-    if (!editingPlan && planRows.length > 0) setEditingPlan(planRows[0]);
-  }, [editingPlan, planRows]);
+    if (!editingPlan && !isNewPlan && planRows.length > 0) setEditingPlan(planRows[0]);
+  }, [editingPlan, isNewPlan, planRows]);
 
   const savePlanMutation = useMutation({
     mutationFn: async (plan) => {
+      if (!plan.id || !String(plan.id).trim()) throw new Error("Plan ID is required.");
+      if (!plan.name || !String(plan.name).trim()) throw new Error("Plan Name is required.");
       const payload = {
-        plan_id: plan.id, plan_name: plan.name,
+        plan_id: String(plan.id).trim().toLowerCase(), plan_name: plan.name,
         monthly_price: plan.monthlyPrice === "" ? null : Number(plan.monthlyPrice),
         currency: plan.currency || "SAR", billing_cycle: plan.billingCycle || "monthly",
         trial_days: Number(plan.trialDays) || 14, user_limit: plan.userLimit,
@@ -266,9 +269,10 @@ export default function OwnerDashboard() {
       if (existing.length > 0) return matrixSales.entities.SubscriptionPlan.update(existing[0].id, { ...existing[0], ...payload });
       return matrixSales.entities.SubscriptionPlan.create(payload);
     },
-    onSuccess: () => {
+    onSuccess: (_, plan) => {
       queryClient.invalidateQueries({ queryKey: ["owner-subscription-plans"] });
-      toast({ title: "Plan saved", description: "Pricing updates now reflect on the public landing page." });
+      setIsNewPlan(false);
+      toast({ title: isNewPlan ? "Plan created" : "Plan saved", description: "The plan is now available in the subscription selector." });
     },
     onError: (err) => toast({ title: "Unable to save plan", description: err.message, variant: "destructive" })
   });
@@ -437,6 +441,17 @@ export default function OwnerDashboard() {
               <Button variant="outline" size="sm" onClick={() => seedPlansMutation.mutate()} disabled={seedPlansMutation.isPending}>
                 Seed Defaults
               </Button>
+              <Button size="sm" className="bg-[#24466f] hover:bg-[#193658]" onClick={() => {
+                setIsNewPlan(true);
+                setEditingPlan({
+                  id: "", name: "", monthlyPrice: 0, currency: "SAR",
+                  billingCycle: "monthly", trialDays: 14, userLimit: 5,
+                  invoiceLimit: 500, supportLevel: "Email support",
+                  modules: [], status: "active", display_order: planRows.length + 1
+                });
+              }}>
+                + Add Plan
+              </Button>
             </div>
           </CardTitle>
         </CardHeader>
@@ -463,7 +478,7 @@ export default function OwnerDashboard() {
                 header: "Edit",
                 key: "edit",
                 sortable: false,
-                render: (_v, row) => <Button variant="outline" size="sm" onClick={() => setEditingPlan(row)}>Edit</Button>
+                render: (_v, row) => <Button variant="outline" size="sm" onClick={() => { setIsNewPlan(false); setEditingPlan(row); }}>Edit</Button>
               }
             ]}
             searchFields={["name", "supportLevel", "status"]}
@@ -472,9 +487,19 @@ export default function OwnerDashboard() {
           />
 
           <div className="rounded-lg border border-slate-200 bg-white p-4">
-            <h3 className="font-semibold text-slate-900">Edit Plan</h3>
+            <h3 className="font-semibold text-slate-900">{isNewPlan ? "New Plan" : "Edit Plan"}</h3>
             {editingPlan ? (
               <div className="mt-4 space-y-3">
+                <div className="space-y-1.5">
+                  <Label>Plan ID <span className="text-slate-400 text-xs font-normal">(slug, e.g. "gold" — cannot change after creation)</span></Label>
+                  <Input
+                    value={editingPlan.id || ""}
+                    placeholder={isNewPlan ? "e.g. gold" : ""}
+                    disabled={!isNewPlan}
+                    className={!isNewPlan ? "bg-slate-50 text-slate-500" : ""}
+                    onChange={(e) => isNewPlan && setEditingPlan({ ...editingPlan, id: e.target.value.toLowerCase().replace(/[^a-z0-9_-]/g, '') })}
+                  />
+                </div>
                 <div className="space-y-1.5">
                   <Label>Plan Name</Label>
                   <Input value={editingPlan.name || ""} onChange={(e) => setEditingPlan({ ...editingPlan, name: e.target.value })} />
@@ -521,16 +546,24 @@ export default function OwnerDashboard() {
                     rows={3}
                   />
                 </div>
+                {isNewPlan && (
+                  <Button variant="outline" className="w-full" onClick={() => {
+                    setIsNewPlan(false);
+                    setEditingPlan(planRows[0] || null);
+                  }}>
+                    Cancel
+                  </Button>
+                )}
                 <Button
                   className="w-full bg-[#24466f] hover:bg-[#193658]"
                   disabled={savePlanMutation.isPending}
                   onClick={() => savePlanMutation.mutate(editingPlan)}
                 >
-                  {savePlanMutation.isPending ? "Saving..." : "Save Pricing"}
+                  {savePlanMutation.isPending ? "Saving..." : isNewPlan ? "Create Plan" : "Save Pricing"}
                 </Button>
               </div>
             ) : (
-              <p className="mt-3 text-sm text-slate-500">Select a plan to edit pricing.</p>
+              <p className="mt-3 text-sm text-slate-500">Select a plan to edit, or click Add Plan.</p>
             )}
           </div>
         </CardContent>
