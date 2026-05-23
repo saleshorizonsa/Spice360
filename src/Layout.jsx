@@ -31,7 +31,10 @@ import {
     Landmark,
     LogOut,
     ChevronDown,
-    Shield
+    Shield,
+    List,
+    BookOpen,
+    BookMarked
 } from "lucide-react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { Button } from "@/components/ui/button";
@@ -95,6 +98,9 @@ function LayoutContent({ children, currentPageName }) {
         { name: "Demand Planning", path: "DemandPlanning", icon: Brain, section: "Supply Chain" },
         { name: "Costing", path: "Costing", icon: Calculator, section: "Finance" },
         { name: t('finance'), path: "Finance", icon: DollarSign, section: "Finance" },
+        { name: "Chart of Accounts", path: "ChartOfAccounts", icon: List, section: "Finance" },
+        { name: "Journal Entries", path: "JournalEntry", icon: BookOpen, section: "Finance" },
+        { name: "Account Ledger", path: "AccountLedger", icon: BookMarked, section: "Finance" },
         { name: "Treasury Management", path: "TreasuryManagement", icon: Landmark, section: "Finance" },
         { name: "Depreciation Reports", path: "DepreciationReports", icon: TrendingDown, section: "Finance" },
         { name: "Asset Lifecycle", path: "AssetLifecycle", icon: Recycle, section: "Finance" },

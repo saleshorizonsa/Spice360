@@ -104,6 +104,7 @@ const getDocumentPrefix = (documentType) => {
         'cycle_count': 'CC',
         
         // Finance
+        'JE': 'JE',
         'journal_entry': 'JE',
         'payment': 'PAY',
         'receipt': 'RCP',

@@ -9,10 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Switch } from "@/components/ui/switch";
+import { useOrganization } from "../utils/OrganizationContext";
 
 export default function ChartOfAccountsForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const { currentOrg } = useOrganization();
 
     const { data: accounts = [] } = useQuery({
         queryKey: ['chartOfAccounts'],
@@ -25,6 +27,8 @@ export default function ChartOfAccountsForm({ item, onClose }) {
         account_name: '',
         account_type: 'asset',
         account_subtype: 'current_asset',
+        financial_statement_category: 'current_asset',
+        normal_balance: 'debit',
         parent_account: '',
         level: 1,
         is_control_account: false,
@@ -44,10 +48,15 @@ export default function ChartOfAccountsForm({ item, onClose }) {
 
     const saveMutation = useMutation({
         mutationFn: (data) => {
+            const payload = {
+                ...data,
+                tenant_id: data.tenant_id || currentOrg?.id,
+                organization_id: data.organization_id || currentOrg?.id
+            };
             if (item) {
-                return matrixSales.entities.ChartOfAccounts.update(item.id, data);
+                return matrixSales.entities.ChartOfAccounts.update(item.id, payload);
             }
-            return matrixSales.entities.ChartOfAccounts.create(data);
+            return matrixSales.entities.ChartOfAccounts.create(payload);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['chartOfAccounts'] });
@@ -101,6 +110,36 @@ export default function ChartOfAccountsForm({ item, onClose }) {
         ]
     };
 
+    const categoryOptions = [
+        { value: 'current_asset', label: 'Current Asset' },
+        { value: 'non_current_asset', label: 'Non-current Asset' },
+        { value: 'current_liability', label: 'Current Liability' },
+        { value: 'non_current_liability', label: 'Non-current Liability' },
+        { value: 'equity', label: 'Equity / Owner Capital' },
+        { value: 'retained_earnings', label: 'Retained Earnings' },
+        { value: 'revenue', label: 'Revenue' },
+        { value: 'cost_of_sales', label: 'Cost of Sales / Services' },
+        { value: 'operating_expense', label: 'Operating Expense' },
+        { value: 'other_income', label: 'Other Income' },
+        { value: 'other_expense', label: 'Other Expense' }
+    ];
+
+    const defaultCategoryForType = {
+        asset: 'current_asset',
+        liability: 'current_liability',
+        equity: 'equity',
+        revenue: 'revenue',
+        expense: 'operating_expense'
+    };
+
+    const defaultNormalBalanceForType = {
+        asset: 'debit',
+        expense: 'debit',
+        liability: 'credit',
+        equity: 'credit',
+        revenue: 'credit'
+    };
+
     const controlAccounts = accounts.filter(a => a.is_control_account || a.level === 1);
 
     return (
@@ -148,11 +187,12 @@ export default function ChartOfAccountsForm({ item, onClose }) {
                                     value={formData.account_type} 
                                     onValueChange={(val) => {
                                         handleChange('account_type', val);
-                                        // Reset subtype when type changes
                                         const firstSubtype = subtypeOptions[val]?.[0]?.value;
                                         if (firstSubtype) {
                                             handleChange('account_subtype', firstSubtype);
                                         }
+                                        handleChange('financial_statement_category', defaultCategoryForType[val] || 'current_asset');
+                                        handleChange('normal_balance', defaultNormalBalanceForType[val] || 'debit');
                                     }}
                                 >
                                     <SelectTrigger>
@@ -182,6 +222,41 @@ export default function ChartOfAccountsForm({ item, onClose }) {
                                                 {option.label}
                                             </SelectItem>
                                         ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <Label>Financial Statement Category *</Label>
+                                <Select
+                                    value={formData.financial_statement_category}
+                                    onValueChange={(val) => handleChange('financial_statement_category', val)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {categoryOptions.map(option => (
+                                            <SelectItem key={option.value} value={option.value}>
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div>
+                                <Label>Normal Balance *</Label>
+                                <Select
+                                    value={formData.normal_balance}
+                                    onValueChange={(val) => handleChange('normal_balance', val)}
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="debit">Debit</SelectItem>
+                                        <SelectItem value="credit">Credit</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

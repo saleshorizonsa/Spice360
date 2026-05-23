@@ -48,6 +48,7 @@
  * The mainPage value must match a key in the PAGES object exactly.
  */
 import AIAssistant from './pages/AIAssistant';
+import AccountLedger from './pages/AccountLedger';
 import AdminCenter from './pages/AdminCenter';
 import Analytics from './pages/Analytics';
 import ApprovalWorkflows from './pages/ApprovalWorkflows';
@@ -56,6 +57,7 @@ import AssetLifecycle from './pages/AssetLifecycle';
 import AssetScanner from './pages/AssetScanner';
 import AssetVerification from './pages/AssetVerification';
 import BudgetManagement from './pages/BudgetManagement';
+import ChartOfAccounts from './pages/ChartOfAccounts';
 import CoilManagement from './pages/CoilManagement';
 import ComplianceReports from './pages/ComplianceReports';
 import Costing from './pages/Costing';
@@ -71,6 +73,7 @@ import ITSecurityReports from './pages/ITSecurityReports';
 import Integrations from './pages/Integrations';
 import Inventory from './pages/Inventory';
 import InventoryReports from './pages/InventoryReports';
+import JournalEntry from './pages/JournalEntry';
 import KPIDashboard from './pages/KPIDashboard';
 import POS from './pages/POS';
 import ManufacturingReports from './pages/ManufacturingReports';
@@ -95,6 +98,7 @@ import __Layout from './Layout.jsx';
 
 export const PAGES = {
     "AIAssistant": AIAssistant,
+    "AccountLedger": AccountLedger,
     "AdminCenter": AdminCenter,
     "Analytics": Analytics,
     "ApprovalWorkflows": ApprovalWorkflows,
@@ -103,6 +107,7 @@ export const PAGES = {
     "AssetScanner": AssetScanner,
     "AssetVerification": AssetVerification,
     "BudgetManagement": BudgetManagement,
+    "ChartOfAccounts": ChartOfAccounts,
     "CoilManagement": CoilManagement,
     "ComplianceReports": ComplianceReports,
     "Costing": Costing,
@@ -118,6 +123,7 @@ export const PAGES = {
     "Integrations": Integrations,
     "Inventory": Inventory,
     "InventoryReports": InventoryReports,
+    "JournalEntry": JournalEntry,
     "KPIDashboard": KPIDashboard,
     "POS": POS,
     "ManufacturingReports": ManufacturingReports,

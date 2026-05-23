@@ -26,6 +26,8 @@ import { createPageUrl } from "../utils";
 import { Link } from "react-router-dom";
 import { usePermissions, PermissionGate } from "../components/utils/usePermissions";
 import { useLanguage } from "../components/utils/languageContext";
+import { useOrganization } from "../components/utils/OrganizationContext";
+import { postJournalEntry } from "../components/utils/journalService";
 
 export default function FixedAssets() {
     const [activeTab, setActiveTab] = useState("assets");
@@ -46,6 +48,7 @@ export default function FixedAssets() {
     const { toast } = useToast();
     const { hasPermission, isAdmin, loading: permissionsLoading } = usePermissions();
     const { t } = useLanguage();
+    const { currentOrg } = useOrganization();
 
     const { data: assets = [] } = useQuery({
         queryKey: ['assets'],
@@ -146,6 +149,22 @@ export default function FixedAssets() {
                         net_book_value: entry.net_book_value
                     });
                 }
+            }
+
+            const totalDepreciation = depEntries.reduce((sum, entry) => sum + (entry.depreciation_amount || 0), 0);
+            if (totalDepreciation > 0) {
+                await postJournalEntry({
+                    lines: [
+                        { account_code: '5500', account_name: 'Depreciation Expense', debit: totalDepreciation, credit: 0 },
+                        { account_code: '1410', account_name: 'Accumulated Depreciation', debit: 0, credit: totalDepreciation }
+                    ],
+                    referenceType: 'asset_depreciation',
+                    referenceId: `${fiscalYear}-${period}`,
+                    description: `Monthly depreciation ${fiscalYear}-${period}`,
+                    entryDate: `${fiscalYear}-${period}-01`,
+                    entryType: 'depreciation',
+                    orgId: currentOrg?.id
+                });
             }
             
             queryClient.invalidateQueries();

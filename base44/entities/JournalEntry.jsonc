@@ -1,0 +1,22 @@
+{
+  "name": "JournalEntry",
+  "type": "object",
+  "properties": {
+    "journal_number": { "type": "string" },
+    "entry_date": { "type": "string", "format": "date" },
+    "entry_type": { "type": "string", "enum": ["invoice", "payment", "adjustment", "opening", "reversal", "depreciation", "payroll"] },
+    "reference_type": { "type": "string" },
+    "reference_id": { "type": "string" },
+    "description": { "type": "string" },
+    "status": { "type": "string", "enum": ["draft", "posted", "reversed"], "default": "draft" },
+    "total_debit": { "type": "number", "default": 0 },
+    "total_credit": { "type": "number", "default": 0 },
+    "period": { "type": "string" },
+    "created_by": { "type": "string" },
+    "posted_by": { "type": "string" },
+    "posted_at": { "type": "string", "format": "date-time" },
+    "reversal_of": { "type": "string" },
+    "organization_id": { "type": "string" }
+  },
+  "required": ["journal_number", "entry_date", "entry_type", "status", "organization_id"]
+}

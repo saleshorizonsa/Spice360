@@ -303,7 +303,10 @@ function getDefaultPermissions() {
             accounts_payable: { view: false, create: false, edit: false, approve: false },
             payment: { view: false, create: false, approve: false },
             fixed_asset: { view: false, create: false, edit: false, dispose: false },
-            bank_reconciliation: { view: false, perform: false }
+            bank_reconciliation: { view: false, perform: false },
+            financial_statements: { view: false, export: false, drill_down: false },
+            chart_of_accounts: { view: false, create: false, edit: false, manage: false },
+            manual_journal: { view: false, create: false, post: false }
         },
         maintenance: {
             work_order: { view: false, create: false, edit: false, complete: false },
@@ -421,7 +424,10 @@ function getPermissionModules() {
                 { key: 'accounts_payable', label: 'Accounts Payable' },
                 { key: 'payment', label: 'Payments' },
                 { key: 'fixed_asset', label: 'Fixed Assets' },
-                { key: 'bank_reconciliation', label: 'Bank Reconciliation' }
+                { key: 'bank_reconciliation', label: 'Bank Reconciliation' },
+                { key: 'financial_statements', label: 'Financial Statements' },
+                { key: 'chart_of_accounts', label: 'Chart of Accounts' },
+                { key: 'manual_journal', label: 'Manual Journals' }
             ]
         },
         {

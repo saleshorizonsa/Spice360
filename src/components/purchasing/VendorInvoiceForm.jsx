@@ -10,10 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertCircle, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { postJournalEntry } from "../utils/journalService";
+import { useOrganization } from "../utils/OrganizationContext";
 
 export default function VendorInvoiceForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const { currentOrg } = useOrganization();
 
     const { data: pos = [] } = useQuery({
         queryKey: ['purchaseOrders'],
@@ -141,7 +144,27 @@ export default function VendorInvoiceForm({ item, onClose }) {
             }
             return matrixSales.entities.VendorInvoice.create(data);
         },
-        onSuccess: () => {
+        onSuccess: async (savedInvoice) => {
+            if (['approved', 'approved_for_payment'].includes(savedInvoice?.status) && !savedInvoice.gl_posted) {
+                try {
+                    await postJournalEntry({
+                        lines: [
+                            { account_code: '5001', account_name: 'Cost of Goods Sold', debit: savedInvoice.subtotal, credit: 0 },
+                            { account_code: '2210', account_name: 'VAT Receivable', debit: savedInvoice.vat_amount || 0, credit: 0 },
+                            { account_code: '2100', account_name: 'Trade Payables', debit: 0, credit: savedInvoice.total_amount }
+                        ].filter(line => Number(line.debit || line.credit || 0) > 0),
+                        referenceType: 'vendor_invoice',
+                        referenceId: savedInvoice.vendor_invoice_number,
+                        description: `Vendor invoice ${savedInvoice.vendor_invoice_number}`,
+                        entryDate: savedInvoice.invoice_date,
+                        entryType: 'invoice',
+                        orgId: currentOrg?.id
+                    });
+                    await matrixSales.entities.VendorInvoice.update(savedInvoice.id, { ...savedInvoice, gl_posted: true });
+                } catch (error) {
+                    toast({ title: "Vendor invoice saved but GL posting failed", description: error.message, variant: "destructive" });
+                }
+            }
             queryClient.invalidateQueries({ queryKey: ['vendorInvoices'] });
             toast({
                 title: "Success",

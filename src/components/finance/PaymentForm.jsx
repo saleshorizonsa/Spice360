@@ -8,10 +8,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { postJournalEntry } from "../utils/journalService";
+import { useOrganization } from "../utils/OrganizationContext";
 
 export default function PaymentForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const { currentOrg } = useOrganization();
 
     const { data: banks = [] } = useQuery({
         queryKey: ['banks'],
@@ -50,7 +53,32 @@ export default function PaymentForm({ item, onClose }) {
             }
             return matrixSales.entities.Payment.create(data);
         },
-        onSuccess: () => {
+        onSuccess: async (savedPayment) => {
+            if (savedPayment?.status === 'cleared' && !savedPayment.gl_posted) {
+                try {
+                    const isIncoming = savedPayment.payment_type === 'incoming';
+                    await postJournalEntry({
+                        lines: isIncoming
+                            ? [
+                                { account_code: '1010', account_name: 'Cash & Bank', debit: savedPayment.amount, credit: 0 },
+                                { account_code: '1100', account_name: 'Trade Receivables', debit: 0, credit: savedPayment.amount }
+                            ]
+                            : [
+                                { account_code: '2100', account_name: 'Trade Payables', debit: savedPayment.amount, credit: 0 },
+                                { account_code: '1010', account_name: 'Cash & Bank', debit: 0, credit: savedPayment.amount }
+                            ],
+                        referenceType: isIncoming ? 'customer_payment' : 'vendor_payment',
+                        referenceId: savedPayment.payment_number,
+                        description: `Payment ${savedPayment.payment_number}`,
+                        entryDate: savedPayment.payment_date,
+                        entryType: 'payment',
+                        orgId: currentOrg?.id
+                    });
+                    await matrixSales.entities.Payment.update(savedPayment.id, { ...savedPayment, gl_posted: true });
+                } catch (error) {
+                    toast({ title: "Payment saved but GL posting failed", description: error.message, variant: "destructive" });
+                }
+            }
             queryClient.invalidateQueries({ queryKey: ['payments'] });
             toast({
                 title: "Success",

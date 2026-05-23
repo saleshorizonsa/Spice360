@@ -1,0 +1,15 @@
+{
+  "name": "AccountingPeriod",
+  "type": "object",
+  "properties": {
+    "period": { "type": "string" },
+    "period_name": { "type": "string" },
+    "start_date": { "type": "string", "format": "date" },
+    "end_date": { "type": "string", "format": "date" },
+    "status": { "type": "string", "enum": ["open", "closed", "locked"], "default": "open" },
+    "closed_by": { "type": "string" },
+    "closed_at": { "type": "string", "format": "date-time" },
+    "organization_id": { "type": "string" }
+  },
+  "required": ["period", "period_name", "start_date", "end_date", "status", "organization_id"]
+}

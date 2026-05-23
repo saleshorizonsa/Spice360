@@ -8,12 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { Shield } from "lucide-react";
+import { postJournalEntry } from "../utils/journalService";
+import { useOrganization } from "../utils/OrganizationContext";
 
 const GOSI_MAX_WAGE = 45000;
 
 export default function PayrollForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const { currentOrg } = useOrganization();
 
     const { data: employees = [] } = useQuery({
         queryKey: ['employees'],
@@ -134,7 +137,29 @@ export default function PayrollForm({ item, onClose }) {
 
             return payrollResult;
         },
-        onSuccess: () => {
+        onSuccess: async (savedPayroll) => {
+            if (savedPayroll?.status === 'approved' && !savedPayroll.gl_posted) {
+                try {
+                    await postJournalEntry({
+                        lines: [
+                            { account_code: '5100', account_name: 'Salaries & Wages', debit: savedPayroll.gross_earnings, credit: 0 },
+                            { account_code: '2410', account_name: 'Salaries Payable', debit: 0, credit: savedPayroll.net_salary },
+                            { account_code: '2400', account_name: 'GOSI Payable', debit: 0, credit: savedPayroll.gosi_employee },
+                            { account_code: '5200', account_name: 'GOSI Employer Contribution', debit: savedPayroll.gosi_employer, credit: 0 },
+                            { account_code: '2400', account_name: 'GOSI Payable', debit: 0, credit: savedPayroll.gosi_employer }
+                        ].filter(line => Number(line.debit || line.credit || 0) > 0),
+                        referenceType: 'payroll',
+                        referenceId: savedPayroll.payroll_number,
+                        description: `Payroll ${savedPayroll.payroll_number}`,
+                        entryDate: `${savedPayroll.payroll_month}-01`,
+                        entryType: 'payroll',
+                        orgId: currentOrg?.id
+                    });
+                    await matrixSales.entities.Payroll.update(savedPayroll.id, { ...savedPayroll, gl_posted: true });
+                } catch (error) {
+                    toast({ title: "Payroll saved but GL posting failed", description: error.message, variant: "destructive" });
+                }
+            }
             queryClient.invalidateQueries({ queryKey: ['payrolls'] });
             queryClient.invalidateQueries({ queryKey: ['gosiContributions'] });
             toast({ title: "Success", description: "Payroll processed and GOSI contribution created" });

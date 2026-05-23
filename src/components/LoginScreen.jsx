@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, CheckCircle2, LogIn, ShieldCheck, UserPlus } from 'lucide-react';
+import { ArrowRight, CheckCircle2, LogIn, Mail, ShieldCheck, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,8 +8,8 @@ import { useAuth } from '@/lib/AuthContext';
 import BrandLogo from '@/components/BrandLogo';
 import { defaultSubscriptionPlanId, getSubscriptionPlan, storeSignupPlan } from '@/lib/subscriptionPlans';
 
-export default function LoginScreen({ onLogin, onAuthSuccess, onSignupPending, selectedPlan = defaultSubscriptionPlanId, initialMode = 'signin', onBackToLanding }) {
-  const { authProvider, authError, signInWithPassword, signUpWithPassword } = useAuth();
+export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = defaultSubscriptionPlanId, initialMode = 'signin', onBackToLanding }) {
+  const { authProvider, authError, signInWithPassword, signUpWithPassword, resendVerificationEmail } = useAuth();
   const { toast } = useToast();
   const [mode, setMode] = useState(initialMode);
   const [formData, setFormData] = useState({
@@ -18,6 +18,8 @@ export default function LoginScreen({ onLogin, onAuthSuccess, onSignupPending, s
     password: ''
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState('');
   const plan = getSubscriptionPlan(selectedPlan);
 
   const handleChange = (field, value) => {
@@ -44,18 +46,20 @@ export default function LoginScreen({ onLogin, onAuthSuccess, onSignupPending, s
     try {
       setIsSubmitting(true);
       if (mode === 'signup') {
+        const email = formData.email.trim().toLowerCase();
         await signUpWithPassword({
-          email: formData.email.trim().toLowerCase(),
+          email,
           password: formData.password,
           fullName: formData.fullName.trim(),
           selectedPlan
         });
         storeSignupPlan(selectedPlan);
+        setPendingConfirmationEmail(email);
         toast({
-          title: 'Verification email sent',
-          description: 'Open the verification link before continuing to company setup.'
+          title: 'Account created',
+          description: 'Check your inbox and spam folder for the confirmation email.'
         });
-        onSignupPending?.(formData.email.trim().toLowerCase());
+        setMode('signin');
       } else {
         await signInWithPassword({
           email: formData.email.trim().toLowerCase(),
@@ -71,6 +75,36 @@ export default function LoginScreen({ onLogin, onAuthSuccess, onSignupPending, s
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleResendConfirmation = async () => {
+    const email = (pendingConfirmationEmail || formData.email).trim().toLowerCase();
+    if (!email) {
+      toast({
+        title: 'Email required',
+        description: 'Enter the email address used during signup.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      setIsResending(true);
+      await resendVerificationEmail(email);
+      setPendingConfirmationEmail(email);
+      toast({
+        title: 'Confirmation email sent',
+        description: 'Use the latest email from HORIZON. Check spam or junk if it is not in your inbox.'
+      });
+    } catch (error) {
+      toast({
+        title: 'Unable to resend confirmation',
+        description: error.message || 'Check Supabase email settings and try again.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -132,6 +166,26 @@ export default function LoginScreen({ onLogin, onAuthSuccess, onSignupPending, s
                   </div>
                 )}
 
+                {pendingConfirmationEmail && mode === 'signin' && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                    <p className="font-semibold">Confirm your email to continue</p>
+                    <p className="mt-1 leading-5">
+                      We sent a confirmation link to <strong>{pendingConfirmationEmail}</strong>. Check inbox, spam, or junk.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="mt-3 border-amber-300 bg-white"
+                      onClick={handleResendConfirmation}
+                      disabled={isResending}
+                    >
+                      <Mail className="mr-2 h-4 w-4" />
+                      {isResending ? 'Sending...' : 'Resend confirmation email'}
+                    </Button>
+                  </div>
+                )}
+
                 {mode === 'signup' && (
                   <>
                     <div className="rounded-lg border border-[#dbe6f3] bg-[#f8fafc] p-3 text-sm text-slate-700">
@@ -190,6 +244,19 @@ export default function LoginScreen({ onLogin, onAuthSuccess, onSignupPending, s
                 {onBackToLanding && (
                   <Button type="button" variant="outline" className="w-full" onClick={onBackToLanding}>
                     Back to plans
+                  </Button>
+                )}
+
+                {mode === 'signin' && !pendingConfirmationEmail && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full text-[#24466f]"
+                    onClick={handleResendConfirmation}
+                    disabled={isResending}
+                  >
+                    <Mail className="mr-2 h-4 w-4" />
+                    {isResending ? 'Sending confirmation...' : "Didn't receive confirmation email?"}
                   </Button>
                 )}
               </form>

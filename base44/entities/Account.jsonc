@@ -1,0 +1,21 @@
+{
+  "name": "Account",
+  "type": "object",
+  "properties": {
+    "account_code": { "type": "string" },
+    "account_name": { "type": "string" },
+    "account_name_ar": { "type": "string" },
+    "account_type": { "type": "string", "enum": ["asset", "liability", "equity", "revenue", "expense"] },
+    "account_subtype": { "type": "string" },
+    "parent_account": { "type": "string" },
+    "is_header": { "type": "boolean", "default": false },
+    "normal_balance": { "type": "string", "enum": ["debit", "credit"] },
+    "is_active": { "type": "boolean", "default": true },
+    "allow_direct_posting": { "type": "boolean", "default": true },
+    "cost_center_required": { "type": "boolean", "default": false },
+    "opening_balance": { "type": "number", "default": 0 },
+    "currency": { "type": "string", "default": "SAR" },
+    "organization_id": { "type": "string" }
+  },
+  "required": ["account_code", "account_name", "account_type", "normal_balance", "organization_id"]
+}

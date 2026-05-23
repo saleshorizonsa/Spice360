@@ -1,0 +1,18 @@
+{
+  "name": "JournalLine",
+  "type": "object",
+  "properties": {
+    "journal_number": { "type": "string" },
+    "line_number": { "type": "integer" },
+    "account_code": { "type": "string" },
+    "account_name": { "type": "string" },
+    "debit": { "type": "number", "default": 0 },
+    "credit": { "type": "number", "default": 0 },
+    "description": { "type": "string" },
+    "cost_center": { "type": "string" },
+    "vat_code": { "type": "string" },
+    "currency": { "type": "string", "default": "SAR" },
+    "organization_id": { "type": "string" }
+  },
+  "required": ["journal_number", "line_number", "account_code"]
+}

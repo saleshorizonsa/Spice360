@@ -18,12 +18,13 @@ import BankReconciliationReport from "../components/reports/BankReconciliationRe
 import FixedAssetReport from "../components/reports/FixedAssetReport";
 import ProfitLossReport from "../components/reports/ProfitLossReport";
 import BalanceSheetReport from "../components/reports/BalanceSheetReport";
+import AccountingStatementsReport from "../components/reports/AccountingStatementsReport";
 import CashFlowReport from "../components/reports/CashFlowReport";
 import CashForecastReport from "../components/reports/CashForecastReport";
 import InterBranchReconciliationReport from "../components/reports/InterBranchReconciliationReport";
 
 export default function FinancialReports() {
-    const [activeTab, setActiveTab] = useState("trial_balance");
+    const [activeTab, setActiveTab] = useState("financial_statements");
 
     const { data: reportHistory = [] } = useQuery({
         queryKey: ['reportHistory'],
@@ -77,7 +78,8 @@ export default function FinancialReports() {
             </Card>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="grid grid-cols-6 lg:grid-cols-11 w-full">
+                <TabsList className="grid grid-cols-6 lg:grid-cols-12 w-full">
+                    <TabsTrigger value="financial_statements">Statements</TabsTrigger>
                     <TabsTrigger value="trial_balance">Trial Balance</TabsTrigger>
                     <TabsTrigger value="gl_detail">GL Detail</TabsTrigger>
                     <TabsTrigger value="ar_aging">A/R Aging</TabsTrigger>
@@ -90,6 +92,10 @@ export default function FinancialReports() {
                     <TabsTrigger value="cash_forecast">Cash Forecast</TabsTrigger>
                     <TabsTrigger value="inter_branch">Inter-Branch</TabsTrigger>
                 </TabsList>
+
+                <TabsContent value="financial_statements">
+                    <AccountingStatementsReport />
+                </TabsContent>
 
                 <TabsContent value="trial_balance">
                     <TrialBalanceReport />

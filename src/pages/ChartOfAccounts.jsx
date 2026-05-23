@@ -1,0 +1,322 @@
+import React, { useMemo, useState } from "react";
+import { matrixSales } from "@/api/matrixSalesClient";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
+import { Edit, FolderTree, Plus, Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useToast } from "@/components/ui/use-toast";
+import { useLanguage } from "@/components/utils/languageContext";
+import { useOrganization } from "@/components/utils/OrganizationContext";
+
+const fmt = (value) => `SAR ${Number(value || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+const seededAccounts = [
+  ["1000", "Assets", "الأصول", "asset", "", "", true, "debit"],
+  ["1010", "Cash & Bank", "النقد والبنوك", "asset", "cash", "1000", false, "debit"],
+  ["1020", "Petty Cash", "العهدة النقدية", "asset", "cash", "1000", false, "debit"],
+  ["1100", "Trade Receivables", "ذمم العملاء", "asset", "receivables", "1000", false, "debit"],
+  ["1110", "Other Receivables", "ذمم مدينة أخرى", "asset", "receivables", "1000", false, "debit"],
+  ["1200", "Inventory - Raw Materials", "مخزون مواد خام", "asset", "inventory", "1000", false, "debit"],
+  ["1210", "Inventory WIP", "مخزون تحت التشغيل", "asset", "inventory", "1000", false, "debit"],
+  ["1220", "Inventory Finished Goods", "مخزون تام", "asset", "inventory", "1000", false, "debit"],
+  ["1300", "Prepaid Expenses", "مصروفات مدفوعة مقدما", "asset", "prepaid", "1000", false, "debit"],
+  ["1400", "Fixed Assets", "أصول ثابتة", "asset", "fixed_asset", "1000", false, "debit"],
+  ["1410", "Accumulated Depreciation", "مجمع الإهلاك", "asset", "fixed_asset", "1000", false, "credit"],
+  ["1500", "Assets Under Construction", "أصول تحت الإنشاء", "asset", "auc", "1000", false, "debit"],
+  ["2000", "Liabilities", "الالتزامات", "liability", "", "", true, "credit"],
+  ["2100", "Trade Payables", "ذمم الموردين", "liability", "payables", "2000", false, "credit"],
+  ["2110", "Accrued Expenses", "مصروفات مستحقة", "liability", "accruals", "2000", false, "credit"],
+  ["2200", "VAT Payable", "ضريبة قيمة مضافة مستحقة", "liability", "vat", "2000", false, "credit"],
+  ["2210", "VAT Receivable", "ضريبة قيمة مضافة مدينة", "asset", "vat", "1000", false, "debit"],
+  ["2300", "Customer Advances", "دفعات عملاء مقدمة", "liability", "advances", "2000", false, "credit"],
+  ["2400", "GOSI Payable", "تأمينات اجتماعية مستحقة", "liability", "payroll", "2000", false, "credit"],
+  ["2410", "Salaries Payable", "رواتب مستحقة", "liability", "payroll", "2000", false, "credit"],
+  ["2500", "Long-Term Loans", "قروض طويلة الأجل", "liability", "loans", "2000", false, "credit"],
+  ["3000", "Equity", "حقوق الملكية", "equity", "", "", true, "credit"],
+  ["3001", "Share Capital", "رأس المال", "equity", "capital", "3000", false, "credit"],
+  ["3100", "Retained Earnings", "الأرباح المبقاة", "equity", "retained_earnings", "3000", false, "credit"],
+  ["3200", "Current Year Profit/Loss", "ربح أو خسارة السنة الحالية", "equity", "current_year_profit", "3000", false, "credit"],
+  ["4000", "Revenue", "الإيرادات", "revenue", "", "", true, "credit"],
+  ["4001", "Sales Revenue", "إيرادات المبيعات", "revenue", "sales", "4000", false, "credit"],
+  ["4010", "Service Revenue", "إيرادات الخدمات", "revenue", "services", "4000", false, "credit"],
+  ["4020", "Other Income", "إيرادات أخرى", "revenue", "other_income", "4000", false, "credit"],
+  ["5000", "Expenses", "المصروفات", "expense", "", "", true, "debit"],
+  ["5001", "Cost of Goods Sold", "تكلفة البضاعة المباعة", "expense", "cogs", "5000", false, "debit"],
+  ["5100", "Salaries & Wages", "الرواتب والأجور", "expense", "payroll", "5000", false, "debit"],
+  ["5200", "GOSI Employer Contribution", "حصة صاحب العمل في التأمينات", "expense", "payroll", "5000", false, "debit"],
+  ["5300", "Rent Expense", "مصروف الإيجار", "expense", "rent", "5000", false, "debit"],
+  ["5400", "Utilities", "مرافق", "expense", "utilities", "5000", false, "debit"],
+  ["5500", "Depreciation Expense", "مصروف الإهلاك", "expense", "depreciation", "5000", false, "debit"],
+  ["5600", "VAT Expense (irrecoverable)", "ضريبة غير قابلة للاسترداد", "expense", "vat", "5000", false, "debit"]
+];
+
+export async function seedChartOfAccounts(orgId) {
+  return Promise.all(seededAccounts.map(([account_code, account_name, account_name_ar, account_type, account_subtype, parent_account, is_header, normal_balance]) =>
+    matrixSales.entities.Account.create({
+      account_code,
+      account_name,
+      account_name_ar,
+      account_type,
+      account_subtype,
+      parent_account,
+      is_header,
+      normal_balance,
+      is_active: true,
+      allow_direct_posting: !is_header,
+      cost_center_required: false,
+      opening_balance: 0,
+      currency: "SAR",
+      organization_id: orgId
+    })
+  ));
+}
+
+function AccountForm({ account, accounts, orgId, onClose }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [form, setForm] = useState(account || {
+    account_code: "",
+    account_name: "",
+    account_name_ar: "",
+    account_type: "asset",
+    account_subtype: "",
+    parent_account: "",
+    is_header: false,
+    normal_balance: "debit",
+    is_active: true,
+    allow_direct_posting: true,
+    cost_center_required: false,
+    opening_balance: 0,
+    currency: "SAR",
+    organization_id: orgId
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: (payload) => account?.id
+      ? matrixSales.entities.Account.update(account.id, payload)
+      : matrixSales.entities.Account.create(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["accounts", orgId] });
+      toast({ title: "Success", description: "Account saved successfully." });
+      onClose();
+    },
+    onError: (error) => toast({ title: "Unable to save account", description: error.message, variant: "destructive" })
+  });
+
+  const update = (field, value) => setForm((prev) => ({
+    ...prev,
+    [field]: value,
+    ...(field === "is_header" && value ? { allow_direct_posting: false } : {})
+  }));
+
+  return (
+    <Dialog open onOpenChange={onClose}>
+      <DialogContent className="max-h-[90vh] max-w-3xl overflow-y-auto">
+        <DialogHeader><DialogTitle>{account ? "Edit Account" : "Add Account"}</DialogTitle></DialogHeader>
+        <form className="space-y-5" onSubmit={(event) => { event.preventDefault(); saveMutation.mutate({ ...form, organization_id: orgId }); }}>
+          <div className="grid grid-cols-2 gap-4">
+            <div><Label>Account Code *</Label><Input value={form.account_code} onChange={(e) => update("account_code", e.target.value)} required /></div>
+            <div><Label>Account Name *</Label><Input value={form.account_name} onChange={(e) => update("account_name", e.target.value)} required /></div>
+            <div><Label>Arabic Name</Label><Input value={form.account_name_ar || ""} onChange={(e) => update("account_name_ar", e.target.value)} /></div>
+            <div>
+              <Label>Account Type *</Label>
+              <Select value={form.account_type} onValueChange={(value) => update("account_type", value)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{["asset", "liability", "equity", "revenue", "expense"].map((type) => <SelectItem key={type} value={type}>{type}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div><Label>Subtype</Label><Input value={form.account_subtype || ""} onChange={(e) => update("account_subtype", e.target.value)} /></div>
+            <div>
+              <Label>Parent Account</Label>
+              <Select value={form.parent_account || "NONE"} onValueChange={(value) => update("parent_account", value === "NONE" ? "" : value)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="NONE">None</SelectItem>
+                  {accounts.filter((item) => item.account_code !== form.account_code).map((item) => (
+                    <SelectItem key={item.id || item.account_code} value={item.account_code}>{item.account_code} - {item.account_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Normal Balance</Label>
+              <Select value={form.normal_balance} onValueChange={(value) => update("normal_balance", value)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="debit">Debit</SelectItem><SelectItem value="credit">Credit</SelectItem></SelectContent>
+              </Select>
+            </div>
+            <div><Label>Opening Balance</Label><Input type="number" step="0.01" value={form.opening_balance} onChange={(e) => update("opening_balance", Number(e.target.value || 0))} /></div>
+            <div><Label>Currency</Label><Input value={form.currency || "SAR"} onChange={(e) => update("currency", e.target.value)} /></div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {[
+              ["is_header", "Header account"],
+              ["is_active", "Active"],
+              ["allow_direct_posting", "Allow direct posting"],
+              ["cost_center_required", "Cost center required"]
+            ].map(([field, label]) => (
+              <label key={field} className="flex items-center gap-3 rounded-md border p-3">
+                <Switch checked={Boolean(form[field])} onCheckedChange={(value) => update(field, value)} />
+                <span>{label}</span>
+              </label>
+            ))}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={saveMutation.isPending}>{saveMutation.isPending ? "Saving..." : "Save Account"}</Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export default function ChartOfAccounts() {
+  const { currentOrg } = useOrganization();
+  const { isRTL } = useLanguage();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [editing, setEditing] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+  const orgId = currentOrg?.id;
+
+  const { data: accounts = [], isLoading } = useQuery({
+    queryKey: ["accounts", orgId],
+    enabled: !!orgId,
+    queryFn: async () => {
+      const rows = await matrixSales.entities.Account.filter({ organization_id: orgId });
+      if (!rows.length) {
+        await seedChartOfAccounts(orgId);
+        return matrixSales.entities.Account.filter({ organization_id: orgId });
+      }
+      return rows;
+    },
+    initialData: []
+  });
+
+  const { data: lines = [] } = useQuery({
+    queryKey: ["journalLines", orgId],
+    enabled: !!orgId,
+    queryFn: () => matrixSales.entities.JournalLine.filter({ organization_id: orgId }),
+    initialData: []
+  });
+
+  const balances = useMemo(() => {
+    const map = new Map();
+    lines.forEach((line) => {
+      const current = map.get(line.account_code) || { debit: 0, credit: 0 };
+      current.debit += Number(line.debit || 0);
+      current.credit += Number(line.credit || 0);
+      map.set(line.account_code, current);
+    });
+    return map;
+  }, [lines]);
+
+  const depthFor = (account, lookup, depth = 0) => {
+    if (!account.parent_account || depth > 8) return depth;
+    const parent = lookup.get(account.parent_account);
+    return parent ? depthFor(parent, lookup, depth + 1) : depth;
+  };
+
+  const rows = useMemo(() => {
+    const lookup = new Map(accounts.map((account) => [account.account_code, account]));
+    return [...accounts].sort((a, b) => a.account_code.localeCompare(b.account_code)).map((account) => {
+      const movement = balances.get(account.account_code) || { debit: 0, credit: 0 };
+      const movementBalance = account.normal_balance === "credit"
+        ? movement.credit - movement.debit
+        : movement.debit - movement.credit;
+      return {
+        ...account,
+        depth: depthFor(account, lookup),
+        current_balance: Number(account.opening_balance || 0) + movementBalance
+      };
+    });
+  }, [accounts, balances]);
+
+  const seedMutation = useMutation({
+    mutationFn: () => seedChartOfAccounts(orgId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["accounts", orgId] });
+      toast({ title: "Chart of accounts seeded", description: "Standard Saudi CoA was created." });
+    }
+  });
+
+  return (
+    <div className="space-y-6 p-6" dir={isRTL ? "rtl" : "ltr"}>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900">Chart of Accounts</h1>
+          <p className="text-slate-600">Manage posting accounts, headers, opening balances, and ledger access.</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => seedMutation.mutate()} disabled={!orgId || seedMutation.isPending}>
+            <FolderTree className="mr-2 h-4 w-4" />
+            Seed Saudi CoA
+          </Button>
+          <Button onClick={() => { setEditing(null); setShowForm(true); }}>
+            <Plus className="mr-2 h-4 w-4" />
+            Add Account
+          </Button>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle>Accounts</CardTitle></CardHeader>
+        <CardContent>
+          <div className="overflow-auto rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Normal</TableHead>
+                  <TableHead className="text-right">Current Balance</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow><TableCell colSpan={6} className="py-8 text-center">Loading accounts...</TableCell></TableRow>
+                ) : rows.map((account) => (
+                  <TableRow key={`${account.id || account.account_code}`}>
+                    <TableCell className={account.is_header ? "font-bold" : "font-mono"}>{account.account_code}</TableCell>
+                    <TableCell className={account.is_header ? "font-bold" : ""} style={{ paddingInlineStart: `${account.depth * 16 + 16}px` }}>
+                      {isRTL && account.account_name_ar ? account.account_name_ar : account.account_name}
+                      {account.is_header && <Badge className="ml-2" variant="outline">Header</Badge>}
+                    </TableCell>
+                    <TableCell><Badge variant="secondary">{account.account_type}</Badge></TableCell>
+                    <TableCell className="capitalize">{account.normal_balance}</TableCell>
+                    <TableCell className="text-right font-mono">{fmt(account.current_balance)}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/AccountLedger?account=${encodeURIComponent(account.account_code)}`)}>
+                          <Search className="mr-2 h-4 w-4" />
+                          Ledger
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => { setEditing(account); setShowForm(true); }}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {showForm && <AccountForm account={editing} accounts={accounts} orgId={orgId} onClose={() => setShowForm(false)} />}
+    </div>
+  );
+}
