@@ -33,11 +33,13 @@ try {
         UNIQUE KEY `uk_email` (`email`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
 
+    // Check if already exists
     $stmt = getDB()->prepare('SELECT id FROM `_users` WHERE email = ? LIMIT 1');
     $stmt->execute([strtolower($adminEmail)]);
     $existing = $stmt->fetch();
 
     if ($existing) {
+        // Update password and verify the account
         $hash = password_hash($adminPassword, PASSWORD_BCRYPT);
         getDB()->prepare('UPDATE `_users` SET password_hash=?, full_name=?, is_verified=1, verification_token=NULL WHERE email=?')
                ->execute([$hash, $adminName, strtolower($adminEmail)]);
