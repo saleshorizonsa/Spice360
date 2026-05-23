@@ -29,7 +29,7 @@ export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = def
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (authProvider !== 'supabase') {
+    if (authProvider !== 'supabase' && authProvider !== 'phpApi') {
       onLogin();
       return;
     }
@@ -158,7 +158,7 @@ export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = def
               </p>
             </div>
 
-            {authProvider === 'supabase' ? (
+            {authProvider === 'supabase' || authProvider === 'phpApi' ? (
               <form onSubmit={handleSubmit} className="space-y-4">
                 {authError?.type === 'missing_supabase_config' && (
                   <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
