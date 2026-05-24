@@ -160,12 +160,6 @@ export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = def
 
             {authProvider === 'supabase' || authProvider === 'phpApi' ? (
               <form onSubmit={handleSubmit} className="space-y-4">
-                {authError?.type === 'missing_supabase_config' && authProvider !== 'phpApi' && (
-                  <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-                    Authentication is not configured for this deployment. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY, then redeploy.
-                  </div>
-                )}
-
                 {pendingConfirmationEmail && mode === 'signin' && (
                   <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
                     <p className="font-semibold">Confirm your email to continue</p>
@@ -227,7 +221,7 @@ export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = def
                   />
                 </div>
 
-                <Button type="submit" disabled={isSubmitting || (authError?.type === 'missing_supabase_config' && authProvider !== 'phpApi')} className="h-11 w-full bg-[#24466f] hover:bg-[#193658]">
+                <Button type="submit" disabled={isSubmitting} className="h-11 w-full bg-[#24466f] hover:bg-[#193658]">
                   {mode === 'signup' ? <UserPlus className="mr-2 h-4 w-4" /> : <LogIn className="mr-2 h-4 w-4" />}
                   {isSubmitting ? 'Please wait...' : mode === 'signup' ? 'Create Account' : 'Sign In'}
                   {!isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
