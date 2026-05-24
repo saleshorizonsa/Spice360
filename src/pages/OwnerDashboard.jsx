@@ -245,7 +245,7 @@ export default function OwnerDashboard() {
     currency: plan.currency, billing_cycle: plan.billingCycle, trial_days: plan.trialDays,
     user_limit: plan.userLimit, invoice_limit: plan.invoiceLimit, support_level: plan.supportLevel,
     modules: plan.modules, limits: plan.limits, display_order: i + 1, status: "active"
-  }))).map(normalizeSubscriptionPlan);
+  }))).filter(Boolean).map(normalizeSubscriptionPlan).filter(Boolean);
 
   useEffect(() => {
     if (!editingPlan && !isNewPlan && planRows.length > 0) setEditingPlan(planRows[0]);

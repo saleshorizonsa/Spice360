@@ -61,6 +61,7 @@ export function getSubscriptionPlan(planId = defaultSubscriptionPlanId) {
 }
 
 export function normalizeSubscriptionPlan(plan = {}) {
+  if (!plan || typeof plan !== 'object') plan = {};
   const fallback = getSubscriptionPlan(plan.plan_id || plan.id);
   return {
     ...fallback,
@@ -83,8 +84,9 @@ export function normalizeSubscriptionPlan(plan = {}) {
 export function normalizeSubscriptionPlans(plans = []) {
   if (!Array.isArray(plans) || plans.length === 0) return subscriptionPlans;
   const activePlans = plans
+    .filter(Boolean)
     .map(normalizeSubscriptionPlan)
-    .filter((plan) => plan.status === "active")
+    .filter((plan) => plan && plan.status === "active")
     .sort((left, right) => (left.display_order ?? 99) - (right.display_order ?? 99));
   return activePlans.length > 0 ? activePlans : subscriptionPlans;
 }
