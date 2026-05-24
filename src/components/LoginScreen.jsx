@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, CheckCircle2, LogIn, Mail, ShieldCheck, UserPlus } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle2, LogIn, Mail, ShieldCheck, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -148,6 +148,16 @@ export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = def
           </div>
 
           <div className="flex flex-col justify-center bg-white p-7 lg:p-9">
+            {onBackToLanding && (
+              <button
+                type="button"
+                onClick={onBackToLanding}
+                className="mb-6 flex w-fit items-center gap-1.5 text-sm text-slate-500 transition-colors hover:text-[#24466f]"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back to Home
+              </button>
+            )}
             <div className="mb-8">
               <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef3f9]">
                 <ShieldCheck className="h-6 w-6 text-[#24466f]" />
@@ -235,12 +245,6 @@ export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = def
                 >
                   {mode === 'signup' ? 'Use an existing account' : 'Create a new account'}
                 </Button>
-                {onBackToLanding && (
-                  <Button type="button" variant="outline" className="w-full" onClick={onBackToLanding}>
-                    Back to plans
-                  </Button>
-                )}
-
                 {mode === 'signin' && !pendingConfirmationEmail && (
                   <Button
                     type="button"
