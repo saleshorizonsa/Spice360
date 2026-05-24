@@ -29,7 +29,6 @@ jobs:
           MAIL_FROM:            ${{ secrets.MAIL_FROM }}
           ADMIN_EMAILS:         ${{ secrets.ADMIN_EMAILS }}
           PLATFORM_OWNER_EMAIL: ${{ secrets.PLATFORM_OWNER_EMAIL }}
-          SETUP_SECRET:         ${{ secrets.SETUP_SECRET }}
         run: envsubst < api/config/config.php.template > api/config/config.php
 
       - name: Build React app
