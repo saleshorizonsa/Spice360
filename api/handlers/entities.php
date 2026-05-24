@@ -309,6 +309,68 @@ function sortRows(array $rows, string $sort): array {
     return $rows;
 }
 
+function checkSubscriptionLimits(string $entityName, string $orgId, array $user): void {
+    if ($user['is_platform_owner'] ?? false) return;
+    if (in_array($entityName, ['Subscription', 'Organization', 'SubscriptionPlan', 'User', 'Role'], true)) return;
+
+    $subTable = sanitizeTableName('Subscription');
+    ensureEntityTable($subTable);
+    $subStmt = getDB()->prepare(
+        "SELECT record FROM `{$subTable}` WHERE organization_id = ? ORDER BY created_at DESC LIMIT 1"
+    );
+    $subStmt->execute([$orgId]);
+    $subRow = $subStmt->fetch();
+    if (!$subRow) return; // no subscription record yet — allow (onboarding phase)
+
+    $sub = is_string($subRow['record']) ? (json_decode($subRow['record'], true) ?? []) : ($subRow['record'] ?? []);
+    $status     = $sub['status'] ?? 'trialing';
+    $trialEnd   = $sub['trial_end_date'] ?? null;
+
+    // Block if subscription is blocked
+    $blocked = ['expired','cancelled','suspended'];
+    if (in_array($status, $blocked, true)) {
+        throw new RuntimeException('Your subscription has ended. Upgrade to continue creating records.', 402);
+    }
+
+    // Block if trial has expired
+    if ($status === 'trialing' && $trialEnd && strtotime($trialEnd) < time()) {
+        throw new RuntimeException('Your trial period has ended. Upgrade to continue creating records.', 402);
+    }
+
+    // Enforce invoice limit (per calendar month)
+    if ($entityName === 'Invoice') {
+        $invoiceTable = sanitizeTableName('Invoice');
+        ensureEntityTable($invoiceTable);
+        $monthStart = date('Y-m-01 00:00:00');
+        $cntStmt = getDB()->prepare(
+            "SELECT COUNT(*) FROM `{$invoiceTable}` WHERE organization_id = ? AND created_at >= ?"
+        );
+        $cntStmt->execute([$orgId, $monthStart]);
+        $invoiceCount = (int)$cntStmt->fetchColumn();
+
+        $limits   = $sub['limits'] ?? [];
+        $maxInv   = isset($limits['invoices_per_month']) ? (int)$limits['invoices_per_month'] : PHP_INT_MAX;
+        if ($maxInv > 0 && $maxInv < PHP_INT_MAX && $invoiceCount >= $maxInv) {
+            throw new RuntimeException("Monthly invoice limit ({$maxInv}) reached. Upgrade your plan to create more invoices.", 402);
+        }
+    }
+
+    // Enforce user limit
+    if ($entityName === 'User') {
+        $userTable = sanitizeTableName('User');
+        ensureEntityTable($userTable);
+        $cntStmt = getDB()->prepare("SELECT COUNT(*) FROM `{$userTable}` WHERE organization_id = ?");
+        $cntStmt->execute([$orgId]);
+        $userCount = (int)$cntStmt->fetchColumn();
+
+        $limits   = $sub['limits'] ?? [];
+        $maxUsers = isset($limits['users']) ? (int)$limits['users'] : PHP_INT_MAX;
+        if ($maxUsers > 0 && $maxUsers < PHP_INT_MAX && $userCount >= $maxUsers) {
+            throw new RuntimeException("User limit ({$maxUsers}) reached. Upgrade your plan to add more users.", 402);
+        }
+    }
+}
+
 function createEntity(string $entityName, array $user, array $data): array {
     $tableName = sanitizeTableName($entityName);
     ensureEntityTable($tableName);
@@ -319,6 +381,8 @@ function createEntity(string $entityName, array $user, array $data): array {
     if (!$scopeExcluded && !$orgId) {
         throw new RuntimeException('Company selection required. Complete onboarding or select a company before creating records.', 422);
     }
+
+    if ($orgId) checkSubscriptionLimits($entityName, $orgId, $user);
 
     $record = $data;
     if ($orgId) { $record['organization_id'] = $orgId; $record['tenant_id'] = $orgId; }

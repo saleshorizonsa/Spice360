@@ -8,7 +8,7 @@ import { useAuth } from '@/lib/AuthContext';
 import BrandLogo from '@/components/BrandLogo';
 import { defaultSubscriptionPlanId, getSubscriptionPlan, storeSignupPlan } from '@/lib/subscriptionPlans';
 
-export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = defaultSubscriptionPlanId, initialMode = 'signin', onBackToLanding }) {
+export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = defaultSubscriptionPlanId, initialMode = 'signin', onBackToLanding, onForgotPassword }) {
   const { authProvider, authError, signInWithPassword, signUpWithPassword, resendVerificationEmail } = useAuth();
   const { toast } = useToast();
   const [mode, setMode] = useState(initialMode);
@@ -19,6 +19,7 @@ export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = def
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [pendingConfirmationEmail, setPendingConfirmationEmail] = useState('');
   const plan = getSubscriptionPlan(selectedPlan);
 
@@ -51,7 +52,8 @@ export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = def
           email,
           password: formData.password,
           fullName: formData.fullName.trim(),
-          selectedPlan
+          selectedPlan,
+          termsAccepted
         });
         storeSignupPlan(selectedPlan);
         setPendingConfirmationEmail(email);
@@ -204,6 +206,21 @@ export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = def
                         placeholder="Your full name"
                       />
                     </div>
+                    <div className="flex items-start gap-2.5">
+                      <input
+                        id="tos"
+                        type="checkbox"
+                        checked={termsAccepted}
+                        onChange={(e) => setTermsAccepted(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#24466f]"
+                      />
+                      <label htmlFor="tos" className="cursor-pointer text-xs leading-5 text-slate-600">
+                        I agree to the{' '}
+                        <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-[#24466f] underline">Terms of Service</a>
+                        {' '}and{' '}
+                        <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[#24466f] underline">Privacy Policy</a>
+                      </label>
+                    </div>
                   </>
                 )}
 
@@ -229,9 +246,18 @@ export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = def
                     placeholder="Password"
                     autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                   />
+                  {mode === 'signin' && onForgotPassword && (
+                    <button
+                      type="button"
+                      onClick={onForgotPassword}
+                      className="mt-1 text-xs text-[#24466f] hover:underline"
+                    >
+                      Forgot password?
+                    </button>
+                  )}
                 </div>
 
-                <Button type="submit" disabled={isSubmitting} className="h-11 w-full bg-[#24466f] hover:bg-[#193658]">
+                <Button type="submit" disabled={isSubmitting || (mode === 'signup' && !termsAccepted)} className="h-11 w-full bg-[#24466f] hover:bg-[#193658]">
                   {mode === 'signup' ? <UserPlus className="mr-2 h-4 w-4" /> : <LogIn className="mr-2 h-4 w-4" />}
                   {isSubmitting ? 'Please wait...' : mode === 'signup' ? 'Create Account' : 'Sign In'}
                   {!isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}

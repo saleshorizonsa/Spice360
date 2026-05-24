@@ -1144,6 +1144,10 @@ const phpApiMatrixSales = {
       apiFetch('/auth/resend', { method: 'POST', body: JSON.stringify({ email }) }),
     confirmEmail: (token) =>
       apiFetch(`/auth/confirm?token=${encodeURIComponent(token)}`),
+    forgotPassword: (email) =>
+      apiFetch('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) }),
+    resetPassword: (token, password) =>
+      apiFetch('/auth/reset-password', { method: 'POST', body: JSON.stringify({ token, password }) }),
     redirectToLogin: () => {}
   },
   entities: phpApiEntities,

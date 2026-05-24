@@ -6,5 +6,7 @@ define('DB_PASS', '${DB_PASS}');
 define('JWT_SECRET', '${JWT_SECRET}');
 define('MAIL_FROM', '${MAIL_FROM}');
 define('APP_URL', 'https://erp.horizon-sa.net');
+define('ALLOWED_ORIGINS', 'https://erp.horizon-sa.net');
 define('ADMIN_EMAILS', '${ADMIN_EMAILS}');
 define('PLATFORM_OWNER_EMAIL', '${PLATFORM_OWNER_EMAIL}');
+define('SETUP_SECRET', '${SETUP_SECRET}');

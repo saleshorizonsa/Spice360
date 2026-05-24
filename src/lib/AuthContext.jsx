@@ -279,10 +279,10 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
-  const signUpWithPassword = async ({ email, password, fullName, selectedPlan = defaultSubscriptionPlanId }) => {
+  const signUpWithPassword = async ({ email, password, fullName, selectedPlan = defaultSubscriptionPlanId, termsAccepted = false }) => {
     if (usePhpApi) {
       storeSignupPlan(selectedPlan);
-      return matrixSales.auth.signup(email, password, { full_name: fullName, selected_plan: selectedPlan });
+      return matrixSales.auth.signup(email, password, { full_name: fullName, selected_plan: selectedPlan, terms_accepted: termsAccepted });
     }
 
     if (!supabase) {

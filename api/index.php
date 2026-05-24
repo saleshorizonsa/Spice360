@@ -1,9 +1,17 @@
 <?php
 
-header('Access-Control-Allow-Origin: *');
+$allowedOrigins = array_filter(array_map('trim', explode(',',
+    defined('ALLOWED_ORIGINS') ? ALLOWED_ORIGINS : (getenv('ALLOWED_ORIGINS') ?: 'https://erp.horizon-sa.net')
+)));
+$requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
+$corsOrigin = in_array($requestOrigin, $allowedOrigins, true) ? $requestOrigin : ($allowedOrigins[0] ?? 'https://erp.horizon-sa.net');
+
+header('Access-Control-Allow-Origin: ' . $corsOrigin);
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Organization-Id');
+header('Access-Control-Allow-Credentials: true');
 header('Access-Control-Max-Age: 3600');
+header('Vary: Origin');
 header('Content-Type: application/json; charset=UTF-8');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -43,6 +51,12 @@ try {
 
     } elseif ($path === '/auth/resend' && $method === 'POST') {
         echo json_encode(handleResendVerification($body['email'] ?? ''));
+
+    } elseif ($path === '/auth/forgot-password' && $method === 'POST') {
+        echo json_encode(handleForgotPassword($body));
+
+    } elseif ($path === '/auth/reset-password' && $method === 'POST') {
+        echo json_encode(handleResetPassword($body));
 
     // ── Entities ──────────────────────────────────────────────────────────
     } elseif (preg_match('#^/entities/([A-Za-z0-9]+)$#', $path, $m) && $method === 'GET') {

@@ -9,13 +9,18 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import LoginScreen from '@/components/LoginScreen';
+import ForgotPasswordScreen from '@/components/ForgotPasswordScreen';
+import ResetPasswordScreen from '@/components/ResetPasswordScreen';
 import TenantOnboardingWizard, { useTenantReadiness } from '@/components/onboarding/TenantOnboardingWizard';
 import PublicLandingPage from '@/components/PublicLandingPage';
 import AuthConfirmPage from '@/components/AuthConfirmPage';
 import EmailVerificationPendingPage from '@/components/EmailVerificationPendingPage';
+import SubscriptionGatePage from '@/components/SubscriptionGatePage';
 import { defaultSubscriptionPlanId, storeSignupPlan } from '@/lib/subscriptionPlans';
 import { isAuthCallbackPath } from '@/lib/authRedirect';
 import { canAccessPathForEmailVerification } from '@/lib/emailVerificationGate';
+import { useQuery } from '@tanstack/react-query';
+import { matrixSales } from '@/api/matrixSalesClient';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -25,6 +30,8 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   <Layout currentPageName={currentPageName}>{children}</Layout>
   : <>{children}</>;
 
+const BLOCKED_SUBSCRIPTION_STATUSES = new Set(['expired', 'cancelled', 'past_due', 'suspended']);
+
 const AuthenticatedApp = () => {
   const { user, isAuthenticated, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, authProvider } = useAuth();
   const location = useLocation();
@@ -33,6 +40,19 @@ const AuthenticatedApp = () => {
   const readiness = useTenantReadiness();
   const [authScreen, setAuthScreen] = useState('landing');
   const [selectedPlan, setSelectedPlan] = useState(defaultSubscriptionPlanId);
+
+  // Fetch active subscription for the current tenant (only when authenticated and not platform owner)
+  const { data: subscription } = useQuery({
+    queryKey: ['active-subscription', user?.id],
+    queryFn: async () => {
+      const orgId = user?.organization_id || user?.tenant_id;
+      if (!orgId) return null;
+      const subs = await matrixSales.entities.Subscription.filter({ organization_id: orgId });
+      return Array.isArray(subs) && subs.length > 0 ? subs[0] : null;
+    },
+    enabled: isAuthenticated && !user?.is_platform_owner,
+    staleTime: 60_000,
+  });
 
   const enterApp = useCallback(() => {
     sessionStorage.setItem('horizon_entered_app', 'true');
@@ -53,10 +73,14 @@ const AuthenticatedApp = () => {
   const openLogin = () => setAuthScreen('login');
   const isAuthCallback = isAuthCallbackPath(location.pathname);
   const isEmailVerificationPendingPath = location.pathname === '/email-verification-pending';
+  const isResetPasswordPath = location.pathname === '/reset-password';
 
   const renderAuthEntry = () => {
     if (authScreen === 'landing') {
       return <PublicLandingPage onLogin={openLogin} onSelectPlan={openSignupForPlan} />;
+    }
+    if (authScreen === 'forgot') {
+      return <ForgotPasswordScreen onBack={() => setAuthScreen('login')} />;
     }
 
     return (
@@ -67,12 +91,18 @@ const AuthenticatedApp = () => {
         selectedPlan={selectedPlan}
         initialMode={authScreen === 'signup' ? 'signup' : 'signin'}
         onBackToLanding={() => setAuthScreen('landing')}
+        onForgotPassword={() => setAuthScreen('forgot')}
       />
     );
   };
 
   if (isAuthCallback) {
     return <AuthConfirmPage onConfirmed={() => navigate('/', { replace: true })} onBackToLogin={backToLogin} />;
+  }
+
+  if (isResetPasswordPath) {
+    const token = new URLSearchParams(location.search).get('token') || '';
+    return <ResetPasswordScreen token={token} onSuccess={() => { navigate('/', { replace: true }); setAuthScreen('login'); }} />;
   }
 
   if (isEmailVerificationPendingPath) {
@@ -110,6 +140,18 @@ const AuthenticatedApp = () => {
 
   if (authProvider === 'supabase' && !user?.is_platform_owner && !readiness.ready) {
     return <TenantOnboardingWizard onComplete={enterApp} />;
+  }
+
+  // Block access for non-owners with expired/cancelled/suspended subscriptions
+  if (isAuthenticated && !user?.is_platform_owner && subscription) {
+    const status = subscription.status;
+    const trialEnded = status === 'trialing' && subscription.trial_end_date && new Date(subscription.trial_end_date) < new Date();
+    if (trialEnded) {
+      return <SubscriptionGatePage subscriptionStatus="expired" />;
+    }
+    if (BLOCKED_SUBSCRIPTION_STATUSES.has(status)) {
+      return <SubscriptionGatePage subscriptionStatus={status} />;
+    }
   }
 
   if (location.pathname === '/' && !hasEnteredApp) {
