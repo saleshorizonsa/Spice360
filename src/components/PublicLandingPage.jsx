@@ -43,7 +43,6 @@ export default function PublicLandingPage({ onLogin, onSelectPlan }) {
         return [];
       }
     },
-    staleTime: 60_000,
     initialData: []
   });
   const plans = normalizeSubscriptionPlans(dbPlans);

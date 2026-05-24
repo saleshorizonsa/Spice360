@@ -67,12 +67,26 @@ try {
     } elseif ($path === '/public/plans' && $method === 'GET') {
         $tableName = sanitizeTableName('SubscriptionPlan');
         ensureEntityTable($tableName);
-        $stmt = getDB()->query(
-            "SELECT * FROM `{$tableName}`
+        $db = getDB();
+        $planQuery = "SELECT * FROM `{$tableName}`
              ORDER BY CAST(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(record,'$.display_order')),'99') AS UNSIGNED) ASC,
-                      created_at ASC"
-        );
-        echo json_encode(array_map('normalizeRow', $stmt->fetchAll()));
+                      created_at ASC";
+        $rows = $db->query($planQuery)->fetchAll();
+        if (empty($rows)) {
+            $defaults = [
+                ['id' => 'starter',      'plan_id' => 'starter',      'plan_name' => 'Starter',      'monthly_price' => 299,  'currency' => 'SAR', 'billing_cycle' => 'monthly', 'trial_days' => 14, 'user_limit' => 5,           'invoice_limit' => 500,    'support_level' => 'Email support',             'modules' => ['Sales','Inventory','Finance','ZATCA'],                                                 'limits' => ['users' => 5,      'invoices_per_month' => 500,    'tenants' => 1], 'display_order' => 1, 'status' => 'active'],
+                ['id' => 'professional', 'plan_id' => 'professional', 'plan_name' => 'Professional', 'monthly_price' => 799,  'currency' => 'SAR', 'billing_cycle' => 'monthly', 'trial_days' => 14, 'user_limit' => 25,          'invoice_limit' => 5000,   'support_level' => 'Priority support',          'modules' => ['Sales','Inventory','Finance','Purchasing','HR','Projects','ZATCA','Reports'],         'limits' => ['users' => 25,     'invoices_per_month' => 5000,   'tenants' => 1], 'display_order' => 2, 'status' => 'active'],
+                ['id' => 'enterprise',   'plan_id' => 'enterprise',   'plan_name' => 'Enterprise',   'monthly_price' => null, 'currency' => 'SAR', 'billing_cycle' => 'custom',  'trial_days' => 30, 'user_limit' => 'Unlimited', 'invoice_limit' => 'Custom', 'support_level' => 'Dedicated success manager', 'modules' => ['All modules','Advanced reports','Owner controls','Integrations'],                    'limits' => ['users' => 999999, 'invoices_per_month' => 999999, 'tenants' => 1], 'display_order' => 3, 'status' => 'active'],
+            ];
+            $ins = $db->prepare("INSERT IGNORE INTO `{$tableName}` (id, record, status, created_at, updated_at) VALUES (?, ?, 'active', NOW(), NOW())");
+            foreach ($defaults as $plan) {
+                $rowId = $plan['id'];
+                unset($plan['id']);
+                $ins->execute([$rowId, json_encode($plan)]);
+            }
+            $rows = $db->query($planQuery)->fetchAll();
+        }
+        echo json_encode(array_map('normalizeRow', $rows));
 
     // ── Owner ─────────────────────────────────────────────────────────────
     } elseif ($path === '/owner/tenants' && $method === 'GET') {
