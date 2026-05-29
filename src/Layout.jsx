@@ -34,10 +34,13 @@ import {
     Shield,
     List,
     BookOpen,
-    BookMarked
+    BookMarked,
+    Lock
 } from "lucide-react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { Button } from "@/components/ui/button";
+import { useSubscription } from "@/lib/SubscriptionContext";
+import { getModuleForPage } from "@/lib/moduleAccess";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Toaster } from "@/components/ui/toaster";
 import { LanguageProvider, useLanguage } from "@/components/utils/languageContext";
@@ -52,6 +55,8 @@ import OfflineIndicator from "@/components/mobile/OfflineIndicator";
 import { useAuth } from "@/lib/AuthContext";
 import BrandLogo from "@/components/BrandLogo";
 import { isPlatformOwnerEmail } from "@/lib/subscriptionPlans";
+import TrialBanner from "@/components/shared/TrialBanner";
+import UpgradeCTA from "@/components/shared/UpgradeCTA";
 
 function LayoutContent({ children, currentPageName }) {
     const [showQuickAction, setShowQuickAction] = React.useState(false);
@@ -78,6 +83,7 @@ function LayoutContent({ children, currentPageName }) {
     }, []);
     const { language, isRTL, toggleLanguage, t } = useLanguage();
     const { user, logout } = useAuth();
+    const { hasModule } = useSubscription();
     const navigate = useNavigate();
 
     const isPlatformOwner = user?.is_platform_owner || isPlatformOwnerEmail(user?.email);
@@ -194,18 +200,24 @@ function LayoutContent({ children, currentPageName }) {
                                     {items.map((item) => {
                                         const Icon = item.icon;
                                         const isActive = currentPageName === item.path;
+                                        const moduleName = getModuleForPage(item.path);
+                                        const locked = moduleName && !hasModule(moduleName);
                                         return (
                                             <Link
                                                 key={item.path}
                                                 to={createPageUrl(item.path)}
+                                                title={locked ? `Locked — upgrade to access ${moduleName}` : undefined}
                                                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                                                     isActive
                                                         ? "bg-[#24466f] text-white shadow-sm"
+                                                        : locked
+                                                        ? "cursor-pointer text-slate-400 hover:bg-slate-50"
                                                         : "text-slate-600 hover:bg-[#eef3f9] hover:text-[#24466f]"
                                                 }`}
                                             >
                                                 <Icon className="h-4 w-4 shrink-0" />
-                                                <span className="font-medium">{item.name}</span>
+                                                <span className="flex-1 font-medium">{item.name}</span>
+                                                {locked && <Lock className="h-3 w-3 shrink-0 text-slate-300" />}
                                             </Link>
                                         );
                                     })}
@@ -255,6 +267,7 @@ function LayoutContent({ children, currentPageName }) {
                     <nav className="flex-1 overflow-y-auto py-5">
                         <NavContent />
                     </nav>
+                    <UpgradeCTA />
                 </div>
             </aside>
 
@@ -322,6 +335,7 @@ function LayoutContent({ children, currentPageName }) {
                         </Button>
                         <GlobalSearch />
                         <div className="hidden items-center gap-2 lg:flex">
+                            <NotificationBell />
                             <Button
                                 onClick={toggleLanguage}
                                 variant="outline"
@@ -345,6 +359,7 @@ function LayoutContent({ children, currentPageName }) {
                             </Button>
                         </div>
                     </div>
+                    <TrialBanner />
                     {/* Add bottom padding on mobile for bottom nav */}
                     <div className="min-w-0 overflow-x-hidden pb-20 lg:pb-0">
                         {children}

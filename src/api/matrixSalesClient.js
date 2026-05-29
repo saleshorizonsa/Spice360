@@ -1063,10 +1063,13 @@ const supabaseMatrixSales = {
     Core: {
       UploadFile: async () => {
         throw new Error('File uploads are not configured for Supabase storage yet.');
+      },
+      InvokeLLM: async () => {
+        throw new Error('AI integrations are not configured for this deployment.');
       }
     },
     InvokeLLM: async () => {
-      throw new Error('AI integrations are not configured for this Supabase deployment.');
+      throw new Error('AI integrations are not configured for this deployment.');
     }
   },
   agents: {
@@ -1154,7 +1157,8 @@ const phpApiMatrixSales = {
   appLogs: { logUserInApp: async () => {} },
   integrations: {
     Core: {
-      UploadFile: async () => { throw new Error('File upload not configured for self-hosted deployment.'); }
+      UploadFile: async () => { throw new Error('File upload not configured for self-hosted deployment.'); },
+      InvokeLLM: async () => { throw new Error('AI integrations not configured for self-hosted deployment.'); }
     },
     InvokeLLM: async () => { throw new Error('AI integrations not configured for self-hosted deployment.'); }
   },

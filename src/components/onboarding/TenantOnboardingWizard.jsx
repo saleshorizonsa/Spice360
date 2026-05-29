@@ -116,8 +116,8 @@ const isReadyTenant = (user, organization) =>
     Boolean(user?.email_verified && organization?.onboarding_status === onboardingStatuses.READY);
 
 const upsertByField = async (entityName, field, value, payload) => {
-    const existing = await matrixSales.entities[entityName].filter({ [field]: value });
-    if (existing.length > 0) {
+    const existing = (await matrixSales.entities[entityName].filter({ [field]: value })).filter(Boolean);
+    if (existing.length > 0 && existing[0]?.id) {
         return matrixSales.entities[entityName].update(existing[0].id, { ...existing[0], ...payload });
     }
     return matrixSales.entities[entityName].create(payload);
@@ -217,8 +217,8 @@ const createTenantSubscription = async (organization, planId) => {
         support_level: plan.supportLevel
     };
 
-    const existing = await matrixSales.entities.Subscription.filter({ subscription_id: payload.subscription_id });
-    if (existing.length > 0) {
+    const existing = (await matrixSales.entities.Subscription.filter({ subscription_id: payload.subscription_id })).filter(Boolean);
+    if (existing.length > 0 && existing[0]?.id) {
         return matrixSales.entities.Subscription.update(existing[0].id, { ...existing[0], ...payload });
     }
     return matrixSales.entities.Subscription.create(payload);
@@ -482,8 +482,8 @@ function ZatcaStep({ organization, existingConfig, onSaved }) {
                 status: "active",
                 onboarding_status: "ready"
             };
-            const existing = await matrixSales.entities.ZATCAConfiguration.filter({ config_id: payload.config_id });
-            if (existing.length > 0) {
+            const existing = (await matrixSales.entities.ZATCAConfiguration.filter({ config_id: payload.config_id })).filter(Boolean);
+            if (existing.length > 0 && existing[0]?.id) {
                 await matrixSales.entities.ZATCAConfiguration.update(existing[0].id, { ...existing[0], ...payload });
             } else {
                 await matrixSales.entities.ZATCAConfiguration.create(payload);

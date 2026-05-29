@@ -18,6 +18,7 @@ import DocumentPrintPreview from "@/components/shared/DocumentPrintPreview";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLanguage } from "@/components/utils/languageContext";
+import { useSubscription } from "@/lib/SubscriptionContext";
 
 export default function Sales() {
     const [activeTab, setActiveTab] = useState("quotations");
@@ -28,6 +29,7 @@ export default function Sales() {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { t } = useLanguage();
+    const { atInvoiceLimit, invoicesRemaining, invoiceLimit } = useSubscription();
 
     const { data: quotations = [] } = useQuery({
         queryKey: ['quotations'],
@@ -490,6 +492,7 @@ export default function Sales() {
                                 onEdit={(item) => handleEdit(item, 'quotations')}
                                 onDelete={(item) => handleDelete(item, 'Quotation')}
                                 onPrint={(item) => handlePrint(item, 'Quotation')}
+                                exportFileName="quotations"
                             />
                         </CardContent>
                     </Card>
@@ -517,6 +520,7 @@ export default function Sales() {
                                 onEdit={(item) => handleEdit(item, 'orders')}
                                 onDelete={(item) => handleDelete(item, 'SalesOrder')}
                                 onPrint={(item) => handlePrint(item, 'Sales Order')}
+                                exportFileName="sales-orders"
                             />
                         </CardContent>
                     </Card>
@@ -544,6 +548,7 @@ export default function Sales() {
                                 onEdit={(item) => handleEdit(item, 'deliveries')}
                                 onDelete={(item) => handleDelete(item, 'Delivery')}
                                 onPrint={(item) => handlePrint(item, 'Delivery Note')}
+                                exportFileName="deliveries"
                             />
                         </CardContent>
                     </Card>
@@ -552,10 +557,27 @@ export default function Sales() {
                 <TabsContent value="invoices">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle>{t('invoices')} ({t('zatcaCompliant')})</CardTitle>
-                            <Button 
-                                onClick={() => handleCreate('invoices')}
-                                className="bg-emerald-600 hover:bg-emerald-700"
+                            <div className="space-y-1">
+                                <CardTitle>{t('invoices')} ({t('zatcaCompliant')})</CardTitle>
+                                {atInvoiceLimit && (
+                                    <p className="text-xs font-medium text-red-600">
+                                        Monthly invoice limit reached ({invoiceLimit.toLocaleString()}). Upgrade your plan to create more.
+                                    </p>
+                                )}
+                                {!atInvoiceLimit && invoicesRemaining <= 50 && invoiceLimit < Infinity && (
+                                    <p className="text-xs font-medium text-amber-600">
+                                        {invoicesRemaining} invoice{invoicesRemaining !== 1 ? "s" : ""} remaining this month.
+                                    </p>
+                                )}
+                            </div>
+                            <Button
+                                onClick={() => {
+                                    if (atInvoiceLimit) return;
+                                    handleCreate('invoices');
+                                }}
+                                disabled={atInvoiceLimit}
+                                className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={atInvoiceLimit ? `Monthly limit of ${invoiceLimit.toLocaleString()} invoices reached` : undefined}
                             >
                                 <Plus className="w-4 h-4 mr-2" />
                                 {t('new')} Invoice
@@ -571,6 +593,7 @@ export default function Sales() {
                                 onEdit={(item) => handleEdit(item, 'invoices')}
                                 onDelete={(item) => handleDelete(item, 'Invoice')}
                                 onPrint={(item) => handlePrint(item, 'Invoice')}
+                                exportFileName="invoices"
                             />
                         </CardContent>
                     </Card>

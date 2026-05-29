@@ -133,7 +133,7 @@ function handleLogin(array $body): array {
     $user = $stmt->fetch();
 
     if (!$user || !password_verify($password, $user['password_hash'])) {
-        throw new RuntimeException('Invalid email or password', 401);
+        throw new RuntimeException('Invalid email or password', 400);
     }
 
     if (!$user['is_verified']) {

@@ -3,14 +3,36 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Pencil, Trash2, Printer, ChevronLeft, ChevronRight, ArrowUpDown, CheckCircle2, XCircle } from "lucide-react";
+import { Pencil, Trash2, Printer, ChevronLeft, ChevronRight, ArrowUpDown, CheckCircle2, XCircle, Download } from "lucide-react";
 import SearchFilter from "../shared/SearchFilter";
+import { useLanguage } from "@/components/utils/languageContext";
 
-export default function DataTable({ 
-    data, 
-    columns, 
-    onEdit, 
-    onDelete, 
+function exportToCsv(filename, columns, rows) {
+    const headers = columns.map((c) => `"${String(c.header || c.label || c.key).replace(/"/g, '""')}"`).join(",");
+    const lines = rows.map((row) =>
+        columns
+            .map((c) => {
+                const raw = row[c.key];
+                const val = raw === null || raw === undefined ? "" : String(raw);
+                return `"${val.replace(/"/g, '""')}"`;
+            })
+            .join(",")
+    );
+    const csv = [headers, ...lines].join("\r\n");
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename.endsWith(".csv") ? filename : `${filename}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+export default function DataTable({
+    data,
+    columns,
+    onEdit,
+    onDelete,
     onPrint,
     getPrintTitle,
     onBulkDelete,
@@ -21,8 +43,10 @@ export default function DataTable({
     itemsPerPage = 20,
     showSearch = true,
     enableBulkActions = false,
-    enableSorting = true
+    enableSorting = true,
+    exportFileName
 }) {
+    const { t } = useLanguage();
     const [filteredData, setFilteredData] = useState(data || []);
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedRows, setSelectedRows] = useState([]);
@@ -87,7 +111,7 @@ export default function DataTable({
 
     const handleSelectAll = (checked) => {
         if (checked) {
-            setSelectedRows(currentData.map(row => row.id));
+            setSelectedRows(currentData.filter(Boolean).map(row => row.id).filter(Boolean));
         } else {
             setSelectedRows([]);
         }
@@ -134,13 +158,28 @@ export default function DataTable({
     return (
         <div className="space-y-4">
             {showSearch && (
-                <SearchFilter
-                    data={data || []}
-                    onFilteredData={handleFilteredData}
-                    searchFields={searchFields}
-                    filterOptions={filterOptions}
-                    placeholder="Search by any field..."
-                />
+                <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                        <SearchFilter
+                            data={data || []}
+                            onFilteredData={handleFilteredData}
+                            searchFields={searchFields}
+                            filterOptions={filterOptions}
+                            placeholder="Search by any field..."
+                        />
+                    </div>
+                    {exportFileName && (
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="shrink-0 gap-1.5"
+                            onClick={() => exportToCsv(exportFileName, columns, filteredData)}
+                        >
+                            <Download className="h-4 w-4" />
+                            {t('exportCSV') || 'Export CSV'}
+                        </Button>
+                    )}
+                </div>
             )}
 
             {enableBulkActions && selectedRows.length > 0 && (

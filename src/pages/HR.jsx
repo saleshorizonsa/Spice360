@@ -281,6 +281,7 @@ export default function HR() {
                                 getBadgeColor={getBadgeColor}
                                 onEdit={(item) => handleEdit(item, 'employees')}
                                 onDelete={(item) => handleDelete(item, 'Employee')}
+                                exportFileName="employees"
                             />
                         </CardContent>
                     </Card>
@@ -305,6 +306,7 @@ export default function HR() {
                                 getBadgeColor={getBadgeColor}
                                 onEdit={(item) => handleEdit(item, 'leaves')}
                                 onDelete={(item) => handleDelete(item, 'LeaveRequest')}
+                                exportFileName="leave-requests"
                             />
                         </CardContent>
                     </Card>
@@ -329,6 +331,7 @@ export default function HR() {
                                 getBadgeColor={getBadgeColor}
                                 onEdit={(item) => handleEdit(item, 'payroll')}
                                 onDelete={(item) => handleDelete(item, 'Payroll')}
+                                exportFileName="payroll"
                             />
                         </CardContent>
                     </Card>
@@ -353,6 +356,7 @@ export default function HR() {
                                 getBadgeColor={getBadgeColor}
                                 onEdit={(item) => handleEdit(item, 'loans')}
                                 onDelete={(item) => handleDelete(item, 'LoanAdvance')}
+                                exportFileName="loans-advances"
                             />
                         </CardContent>
                     </Card>

@@ -11,6 +11,7 @@ import {
     Mail
 } from "lucide-react";
 import TrialBalanceReport from "../components/reports/TrialBalanceReport";
+import VATReturnReport from "../components/reports/VATReturnReport";
 import GeneralLedgerReport from "../components/reports/GeneralLedgerReport";
 import ARAgingReport from "../components/reports/ARAgingReport";
 import APAgingReport from "../components/reports/APAgingReport";
@@ -78,7 +79,7 @@ export default function FinancialReports() {
             </Card>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="grid grid-cols-6 lg:grid-cols-12 w-full">
+                <TabsList className="flex flex-wrap h-auto gap-1 p-1">
                     <TabsTrigger value="financial_statements">Statements</TabsTrigger>
                     <TabsTrigger value="trial_balance">Trial Balance</TabsTrigger>
                     <TabsTrigger value="gl_detail">GL Detail</TabsTrigger>
@@ -91,6 +92,7 @@ export default function FinancialReports() {
                     <TabsTrigger value="cash_flow">Cash Flow</TabsTrigger>
                     <TabsTrigger value="cash_forecast">Cash Forecast</TabsTrigger>
                     <TabsTrigger value="inter_branch">Inter-Branch</TabsTrigger>
+                    <TabsTrigger value="vat_return">VAT Return</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="financial_statements">
@@ -139,6 +141,10 @@ export default function FinancialReports() {
 
                 <TabsContent value="inter_branch">
                     <InterBranchReconciliationReport />
+                </TabsContent>
+
+                <TabsContent value="vat_return">
+                    <VATReturnReport />
                 </TabsContent>
             </Tabs>
         </div>

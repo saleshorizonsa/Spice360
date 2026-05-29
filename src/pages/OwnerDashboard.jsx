@@ -52,8 +52,8 @@ const fetchAllTenants = async () => {
 
 const saveSubscription = async (orgId, data) => {
   if (hasOwnerApi) return matrixSales.owner.updateSubscription(orgId, data);
-  const existing = await matrixSales.entities.Subscription.filter({ organization_id: orgId });
-  if (existing.length > 0) {
+  const existing = (await matrixSales.entities.Subscription.filter({ organization_id: orgId })).filter(Boolean);
+  if (existing.length > 0 && existing[0]?.id) {
     return matrixSales.entities.Subscription.update(existing[0].id, { ...existing[0], ...data, organization_id: orgId });
   }
   return matrixSales.entities.Subscription.create({ ...data, organization_id: orgId });
@@ -265,8 +265,8 @@ export default function OwnerDashboard() {
         limits: { users: toLimitNumber(plan.userLimit), invoices_per_month: toLimitNumber(plan.invoiceLimit), tenants: 1 },
         display_order: Number(plan.display_order) || 99, status: plan.status || "active"
       };
-      const existing = await matrixSales.entities.SubscriptionPlan.filter({ plan_id: payload.plan_id });
-      if (existing.length > 0) return matrixSales.entities.SubscriptionPlan.update(existing[0].id, { ...existing[0], ...payload });
+      const existing = (await matrixSales.entities.SubscriptionPlan.filter({ plan_id: payload.plan_id })).filter(Boolean);
+      if (existing.length > 0 && existing[0]?.id) return matrixSales.entities.SubscriptionPlan.update(existing[0].id, { ...existing[0], ...payload });
       return matrixSales.entities.SubscriptionPlan.create(payload);
     },
     onSuccess: () => {

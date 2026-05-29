@@ -568,6 +568,7 @@ export default function Purchasing() {
                                 onEdit={(item) => handleEdit(item, 'requisitions')}
                                 onDelete={(item) => handleDelete(item, 'PurchaseRequisition')}
                                 onPrint={(item) => handlePrint(item, 'PR')}
+                                exportFileName="purchase-requisitions"
                             />
                         </CardContent>
                     </Card>
@@ -593,6 +594,7 @@ export default function Purchasing() {
                                 onEdit={(item) => handleEdit(item, 'rfqs')}
                                 onDelete={(item) => handleDelete(item, 'RFQ')}
                                 onPrint={(item) => handlePrint(item, 'RFQ')}
+                                exportFileName="rfqs"
                             />
                         </CardContent>
                     </Card>
@@ -618,6 +620,7 @@ export default function Purchasing() {
                                 onEdit={(item) => handleEdit(item, 'pos')}
                                 onDelete={(item) => handleDelete(item, 'PurchaseOrder')}
                                 onPrint={(item) => handlePrint(item, 'PO')}
+                                exportFileName="purchase-orders"
                             />
                         </CardContent>
                     </Card>

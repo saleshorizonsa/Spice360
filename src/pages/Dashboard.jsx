@@ -38,6 +38,7 @@ import { createPageUrl } from "@/utils";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { usePermissions } from "@/components/utils/usePermissions";
 import { useLanguage } from "@/components/utils/languageContext";
+import PlanUsageWidget from "@/components/shared/PlanUsageWidget";
 
 const toList = (value) => (Array.isArray(value) ? value : []);
 const sumBy = (items, key) => items.reduce((sum, item) => sum + (Number(item?.[key]) || 0), 0);
@@ -525,11 +526,16 @@ export default function Dashboard() {
 
     return (
         <div className="space-y-4 p-4 md:space-y-6 md:p-6">
-            <div>
-                <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">{t("dashboard")}</h1>
-                <p className="mt-1 text-sm text-gray-600 md:text-base">
-                    Management overview by module. Use the cards to review status and open the working screens when needed.
-                </p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">{t("dashboard")}</h1>
+                    <p className="mt-1 text-sm text-gray-600 md:text-base">
+                        Management overview by module. Use the cards to review status and open the working screens when needed.
+                    </p>
+                </div>
+                <div className="w-full sm:w-72 shrink-0">
+                    <PlanUsageWidget />
+                </div>
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-5">

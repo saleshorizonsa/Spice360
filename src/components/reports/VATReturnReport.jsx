@@ -1,259 +1,266 @@
-import React, { useState } from "react";
-import { matrixSales } from "@/api/matrixSalesClient";
+import React, { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, FileText, Mail } from "lucide-react";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { FileCheck, Printer, TrendingUp, TrendingDown, Calculator } from "lucide-react";
+import { useLanguage } from "@/components/utils/languageContext";
+
+const fmt = (n) =>
+  Number(n || 0).toLocaleString("en-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+function getQuarterRange(year, quarter) {
+  const m = (quarter - 1) * 3;
+  const start = new Date(year, m, 1);
+  const end = new Date(year, m + 3, 0);
+  return {
+    start: start.toISOString().slice(0, 10),
+    end: end.toISOString().slice(0, 10),
+    label: `Q${quarter} ${year}`
+  };
+}
 
 export default function VATReturnReport() {
-    const [periodFilter, setPeriodFilter] = useState("2025-01");
-    const [frequencyFilter, setFrequencyFilter] = useState("all");
+  const { isRTL } = useLanguage();
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentQuarter = Math.ceil((now.getMonth() + 1) / 3);
 
-    const { data: vatReturns = [] } = useQuery({
-        queryKey: ['vatReturns'],
-        queryFn: () => matrixSales.entities.VATReturn.list('-period_start'),
-        initialData: []
-    });
+  const [year, setYear] = useState(String(currentYear));
+  const [quarter, setQuarter] = useState(String(currentQuarter));
 
-    const filteredReturns = vatReturns.filter(vat => {
-        const periodMatch = !periodFilter || vat.return_period.includes(periodFilter);
-        const freqMatch = frequencyFilter === 'all' || vat.filing_frequency === frequencyFilter;
-        return periodMatch && freqMatch;
-    });
+  const { start, end, label } = getQuarterRange(Number(year), Number(quarter));
 
-    const handleExportPDF = (vatReturn) => {
-        const printWindow = window.open('', '_blank');
-        const content = `
-            <html>
-                <head>
-                    <title>VAT Return - ${vatReturn.return_period}</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; padding: 40px; font-size: 12px; }
-                        h1 { color: #059669; text-align: center; }
-                        .header { text-align: center; margin-bottom: 30px; }
-                        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-                        th { background-color: #f3f4f6; font-weight: bold; }
-                        .number { text-align: right; font-family: monospace; }
-                        .section { font-weight: bold; background-color: #e5e7eb; }
-                        .total { font-weight: bold; background-color: #d1d5db; font-size: 14px; }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <h1>VAT RETURN</h1>
-                        <p><strong>Period:</strong> ${vatReturn.return_period}</p>
-                        <p><strong>From:</strong> ${vatReturn.period_start} <strong>To:</strong> ${vatReturn.period_end}</p>
-                        <p><strong>Frequency:</strong> ${vatReturn.filing_frequency}</p>
-                    </div>
-                    <table>
-                        <tr class="section">
-                            <td colspan="2">OUTPUT VAT (Sales)</td>
-                        </tr>
-                        <tr>
-                            <td>Standard Rated Sales (15%)</td>
-                            <td class="number">${vatReturn.standard_rated_sales?.toLocaleString('en-US', {minimumFractionDigits: 2}) || '0.00'}</td>
-                        </tr>
-                        <tr>
-                            <td>VAT on Standard Sales</td>
-                            <td class="number">${vatReturn.standard_rated_vat?.toLocaleString('en-US', {minimumFractionDigits: 2}) || '0.00'}</td>
-                        </tr>
-                        <tr>
-                            <td>Zero-Rated Sales (Exports)</td>
-                            <td class="number">${vatReturn.zero_rated_sales?.toLocaleString('en-US', {minimumFractionDigits: 2}) || '0.00'}</td>
-                        </tr>
-                        <tr>
-                            <td>Exempt Sales</td>
-                            <td class="number">${vatReturn.exempt_sales?.toLocaleString('en-US', {minimumFractionDigits: 2}) || '0.00'}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Total Sales</strong></td>
-                            <td class="number"><strong>${vatReturn.total_sales?.toLocaleString('en-US', {minimumFractionDigits: 2}) || '0.00'}</strong></td>
-                        </tr>
-                        <tr>
-                            <td><strong>Total Output VAT</strong></td>
-                            <td class="number"><strong>${vatReturn.output_vat_total?.toLocaleString('en-US', {minimumFractionDigits: 2}) || '0.00'}</strong></td>
-                        </tr>
-                        <tr class="section">
-                            <td colspan="2">INPUT VAT (Purchases)</td>
-                        </tr>
-                        <tr>
-                            <td>Standard Rated Purchases</td>
-                            <td class="number">${vatReturn.standard_rated_purchases?.toLocaleString('en-US', {minimumFractionDigits: 2}) || '0.00'}</td>
-                        </tr>
-                        <tr>
-                            <td>Recoverable Input VAT</td>
-                            <td class="number">${vatReturn.input_vat?.toLocaleString('en-US', {minimumFractionDigits: 2}) || '0.00'}</td>
-                        </tr>
-                        <tr>
-                            <td>Imports Subject to VAT</td>
-                            <td class="number">${vatReturn.imports_subject_to_vat?.toLocaleString('en-US', {minimumFractionDigits: 2}) || '0.00'}</td>
-                        </tr>
-                        <tr>
-                            <td>VAT Paid on Imports</td>
-                            <td class="number">${vatReturn.imports_vat_paid?.toLocaleString('en-US', {minimumFractionDigits: 2}) || '0.00'}</td>
-                        </tr>
-                        <tr>
-                            <td>RCM Purchases</td>
-                            <td class="number">${vatReturn.rcm_purchases?.toLocaleString('en-US', {minimumFractionDigits: 2}) || '0.00'}</td>
-                        </tr>
-                        <tr>
-                            <td>RCM VAT</td>
-                            <td class="number">${vatReturn.rcm_vat?.toLocaleString('en-US', {minimumFractionDigits: 2}) || '0.00'}</td>
-                        </tr>
-                        <tr>
-                            <td><strong>Total Input VAT</strong></td>
-                            <td class="number"><strong>${vatReturn.input_vat_total?.toLocaleString('en-US', {minimumFractionDigits: 2}) || '0.00'}</strong></td>
-                        </tr>
-                        <tr class="total">
-                            <td><strong>NET VAT</strong></td>
-                            <td class="number"><strong>${vatReturn.net_vat?.toLocaleString('en-US', {minimumFractionDigits: 2}) || '0.00'}</strong></td>
-                        </tr>
-                        <tr>
-                            <td>Corrections from Previous Periods</td>
-                            <td class="number">${vatReturn.corrections_previous_period?.toLocaleString('en-US', {minimumFractionDigits: 2}) || '0.00'}</td>
-                        </tr>
-                        <tr class="total">
-                            <td><strong>NET VAT DUE</strong></td>
-                            <td class="number"><strong>${vatReturn.net_vat_due?.toLocaleString('en-US', {minimumFractionDigits: 2}) || '0.00'} SAR</strong></td>
-                        </tr>
-                    </table>
-                    <p style="margin-top: 30px;">
-                        <strong>Status:</strong> ${vatReturn.filing_status}<br>
-                        <strong>Prepared By:</strong> ${vatReturn.prepared_by || 'N/A'}<br>
-                        <strong>Reviewed By:</strong> ${vatReturn.reviewed_by || 'N/A'}<br>
-                        <strong>Approved By:</strong> ${vatReturn.approved_by || 'N/A'}
-                    </p>
-                    <p style="margin-top: 20px; font-size: 10px; color: #6b7280;">
-                        Generated on: ${new Date().toLocaleString()} | MatrixERP Compliance System
-                    </p>
-                </body>
-            </html>
-        `;
-        printWindow.document.write(content);
-        printWindow.document.close();
-        printWindow.print();
-    };
+  const { data: invoices = [], isLoading: loadingInv } = useQuery({
+    queryKey: ["vat-invoices"],
+    queryFn: () => matrixSales.entities.Invoice.list("-invoice_date", 9999),
+    initialData: []
+  });
 
-    const getBadgeColor = (status) => {
-        const colors = {
-            draft: "bg-gray-100 text-gray-800",
-            submitted: "bg-blue-100 text-blue-800",
-            accepted: "bg-green-100 text-green-800",
-            paid: "bg-emerald-100 text-emerald-800",
-            amended: "bg-yellow-100 text-yellow-800"
-        };
-        return colors[status] || "bg-gray-100 text-gray-800";
-    };
+  const { data: vendorInvoices = [], isLoading: loadingVI } = useQuery({
+    queryKey: ["vat-vendor-invoices"],
+    queryFn: async () => {
+      try {
+        return await matrixSales.entities.VendorInvoice.list("-invoice_date", 9999);
+      } catch {
+        return [];
+      }
+    },
+    initialData: []
+  });
 
-    return (
-        <Card>
-            <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                    <span className="flex items-center gap-2">
-                        <FileText className="w-5 h-5 text-emerald-600" />
-                        VAT Return Summary (Standard/Zero-Rated/Exempt/RCM)
-                    </span>
-                    <div className="flex gap-2">
-                        <Button variant="outline" size="sm">
-                            <Download className="w-4 h-4 mr-2" />
-                            Export Excel
-                        </Button>
-                        <Button variant="outline" size="sm">
-                            <Mail className="w-4 h-4 mr-2" />
-                            Email
-                        </Button>
-                    </div>
-                </CardTitle>
+  const stats = useMemo(() => {
+    const outboundRaw = Array.isArray(invoices)
+      ? invoices.filter(Boolean).filter((inv) => inv.invoice_date >= start && inv.invoice_date <= end && inv.status !== "cancelled")
+      : [];
+    const inboundRaw = Array.isArray(vendorInvoices)
+      ? vendorInvoices.filter(Boolean).filter((vi) => (vi.invoice_date || vi.vendor_invoice_date || "") >= start && (vi.invoice_date || vi.vendor_invoice_date || "") <= end && vi.status !== "cancelled")
+      : [];
+
+    const outputTaxBase = outboundRaw.reduce((s, i) => s + Number(i.subtotal || 0), 0);
+    const outputVAT = outboundRaw.reduce((s, i) => s + Number(i.tax_amount || 0), 0);
+    const outputTotal = outboundRaw.reduce((s, i) => s + Number(i.total_amount || 0), 0);
+
+    const inputTaxBase = inboundRaw.reduce((s, i) => s + Number(i.subtotal || i.amount_before_tax || 0), 0);
+    const inputVAT = inboundRaw.reduce((s, i) => s + Number(i.tax_amount || i.vat_amount || 0), 0);
+    const inputTotal = inboundRaw.reduce((s, i) => s + Number(i.total_amount || 0), 0);
+
+    const netVAT = outputVAT - inputVAT;
+
+    return { outboundRaw, inboundRaw, outputTaxBase, outputVAT, outputTotal, inputTaxBase, inputVAT, inputTotal, netVAT };
+  }, [invoices, vendorInvoices, start, end]);
+
+  const isLoading = loadingInv || loadingVI;
+
+  const handlePrint = () => {
+    const w = window.open("", "_blank");
+    w.document.write(`<!DOCTYPE html><html><head><title>VAT Return ${label}</title>
+<style>body{font-family:Arial,sans-serif;padding:40px;color:#1e293b}h1{color:#24466f;margin-bottom:4px}h3{margin:20px 0 8px;color:#475569}
+table{width:100%;border-collapse:collapse;margin:0 0 16px}th{background:#24466f;color:#fff;padding:10px;text-align:left}
+td{padding:10px;border-bottom:1px solid #e2e8f0}.num{text-align:right;font-family:monospace}
+.bold{font-weight:700}.total-row{background:#f8fafc;font-weight:700}
+.net{background:#24466f;color:#fff;font-weight:700;font-size:15px}
+@media print{@page{size:A4;margin:15mm}}</style></head><body>
+<h1>VAT Return Summary — ${label}</h1>
+<p style="color:#64748b;margin-bottom:24px">Period: ${start} to ${end}</p>
+<h3>Output Tax (Sales)</h3>
+<table><tr><th>Description</th><th style="text-align:right">SAR</th></tr>
+<tr><td>Taxable Sales (excl. VAT)</td><td class="num">${fmt(stats.outputTaxBase)}</td></tr>
+<tr class="total-row"><td>Output VAT @ 15%</td><td class="num">${fmt(stats.outputVAT)}</td></tr>
+<tr><td>Total incl. VAT</td><td class="num">${fmt(stats.outputTotal)}</td></tr></table>
+<h3>Input Tax (Purchases)</h3>
+<table><tr><th>Description</th><th style="text-align:right">SAR</th></tr>
+<tr><td>Taxable Purchases (excl. VAT)</td><td class="num">${fmt(stats.inputTaxBase)}</td></tr>
+<tr class="total-row"><td>Recoverable Input VAT</td><td class="num">${fmt(stats.inputVAT)}</td></tr>
+<tr><td>Total incl. VAT</td><td class="num">${fmt(stats.inputTotal)}</td></tr></table>
+<h3>Net VAT</h3>
+<table><tr><th>Description</th><th style="text-align:right">SAR</th></tr>
+<tr><td>Output VAT</td><td class="num">${fmt(stats.outputVAT)}</td></tr>
+<tr><td>Less: Input VAT</td><td class="num">(${fmt(stats.inputVAT)})</td></tr>
+<tr class="net"><td>${stats.netVAT >= 0 ? "VAT Payable to ZATCA" : "VAT Refundable"}</td><td class="num">${fmt(Math.abs(stats.netVAT))}</td></tr></table>
+<p style="margin-top:24px;font-size:11px;color:#94a3b8">Generated ${new Date().toLocaleDateString()} — HORIZON ERP</p>
+<script>window.onload=()=>window.print()<\/script></body></html>`);
+    w.document.close();
+  };
+
+  const yearOptions = [currentYear, currentYear - 1, currentYear - 2].map(String);
+
+  return (
+    <div className="space-y-6" dir={isRTL ? "rtl" : "ltr"}>
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="space-y-1.5">
+          <Label>{isRTL ? "السنة" : "Year"}</Label>
+          <Select value={year} onValueChange={setYear}>
+            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {yearOptions.map((y) => <SelectItem key={y} value={y}>{y}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label>{isRTL ? "الربع" : "Quarter"}</Label>
+          <Select value={quarter} onValueChange={setQuarter}>
+            <SelectTrigger className="w-28"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {[1, 2, 3, 4].map((q) => <SelectItem key={q} value={String(q)}>Q{q}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </div>
+        <Button variant="outline" size="sm" className="gap-1.5 mb-0.5" onClick={handlePrint}>
+          <Printer className="h-4 w-4" />
+          {isRTL ? "طباعة / تصدير PDF" : "Print / PDF"}
+        </Button>
+      </div>
+
+      <p className="text-sm text-slate-500">
+        {isRTL ? "الفترة" : "Period"}: <strong>{label}</strong> ({start} – {end})
+      </p>
+
+      {isLoading ? (
+        <p className="text-sm text-slate-500">{isRTL ? "جارٍ التحميل..." : "Loading..."}</p>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-3">
+          <Card className="border-emerald-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base text-emerald-700">
+                <TrendingUp className="h-4 w-4" />
+                {isRTL ? "ضريبة المخرجات (المبيعات)" : "Output Tax (Sales)"}
+              </CardTitle>
             </CardHeader>
-            <CardContent>
-                {/* Filters */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
-                    <div>
-                        <Label>Period</Label>
-                        <Input
-                            type="month"
-                            value={periodFilter}
-                            onChange={(e) => setPeriodFilter(e.target.value)}
-                        />
-                    </div>
-                    <div>
-                        <Label>Frequency</Label>
-                        <Select value={frequencyFilter} onValueChange={setFrequencyFilter}>
-                            <SelectTrigger>
-                                <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">All</SelectItem>
-                                <SelectItem value="monthly">Monthly</SelectItem>
-                                <SelectItem value="quarterly">Quarterly</SelectItem>
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="flex items-end">
-                        <Button className="w-full bg-emerald-600 hover:bg-emerald-700">
-                            Generate Report
-                        </Button>
-                    </div>
-                </div>
-
-                {/* VAT Returns Table */}
-                <div className="rounded-lg border overflow-hidden">
-                    <Table>
-                        <TableHeader>
-                            <TableRow className="bg-gray-50">
-                                <TableHead>Period</TableHead>
-                                <TableHead>Frequency</TableHead>
-                                <TableHead className="text-right">Standard Sales</TableHead>
-                                <TableHead className="text-right">Output VAT</TableHead>
-                                <TableHead className="text-right">Input VAT</TableHead>
-                                <TableHead className="text-right">Net VAT Due</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Actions</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredReturns.map((vat, idx) => (
-                                <TableRow key={idx}>
-                                    <TableCell className="font-medium">{vat.return_period}</TableCell>
-                                    <TableCell className="capitalize">{vat.filing_frequency}</TableCell>
-                                    <TableCell className="text-right font-mono">
-                                        {vat.standard_rated_sales?.toLocaleString('en-US', {minimumFractionDigits: 2}) || '0.00'}
-                                    </TableCell>
-                                    <TableCell className="text-right font-mono">
-                                        {vat.output_vat_total?.toLocaleString('en-US', {minimumFractionDigits: 2}) || '0.00'}
-                                    </TableCell>
-                                    <TableCell className="text-right font-mono">
-                                        {vat.input_vat_total?.toLocaleString('en-US', {minimumFractionDigits: 2}) || '0.00'}
-                                    </TableCell>
-                                    <TableCell className="text-right font-mono font-bold">
-                                        {vat.net_vat_due?.toLocaleString('en-US', {minimumFractionDigits: 2}) || '0.00'}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge className={getBadgeColor(vat.filing_status)}>
-                                            {vat.filing_status}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => handleExportPDF(vat)}
-                                        >
-                                            <Download className="w-4 h-4" />
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-slate-500">{isRTL ? "المبيعات الخاضعة للضريبة" : "Taxable Sales"}</span>
+                <span className="font-mono font-medium">SAR {fmt(stats.outputTaxBase)}</span>
+              </div>
+              <div className="flex justify-between border-t border-emerald-100 pt-2">
+                <span className="font-semibold text-emerald-700">{isRTL ? "ضريبة القيمة المضافة 15%" : "VAT @ 15%"}</span>
+                <span className="font-mono font-bold text-emerald-700">SAR {fmt(stats.outputVAT)}</span>
+              </div>
+              <p className="text-xs text-slate-400">{stats.outboundRaw.length} {isRTL ? "فاتورة" : "invoices"}</p>
             </CardContent>
+          </Card>
+
+          <Card className="border-amber-200">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base text-amber-700">
+                <TrendingDown className="h-4 w-4" />
+                {isRTL ? "ضريبة المدخلات (المشتريات)" : "Input Tax (Purchases)"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-slate-500">{isRTL ? "المشتريات الخاضعة للضريبة" : "Taxable Purchases"}</span>
+                <span className="font-mono font-medium">SAR {fmt(stats.inputTaxBase)}</span>
+              </div>
+              <div className="flex justify-between border-t border-amber-100 pt-2">
+                <span className="font-semibold text-amber-700">{isRTL ? "ضريبة قابلة للاسترداد" : "Recoverable VAT"}</span>
+                <span className="font-mono font-bold text-amber-700">SAR {fmt(stats.inputVAT)}</span>
+              </div>
+              <p className="text-xs text-slate-400">{stats.inboundRaw.length} {isRTL ? "فاتورة مورد" : "vendor invoices"}</p>
+            </CardContent>
+          </Card>
+
+          <Card className={stats.netVAT >= 0 ? "border-red-200 bg-red-50" : "border-blue-200 bg-blue-50"}>
+            <CardHeader className="pb-3">
+              <CardTitle className={`flex items-center gap-2 text-base ${stats.netVAT >= 0 ? "text-red-700" : "text-blue-700"}`}>
+                <Calculator className="h-4 w-4" />
+                {isRTL ? "صافي الضريبة" : "Net VAT Position"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-slate-500">{isRTL ? "ضريبة المخرجات" : "Output VAT"}</span>
+                <span className="font-mono">SAR {fmt(stats.outputVAT)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">{isRTL ? "ناقص: ضريبة المدخلات" : "Less: Input VAT"}</span>
+                <span className="font-mono">(SAR {fmt(stats.inputVAT)})</span>
+              </div>
+              <div className={`flex justify-between border-t pt-2 ${stats.netVAT >= 0 ? "border-red-200" : "border-blue-200"}`}>
+                <span className={`font-bold ${stats.netVAT >= 0 ? "text-red-700" : "text-blue-700"}`}>
+                  {stats.netVAT >= 0
+                    ? (isRTL ? "مستحق لهيئة الزكاة" : "Payable to ZATCA")
+                    : (isRTL ? "مستحق الاسترداد" : "Refundable")}
+                </span>
+                <span className={`font-mono font-bold text-lg ${stats.netVAT >= 0 ? "text-red-700" : "text-blue-700"}`}>
+                  SAR {fmt(Math.abs(stats.netVAT))}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {!isLoading && stats.outboundRaw.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FileCheck className="h-4 w-4 text-[#24466f]" />
+              {isRTL ? "فواتير المبيعات في الفترة" : "Sales Invoices in Period"}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-xs font-semibold uppercase text-slate-400">
+                    <th className="pb-2 text-left">{isRTL ? "رقم الفاتورة" : "Invoice #"}</th>
+                    <th className="pb-2 text-left">{isRTL ? "التاريخ" : "Date"}</th>
+                    <th className="pb-2 text-left">{isRTL ? "العميل" : "Customer"}</th>
+                    <th className="pb-2 text-right">{isRTL ? "قبل الضريبة" : "Excl. VAT"}</th>
+                    <th className="pb-2 text-right">{isRTL ? "الضريبة" : "VAT"}</th>
+                    <th className="pb-2 text-right">{isRTL ? "الإجمالي" : "Total"}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {stats.outboundRaw.slice(0, 50).map((inv) => (
+                    <tr key={inv.id || inv.invoice_number} className="border-b border-slate-100 hover:bg-slate-50">
+                      <td className="py-2 font-mono text-xs">{inv.invoice_number}</td>
+                      <td className="py-2 text-slate-500">{inv.invoice_date}</td>
+                      <td className="py-2">{inv.customer_name}</td>
+                      <td className="py-2 text-right font-mono">{fmt(inv.subtotal)}</td>
+                      <td className="py-2 text-right font-mono text-emerald-600">{fmt(inv.tax_amount)}</td>
+                      <td className="py-2 text-right font-mono font-semibold">{fmt(inv.total_amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-slate-300 font-bold bg-slate-50">
+                    <td colSpan={3} className="py-2 text-slate-600">
+                      {isRTL ? "الإجمالي" : "Total"} ({stats.outboundRaw.length})
+                    </td>
+                    <td className="py-2 text-right font-mono">SAR {fmt(stats.outputTaxBase)}</td>
+                    <td className="py-2 text-right font-mono text-emerald-600">SAR {fmt(stats.outputVAT)}</td>
+                    <td className="py-2 text-right font-mono">SAR {fmt(stats.outputTotal)}</td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </CardContent>
         </Card>
-    );
+      )}
+    </div>
+  );
 }

@@ -7,6 +7,8 @@ import { pagesConfig } from './pages.config'
 import { BrowserRouter as Router, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
+import { SubscriptionProvider } from '@/lib/SubscriptionContext';
+import ModuleGate from '@/components/shared/ModuleGate';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import LoginScreen from '@/components/LoginScreen';
 import ForgotPasswordScreen from '@/components/ForgotPasswordScreen';
@@ -19,8 +21,7 @@ import SubscriptionGatePage from '@/components/SubscriptionGatePage';
 import { defaultSubscriptionPlanId, storeSignupPlan } from '@/lib/subscriptionPlans';
 import { isAuthCallbackPath } from '@/lib/authRedirect';
 import { canAccessPathForEmailVerification } from '@/lib/emailVerificationGate';
-import { useQuery } from '@tanstack/react-query';
-import { matrixSales } from '@/api/matrixSalesClient';
+import { useSubscription } from '@/lib/SubscriptionContext';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -41,18 +42,8 @@ const AuthenticatedApp = () => {
   const [authScreen, setAuthScreen] = useState('landing');
   const [selectedPlan, setSelectedPlan] = useState(defaultSubscriptionPlanId);
 
-  // Fetch active subscription for the current tenant (only when authenticated and not platform owner)
-  const { data: subscription } = useQuery({
-    queryKey: ['active-subscription', user?.id],
-    queryFn: async () => {
-      const orgId = user?.organization_id || user?.tenant_id;
-      if (!orgId) return null;
-      const subs = await matrixSales.entities.Subscription.filter({ organization_id: orgId });
-      return Array.isArray(subs) && subs.length > 0 ? subs[0] : null;
-    },
-    enabled: isAuthenticated && !user?.is_platform_owner,
-    staleTime: 60_000,
-  });
+  // Use shared subscription context instead of a local query
+  const { subscription } = useSubscription();
 
   const enterApp = useCallback(() => {
     sessionStorage.setItem('horizon_entered_app', 'true');
@@ -172,7 +163,9 @@ const AuthenticatedApp = () => {
           path={`/${path}`}
           element={
             <LayoutWrapper currentPageName={path}>
-              <Page />
+              <ModuleGate pageName={path}>
+                <Page />
+              </ModuleGate>
             </LayoutWrapper>
           }
         />
@@ -190,7 +183,9 @@ function App() {
       <QueryClientProvider client={queryClientInstance}>
         <Router>
           <NavigationTracker />
-          <AuthenticatedApp />
+          <SubscriptionProvider>
+            <AuthenticatedApp />
+          </SubscriptionProvider>
         </Router>
         <Toaster />
       </QueryClientProvider>
