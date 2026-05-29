@@ -73,6 +73,11 @@ try {
         $authUser = requireAuth();
         echo json_encode(handleSendInvite($body, $authUser));
 
+    // ── Search ────────────────────────────────────────────────────────────
+    } elseif ($path === '/search' && $method === 'GET') {
+        $authUser = requireAuth();
+        echo json_encode(searchEntities($_GET['q'] ?? '', $authUser));
+
     // ── Entities ──────────────────────────────────────────────────────────
     } elseif (preg_match('#^/entities/([A-Za-z0-9]+)$#', $path, $m) && $method === 'GET') {
         echo json_encode(listEntities($m[1], requireAuth(), $_GET));

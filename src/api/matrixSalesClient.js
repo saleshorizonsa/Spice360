@@ -1190,6 +1190,7 @@ const phpApiMatrixSales = {
       .then((r) => r.json())
       .then((d) => (Array.isArray(d) ? d : []))
       .catch(() => []),
+  search: (q) => apiFetch(`/search?q=${encodeURIComponent(q)}`),
   owner: {
     listTenants: () => apiFetch('/owner/tenants'),
     updateSubscription: (orgId, data) =>

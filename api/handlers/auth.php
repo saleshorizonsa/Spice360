@@ -374,36 +374,93 @@ function handleChangePassword(array $body, array $authUser): array {
     return ['success' => true, 'message' => 'Password changed successfully. A confirmation email has been sent.'];
 }
 
-function sendPasswordChangedEmail(string $email, string $name): void {
+function buildHtmlEmail(string $heading, string $bodyHtml, string $ctaUrl = '', string $ctaLabel = ''): string {
     $appName = 'HORIZON ERP';
-    $subject = "Your $appName password has been changed";
-    $body    = "Hello " . ($name ?: 'there') . ",\n\n"
-             . "Your HORIZON ERP password was successfully changed.\n\n"
-             . "If you did not make this change, please contact us immediately or reset your password:\n"
-             . APP_URL . "/reset-password\n\n"
-             . "-- $appName Security Team";
-    $headers = "From: $appName <" . MAIL_FROM . ">\r\n"
-             . "Reply-To: " . MAIL_FROM . "\r\n"
-             . "X-Mailer: PHP/" . PHP_VERSION;
-    @mail($email, $subject, $body, $headers);
+    $year    = date('Y');
+    $cta     = '';
+    if ($ctaUrl && $ctaLabel) {
+        $safeUrl   = htmlspecialchars($ctaUrl, ENT_QUOTES, 'UTF-8');
+        $safeLabel = htmlspecialchars($ctaLabel, ENT_QUOTES, 'UTF-8');
+        $cta = <<<HTML
+        <tr>
+            <td align="center" style="padding:24px 0 8px;">
+                <a href="{$safeUrl}" style="background:#1d4ed8;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:600;display:inline-block;">{$safeLabel}</a>
+            </td>
+        </tr>
+HTML;
+    }
+    return <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:40px 16px;">
+    <tr><td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;">
+            <!-- Header -->
+            <tr>
+                <td style="background:#1d4ed8;border-radius:12px 12px 0 0;padding:28px 40px;text-align:center;">
+                    <span style="color:#ffffff;font-size:22px;font-weight:700;letter-spacing:0.5px;">{$appName}</span>
+                </td>
+            </tr>
+            <!-- Body -->
+            <tr>
+                <td style="background:#ffffff;padding:40px 40px 8px;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;">
+                    <h1 style="margin:0 0 16px;font-size:22px;font-weight:700;color:#0f172a;">{$heading}</h1>
+                    {$bodyHtml}
+                </td>
+            </tr>
+            <!-- CTA -->
+            {$cta}
+            <!-- Footer -->
+            <tr>
+                <td style="background:#ffffff;padding:24px 40px 32px;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0;border-bottom:1px solid #e2e8f0;border-radius:0 0 12px 12px;">
+                    <p style="margin:0;font-size:12px;color:#94a3b8;text-align:center;">&copy; {$year} {$appName}. All rights reserved.</p>
+                </td>
+            </tr>
+        </table>
+    </td></tr>
+</table>
+</body>
+</html>
+HTML;
+}
+
+function htmlMailHeaders(): string {
+    $appName = 'HORIZON ERP';
+    return "MIME-Version: 1.0\r\n"
+         . "Content-Type: text/html; charset=UTF-8\r\n"
+         . "From: {$appName} <" . MAIL_FROM . ">\r\n"
+         . "Reply-To: " . MAIL_FROM . "\r\n"
+         . "X-Mailer: PHP/" . PHP_VERSION;
+}
+
+function sendPasswordChangedEmail(string $email, string $name): void {
+    $greeting  = htmlspecialchars($name ?: 'there', ENT_QUOTES, 'UTF-8');
+    $resetUrl  = htmlspecialchars(APP_URL . '/reset-password', ENT_QUOTES, 'UTF-8');
+    $bodyHtml  = <<<HTML
+        <p style="color:#334155;font-size:15px;line-height:1.7;">Hello {$greeting},</p>
+        <p style="color:#334155;font-size:15px;line-height:1.7;">Your HORIZON ERP password was <strong>successfully changed</strong>.</p>
+        <p style="color:#334155;font-size:15px;line-height:1.7;">If you did not make this change, please reset your password immediately:</p>
+        <p style="margin:0 0 8px;"><a href="{$resetUrl}" style="color:#1d4ed8;">{$resetUrl}</a></p>
+        <p style="color:#94a3b8;font-size:13px;margin-top:24px;">If you made this change yourself, no further action is needed.</p>
+HTML;
+    $subject   = 'Your HORIZON ERP password has been changed';
+    $html      = buildHtmlEmail('Password Changed', $bodyHtml);
+    @mail($email, $subject, $html, htmlMailHeaders());
 }
 
 function sendVerificationEmail(string $email, string $name, string $token): void {
-    $link    = APP_URL . '/auth/confirm?token=' . urlencode($token);
-    $appName = 'HORIZON ERP';
-    $subject = "Verify your $appName account";
-    $body    = "Hello " . ($name ?: 'there') . ",\n\n"
-             . "Please verify your email address by clicking the link below:\n\n"
-             . "$link\n\n"
-             . "This link expires in 24 hours.\n\n"
-             . "If you did not create an account, please ignore this email.\n\n"
-             . "-- $appName Team";
-
-    $headers = "From: $appName <" . MAIL_FROM . ">\r\n"
-             . "Reply-To: " . MAIL_FROM . "\r\n"
-             . "X-Mailer: PHP/" . PHP_VERSION;
-
-    @mail($email, $subject, $body, $headers);
+    $link      = APP_URL . '/auth/confirm?token=' . urlencode($token);
+    $greeting  = htmlspecialchars($name ?: 'there', ENT_QUOTES, 'UTF-8');
+    $bodyHtml  = <<<HTML
+        <p style="color:#334155;font-size:15px;line-height:1.7;">Hello {$greeting},</p>
+        <p style="color:#334155;font-size:15px;line-height:1.7;">Thanks for signing up! Click the button below to verify your email address and activate your account.</p>
+        <p style="color:#94a3b8;font-size:13px;margin-top:24px;">This link expires in <strong>24 hours</strong>. If you did not create an account, you can safely ignore this email.</p>
+HTML;
+    $subject   = 'Verify your HORIZON ERP account';
+    $html      = buildHtmlEmail('Confirm Your Email', $bodyHtml, $link, 'Verify Email Address');
+    @mail($email, $subject, $html, htmlMailHeaders());
 }
 
 function handleAcceptInvite(array $body): array {
@@ -457,20 +514,16 @@ function handleSendInvite(array $body, array $authUser): array {
         throw new RuntimeException('Invite link is required.', 400);
     }
 
-    $appName = 'HORIZON ERP';
-    $subject = "You've been invited to $appName";
-    $msgBody = "Hello " . ($fullName ?: 'there') . ",\n\n"
-             . "{$authUser['full_name']} has invited you to join $appName.\n\n"
-             . "Click the link below to set up your password and access the system:\n\n"
-             . "$inviteLink\n\n"
-             . "This link is unique to you. Do not share it.\n\n"
-             . "-- $appName Team";
-
-    $headers = "From: $appName <" . MAIL_FROM . ">\r\n"
-             . "Reply-To: " . MAIL_FROM . "\r\n"
-             . "X-Mailer: PHP/" . PHP_VERSION;
-
-    @mail($email, $subject, $msgBody, $headers);
+    $greeting    = htmlspecialchars($fullName ?: 'there', ENT_QUOTES, 'UTF-8');
+    $inviterName = htmlspecialchars($authUser['full_name'] ?? 'Your administrator', ENT_QUOTES, 'UTF-8');
+    $bodyHtml    = <<<HTML
+        <p style="color:#334155;font-size:15px;line-height:1.7;">Hello {$greeting},</p>
+        <p style="color:#334155;font-size:15px;line-height:1.7;"><strong>{$inviterName}</strong> has invited you to join <strong>HORIZON ERP</strong>.</p>
+        <p style="color:#334155;font-size:15px;line-height:1.7;">Click the button below to set your password and access the system. This link is unique to you — do not share it.</p>
+HTML;
+    $subject  = 'You\'ve been invited to HORIZON ERP';
+    $html     = buildHtmlEmail('You\'re Invited!', $bodyHtml, $inviteLink, 'Accept Invitation');
+    @mail($email, $subject, $html, htmlMailHeaders());
 
     return ['success' => true, 'message' => "Invitation sent to $email."];
 }
@@ -510,18 +563,14 @@ function handleUpdateProfile(array $body, array $authUser): array {
 }
 
 function sendPasswordResetEmail(string $email, string $name, string $token): void {
-    $link    = APP_URL . '/reset-password?token=' . urlencode($token);
-    $appName = 'HORIZON ERP';
-    $subject = "Reset your $appName password";
-    $body    = "Hello " . ($name ?: 'there') . ",\n\n"
-             . "We received a request to reset your password. Click the link below to set a new password:\n\n"
-             . "$link\n\n"
-             . "This link expires in 1 hour. If you did not request a password reset, ignore this email.\n\n"
-             . "-- $appName Team";
-
-    $headers = "From: $appName <" . MAIL_FROM . ">\r\n"
-             . "Reply-To: " . MAIL_FROM . "\r\n"
-             . "X-Mailer: PHP/" . PHP_VERSION;
-
-    @mail($email, $subject, $body, $headers);
+    $link     = APP_URL . '/reset-password?token=' . urlencode($token);
+    $greeting = htmlspecialchars($name ?: 'there', ENT_QUOTES, 'UTF-8');
+    $bodyHtml = <<<HTML
+        <p style="color:#334155;font-size:15px;line-height:1.7;">Hello {$greeting},</p>
+        <p style="color:#334155;font-size:15px;line-height:1.7;">We received a request to reset your HORIZON ERP password. Click the button below to choose a new one.</p>
+        <p style="color:#94a3b8;font-size:13px;margin-top:24px;">This link expires in <strong>1 hour</strong>. If you did not request a password reset, ignore this email — your account is safe.</p>
+HTML;
+    $subject  = 'Reset your HORIZON ERP password';
+    $html     = buildHtmlEmail('Reset Your Password', $bodyHtml, $link, 'Reset Password');
+    @mail($email, $subject, $html, htmlMailHeaders());
 }

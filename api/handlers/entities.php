@@ -481,3 +481,82 @@ function fetchRow(string $tableName, string $id): ?array {
     $stmt->execute([$id]);
     return $stmt->fetch() ?: null;
 }
+
+function searchEntities(string $q, array $user): array {
+    $q = trim($q);
+    if (strlen($q) < 2) return [];
+
+    $orgId = getSelectedOrgId($user);
+    $like  = '%' . $q . '%';
+
+    $config = [
+        'Customer'      => ['page' => 'MasterDataManagement', 'label' => 'Customer',       'title' => 'customer_name',  'sub' => 'customer_code',   'search' => ['customer_name','customer_code','email']],
+        'Vendor'        => ['page' => 'MasterDataManagement', 'label' => 'Vendor',         'title' => 'vendor_name',    'sub' => 'vendor_code',     'search' => ['vendor_name','vendor_code','email']],
+        'Material'      => ['page' => 'MasterDataManagement', 'label' => 'Material',       'title' => 'material_name',  'sub' => 'material_code',   'search' => ['material_name','material_code','description']],
+        'Product'       => ['page' => 'MasterDataManagement', 'label' => 'Product',        'title' => 'product_name',   'sub' => 'product_code',    'search' => ['product_name','product_code']],
+        'SalesOrder'    => ['page' => 'Sales',                'label' => 'Sales Order',    'title' => 'order_number',   'sub' => 'customer_name',   'search' => ['order_number','sales_order_number','customer_name']],
+        'Quotation'     => ['page' => 'Sales',                'label' => 'Quotation',      'title' => 'quotation_number','sub' => 'customer_name',  'search' => ['quotation_number','customer_name']],
+        'Invoice'       => ['page' => 'Sales',                'label' => 'Invoice',        'title' => 'invoice_number', 'sub' => 'customer_name',   'search' => ['invoice_number','customer_name']],
+        'PurchaseOrder' => ['page' => 'Purchasing',           'label' => 'Purchase Order', 'title' => 'po_number',      'sub' => 'vendor_name',     'search' => ['po_number','purchase_order_number','vendor_name']],
+        'Employee'      => ['page' => 'HR',                   'label' => 'Employee',       'title' => 'employee_name',  'sub' => 'employee_number', 'search' => ['employee_name','employee_number','email']],
+        'FixedAsset'    => ['page' => 'FixedAssets',          'label' => 'Fixed Asset',    'title' => 'asset_name',     'sub' => 'asset_number',    'search' => ['asset_name','asset_number','serial_number']],
+        'Project'       => ['page' => 'Projects',             'label' => 'Project',        'title' => 'project_name',   'sub' => 'project_number',  'search' => ['project_name','project_number','customer_name']],
+    ];
+
+    $results = [];
+
+    foreach ($config as $entityName => $cfg) {
+        $tableName = sanitizeTableName($entityName);
+
+        // Check table exists without creating it (we only search existing data)
+        try {
+            $check = getDB()->query("SHOW TABLES LIKE '{$tableName}'")->fetchColumn();
+            if (!$check) continue;
+        } catch (\Exception $e) {
+            continue;
+        }
+
+        $conditions = array_map(
+            fn($f) => "JSON_UNQUOTE(JSON_EXTRACT(record, '$.$f')) LIKE ?",
+            $cfg['search']
+        );
+
+        $sql    = "SELECT id, record FROM `{$tableName}` WHERE ";
+        $params = [];
+
+        if ($orgId && !in_array($entityName, ORG_SCOPE_EXCLUSIONS, true)) {
+            $sql    .= "organization_id = ? AND ";
+            $params[] = $orgId;
+        }
+
+        $sql    .= "(" . implode(" OR ", $conditions) . ") LIMIT 5";
+        foreach ($cfg['search'] as $_) $params[] = $like;
+
+        try {
+            $stmt = getDB()->prepare($sql);
+            $stmt->execute($params);
+            foreach ($stmt->fetchAll() as $row) {
+                $rec      = json_decode($row['record'], true) ?? [];
+                $titleVal = $rec[$cfg['title']] ?? $rec['id'] ?? $row['id'];
+                $subVal   = $rec[$cfg['sub']]   ?? null;
+                $results[] = [
+                    'id'       => "{$entityName}-{$row['id']}",
+                    'entityId' => $row['id'],
+                    'title'    => (string)$titleVal,
+                    'subtitle' => $subVal ? (string)$subVal : null,
+                    'label'    => $cfg['label'],
+                    'page'     => $cfg['page'],
+                ];
+            }
+        } catch (\Exception $e) {
+            continue;
+        }
+    }
+
+    // Sort: exact matches first
+    usort($results, fn($a, $b) =>
+        (stripos($a['title'], $q) === 0 ? 0 : 1) - (stripos($b['title'], $q) === 0 ? 0 : 1)
+    );
+
+    return array_slice($results, 0, 20);
+}

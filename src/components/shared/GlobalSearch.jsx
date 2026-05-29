@@ -5,85 +5,6 @@ import { matrixSales } from "@/api/matrixSalesClient";
 import { Input } from "@/components/ui/input";
 import { createPageUrl } from "@/utils";
 
-const SEARCH_ENTITIES = [
-    {
-        entity: "Customer",
-        label: "Customer",
-        page: "MasterDataManagement",
-        fields: ["customer_code", "customer_name", "company_name", "email"]
-    },
-    {
-        entity: "Vendor",
-        label: "Vendor",
-        page: "MasterDataManagement",
-        fields: ["vendor_code", "vendor_name", "company_name", "email"]
-    },
-    {
-        entity: "Material",
-        label: "Material",
-        page: "MasterDataManagement",
-        fields: ["material_code", "material_name", "description"]
-    },
-    {
-        entity: "Product",
-        label: "Product",
-        page: "MasterDataManagement",
-        fields: ["product_code", "product_name", "description"]
-    },
-    {
-        entity: "SalesOrder",
-        label: "Sales Order",
-        page: "Sales",
-        fields: ["order_number", "sales_order_number", "customer_name", "product_name"]
-    },
-    {
-        entity: "PurchaseOrder",
-        label: "Purchase Order",
-        page: "Purchasing",
-        fields: ["po_number", "purchase_order_number", "vendor_name"]
-    },
-    {
-        entity: "Invoice",
-        label: "Invoice",
-        page: "Sales",
-        fields: ["invoice_number", "customer_name", "sales_order_number"]
-    },
-    {
-        entity: "Employee",
-        label: "Employee",
-        page: "HR",
-        fields: ["employee_number", "employee_name", "department", "email"]
-    },
-    {
-        entity: "FixedAsset",
-        label: "Fixed Asset",
-        page: "FixedAssets",
-        fields: ["asset_number", "asset_name", "asset_tag", "serial_number"]
-    },
-    {
-        entity: "Project",
-        label: "Project",
-        page: "Projects",
-        fields: ["project_number", "project_name", "customer_name"]
-    }
-];
-
-const recordMatches = (record, fields, query) => fields.some((field) =>
-    String(record?.[field] || "").toLowerCase().includes(query)
-);
-
-const getTitle = (record, fields) => {
-    const titleField = fields.find((field) => record?.[field]);
-    return titleField ? record[titleField] : record?.id || "Record";
-};
-
-const getSubtitle = (record, fields) => fields
-    .slice(1)
-    .map((field) => record?.[field])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join(" - ");
-
 export default function GlobalSearch() {
     const [query, setQuery] = useState("");
     const [results, setResults] = useState([]);
@@ -115,30 +36,13 @@ export default function GlobalSearch() {
         const timer = window.setTimeout(async () => {
             setLoading(true);
             try {
-                const batches = await Promise.all(
-                    SEARCH_ENTITIES.map(async (config) => {
-                        try {
-                            const rows = await matrixSales.entities[config.entity].list("-created_at", 25);
-                            return rows
-                                .filter((record) => recordMatches(record, config.fields, normalizedQuery))
-                                .slice(0, 4)
-                                .map((record) => ({
-                                    id: `${config.entity}-${record.id}`,
-                                    title: getTitle(record, config.fields),
-                                    subtitle: getSubtitle(record, config.fields),
-                                    label: config.label,
-                                    page: config.page
-                                }));
-                        } catch {
-                            return [];
-                        }
-                    })
-                );
-
+                const data = await matrixSales.search(normalizedQuery);
                 if (active) {
-                    setResults(batches.flat().slice(0, 12));
+                    setResults(Array.isArray(data) ? data : []);
                     setOpen(true);
                 }
+            } catch {
+                if (active) setResults([]);
             } finally {
                 if (active) setLoading(false);
             }
