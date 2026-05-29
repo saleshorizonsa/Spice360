@@ -11,11 +11,10 @@ require_once __DIR__ . '/config/database.php';
 
 header('Content-Type: text/plain');
 
-$lockFile   = __DIR__ . '/.setup-done';
-$forceReset = ($_GET['force'] ?? '') === '1';
+$lockFile = __DIR__ . '/.setup-done';
 
-// Refuse if already run (unless force=1 is supplied together with the secret)
-if (file_exists($lockFile) && !$forceReset) {
+// Refuse if already run
+if (file_exists($lockFile)) {
     http_response_code(403);
     echo "✗ Setup has already been completed. This endpoint is disabled.\n";
     exit;
@@ -79,16 +78,12 @@ try {
         echo "✓ Admin account created.\n";
     }
 
+    // Write lock file — endpoint disabled permanently after this
+    file_put_contents($lockFile, date('Y-m-d H:i:s') . ' ' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
+
     echo "  Email: $adminEmail\n";
     echo "  Role : owner (platform owner)\n\n";
-
-    if (!$forceReset) {
-        // Write lock file — endpoint disabled permanently after this
-        file_put_contents($lockFile, date('Y-m-d H:i:s') . ' ' . ($_SERVER['REMOTE_ADDR'] ?? 'unknown'));
-        echo "✓ Setup locked. This endpoint will refuse all future requests.\n";
-    } else {
-        echo "✓ Force reset complete. Lock file not touched.\n";
-    }
+    echo "✓ Setup locked. This endpoint will refuse all future requests.\n";
 
 } catch (Exception $e) {
     http_response_code(500);
