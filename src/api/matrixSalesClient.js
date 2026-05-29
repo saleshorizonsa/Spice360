@@ -1082,7 +1082,13 @@ const supabaseMatrixSales = {
 
 // ─── PHP API implementation ──────────────────────────────────────────────────
 
-const phpApiUrl = import.meta.env.VITE_API_URL;
+// If VITE_API_URL is set at build time, use it.
+// If Supabase is also not configured, fall back to /api on the current origin
+// (covers cases where the env var didn't get baked in by the build pipeline).
+const phpApiUrl = import.meta.env.VITE_API_URL ||
+  (!import.meta.env.VITE_SUPABASE_URL
+    ? (typeof window !== 'undefined' ? window.location.origin + '/api' : null)
+    : null);
 
 const getAuthToken = () => localStorage.getItem('auth_token');
 

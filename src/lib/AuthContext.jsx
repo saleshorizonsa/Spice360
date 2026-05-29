@@ -9,7 +9,9 @@ import { createSignupVerificationOptions, getAuthRedirectUrl, isAuthCallbackPath
 
 const AuthContext = createContext();
 
-const usePhpApi = !!import.meta.env.VITE_API_URL;
+// PHP API mode: VITE_API_URL is set, OR Supabase is not configured at all.
+// The second condition handles cases where VITE_API_URL didn't get baked in.
+const usePhpApi = !!import.meta.env.VITE_API_URL || !import.meta.env.VITE_SUPABASE_URL;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
