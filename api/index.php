@@ -66,6 +66,13 @@ try {
         $authUser = requireAuth();
         echo json_encode(handleUpdateProfile($body, $authUser));
 
+    } elseif ($path === '/auth/accept-invite' && $method === 'POST') {
+        echo json_encode(handleAcceptInvite($body));
+
+    } elseif ($path === '/auth/send-invite' && $method === 'POST') {
+        $authUser = requireAuth();
+        echo json_encode(handleSendInvite($body, $authUser));
+
     // ── Entities ──────────────────────────────────────────────────────────
     } elseif (preg_match('#^/entities/([A-Za-z0-9]+)$#', $path, $m) && $method === 'GET') {
         echo json_encode(listEntities($m[1], requireAuth(), $_GET));

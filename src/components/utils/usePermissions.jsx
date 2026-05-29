@@ -64,10 +64,22 @@ export function usePermissions() {
                     setIsBootstrapAdmin(false);
                 }
 
-                // Fetch user's assigned roles
-                if (user.assigned_roles && user.assigned_roles.length > 0) {
+                // Fetch User entity to get org-scoped assigned_roles
+                // (auth.me() returns assigned_roles:[] from JWT; entity has the real roles)
+                let assignedRoleCodes = user.assigned_roles || [];
+                try {
+                    const userEntities = await matrixSales.entities.User.filter({ email: user.email });
+                    const userEntity = userEntities?.[0];
+                    if (userEntity?.assigned_roles?.length) {
+                        assignedRoleCodes = userEntity.assigned_roles;
+                    }
+                } catch {
+                    // entity table may not exist yet — fall back to JWT roles
+                }
+
+                if (assignedRoleCodes.length > 0) {
                     const roles = await Promise.all(
-                        user.assigned_roles.map(roleCode => 
+                        assignedRoleCodes.map(roleCode =>
                             matrixSales.entities.Role.filter({ role_code: roleCode })
                         )
                     );

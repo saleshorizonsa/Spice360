@@ -1153,6 +1153,13 @@ const phpApiMatrixSales = {
       apiFetch('/auth/change-password', { method: 'POST', body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }) }),
     updateProfile: (data) =>
       apiFetch('/auth/profile', { method: 'PUT', body: JSON.stringify(data) }),
+    acceptInvite: (data) =>
+      apiFetch('/auth/accept-invite', { method: 'POST', body: JSON.stringify(data) }).then((res) => {
+        if (res.token) localStorage.setItem('auth_token', res.token);
+        return res;
+      }),
+    sendInvite: (data) =>
+      apiFetch('/auth/send-invite', { method: 'POST', body: JSON.stringify(data) }),
     resend: (email) =>
       apiFetch('/auth/resend', { method: 'POST', body: JSON.stringify({ email }) }),
     confirmEmail: (token) =>

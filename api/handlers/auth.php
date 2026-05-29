@@ -406,6 +406,75 @@ function sendVerificationEmail(string $email, string $name, string $token): void
     @mail($email, $subject, $body, $headers);
 }
 
+function handleAcceptInvite(array $body): array {
+    $email    = trim(strtolower($body['email'] ?? ''));
+    $password = $body['password'] ?? '';
+    $fullName = trim($body['full_name'] ?? '');
+
+    if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        throw new RuntimeException('A valid email address is required.', 400);
+    }
+
+    validatePassword($password);
+    ensureUsersTable();
+
+    $stmt = getDB()->prepare('SELECT id FROM `_users` WHERE email = ? LIMIT 1');
+    $stmt->execute([$email]);
+    if ($stmt->fetch()) {
+        throw new RuntimeException('This email is already registered. Please log in instead.', 409);
+    }
+
+    $id      = generateUUID();
+    $hash    = password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]);
+    $termsAt = date('Y-m-d H:i:s');
+
+    getDB()->prepare(
+        'INSERT INTO `_users` (id, email, password_hash, full_name, is_verified, terms_accepted_at)
+         VALUES (?, ?, ?, ?, 1, ?)'
+    )->execute([$id, $email, $hash, $fullName ?: null, $termsAt]);
+
+    $userPayload = getUserById($id);
+    $token = jwtEncode([
+        'id'               => $id,
+        'email'            => $email,
+        'full_name'        => $fullName ?: null,
+        'role'             => $userPayload['role'],
+        'is_platform_owner'=> $userPayload['is_platform_owner'],
+    ]);
+
+    return ['token' => $token, 'user' => $userPayload];
+}
+
+function handleSendInvite(array $body, array $authUser): array {
+    $email      = trim(strtolower($body['email'] ?? ''));
+    $fullName   = trim($body['full_name'] ?? '');
+    $inviteLink = trim($body['invite_link'] ?? '');
+
+    if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        throw new RuntimeException('A valid email address is required.', 400);
+    }
+    if (!$inviteLink) {
+        throw new RuntimeException('Invite link is required.', 400);
+    }
+
+    $appName = 'HORIZON ERP';
+    $subject = "You've been invited to $appName";
+    $msgBody = "Hello " . ($fullName ?: 'there') . ",\n\n"
+             . "{$authUser['full_name']} has invited you to join $appName.\n\n"
+             . "Click the link below to set up your password and access the system:\n\n"
+             . "$inviteLink\n\n"
+             . "This link is unique to you. Do not share it.\n\n"
+             . "-- $appName Team";
+
+    $headers = "From: $appName <" . MAIL_FROM . ">\r\n"
+             . "Reply-To: " . MAIL_FROM . "\r\n"
+             . "X-Mailer: PHP/" . PHP_VERSION;
+
+    @mail($email, $subject, $msgBody, $headers);
+
+    return ['success' => true, 'message' => "Invitation sent to $email."];
+}
+
 function handleUpdateProfile(array $body, array $authUser): array {
     ensureUsersTable();
 

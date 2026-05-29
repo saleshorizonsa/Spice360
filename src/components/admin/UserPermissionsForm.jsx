@@ -42,7 +42,7 @@ export default function UserPermissionsForm({ user, onClose }) {
 
     const saveMutation = useMutation({
         mutationFn: (data) => {
-            return matrixSales.auth.updateMe(data);
+            return matrixSales.entities.User.update(user.id, data);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });

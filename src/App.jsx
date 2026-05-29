@@ -22,6 +22,7 @@ import { defaultSubscriptionPlanId, storeSignupPlan } from '@/lib/subscriptionPl
 import { isAuthCallbackPath } from '@/lib/authRedirect';
 import { canAccessPathForEmailVerification } from '@/lib/emailVerificationGate';
 import { useSubscription } from '@/lib/SubscriptionContext';
+import AcceptInviteScreen from '@/components/AcceptInviteScreen';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -65,6 +66,7 @@ const AuthenticatedApp = () => {
   const isAuthCallback = isAuthCallbackPath(location.pathname);
   const isEmailVerificationPendingPath = location.pathname === '/email-verification-pending';
   const isResetPasswordPath = location.pathname === '/reset-password';
+  const inviteEmail = new URLSearchParams(location.search).get('invite_email') || '';
 
   const renderAuthEntry = () => {
     if (authScreen === 'landing') {
@@ -89,6 +91,18 @@ const AuthenticatedApp = () => {
 
   if (isAuthCallback) {
     return <AuthConfirmPage onConfirmed={() => navigate('/', { replace: true })} onBackToLogin={backToLogin} />;
+  }
+
+  if (inviteEmail && !isAuthenticated) {
+    return (
+      <AcceptInviteScreen
+        email={decodeURIComponent(inviteEmail)}
+        onAccepted={() => {
+          navigate('/', { replace: true });
+          enterApp();
+        }}
+      />
+    );
   }
 
   if (isResetPasswordPath) {

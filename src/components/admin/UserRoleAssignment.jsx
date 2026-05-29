@@ -8,7 +8,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { UserCog, Search, Shield, Save, Users as UsersIcon, UserPlus, Mail, Copy } from "lucide-react";
+import { UserCog, Search, Shield, Save, Users as UsersIcon, UserPlus, Mail, Copy, ToggleLeft, ToggleRight, Trash2, RefreshCw } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { logAuditTrail } from "../utils/auditTrail";
 
@@ -211,22 +211,59 @@ export default function UserRoleAssignment() {
         inviteUserMutation.mutate(inviteData);
     };
 
+    const [sendingInvite, setSendingInvite] = useState(false);
+
     const copyInviteLink = async () => {
         if (!lastInvite?.invite_link) return;
         await navigator.clipboard.writeText(lastInvite.invite_link);
-        toast({
-            title: "Copied",
-            description: "Invite link copied to clipboard.",
-        });
+        toast({ title: "Copied", description: "Invite link copied to clipboard." });
     };
 
-    const openInviteEmail = () => {
-        if (!lastInvite?.email || !lastInvite?.invite_link) return;
-        const subject = encodeURIComponent('You are invited to MatrixSales');
-        const body = encodeURIComponent(
-            `Hello ${lastInvite.full_name || ''},\n\nYou have been invited to MatrixSales.\n\nOpen this link to sign in:\n${lastInvite.invite_link}\n\nRegards,\nMatrixSales Admin`
-        );
-        window.location.href = `mailto:${lastInvite.email}?subject=${subject}&body=${body}`;
+    const sendInviteEmail = async () => {
+        if (!lastInvite) return;
+        setSendingInvite(true);
+        try {
+            await matrixSales.auth.sendInvite({
+                email: lastInvite.email,
+                full_name: lastInvite.full_name,
+                invite_link: lastInvite.invite_link,
+            });
+            toast({ title: "Email sent", description: `Invitation sent to ${lastInvite.email}.` });
+        } catch (err) {
+            toast({ title: "Email failed", description: err.message || "Could not send invite email.", variant: "destructive" });
+        } finally {
+            setSendingInvite(false);
+        }
+    };
+
+    const toggleUserStatusMutation = useMutation({
+        mutationFn: ({ userId, newStatus }) =>
+            matrixSales.entities.User.update(userId, {
+                status: newStatus,
+                is_active: newStatus === 'active',
+            }),
+        onSuccess: (_, vars) => {
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+            toast({ title: "Updated", description: `User ${vars.newStatus === 'active' ? 'activated' : 'deactivated'}.` });
+        },
+    });
+
+    const deleteUserMutation = useMutation({
+        mutationFn: (userId) => matrixSales.entities.User.delete(userId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['users'] });
+            toast({ title: "Removed", description: "User removed from the system." });
+        },
+    });
+
+    const handleToggleStatus = (user) => {
+        const newStatus = user.status === 'active' ? 'inactive' : 'active';
+        toggleUserStatusMutation.mutate({ userId: user.id, newStatus });
+    };
+
+    const handleDeleteUser = (user) => {
+        if (!confirm(`Remove ${user.full_name || user.email} permanently?`)) return;
+        deleteUserMutation.mutate(user.id);
     };
 
     return (
@@ -346,9 +383,10 @@ export default function UserRoleAssignment() {
                                         <Copy className="w-4 h-4 mr-2" />
                                         Copy
                                     </Button>
-                                    <Button type="button" size="sm" className="bg-emerald-600 hover:bg-emerald-700" onClick={openInviteEmail}>
+                                    <Button type="button" size="sm" className="bg-emerald-600 hover:bg-emerald-700"
+                                        onClick={sendInviteEmail} disabled={sendingInvite}>
                                         <Mail className="w-4 h-4 mr-2" />
-                                        Email
+                                        {sendingInvite ? 'Sending…' : 'Send Email'}
                                     </Button>
                                 </div>
                             </div>
@@ -378,42 +416,65 @@ export default function UserRoleAssignment() {
                     </div>
 
                     <div className="space-y-2 max-h-96 overflow-y-auto">
+                        {filteredUsers.length === 0 && (
+                            <p className="text-center text-gray-500 py-8 text-sm">No users found.</p>
+                        )}
                         {filteredUsers.map(user => {
                             const isSelected = selectedUser?.id === user.id;
                             const roleCount = user.assigned_roles?.length || 0;
-                            
+                            const statusColor = {
+                                active:    'bg-green-100 text-green-700',
+                                invited:   'bg-amber-100 text-amber-700',
+                                inactive:  'bg-gray-100 text-gray-600',
+                                suspended: 'bg-red-100 text-red-700',
+                            }[user.status] || 'bg-gray-100 text-gray-600';
+
                             return (
                                 <div
                                     key={user.id}
-                                    onClick={() => handleSelectUser(user)}
-                                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                                        isSelected 
-                                            ? 'bg-emerald-50 border-emerald-300' 
-                                            : 'hover:bg-gray-50'
+                                    className={`border rounded-lg transition-colors ${
+                                        isSelected ? 'bg-emerald-50 border-emerald-300' : 'hover:bg-gray-50'
                                     }`}
                                 >
-                                    <div className="flex items-center justify-between">
-                                        <div className="flex-1">
-                                            <p className="font-semibold">{user.full_name}</p>
-                                            <p className="text-sm text-gray-600">{user.email}</p>
-                                            {user.employee_number && (
-                                                <p className="text-xs text-gray-500">
-                                                    Emp #: {user.employee_number}
-                                                </p>
+                                    <div
+                                        className="flex items-center justify-between p-3 cursor-pointer"
+                                        onClick={() => handleSelectUser(user)}
+                                    >
+                                        <div className="flex-1 min-w-0">
+                                            <p className="font-semibold truncate">{user.full_name}</p>
+                                            <p className="text-sm text-gray-600 truncate">{user.email}</p>
+                                            {user.job_title && (
+                                                <p className="text-xs text-gray-400">{user.job_title}</p>
                                             )}
                                         </div>
-                                        <div className="flex flex-col items-end gap-1">
-                                            {user.role === 'admin' ? (
-                                                <Badge className="bg-purple-600">Admin</Badge>
-                                            ) : (
-                                                <Badge variant="outline">
-                                                    {roleCount} role{roleCount !== 1 ? 's' : ''}
-                                                </Badge>
-                                            )}
-                                            {user.is_active === false && (
-                                                <Badge variant="secondary">Inactive</Badge>
-                                            )}
+                                        <div className="flex flex-col items-end gap-1 ml-2 flex-shrink-0">
+                                            <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColor}`}>
+                                                {user.status || 'active'}
+                                            </span>
+                                            <Badge variant="outline" className="text-xs">
+                                                {roleCount} role{roleCount !== 1 ? 's' : ''}
+                                            </Badge>
                                         </div>
+                                    </div>
+                                    <div className="flex gap-1 px-3 pb-2 border-t border-gray-100 pt-1.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleToggleStatus(user)}
+                                            className="flex items-center gap-1 text-xs px-2 py-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+                                        >
+                                            {user.status === 'active'
+                                                ? <ToggleRight className="w-3.5 h-3.5 text-emerald-600" />
+                                                : <ToggleLeft className="w-3.5 h-3.5 text-gray-400" />}
+                                            {user.status === 'active' ? 'Deactivate' : 'Activate'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleDeleteUser(user)}
+                                            className="flex items-center gap-1 text-xs px-2 py-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-600 ml-auto"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                            Remove
+                                        </button>
                                     </div>
                                 </div>
                             );
