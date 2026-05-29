@@ -93,6 +93,7 @@ import SupplyChain from './pages/SupplyChain';
 import TreasuryManagement from './pages/TreasuryManagement';
 import ZATCA from './pages/ZATCA';
 import ZakatManagement from './pages/ZakatManagement';
+import Profile from './pages/Profile';
 import __Layout from './Layout.jsx';
 
 
@@ -143,6 +144,7 @@ export const PAGES = {
     "TreasuryManagement": TreasuryManagement,
     "ZATCA": ZATCA,
     "ZakatManagement": ZakatManagement,
+    "Profile": Profile,
 }
 
 export const pagesConfig = {

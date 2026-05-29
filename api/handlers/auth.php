@@ -23,6 +23,18 @@ function ensureUsersTable(): void {
     if (!in_array('terms_accepted_at', $cols)) {
         getDB()->exec("ALTER TABLE `_users` ADD COLUMN `terms_accepted_at` DATETIME DEFAULT NULL");
     }
+    $profileCols = [
+        'phone'               => "VARCHAR(50) DEFAULT NULL",
+        'job_title'           => "VARCHAR(100) DEFAULT NULL",
+        'department'          => "VARCHAR(100) DEFAULT NULL",
+        'language_preference' => "VARCHAR(10) NOT NULL DEFAULT 'en'",
+        'timezone'            => "VARCHAR(50) NOT NULL DEFAULT 'Asia/Riyadh'",
+    ];
+    foreach ($profileCols as $col => $def) {
+        if (!in_array($col, $cols)) {
+            getDB()->exec("ALTER TABLE `_users` ADD COLUMN `{$col}` {$def}");
+        }
+    }
 }
 
 function ensureRateLimitTable(): void {
@@ -96,13 +108,20 @@ function buildUserPayload(array $row): array {
     $isAdmin         = $isPlatformOwner || in_array(strtolower($email), array_map('strtolower', $adminEmails), true);
 
     return [
-        'id'               => $row['id'],
-        'email'            => $email,
-        'email_verified'   => (bool)$row['is_verified'],
-        'full_name'        => $row['full_name'] ?? $email,
-        'role'             => $isPlatformOwner ? 'owner' : ($isAdmin ? 'admin' : 'user'),
-        'is_platform_owner'=> $isPlatformOwner,
-        'assigned_roles'   => [],
+        'id'                  => $row['id'],
+        'email'               => $email,
+        'email_verified'      => (bool)$row['is_verified'],
+        'full_name'           => $row['full_name'] ?? $email,
+        'role'                => $isPlatformOwner ? 'owner' : ($isAdmin ? 'admin' : 'user'),
+        'is_platform_owner'   => $isPlatformOwner,
+        'assigned_roles'      => [],
+        'phone'               => $row['phone'] ?? null,
+        'job_title'           => $row['job_title'] ?? null,
+        'department'          => $row['department'] ?? null,
+        'language_preference' => $row['language_preference'] ?? 'en',
+        'timezone'            => $row['timezone'] ?? 'Asia/Riyadh',
+        'terms_accepted_at'   => $row['terms_accepted_at'] ?? null,
+        'created_at'          => $row['created_at'] ?? null,
     ];
 }
 
@@ -385,6 +404,40 @@ function sendVerificationEmail(string $email, string $name, string $token): void
              . "X-Mailer: PHP/" . PHP_VERSION;
 
     @mail($email, $subject, $body, $headers);
+}
+
+function handleUpdateProfile(array $body, array $authUser): array {
+    ensureUsersTable();
+
+    $allowedFields = ['full_name', 'phone', 'job_title', 'department', 'language_preference', 'timezone'];
+    $setClauses = [];
+    $values     = [];
+
+    foreach ($allowedFields as $field) {
+        if (!array_key_exists($field, $body)) continue;
+        $value = $body[$field];
+
+        if ($field === 'full_name') {
+            $value = trim($value ?? '');
+            if ($value === '') throw new RuntimeException('Full name cannot be empty.', 400);
+        }
+        if ($field === 'language_preference' && !in_array($value, ['en', 'ar'], true)) {
+            throw new RuntimeException('Language must be "en" or "ar".', 400);
+        }
+
+        $setClauses[] = "`{$field}` = ?";
+        $values[]     = $value;
+    }
+
+    if (empty($setClauses)) {
+        throw new RuntimeException('No valid profile fields provided.', 400);
+    }
+
+    $values[] = $authUser['id'];
+    getDB()->prepare("UPDATE `_users` SET " . implode(', ', $setClauses) . " WHERE id = ?")
+           ->execute($values);
+
+    return getUserById($authUser['id']);
 }
 
 function sendPasswordResetEmail(string $email, string $name, string $token): void {

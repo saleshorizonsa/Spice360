@@ -62,6 +62,10 @@ try {
         $authUser = requireAuth();
         echo json_encode(handleChangePassword($body, $authUser));
 
+    } elseif ($path === '/auth/profile' && $method === 'PUT') {
+        $authUser = requireAuth();
+        echo json_encode(handleUpdateProfile($body, $authUser));
+
     // ── Entities ──────────────────────────────────────────────────────────
     } elseif (preg_match('#^/entities/([A-Za-z0-9]+)$#', $path, $m) && $method === 'GET') {
         echo json_encode(listEntities($m[1], requireAuth(), $_GET));
