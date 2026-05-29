@@ -35,10 +35,12 @@ export default function NotificationsPage() {
         queryFn: async () => {
             if (!currentUser?.email) return [];
             const now = new Date().toISOString();
-            return await matrixSales.entities.Notification.filter({
-                user_email: currentUser.email,
-                expires_at: { $gt: now }
-            }, '-created_date', 100);
+            const all = await matrixSales.entities.Notification.filter(
+                { user_email: currentUser.email },
+                '-created_at',
+                200
+            );
+            return all.filter((n) => !n.expires_at || n.expires_at > now);
         },
         enabled: !!currentUser?.email,
         refetchInterval: 30000,

@@ -9,7 +9,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut, Building2 } from "lucide-react";
+import { User, LogOut, Building2, Activity } from "lucide-react";
 
 export default function UserMenu({ onLogout, isRTL }) {
   const { user } = useAuth();
@@ -40,10 +40,16 @@ export default function UserMenu({ onLogout, isRTL }) {
           {isRTL ? "ملفي الشخصي" : "My Profile"}
         </DropdownMenuItem>
         {(user?.role === "owner" || user?.role === "admin") && (
-          <DropdownMenuItem onSelect={() => navigate("/OrganizationSettings")} className="cursor-pointer">
-            <Building2 className="mr-2 h-4 w-4" />
-            {isRTL ? "إعدادات المنظمة" : "Organization Settings"}
-          </DropdownMenuItem>
+          <>
+            <DropdownMenuItem onSelect={() => navigate("/OrganizationSettings")} className="cursor-pointer">
+              <Building2 className="mr-2 h-4 w-4" />
+              {isRTL ? "إعدادات المنظمة" : "Organization Settings"}
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => navigate("/AuditTrail")} className="cursor-pointer">
+              <Activity className="mr-2 h-4 w-4" />
+              {isRTL ? "سجل التدقيق" : "Audit Trail"}
+            </DropdownMenuItem>
+          </>
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={onLogout} className="cursor-pointer text-red-600 focus:text-red-600">

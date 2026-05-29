@@ -37,10 +37,12 @@ export default function NotificationBell() {
         queryFn: async () => {
             if (!currentUser?.email) return [];
             const now = new Date().toISOString();
-            return await matrixSales.entities.Notification.filter({
-                user_email: currentUser.email,
-                expires_at: { $gt: now }
-            }, '-created_date', 50);
+            const all = await matrixSales.entities.Notification.filter(
+                { user_email: currentUser.email },
+                '-created_at',
+                100
+            );
+            return all.filter((n) => !n.expires_at || n.expires_at > now);
         },
         enabled: !!currentUser?.email,
         refetchInterval: 30000,

@@ -95,6 +95,7 @@ import ZATCA from './pages/ZATCA';
 import ZakatManagement from './pages/ZakatManagement';
 import Profile from './pages/Profile';
 import OrganizationSettings from './pages/OrganizationSettings';
+import AuditTrail from './pages/AuditTrail';
 import __Layout from './Layout.jsx';
 
 
@@ -147,6 +148,7 @@ export const PAGES = {
     "ZakatManagement": ZakatManagement,
     "Profile": Profile,
     "OrganizationSettings": OrganizationSettings,
+    "AuditTrail": AuditTrail,
 }
 
 export const pagesConfig = {

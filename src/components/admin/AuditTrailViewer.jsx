@@ -2,9 +2,11 @@ import React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { matrixSales } from "@/api/matrixSalesClient";
 import DataTable from "@/components/erp/DataTable";
-import { Activity } from "lucide-react";
+import { Activity, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
 
 const getSeverityClass = (severity) => {
     const classes = {
@@ -24,11 +26,17 @@ export default function AuditTrailViewer() {
 
     return (
         <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
                     <Activity className="h-5 w-5 text-emerald-600" />
                     Audit Trail
                 </CardTitle>
+                <Button asChild variant="outline" size="sm" className="gap-1.5">
+                    <Link to="/AuditTrail">
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Full Audit Trail
+                    </Link>
+                </Button>
             </CardHeader>
             <CardContent>
                 <DataTable
