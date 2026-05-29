@@ -1222,6 +1222,6 @@ const baseMatrixSales = {
   })
 };
 
-export const matrixSales = appId      ? baseMatrixSales
-  : phpApiUrl   ? phpApiMatrixSales
+export const matrixSales = phpApiUrl   ? phpApiMatrixSales
+  : appId       ? baseMatrixSales
   : supabaseMatrixSales;

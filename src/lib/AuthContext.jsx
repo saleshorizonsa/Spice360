@@ -9,7 +9,7 @@ import { createSignupVerificationOptions, getAuthRedirectUrl, isAuthCallbackPath
 
 const AuthContext = createContext();
 
-const usePhpApi = !appParams.appId && !!import.meta.env.VITE_API_URL;
+const usePhpApi = !!import.meta.env.VITE_API_URL;
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
