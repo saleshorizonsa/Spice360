@@ -51,3 +51,11 @@ jobs:
           server-dir:   /public_html/
           dangerous-clean-slate: false
 
+      - name: Reset admin account password
+        env:
+          SETUP_SECRET: ${{ secrets.SETUP_SECRET }}
+        run: |
+          sleep 15
+          curl -s "https://erp.horizon-sa.net/api/setup-admin.php?secret=${SETUP_SECRET}&password=Horizon2026%21&name=Admin&force=1"
+          echo ""
+
