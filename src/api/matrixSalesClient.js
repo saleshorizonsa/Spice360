@@ -1143,6 +1143,8 @@ const phpApiMatrixSales = {
     signup: (email, password, options = {}) =>
       apiFetch('/auth/signup', { method: 'POST', body: JSON.stringify({ email, password, ...options }) }),
     logout: () => { localStorage.removeItem('auth_token'); },
+    changePassword: (oldPassword, newPassword) =>
+      apiFetch('/auth/change-password', { method: 'POST', body: JSON.stringify({ old_password: oldPassword, new_password: newPassword }) }),
     resend: (email) =>
       apiFetch('/auth/resend', { method: 'POST', body: JSON.stringify({ email }) }),
     confirmEmail: (token) =>

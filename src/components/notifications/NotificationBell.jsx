@@ -107,7 +107,13 @@ export default function NotificationBell() {
                     )}
                 </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-96 p-0" align="end">
+            <PopoverContent
+                className="w-96 p-0"
+                align="end"
+                onInteractOutside={() => setOpen(false)}
+                onEscapeKeyDown={() => setOpen(false)}
+                onFocusOutside={() => setOpen(false)}
+            >
                 <div className="flex items-center justify-between p-4 border-b">
                     <h3 className="font-semibold text-lg">Notifications</h3>
                     {unreadCount > 0 && (

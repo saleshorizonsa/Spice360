@@ -319,6 +319,56 @@ function handleResetPassword(array $body): array {
     return ['success' => true, 'message' => 'Your password has been reset. You can now log in.'];
 }
 
+function handleChangePassword(array $body, array $authUser): array {
+    $oldPassword = $body['old_password'] ?? '';
+    $newPassword = $body['new_password'] ?? '';
+
+    if (!$oldPassword || !$newPassword) {
+        throw new RuntimeException('Old and new passwords are required.', 400);
+    }
+
+    validatePassword($newPassword);
+
+    ensureUsersTable();
+    $stmt = getDB()->prepare('SELECT * FROM `_users` WHERE id = ? LIMIT 1');
+    $stmt->execute([$authUser['id']]);
+    $user = $stmt->fetch();
+
+    if (!$user) {
+        throw new RuntimeException('User not found.', 404);
+    }
+
+    if (!password_verify($oldPassword, $user['password_hash'])) {
+        throw new RuntimeException('Current password is incorrect.', 400);
+    }
+
+    if ($oldPassword === $newPassword) {
+        throw new RuntimeException('New password must be different from your current password.', 400);
+    }
+
+    $hash = password_hash($newPassword, PASSWORD_BCRYPT, ['cost' => 12]);
+    getDB()->prepare('UPDATE `_users` SET password_hash = ? WHERE id = ?')
+           ->execute([$hash, $user['id']]);
+
+    sendPasswordChangedEmail($user['email'], $user['full_name'] ?? '');
+
+    return ['success' => true, 'message' => 'Password changed successfully. A confirmation email has been sent.'];
+}
+
+function sendPasswordChangedEmail(string $email, string $name): void {
+    $appName = 'HORIZON ERP';
+    $subject = "Your $appName password has been changed";
+    $body    = "Hello " . ($name ?: 'there') . ",\n\n"
+             . "Your HORIZON ERP password was successfully changed.\n\n"
+             . "If you did not make this change, please contact us immediately or reset your password:\n"
+             . APP_URL . "/reset-password\n\n"
+             . "-- $appName Security Team";
+    $headers = "From: $appName <" . MAIL_FROM . ">\r\n"
+             . "Reply-To: " . MAIL_FROM . "\r\n"
+             . "X-Mailer: PHP/" . PHP_VERSION;
+    @mail($email, $subject, $body, $headers);
+}
+
 function sendVerificationEmail(string $email, string $name, string $token): void {
     $link    = APP_URL . '/auth/confirm?token=' . urlencode($token);
     $appName = 'HORIZON ERP';

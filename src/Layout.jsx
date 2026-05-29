@@ -57,6 +57,7 @@ import BrandLogo from "@/components/BrandLogo";
 import { isPlatformOwnerEmail } from "@/lib/subscriptionPlans";
 import TrialBanner from "@/components/shared/TrialBanner";
 import UpgradeCTA from "@/components/shared/UpgradeCTA";
+import UserMenu from "@/components/shared/UserMenu";
 
 function LayoutContent({ children, currentPageName }) {
     const [showQuickAction, setShowQuickAction] = React.useState(false);
@@ -290,15 +291,7 @@ function LayoutContent({ children, currentPageName }) {
                             </span>
                         </Button>
 
-                        <Button
-                            onClick={() => logout()}
-                            variant="ghost"
-                            size="icon"
-                            className="text-red-600"
-                            aria-label="Logout"
-                        >
-                            <LogOut className="w-5 h-5" />
-                        </Button>
+                        <UserMenu onLogout={logout} isRTL={isRTL} />
                         
                         <Sheet>
                             <SheetTrigger asChild>
@@ -348,15 +341,7 @@ function LayoutContent({ children, currentPageName }) {
                                     {language === 'en' ? 'AR' : 'EN'}
                                 </span>
                             </Button>
-                            <Button
-                                onClick={() => logout()}
-                                variant="ghost"
-                                size="sm"
-                                className="gap-2 text-red-600 hover:bg-red-50 hover:text-red-700"
-                            >
-                                <LogOut className="w-4 h-4" />
-                                Logout
-                            </Button>
+                            <UserMenu onLogout={logout} isRTL={isRTL} />
                         </div>
                     </div>
                     <TrialBanner />

@@ -58,6 +58,10 @@ try {
     } elseif ($path === '/auth/reset-password' && $method === 'POST') {
         echo json_encode(handleResetPassword($body));
 
+    } elseif ($path === '/auth/change-password' && $method === 'POST') {
+        $authUser = requireAuth();
+        echo json_encode(handleChangePassword($body, $authUser));
+
     // ── Entities ──────────────────────────────────────────────────────────
     } elseif (preg_match('#^/entities/([A-Za-z0-9]+)$#', $path, $m) && $method === 'GET') {
         echo json_encode(listEntities($m[1], requireAuth(), $_GET));
