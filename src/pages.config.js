@@ -94,6 +94,7 @@ import TreasuryManagement from './pages/TreasuryManagement';
 import ZATCA from './pages/ZATCA';
 import ZakatManagement from './pages/ZakatManagement';
 import Profile from './pages/Profile';
+import OrganizationSettings from './pages/OrganizationSettings';
 import __Layout from './Layout.jsx';
 
 
@@ -145,6 +146,7 @@ export const PAGES = {
     "ZATCA": ZATCA,
     "ZakatManagement": ZakatManagement,
     "Profile": Profile,
+    "OrganizationSettings": OrganizationSettings,
 }
 
 export const pagesConfig = {

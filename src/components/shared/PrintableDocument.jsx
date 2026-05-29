@@ -1,11 +1,10 @@
 import React from "react";
-import { BarChart3 } from "lucide-react";
 
 export default function PrintableDocument({
     title,
     documentNumber,
     documentDate,
-    companyInfo, // This prop will no longer be used in the header directly but is kept for compatibility.
+    companyInfo,
     customerInfo,
     items = [],
     totals,
@@ -14,212 +13,184 @@ export default function PrintableDocument({
     language = "en"
 }) {
     const isRTL = language === "ar";
+    const company = companyInfo || {};
+    const companyName = company.organization_name || company.company_legal_name || company.name || "HORIZON ERP";
+    const companyNameAr = company.organization_name_ar || "";
+    const vatNo = company.vat_number || company.vat_registration_number || "";
+    const crNo = company.cr_number || company.commercial_registration_number || "";
+    const phone = company.phone || company.contact_phone || "";
+    const email = company.email || company.contact_email || "";
+    const address = [company.address, company.city, company.country].filter(Boolean).join(", ");
 
     const renderHeader = () => (
-        <div className="text-center mb-6 pb-4 border-b-2 border-emerald-600">
-            <div className="flex items-center justify-center gap-3 mb-3">
-                <div className="bg-gradient-to-br from-emerald-600 to-emerald-700 p-2 rounded-lg">
-                    <BarChart3 className="w-8 h-8 text-white" />
-                </div>
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900">MatrixERP</h1>
-                    <p className="text-xs text-gray-600">Enterprise Resource Planning</p>
+        <div style={{ textAlign: "center", marginBottom: "24px", paddingBottom: "16px", borderBottom: "2px solid #059669" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", marginBottom: "8px" }}>
+                {company.logo_url ? (
+                    <img src={company.logo_url} alt={companyName} style={{ height: "48px", objectFit: "contain" }} />
+                ) : (
+                    <div style={{ width: "44px", height: "44px", background: "linear-gradient(135deg,#1d4ed8,#2563eb)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <span style={{ color: "#fff", fontSize: "18px", fontWeight: "700" }}>{companyName.charAt(0)}</span>
+                    </div>
+                )}
+                <div style={{ textAlign: "left" }}>
+                    <div style={{ fontSize: "22px", fontWeight: "700", color: "#0f172a" }}>{companyName}</div>
+                    {companyNameAr && <div style={{ fontSize: "14px", color: "#475569", direction: "rtl" }}>{companyNameAr}</div>}
                 </div>
             </div>
-            <div className="text-xs text-gray-600 space-y-1">
-                <p>P.O. Box 12345, Riyadh 11564, Kingdom of Saudi Arabia</p>
-                <p>Tel: +966 11 234 5678 | Email: info@matrixerp.com</p>
-                <p>VAT: 300000000000003 | CR: 1010123456</p>
+            <div style={{ fontSize: "12px", color: "#64748b", lineHeight: "1.8" }}>
+                {address && <div>{address}</div>}
+                {(phone || email) && <div>{[phone, email].filter(Boolean).join(" | ")}</div>}
+                {(vatNo || crNo) && (
+                    <div>
+                        {vatNo && <span>VAT: {vatNo}</span>}
+                        {vatNo && crNo && " | "}
+                        {crNo && <span>CR: {crNo}</span>}
+                    </div>
+                )}
             </div>
         </div>
     );
 
     return (
-        <div className={`print-document bg-white p-8 ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? "rtl" : "ltr"}>
+        <div className="print-document bg-white p-8" dir={isRTL ? "rtl" : "ltr"}>
             <style>{`
                 @media print {
+                    body * { visibility: hidden !important; }
+                    .print-document, .print-document * { visibility: visible !important; }
                     .print-document {
-                        margin: 0;
-                        padding: 20mm;
+                        position: fixed !important;
+                        inset: 0 !important;
+                        margin: 0 !important;
+                        padding: 15mm !important;
+                        box-shadow: none !important;
                     }
-                    @page {
-                        size: A4;
-                        margin: 10mm;
-                    }
+                    @page { size: A4; margin: 0; }
                 }
             `}</style>
 
-            {/* Header */}
             {renderHeader()}
 
-            <div className="border-b-2 border-gray-300 pb-4 mb-6">
-                <div className="flex justify-between items-start">
-                    {/* The companyInfo section is replaced by renderHeader() content */}
-                    {/* This div is now left empty to move the title and date to the right */}
-                    <div>
-                        {/* Keeping this empty div to maintain flex layout for the right side */}
-                    </div>
-                    <div className="text-right">
-                        <h2 className="text-2xl font-semibold text-emerald-600">
-                            {title}
-                        </h2>
-                        <p className="text-lg font-medium text-gray-700 mt-2">
-                            {documentNumber}
-                        </p>
-                        <p className="text-sm text-gray-600 mt-1">
-                            {isRTL ? 'التاريخ' : 'Date'}: {documentDate}
-                        </p>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "1px solid #e2e8f0", paddingBottom: "16px", marginBottom: "20px" }}>
+                <div />
+                <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: "20px", fontWeight: "700", color: "#059669" }}>{title}</div>
+                    <div style={{ fontSize: "16px", fontWeight: "600", color: "#334155", marginTop: "4px" }}>{documentNumber}</div>
+                    <div style={{ fontSize: "13px", color: "#64748b", marginTop: "2px" }}>
+                        {isRTL ? "التاريخ" : "Date"}: {documentDate}
                     </div>
                 </div>
             </div>
 
-            {/* Customer Info */}
             {customerInfo && (
-                <div className="mb-6 bg-gray-50 p-4 rounded-lg">
-                    <h3 className="font-semibold text-gray-900 mb-2">
-                        {isRTL ? 'بيانات العميل' : 'Customer Information'}
-                    </h3>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <p className="text-gray-600">{isRTL ? 'الاسم' : 'Name'}:</p>
-                            <p className="font-medium">{customerInfo.name}</p>
-                        </div>
-                        {customerInfo.vat_number && (
-                            <div>
-                                <p className="text-gray-600">{isRTL ? 'الرقم الضريبي' : 'VAT Number'}:</p>
-                                <p className="font-medium">{customerInfo.vat_number}</p>
-                            </div>
-                        )}
-                        {customerInfo.address && (
-                            <div className="col-span-2">
-                                <p className="text-gray-600">{isRTL ? 'العنوان' : 'Address'}:</p>
-                                <p className="font-medium">{customerInfo.address}</p>
-                            </div>
-                        )}
+                <div style={{ background: "#f8fafc", borderRadius: "6px", padding: "14px 16px", marginBottom: "20px", border: "1px solid #e2e8f0" }}>
+                    <div style={{ fontSize: "12px", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>
+                        {isRTL ? "بيانات العميل" : "Bill To"}
                     </div>
+                    <div style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}>{customerInfo.name}</div>
+                    {customerInfo.vat_number && (
+                        <div style={{ fontSize: "13px", color: "#475569", marginTop: "2px" }}>
+                            VAT: {customerInfo.vat_number}
+                        </div>
+                    )}
+                    {customerInfo.address && (
+                        <div style={{ fontSize: "13px", color: "#475569", marginTop: "2px" }}>{customerInfo.address}</div>
+                    )}
                 </div>
             )}
 
-            {/* Items Table */}
             {items.length > 0 && (
-                <div className="mb-6">
-                    <table className="w-full border-collapse">
-                        <thead>
-                            <tr className="bg-gray-100 border-b-2 border-gray-300">
-                                <th className="p-3 text-left text-sm font-semibold">#</th>
-                                <th className="p-3 text-left text-sm font-semibold">
-                                    {isRTL ? 'الصنف' : 'Item'}
-                                </th>
-                                <th className="p-3 text-right text-sm font-semibold">
-                                    {isRTL ? 'الكمية' : 'Qty'}
-                                </th>
-                                <th className="p-3 text-right text-sm font-semibold">
-                                    {isRTL ? 'السعر' : 'Unit Price'}
-                                </th>
-                                <th className="p-3 text-right text-sm font-semibold">
-                                    {isRTL ? 'المجموع' : 'Total'}
-                                </th>
+                <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: "20px" }}>
+                    <thead>
+                        <tr style={{ background: "#f1f5f9" }}>
+                            <th style={{ padding: "10px 12px", textAlign: "left", fontSize: "12px", fontWeight: "700", color: "#475569", borderBottom: "2px solid #cbd5e1" }}>
+                                {isRTL ? "م" : "#"}
+                            </th>
+                            <th style={{ padding: "10px 12px", textAlign: "left", fontSize: "12px", fontWeight: "700", color: "#475569", borderBottom: "2px solid #cbd5e1" }}>
+                                {isRTL ? "الصنف / الخدمة" : "Item / Description"}
+                            </th>
+                            <th style={{ padding: "10px 12px", textAlign: "right", fontSize: "12px", fontWeight: "700", color: "#475569", borderBottom: "2px solid #cbd5e1" }}>
+                                {isRTL ? "الكمية" : "Qty"}
+                            </th>
+                            <th style={{ padding: "10px 12px", textAlign: "right", fontSize: "12px", fontWeight: "700", color: "#475569", borderBottom: "2px solid #cbd5e1" }}>
+                                {isRTL ? "سعر الوحدة" : "Unit Price"}
+                            </th>
+                            <th style={{ padding: "10px 12px", textAlign: "right", fontSize: "12px", fontWeight: "700", color: "#475569", borderBottom: "2px solid #cbd5e1" }}>
+                                {isRTL ? "الإجمالي" : "Total"}
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {items.map((item, idx) => (
+                            <tr key={idx} style={{ borderBottom: "1px solid #e2e8f0" }}>
+                                <td style={{ padding: "10px 12px", fontSize: "13px", color: "#475569" }}>{idx + 1}</td>
+                                <td style={{ padding: "10px 12px", fontSize: "13px", color: "#0f172a" }}>{item.name || item.product_name || item.description}</td>
+                                <td style={{ padding: "10px 12px", fontSize: "13px", textAlign: "right" }}>{Number(item.quantity).toLocaleString()}</td>
+                                <td style={{ padding: "10px 12px", fontSize: "13px", textAlign: "right" }}>
+                                    {Number(item.unit_price || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                </td>
+                                <td style={{ padding: "10px 12px", fontSize: "13px", textAlign: "right", fontWeight: "600" }}>
+                                    {(Number(item.quantity) * Number(item.unit_price || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            {items.map((item, idx) => (
-                                <tr key={idx} className="border-b border-gray-200">
-                                    <td className="p-3 text-sm">{idx + 1}</td>
-                                    <td className="p-3 text-sm">{item.name}</td>
-                                    <td className="p-3 text-sm text-right">{item.quantity}</td>
-                                    <td className="p-3 text-sm text-right">
-                                        {item.unit_price?.toLocaleString()}
-                                    </td>
-                                    <td className="p-3 text-sm text-right font-medium">
-                                        {(item.quantity * item.unit_price)?.toLocaleString()}
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
+                        ))}
+                    </tbody>
+                </table>
             )}
 
-            {/* Custom Content */}
             {children}
 
-            {/* Totals */}
             {totals && (
-                <div className="mt-6 flex justify-end">
-                    <div className="w-64 space-y-2">
-                        {totals.subtotal && (
-                            <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">
-                                    {isRTL ? 'المجموع الفرعي' : 'Subtotal'}:
-                                </span>
-                                <span className="font-medium">
-                                    {totals.currency} {totals.subtotal.toLocaleString()}
-                                </span>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "8px" }}>
+                    <div style={{ width: "260px" }}>
+                        {totals.subtotal != null && (
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "5px 0", color: "#475569" }}>
+                                <span>{isRTL ? "المجموع الفرعي" : "Subtotal"}</span>
+                                <span>{totals.currency || "SAR"} {Number(totals.subtotal).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                             </div>
                         )}
                         {totals.discount > 0 && (
-                            <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">
-                                    {isRTL ? 'الخصم' : 'Discount'}:
-                                </span>
-                                <span className="text-red-600">
-                                    - {totals.currency} {totals.discount.toLocaleString()}
-                                </span>
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "5px 0", color: "#dc2626" }}>
+                                <span>{isRTL ? "الخصم" : "Discount"}</span>
+                                <span>- {totals.currency || "SAR"} {Number(totals.discount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                             </div>
                         )}
-                        {totals.vat_amount && (
-                            <div className="flex justify-between text-sm">
-                                <span className="text-gray-600">
-                                    {isRTL ? 'ضريبة القيمة المضافة' : 'VAT'} ({totals.vat_percent}%):
-                                </span>
-                                <span className="font-medium">
-                                    {totals.currency} {totals.vat_amount.toLocaleString()}
-                                </span>
+                        {totals.vat_amount != null && (
+                            <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "5px 0", color: "#475569" }}>
+                                <span>{isRTL ? "ضريبة القيمة المضافة" : "VAT"} ({totals.vat_percent || 15}%)</span>
+                                <span>{totals.currency || "SAR"} {Number(totals.vat_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                             </div>
                         )}
-                        <div className="flex justify-between text-lg font-bold border-t-2 border-gray-300 pt-2">
-                            <span>{isRTL ? 'الإجمالي' : 'Total'}:</span>
-                            <span className="text-emerald-600">
-                                {totals.currency} {totals.total.toLocaleString()}
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "16px", fontWeight: "700", borderTop: "2px solid #0f172a", paddingTop: "8px", marginTop: "6px", color: "#0f172a" }}>
+                            <span>{isRTL ? "الإجمالي" : "Total"}</span>
+                            <span style={{ color: "#059669" }}>
+                                {totals.currency || "SAR"} {Number(totals.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                             </span>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Footer */}
             {footer && (
-                <div className="mt-8 pt-6 border-t border-gray-300 text-sm text-gray-600">
+                <div style={{ marginTop: "32px", paddingTop: "16px", borderTop: "1px solid #e2e8f0", fontSize: "12px", color: "#64748b" }}>
                     {footer}
                 </div>
             )}
 
-            {/* Signature Section */}
-            <div className="mt-12 grid grid-cols-2 gap-8">
-                <div>
-                    <div className="border-t border-gray-400 pt-2 text-center">
-                        <p className="text-sm text-gray-600">
-                            {isRTL ? 'توقيع المصدر' : 'Authorized Signature'}
-                        </p>
-                    </div>
+            <div style={{ marginTop: "48px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px" }}>
+                <div style={{ borderTop: "1px solid #94a3b8", paddingTop: "6px", textAlign: "center", fontSize: "12px", color: "#64748b" }}>
+                    {isRTL ? "توقيع المصدر" : "Authorized Signature"}
                 </div>
-                <div>
-                    <div className="border-t border-gray-400 pt-2 text-center">
-                        <p className="text-sm text-gray-600">
-                            {isRTL ? 'توقيع المستلم' : 'Received By'}
-                        </p>
-                    </div>
+                <div style={{ borderTop: "1px solid #94a3b8", paddingTop: "6px", textAlign: "center", fontSize: "12px", color: "#64748b" }}>
+                    {isRTL ? "توقيع المستلم" : "Received By"}
                 </div>
             </div>
 
-            {/* QR Code Placeholder (for ZATCA invoices) */}
             {totals?.qr_code && (
-                <div className="mt-6 flex justify-center">
-                    <div className="border-2 border-gray-300 p-4 text-center">
-                        <p className="text-xs text-gray-600 mb-2">ZATCA QR Code</p>
-                        <div className="w-32 h-32 bg-gray-100 flex items-center justify-center">
-                            {/* QR code would be rendered here */}
-                            <p className="text-xs text-gray-400">QR Code</p>
+                <div style={{ marginTop: "24px", display: "flex", justifyContent: "center" }}>
+                    <div style={{ border: "1px solid #e2e8f0", padding: "12px", textAlign: "center", borderRadius: "6px" }}>
+                        <div style={{ fontSize: "10px", color: "#94a3b8", marginBottom: "6px" }}>ZATCA QR Code</div>
+                        <div style={{ width: "96px", height: "96px", background: "#f1f5f9", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                            <span style={{ fontSize: "10px", color: "#94a3b8" }}>QR</span>
                         </div>
                     </div>
                 </div>
