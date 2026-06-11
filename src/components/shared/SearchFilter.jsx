@@ -33,7 +33,7 @@ export default function SearchFilter({
     }, []);
 
     const filterData = () => {
-        if (!data || data.length === 0) {
+        if (!Array.isArray(data) || data.length === 0) {
             onFilteredData([]);
             return;
         }

@@ -5,20 +5,35 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3 } from "lucide-react";
 
 export default function CinnamonYieldReport() {
-    const { data: batches = [] } = useQuery({
+    const { data: batches = [], isError: batchesError } = useQuery({
         queryKey: ["cinnamonBatches"],
         queryFn: () => matrixSales.entities.CinnamonBatch.list(),
         initialData: [],
+        select: (d) => Array.isArray(d) ? d : [],
     });
 
-    const { data: gradingOutputs = [] } = useQuery({
+    const { data: gradingOutputs = [], isError: gradingError } = useQuery({
         queryKey: ["cinnamonGradingOutputs"],
         queryFn: () => matrixSales.entities.CinnamonGradingOutput.list(),
         initialData: [],
+        select: (d) => Array.isArray(d) ? d : [],
     });
 
     const safeBatches        = Array.isArray(batches)        ? batches        : [];
     const safeGradingOutputs = Array.isArray(gradingOutputs) ? gradingOutputs : [];
+
+    if (batchesError || gradingError) {
+        return (
+            <Card>
+                <CardContent className="pt-6 text-center py-10">
+                    <p className="text-amber-700 font-semibold">Yield data could not be loaded.</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                        Run the cinnamon migration to create the required database tables.
+                    </p>
+                </CardContent>
+            </Card>
+        );
+    }
 
     // All grade codes present across all grading outputs (for dynamic columns)
     const allGrades = [...new Set(safeGradingOutputs.map((g) => g.grade_code))].sort();

@@ -21,28 +21,32 @@ export default function CinnamonProcessing() {
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
-    const { data: batches = [] } = useQuery({
+    const { data: batches = [], isError: batchesError } = useQuery({
         queryKey: ["cinnamonBatches"],
         queryFn: () => matrixSales.entities.CinnamonBatch.list("-created_at"),
         initialData: [],
+        select: (d) => Array.isArray(d) ? d : [],
     });
 
-    const { data: processSteps = [] } = useQuery({
+    const { data: processSteps = [], isError: stepsError } = useQuery({
         queryKey: ["cinnamonProcessSteps"],
         queryFn: () => matrixSales.entities.CinnamonProcessStep.list("-started_at"),
         initialData: [],
+        select: (d) => Array.isArray(d) ? d : [],
     });
 
-    const { data: gradingOutputs = [] } = useQuery({
+    const { data: gradingOutputs = [], isError: gradingError } = useQuery({
         queryKey: ["cinnamonGradingOutputs"],
         queryFn: () => matrixSales.entities.CinnamonGradingOutput.list(),
         initialData: [],
+        select: (d) => Array.isArray(d) ? d : [],
     });
 
-    const { data: packaging = [] } = useQuery({
+    const { data: packaging = [], isError: packError } = useQuery({
         queryKey: ["cinnamonPackaging"],
         queryFn: () => matrixSales.entities.CinnamonPackaging.list("-created_at"),
         initialData: [],
+        select: (d) => Array.isArray(d) ? d : [],
     });
 
     const safeBatches        = Array.isArray(batches)        ? batches        : [];
@@ -164,6 +168,8 @@ export default function CinnamonProcessing() {
         }
     };
 
+    const hasDataError = batchesError || stepsError || gradingError || packError;
+
     return (
         <div className="p-6 space-y-6">
             <div className="flex justify-between items-center">
@@ -177,6 +183,16 @@ export default function CinnamonProcessing() {
                     </p>
                 </div>
             </div>
+
+            {hasDataError && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-amber-800">
+                    <p className="font-semibold">Cinnamon data could not be loaded.</p>
+                    <p className="text-sm mt-1">
+                        The cinnamon processing tables may not be set up yet. Trigger the migration:{" "}
+                        <strong>GitHub Actions → migrate.yml → Run workflow</strong>.
+                    </p>
+                </div>
+            )}
 
             {/* KPI Cards */}
             <div className="grid grid-cols-4 gap-4">

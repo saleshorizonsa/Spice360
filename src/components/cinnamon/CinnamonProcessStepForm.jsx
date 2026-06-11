@@ -29,6 +29,7 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
         queryKey: ["cinnamonBatches"],
         queryFn: () => matrixSales.entities.CinnamonBatch.filter({ status: "active" }),
         initialData: [],
+        select: (d) => Array.isArray(d) ? d : [],
     });
 
     const [formData, setFormData] = useState({

@@ -19,18 +19,21 @@ export default function CinnamonGradingForm({ onClose }) {
         queryKey: ["cinnamonBatches"],
         queryFn: () => matrixSales.entities.CinnamonBatch.filter({ status: "active" }),
         initialData: [],
+        select: (d) => Array.isArray(d) ? d : [],
     });
 
     const { data: grades = [] } = useQuery({
         queryKey: ["cinnamonGrades"],
         queryFn: () => matrixSales.entities.CinnamonGrade.list(),
         initialData: [],
+        select: (d) => Array.isArray(d) ? d : [],
     });
 
     const { data: processSteps = [] } = useQuery({
         queryKey: ["cinnamonProcessSteps"],
         queryFn: () => matrixSales.entities.CinnamonProcessStep.list(),
         initialData: [],
+        select: (d) => Array.isArray(d) ? d : [],
     });
 
     const [selectedBatch, setSelectedBatch] = useState(null);

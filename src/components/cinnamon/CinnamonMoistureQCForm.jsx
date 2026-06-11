@@ -22,6 +22,7 @@ export default function CinnamonMoistureQCForm({ onClose }) {
         queryKey: ["cinnamonBatches"],
         queryFn: () => matrixSales.entities.CinnamonBatch.filter({ status: "active" }),
         initialData: [],
+        select: (d) => Array.isArray(d) ? d : [],
     });
 
     const [batchNumber, setBatchNumber] = useState("");
