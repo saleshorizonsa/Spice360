@@ -32,6 +32,13 @@ jobs:
           VITE_MATRIXSALES_ADMIN_EMAILS: ${{ secrets.VITE_MATRIXSALES_ADMIN_EMAILS }}
         run: npm run build
 
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
       - name: Deploy to Hostinger via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
