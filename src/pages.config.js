@@ -96,6 +96,7 @@ import ZakatManagement from './pages/ZakatManagement';
 import Profile from './pages/Profile';
 import OrganizationSettings from './pages/OrganizationSettings';
 import AuditTrail from './pages/AuditTrail';
+import CinnamonProcessing from './pages/CinnamonProcessing';
 import __Layout from './Layout.jsx';
 
 
@@ -149,6 +150,7 @@ export const PAGES = {
     "Profile": Profile,
     "OrganizationSettings": OrganizationSettings,
     "AuditTrail": AuditTrail,
+    "CinnamonProcessing": CinnamonProcessing,
 }
 
 export const pagesConfig = {

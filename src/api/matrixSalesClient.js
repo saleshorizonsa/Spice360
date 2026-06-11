@@ -44,7 +44,8 @@ const metadataColumns = new Set([
 
 const organizationScopedEntityExclusions = new Set([
   'Organization',
-  'SubscriptionPlan'
+  'SubscriptionPlan',
+  'CinnamonGrade'  // industry-standard master data shared across all tenants
 ]);
 
 const shouldScopeEntityToOrganization = (entityName) =>
@@ -104,7 +105,11 @@ const auditableEntityNames = new Set([
   'Vendor',
   'VendorInvoice',
   'WorkOrder',
-  'ZATCASubmissionLog'
+  'ZATCASubmissionLog',
+  'CinnamonBatch',
+  'CinnamonProcessStep',
+  'CinnamonGradingOutput',
+  'CinnamonPackaging'
 ]);
 
 const periodControlledEntityConfig = {

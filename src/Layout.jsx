@@ -35,7 +35,8 @@ import {
     List,
     BookOpen,
     BookMarked,
-    Lock
+    Lock,
+    Leaf
 } from "lucide-react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { Button } from "@/components/ui/button";
@@ -100,6 +101,7 @@ function LayoutContent({ children, currentPageName }) {
 
         { name: t('inventory'), path: "Inventory", icon: Package, section: "Inventory" },
         { name: t('quality'), path: "Quality", icon: CheckCircle2, section: "Inventory" },
+        { name: "Cinnamon Processing", path: "CinnamonProcessing", icon: Leaf, section: "Inventory" },
         { name: t('purchasing'), path: "Purchasing", icon: FileText, section: "Supply Chain" },
         { name: t('supplyChain'), path: "SupplyChain", icon: TrendingUp, section: "Supply Chain" },
         { name: "Demand Planning", path: "DemandPlanning", icon: Brain, section: "Supply Chain" },
