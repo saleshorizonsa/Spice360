@@ -48,6 +48,11 @@ const getAppParams = () => {
 		storage.removeItem('matrixsales_access_token');
 		storage.removeItem('token');
 	}
+	// Self-hosted Supabase mode: no VITE_MATRIXSALES_APP_ID configured, so clear any
+	// stale appId from localStorage that may have been set by a previous base44-hosted version.
+	if (!isNode && !import.meta.env.VITE_MATRIXSALES_APP_ID && !import.meta.env.VITE_API_URL) {
+		try { storage.removeItem('matrixsales_app_id'); } catch {}
+	}
 	return {
 		appId: import.meta.env.VITE_API_URL ? null : getAppParamValue("app_id", { defaultValue: import.meta.env.VITE_MATRIXSALES_APP_ID }),
 		token: getAppParamValue("access_token", { removeFromUrl: true }),
