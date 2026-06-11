@@ -87,7 +87,7 @@ export async function postJournalEntry({
     description: line.description || description,
     cost_center: line.cost_center || "",
     vat_code: line.vat_code || "",
-    currency: line.currency || "SAR",
+    currency: line.currency || "LKR",
     organization_id: orgId
   })));
 

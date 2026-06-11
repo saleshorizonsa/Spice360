@@ -143,15 +143,15 @@ export default function CashFlowStatementReport() {
                             <TableBody>
                                 <TableRow>
                                     <TableCell>Cash from Customers</TableCell>
-                                    <TableCell className="text-right text-green-700">SAR {cashFromCustomers.toLocaleString()}</TableCell>
+                                    <TableCell className="text-right text-green-700">LKR {cashFromCustomers.toLocaleString()}</TableCell>
                                 </TableRow>
                                 <TableRow>
                                     <TableCell>Cash to Suppliers</TableCell>
-                                    <TableCell className="text-right text-red-700">(SAR {cashToSuppliers.toLocaleString()})</TableCell>
+                                    <TableCell className="text-right text-red-700">(LKR {cashToSuppliers.toLocaleString()})</TableCell>
                                 </TableRow>
                                 <TableRow className="bg-emerald-50 font-semibold">
                                     <TableCell>Net Cash from Operations</TableCell>
-                                    <TableCell className="text-right">SAR {cashFromOperations.toLocaleString()}</TableCell>
+                                    <TableCell className="text-right">LKR {cashFromOperations.toLocaleString()}</TableCell>
                                 </TableRow>
                             </TableBody>
                         </Table>
@@ -163,11 +163,11 @@ export default function CashFlowStatementReport() {
                             <TableBody>
                                 <TableRow>
                                     <TableCell>Capital Expenditure</TableCell>
-                                    <TableCell className="text-right text-red-700">(SAR {cashUsedInInvesting.toLocaleString()})</TableCell>
+                                    <TableCell className="text-right text-red-700">(LKR {cashUsedInInvesting.toLocaleString()})</TableCell>
                                 </TableRow>
                                 <TableRow className="bg-blue-50 font-semibold">
                                     <TableCell>Net Cash from Investing</TableCell>
-                                    <TableCell className="text-right">(SAR {cashUsedInInvesting.toLocaleString()})</TableCell>
+                                    <TableCell className="text-right">(LKR {cashUsedInInvesting.toLocaleString()})</TableCell>
                                 </TableRow>
                             </TableBody>
                         </Table>
@@ -179,15 +179,15 @@ export default function CashFlowStatementReport() {
                             <TableBody>
                                 <TableRow>
                                     <TableCell>Loan Proceeds</TableCell>
-                                    <TableCell className="text-right text-green-700">SAR {financingInflows.toLocaleString()}</TableCell>
+                                    <TableCell className="text-right text-green-700">LKR {financingInflows.toLocaleString()}</TableCell>
                                 </TableRow>
                                 <TableRow>
                                     <TableCell>Loan Repayments & Dividends</TableCell>
-                                    <TableCell className="text-right text-red-700">(SAR {financingOutflows.toLocaleString()})</TableCell>
+                                    <TableCell className="text-right text-red-700">(LKR {financingOutflows.toLocaleString()})</TableCell>
                                 </TableRow>
                                 <TableRow className="bg-purple-50 font-semibold">
                                     <TableCell>Net Cash from Financing</TableCell>
-                                    <TableCell className="text-right">SAR {cashFromFinancing.toLocaleString()}</TableCell>
+                                    <TableCell className="text-right">LKR {cashFromFinancing.toLocaleString()}</TableCell>
                                 </TableRow>
                             </TableBody>
                         </Table>
@@ -197,7 +197,7 @@ export default function CashFlowStatementReport() {
                         <div className="flex justify-between items-center">
                             <span className="text-xl font-bold">NET CHANGE IN CASH</span>
                             <span className={`text-3xl font-bold ${netCashChange >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                                SAR {netCashChange.toLocaleString()}
+                                LKR {netCashChange.toLocaleString()}
                             </span>
                         </div>
                     </div>

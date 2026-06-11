@@ -183,16 +183,16 @@ export default function BudgetVarianceReport() {
                 <div className="grid grid-cols-4 gap-4">
                     <div className="bg-blue-50 p-4 rounded-lg border">
                         <div className="text-sm text-gray-600">Total Budgeted</div>
-                        <div className="text-2xl font-bold text-blue-700">SAR {totalBudgeted.toLocaleString()}</div>
+                        <div className="text-2xl font-bold text-blue-700">LKR {totalBudgeted.toLocaleString()}</div>
                     </div>
                     <div className="bg-purple-50 p-4 rounded-lg border">
                         <div className="text-sm text-gray-600">Total Actual</div>
-                        <div className="text-2xl font-bold text-purple-700">SAR {totalActual.toLocaleString()}</div>
+                        <div className="text-2xl font-bold text-purple-700">LKR {totalActual.toLocaleString()}</div>
                     </div>
                     <div className={`p-4 rounded-lg border ${totalVariance >= 0 ? 'bg-green-50' : 'bg-red-50'}`}>
                         <div className="text-sm text-gray-600">Variance</div>
                         <div className={`text-2xl font-bold ${totalVariance >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                            SAR {totalVariance.toLocaleString()}
+                            LKR {totalVariance.toLocaleString()}
                         </div>
                     </div>
                     <div className="bg-amber-50 p-4 rounded-lg border">
@@ -288,7 +288,7 @@ export default function BudgetVarianceReport() {
                                 </Select>
                             </div>
                             <div>
-                                <Label>Budgeted Amount (SAR)</Label>
+                                <Label>Budgeted Amount (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"

@@ -156,7 +156,7 @@ export default function SalesReturnForm({ item, onClose }) {
                                 <SelectContent>
                                     {paidInvoices.map(i => (
                                         <SelectItem key={i.id} value={i.invoice_number}>
-                                            {i.invoice_number} - {i.customer_name} - SAR {i.total_amount?.toLocaleString()}
+                                            {i.invoice_number} - {i.customer_name} - LKR {i.total_amount?.toLocaleString()}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -331,16 +331,16 @@ export default function SalesReturnForm({ item, onClose }) {
                         <div className="bg-gray-50 p-4 rounded-lg space-y-2">
                             <div className="flex justify-between">
                                 <span className="text-gray-600">Subtotal:</span>
-                                <span className="font-semibold">SAR {formData.subtotal.toFixed(2)}</span>
+                                <span className="font-semibold">LKR {formData.subtotal.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600">VAT ({formData.vat_percent}%):</span>
-                                <span className="font-semibold">SAR {formData.vat_amount.toFixed(2)}</span>
+                                <span className="font-semibold">LKR {formData.vat_amount.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-lg border-t pt-2">
                                 <span className="font-bold">Total Return Amount:</span>
                                 <span className="font-bold text-red-600">
-                                    SAR {formData.total_return_amount.toFixed(2)}
+                                    LKR {formData.total_return_amount.toFixed(2)}
                                 </span>
                             </div>
                         </div>

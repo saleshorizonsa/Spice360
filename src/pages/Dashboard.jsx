@@ -42,8 +42,8 @@ import PlanUsageWidget from "@/components/shared/PlanUsageWidget";
 
 const toList = (value) => (Array.isArray(value) ? value : []);
 const sumBy = (items, key) => items.reduce((sum, item) => sum + (Number(item?.[key]) || 0), 0);
-const formatSar = (value) => `SAR ${(Number(value) || 0).toLocaleString()}`;
-const formatSarM = (value) => `SAR ${((Number(value) || 0) / 1000000).toFixed(1)}M`;
+const formatLkr = (value) => `LKR ${(Number(value) || 0).toLocaleString()}`;
+const formatLkrM = (value) => `LKR ${((Number(value) || 0) / 1000000).toFixed(1)}M`;
 
 function useEntityList(entityName, queryKey, sort, limit) {
     return useQuery({
@@ -153,8 +153,8 @@ function OverviewCards() {
             <div className="grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-4">
                 {hasPermission("finance.fixed_asset", "view") && (
                     <>
-                        <StatCard title={`${t("active")} Assets`} value={activeAssets} icon={Package2} trend={`${formatSarM(totalAssetValue)} total value`} color="emerald" />
-                        <StatCard title={t("netBookValue")} value={formatSarM(totalNBV)} icon={TrendingDown} trend="Current valuation" color="blue" />
+                        <StatCard title={`${t("active")} Assets`} value={activeAssets} icon={Package2} trend={`${formatLkrM(totalAssetValue)} total value`} color="emerald" />
+                        <StatCard title={t("netBookValue")} value={formatLkrM(totalNBV)} icon={TrendingDown} trend="Current valuation" color="blue" />
                     </>
                 )}
                 {hasPermission("sales.sales_order", "view") && (
@@ -189,7 +189,7 @@ function OverviewCards() {
             <ModuleCards
                 cards={[
                     { title: "Sales", value: pendingSalesOrders, description: "Pending sales orders", icon: ShoppingCart, color: "indigo", to: "Sales" },
-                    { title: "Finance", value: formatSarM(totalNBV), description: "Net book value", icon: DollarSign, color: "blue", to: "Finance" },
+                    { title: "Finance", value: formatLkrM(totalNBV), description: "Net book value", icon: DollarSign, color: "blue", to: "Finance" },
                     { title: "Assets", value: activeAssets, description: "Active fixed assets", icon: Package2, color: "emerald", to: "FixedAssets" },
                     { title: "Approvals", value: pendingApprovals, description: "Pending approval requests", icon: Clock, color: "amber", to: "Approvals" },
                     { title: "Admin Center", value: isAdmin ? "Open" : "Restricted", description: "System setup and access", icon: Shield, color: "slate", to: "AdminCenter" }
@@ -270,7 +270,7 @@ function ControlCenterCards() {
                     },
                     {
                         title: "Overdue Receivables",
-                        value: formatSar(sumBy(overdueReceivables, "outstanding_amount")),
+                        value: formatLkr(sumBy(overdueReceivables, "outstanding_amount")),
                         description: `${overdueReceivables.length} customer balances past due`,
                         icon: TrendingUp,
                         color: overdueReceivables.length > 0 ? "red" : "emerald",
@@ -278,7 +278,7 @@ function ControlCenterCards() {
                     },
                     {
                         title: "Overdue Payables",
-                        value: formatSar(sumBy(overduePayables, "outstanding_amount")),
+                        value: formatLkr(sumBy(overduePayables, "outstanding_amount")),
                         description: `${overduePayables.length} vendor balances past due`,
                         icon: TrendingDown,
                         color: overduePayables.length > 0 ? "amber" : "emerald",
@@ -342,7 +342,7 @@ function SalesCards() {
 
     return <ModuleCards cards={[
         { title: "Quotations", value: quotationList.length, description: `${quotationList.filter(q => q.status === "accepted" || q.status === "converted").length} accepted or converted`, icon: FileText, color: "blue", to: "Sales" },
-        { title: "Sales Orders", value: orderList.length, description: `${formatSar(sumBy(orderList, "total_amount"))} total order value`, icon: ShoppingCart, color: "indigo", to: "Sales" },
+        { title: "Sales Orders", value: orderList.length, description: `${formatLkr(sumBy(orderList, "total_amount"))} total order value`, icon: ShoppingCart, color: "indigo", to: "Sales" },
         { title: "Deliveries", value: deliveryList.filter(d => d.status === "pending" || d.status === "in_transit").length, description: "Pending or in transit", icon: Truck, color: "amber", to: "Sales" },
         { title: "Invoices", value: invoiceList.filter(i => i.payment_status === "unpaid" || i.payment_status === "overdue").length, description: "Unpaid or overdue", icon: Receipt, color: "red", to: "Sales" },
         { title: "POS", value: "Open", description: "Point of sale workspace", icon: DollarSign, color: "emerald", to: "POS" },
@@ -361,10 +361,10 @@ function FinanceCards() {
     const assetList = toList(assets);
 
     return <ModuleCards cards={[
-        { title: "Accounts Receivable", value: formatSar(sumBy(arList, "outstanding_amount")), description: `${arList.filter(x => x.status === "overdue").length} overdue records`, icon: TrendingUp, color: "blue", to: "Finance" },
-        { title: "Accounts Payable", value: formatSar(sumBy(apList, "outstanding_amount")), description: "Outstanding payable balance", icon: TrendingDown, color: "amber", to: "Finance" },
+        { title: "Accounts Receivable", value: formatLkr(sumBy(arList, "outstanding_amount")), description: `${arList.filter(x => x.status === "overdue").length} overdue records`, icon: TrendingUp, color: "blue", to: "Finance" },
+        { title: "Accounts Payable", value: formatLkr(sumBy(apList, "outstanding_amount")), description: "Outstanding payable balance", icon: TrendingDown, color: "amber", to: "Finance" },
         { title: "Payments", value: paymentList.length, description: "Payment records", icon: Receipt, color: "emerald", to: "Finance" },
-        { title: "Fixed Assets", value: formatSarM(sumBy(assetList, "net_book_value")), description: `${assetList.filter(a => a.status === "active").length} active assets`, icon: Building2, color: "indigo", to: "FixedAssets" },
+        { title: "Fixed Assets", value: formatLkrM(sumBy(assetList, "net_book_value")), description: `${assetList.filter(a => a.status === "active").length} active assets`, icon: Building2, color: "indigo", to: "FixedAssets" },
         { title: "Treasury", value: "Open", description: "Bank and cash management", icon: Landmark, color: "slate", to: "TreasuryManagement" },
         { title: "Finance Reports", value: "Reports", description: "Statements and variance reports", icon: BarChart3, color: "purple", to: "FinancialReports" }
     ]} />;
@@ -381,7 +381,7 @@ function InventoryCards() {
     const inspectionList = toList(inspections);
 
     return <ModuleCards cards={[
-        { title: "Stock Value", value: formatSar(sumBy(stockList, "total_value")), description: `${sumBy(stockList, "quantity").toLocaleString()} total quantity`, icon: Warehouse, color: "emerald", to: "Inventory" },
+        { title: "Stock Value", value: formatLkr(sumBy(stockList, "total_value")), description: `${sumBy(stockList, "quantity").toLocaleString()} total quantity`, icon: Warehouse, color: "emerald", to: "Inventory" },
         { title: "Low Stock", value: stockList.filter(s => (s.available_quantity || 0) <= 10).length, description: "Materials needing attention", icon: AlertTriangle, color: "red", to: "Inventory" },
         { title: "Movements", value: movementList.length, description: "Stock movement records", icon: Truck, color: "blue", to: "Inventory" },
         { title: "Cycle Counts", value: countList.filter(c => c.status === "in_progress" || c.status === "planned").length, description: "Planned or in progress", icon: Calculator, color: "amber", to: "Inventory" },
@@ -413,7 +413,7 @@ function SupplyChainCards() {
 
     return <ModuleCards cards={[
         { title: "Purchase Requisitions", value: toList(requisitions).filter(r => r.status === "pending" || r.status === "submitted").length, description: "Waiting for processing", icon: FileText, color: "amber", to: "Purchasing" },
-        { title: "Purchase Orders", value: toList(orders).length, description: `${formatSar(sumBy(toList(orders), "total_amount"))} total value`, icon: ShoppingCart, color: "blue", to: "Purchasing" },
+        { title: "Purchase Orders", value: toList(orders).length, description: `${formatLkr(sumBy(toList(orders), "total_amount"))} total value`, icon: ShoppingCart, color: "blue", to: "Purchasing" },
         { title: "Goods Receipts", value: toList(grn).length, description: "Receipt documents", icon: Truck, color: "emerald", to: "Purchasing" },
         { title: "Vendors", value: toList(vendors).length, description: "Vendor master records", icon: Building2, color: "indigo", to: "MasterDataManagement" },
         { title: "Demand Planning", value: "Open", description: "Forecasting dashboard", icon: Target, color: "purple", to: "DemandPlanning" },
@@ -447,7 +447,7 @@ function ProjectCards() {
         { title: "Projects", value: toList(projects).filter(p => p.status === "active" || p.status === "in_progress").length, description: "Active projects", icon: Briefcase, color: "blue", to: "Projects" },
         { title: "Project Tasks", value: toList(tasks).filter(t => t.status !== "completed").length, description: "Open tasks", icon: CheckCircle2, color: "amber", to: "Projects" },
         { title: "Milestones", value: toList(milestones).length, description: "Tracked milestones", icon: Target, color: "indigo", to: "Projects" },
-        { title: "Project Expenses", value: formatSar(sumBy(toList(expenses), "amount")), description: "Recorded project expenses", icon: DollarSign, color: "emerald", to: "Projects" }
+        { title: "Project Expenses", value: formatLkr(sumBy(toList(expenses), "amount")), description: "Recorded project expenses", icon: DollarSign, color: "emerald", to: "Projects" }
     ]} />;
 }
 

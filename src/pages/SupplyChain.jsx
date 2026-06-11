@@ -108,7 +108,7 @@ export default function SupplyChain() {
                                         <p className="text-sm text-gray-600">{po.supplier_name}</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-semibold">SAR {po.total_cost?.toLocaleString() || 0}</p>
+                                        <p className="font-semibold">LKR {po.total_cost?.toLocaleString() || 0}</p>
                                         <p className="text-sm text-gray-600 capitalize">{po.status}</p>
                                     </div>
                                 </div>
@@ -130,7 +130,7 @@ export default function SupplyChain() {
                                         <p className="text-sm text-gray-600">{so.customer_name}</p>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-semibold">SAR {so.total_amount?.toLocaleString() || 0}</p>
+                                        <p className="font-semibold">LKR {so.total_amount?.toLocaleString() || 0}</p>
                                         <p className="text-sm text-gray-600 capitalize">{so.status}</p>
                                     </div>
                                 </div>

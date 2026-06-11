@@ -197,7 +197,7 @@ export default function JournalEntryForm({ item, onClose }) {
                             </div>
 
                             <div>
-                                <Label>Amount (SAR) *</Label>
+                                <Label>Amount (LKR) *</Label>
                                 <Input
                                     type="number"
                                     step="0.01"

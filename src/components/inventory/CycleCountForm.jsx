@@ -360,7 +360,7 @@ export default function CycleCountForm({ item, onClose }) {
                                             <div>
                                                 <span className="text-sm text-amber-700">Variance Value: </span>
                                                 <Badge className="bg-amber-600">
-                                                    SAR {Math.abs(formData.variance_value).toLocaleString()}
+                                                    LKR {Math.abs(formData.variance_value).toLocaleString()}
                                                 </Badge>
                                             </div>
                                         </div>

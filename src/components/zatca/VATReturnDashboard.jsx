@@ -19,7 +19,7 @@ function SummaryRow({ label, amount, highlight, sub }) {
     return (
         <div className={`flex justify-between items-center py-2 ${highlight ? "font-bold border-t border-gray-300 mt-1" : ""} ${sub ? "pl-4 text-sm text-gray-600" : ""}`}>
             <span>{label}</span>
-            <span className={highlight ? "text-emerald-700 text-lg" : ""}>{`SAR ${(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</span>
+            <span className={highlight ? "text-emerald-700 text-lg" : ""}>{`LKR ${(amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}</span>
         </div>
     );
 }
@@ -84,7 +84,7 @@ export default function VATReturnDashboard({ invoices = [], vendorInvoices = [] 
         const rows = [
             ["VAT Return Report", `${quarter.label} ${selectedYear}`],
             [],
-            ["Box", "Description", "Amount (SAR)"],
+            ["Box", "Description", "Amount (LKR)"],
             ["1a", "Standard Rated Sales", salesStandard.toFixed(2)],
             ["1b", "Output VAT (15%)", totalOutputVAT.toFixed(2)],
             ["2", "Zero Rated Sales", outputVATZeroRated.toFixed(2)],
@@ -146,21 +146,21 @@ export default function VATReturnDashboard({ invoices = [], vendorInvoices = [] 
                 <Card className="border-emerald-200 bg-emerald-50">
                     <CardContent className="p-4">
                         <p className="text-xs text-emerald-700 font-medium">Total Sales (ex-VAT)</p>
-                        <p className="text-xl font-bold text-emerald-900">SAR {salesStandard.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                        <p className="text-xl font-bold text-emerald-900">LKR {salesStandard.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
                         <p className="text-xs text-emerald-600">{periodInvoices.length} invoices</p>
                     </CardContent>
                 </Card>
                 <Card className="border-blue-200 bg-blue-50">
                     <CardContent className="p-4">
                         <p className="text-xs text-blue-700 font-medium">Output VAT Collected</p>
-                        <p className="text-xl font-bold text-blue-900">SAR {totalOutputVAT.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                        <p className="text-xl font-bold text-blue-900">LKR {totalOutputVAT.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
                         <p className="text-xs text-blue-600">15% standard rate</p>
                     </CardContent>
                 </Card>
                 <Card className="border-orange-200 bg-orange-50">
                     <CardContent className="p-4">
                         <p className="text-xs text-orange-700 font-medium">Input VAT Recoverable</p>
-                        <p className="text-xl font-bold text-orange-900">SAR {inputVAT.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                        <p className="text-xl font-bold text-orange-900">LKR {inputVAT.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
                         <p className="text-xs text-orange-600">{periodVendorInvoices.length} purchase invoices</p>
                     </CardContent>
                 </Card>
@@ -170,7 +170,7 @@ export default function VATReturnDashboard({ invoices = [], vendorInvoices = [] 
                             {netVATDue >= 0 ? "Net VAT Payable" : "VAT Refundable"}
                         </p>
                         <p className={`text-xl font-bold ${netVATDue >= 0 ? "text-red-900" : "text-green-900"}`}>
-                            SAR {Math.abs(netVATDue).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                            LKR {Math.abs(netVATDue).toLocaleString(undefined, { maximumFractionDigits: 0 })}
                         </p>
                         {netVATDue >= 0
                             ? <p className="text-xs text-red-600 flex items-center gap-1"><TrendingUp className="w-3 h-3" /> Due to ZATCA</p>
@@ -211,7 +211,7 @@ export default function VATReturnDashboard({ invoices = [], vendorInvoices = [] 
                                         {netVATDue >= 0 ? "Box 9 — Net VAT Payable" : "Box 9 — VAT Refund Due"}
                                     </span>
                                     <span className={`font-bold text-lg ${netVATDue >= 0 ? "text-red-700" : "text-green-700"}`}>
-                                        SAR {Math.abs(netVATDue).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                        LKR {Math.abs(netVATDue).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                     </span>
                                 </div>
                             </div>
@@ -236,7 +236,7 @@ export default function VATReturnDashboard({ invoices = [], vendorInvoices = [] 
                             <TableHeader>
                                 <TableRow className="bg-gray-50">
                                     <TableHead className="text-xs">Month</TableHead>
-                                    <TableHead className="text-xs text-right">Sales (SAR)</TableHead>
+                                    <TableHead className="text-xs text-right">Sales (LKR)</TableHead>
                                     <TableHead className="text-xs text-right">Output VAT</TableHead>
                                     <TableHead className="text-xs text-right">Input VAT</TableHead>
                                     <TableHead className="text-xs text-right">Net</TableHead>

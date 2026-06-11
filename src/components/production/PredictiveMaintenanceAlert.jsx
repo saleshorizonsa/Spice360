@@ -170,7 +170,7 @@ Return in JSON format:`,
                                             <p className="text-sm mb-2"><strong>Issue:</strong> {alert.predicted_issue}</p>
                                             <p className="text-sm mb-2"><strong>Action:</strong> {alert.recommended_action}</p>
                                             <p className="text-sm text-gray-700">
-                                                <strong>Est. Cost:</strong> SAR {alert.estimated_cost?.toLocaleString()}
+                                                <strong>Est. Cost:</strong> LKR {alert.estimated_cost?.toLocaleString()}
                                             </p>
                                         </div>
                                     ))}
@@ -227,7 +227,7 @@ Return in JSON format:`,
                                         <p className="text-sm mb-1">{rec.action}</p>
                                         <div className="flex gap-4 text-xs text-gray-600">
                                             <span>Downtime: {rec.estimated_downtime_hours}h</span>
-                                            <span>Savings: SAR {rec.cost_savings?.toLocaleString()}</span>
+                                            <span>Savings: LKR {rec.cost_savings?.toLocaleString()}</span>
                                         </div>
                                     </div>
                                 ))}

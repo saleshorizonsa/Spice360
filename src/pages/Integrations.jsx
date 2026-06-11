@@ -116,8 +116,8 @@ export default function Integrations() {
         { header: "Ref", key: "transaction_ref" },
         { header: "Description", key: "description" },
         { header: "Type", key: "transaction_type", isBadge: true },
-        { header: "Amount", key: "amount", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
-        { header: "Balance", key: "balance", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: "Amount", key: "amount", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: "Balance", key: "balance", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: "Reconciled", key: "reconciled", render: (val) => val ? "✓" : "✗" }
     ];
 
@@ -138,7 +138,7 @@ export default function Integrations() {
         { header: "Channel", key: "channel", isBadge: true },
         { header: "Store", key: "store_location" },
         { header: "Customer", key: "customer_name" },
-        { header: "Amount", key: "total_amount", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: "Amount", key: "total_amount", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: "Payment", key: "payment_method" },
         { header: "Synced", key: "synced_to_erp", render: (val) => val ? "✓" : "✗" },
         { header: "Status", key: "sync_status", isBadge: true }

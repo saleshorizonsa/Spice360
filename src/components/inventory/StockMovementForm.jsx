@@ -396,7 +396,7 @@ export default function StockMovementForm({ item, onClose }) {
                                 />
                             </div>
                             <div>
-                                <Label>Unit Cost (SAR)</Label>
+                                <Label>Unit Cost (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -505,7 +505,7 @@ export default function StockMovementForm({ item, onClose }) {
                         <div className="bg-gray-50 p-4 rounded-lg">
                             <Label className="text-lg">Total Movement Value</Label>
                             <div className="text-2xl font-bold text-emerald-600 mt-2">
-                                SAR {formData.total_value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                LKR {formData.total_value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                         </div>
                     </div>

@@ -371,7 +371,7 @@ export default function GRNForm({ item, onClose }) {
                                 />
                             </div>
                             <div>
-                                <Label>Unit Price (SAR)</Label>
+                                <Label>Unit Price (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -462,7 +462,7 @@ export default function GRNForm({ item, onClose }) {
                         <div className="bg-gray-50 p-4 rounded-lg">
                             <Label className="text-lg">Total Receipt Value</Label>
                             <div className="text-2xl font-bold text-emerald-600 mt-2">
-                                SAR {formData.total_value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                LKR {formData.total_value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                         </div>
                     </div>

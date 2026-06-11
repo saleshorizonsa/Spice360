@@ -324,7 +324,7 @@ export default function FixedAssetForm({ item, onClose }) {
                                 />
                             </div>
                             <div>
-                                <Label>Acquisition Cost (SAR) *</Label>
+                                <Label>Acquisition Cost (LKR) *</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -362,7 +362,7 @@ export default function FixedAssetForm({ item, onClose }) {
                                 </Select>
                             </div>
                             <div>
-                                <Label>Salvage Value (SAR)</Label>
+                                <Label>Salvage Value (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -375,12 +375,12 @@ export default function FixedAssetForm({ item, onClose }) {
                         <div className="bg-gray-50 p-4 rounded-lg space-y-2">
                             <div className="flex justify-between">
                                 <span className="text-gray-600">Accumulated Depreciation:</span>
-                                <span className="font-semibold">SAR {formData.accumulated_depreciation.toLocaleString()}</span>
+                                <span className="font-semibold">LKR {formData.accumulated_depreciation.toLocaleString()}</span>
                             </div>
                             <div className="flex justify-between text-lg border-t pt-2">
                                 <span className="font-bold">Net Book Value:</span>
                                 <span className="font-bold text-emerald-600">
-                                    SAR {formData.net_book_value.toLocaleString()}
+                                    LKR {formData.net_book_value.toLocaleString()}
                                 </span>
                             </div>
                         </div>

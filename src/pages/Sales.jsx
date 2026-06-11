@@ -139,7 +139,7 @@ export default function Sales() {
         { header: t('customer'), key: "customer_name" },
         { header: t('product'), key: "product_name" },
         { header: "Qty", key: "quantity" },
-        { header: `${t('amount')} (SAR)`, key: "total_amount", render: (val) => `${val?.toLocaleString() || 0}` },
+        { header: `${t('amount')} (LKR)`, key: "total_amount", render: (val) => `${val?.toLocaleString() || 0}` },
         { header: t('date'), key: "quotation_date" },
         { header: "Valid Until", key: "valid_until" },
         { header: t('status'), key: "status", isBadge: true }
@@ -169,7 +169,7 @@ export default function Sales() {
         { 
             header: `${t('total')} ${t('amount')}`, 
             key: "total_amount", 
-            render: (val) => `SAR ${val?.toLocaleString() || 0}` 
+            render: (val) => `LKR ${val?.toLocaleString() || 0}` 
         },
         { header: "Order Date", key: "order_date" },
         { header: t('status'), key: "status", isBadge: true },
@@ -257,7 +257,7 @@ export default function Sales() {
         { header: "SO #", key: "sales_order_number" },
         { header: t('customer'), key: "customer_name" },
         { header: "VAT #", key: "customer_vat_number" },
-        { header: `${t('amount')} (SAR)`, key: "total_amount", render: (val) => `${val?.toLocaleString() || 0}` },
+        { header: `${t('amount')} (LKR)`, key: "total_amount", render: (val) => `${val?.toLocaleString() || 0}` },
         { header: "Invoice Date", key: "invoice_date" },
         { header: "Due Date", key: "due_date" },
         { header: "ZATCA", key: "zatca_status", isBadge: true },
@@ -294,7 +294,7 @@ export default function Sales() {
         { header: t('customer'), key: "customer_name" },
         { header: t('product'), key: "product_name" },
         { header: "Qty", key: "quantity_returned" },
-        { header: `${t('amount')} (SAR)`, key: "total_return_amount", render: (val) => `${val?.toLocaleString() || 0}` },
+        { header: `${t('amount')} (LKR)`, key: "total_return_amount", render: (val) => `${val?.toLocaleString() || 0}` },
         { header: "Reason", key: "return_reason" },
         { header: t('date'), key: "return_date" },
         { header: "Credit Note", key: "credit_note_issued", render: (val) => val ? "Issued" : t('pending') },
@@ -330,8 +330,8 @@ export default function Sales() {
         { header: t('customer'), key: "customer_name" },
         { header: "Service Type", key: "service_type", isBadge: true },
         { header: "Billing", key: "billing_type" },
-        { header: "Contract Value", key: "total_contract_value", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
-        { header: "Billed", key: "billed_amount", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: "Contract Value", key: "total_contract_value", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: "Billed", key: "billed_amount", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: "Start Date", key: "start_date" },
         { header: "Assigned To", key: "assigned_to" },
         { header: t('status'), key: "status", isBadge: true }

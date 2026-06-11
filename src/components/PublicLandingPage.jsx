@@ -9,23 +9,23 @@ import { formatPlanPrice, normalizeSubscriptionPlans } from "@/lib/subscriptionP
 
 const benefits = [
   "Run sales, finance, inventory, purchasing, HR, approvals, and reporting in one tenant-safe workspace.",
-  "Guide new companies through verified onboarding, company profile setup, and ZATCA readiness.",
+  "Guide new companies through verified onboarding, company profile setup, and Sri Lanka tax compliance.",
   "Give management live exception cards for approvals, receivables, payables, stock, and compliance."
 ];
 
 const modules = [
-  { title: "Sales & Invoicing", icon: ShoppingCart, description: "Quotations, orders, delivery, invoices, returns, POS, and ZATCA invoice flow." },
+  { title: "Sales & Invoicing", icon: ShoppingCart, description: "Quotations, orders, delivery, VAT invoices, returns, POS, and 18% VAT calculation." },
   { title: "Finance", icon: BarChart3, description: "AR, AP, journal entries, payments, assets, reports, and period close controls." },
   { title: "Inventory", icon: Package, description: "Stock levels, movements, transfers, cycle counts, warehouse bins, and valuation." },
-  { title: "HR & Projects", icon: Users, description: "Employees, payroll, leave, loans, project expenses, milestones, and timesheets." },
-  { title: "ZATCA Compliance", icon: FileCheck, description: "Phase 1 QR readiness, Phase 2 setup fields, submission logs, and validation controls." },
+  { title: "HR & Projects", icon: Users, description: "Employees, EPF/ETF/APIT payroll, leave, loans, project expenses, and timesheets." },
+  { title: "Sri Lanka Tax", icon: FileCheck, description: "VAT 18%, WHT, SSCL, APIT calculator, EPF/ETF contributions, and IRD returns." },
   { title: "Security", icon: Shield, description: "Tenant isolation, owner dashboard, roles, approvals, and audit trail controls." }
 ];
 
 const faqs = [
   ["Is HORIZON multi-tenant?", "Yes. Each company is treated as a separate tenant and business data is scoped by tenant."],
   ["Can we start with a trial?", "Yes. Plans include trial days and the selected plan is carried into signup and onboarding."],
-  ["Does it support ZATCA?", "The app includes ZATCA setup fields, QR readiness, validation, and submission log workflows."],
+  ["Does it support Sri Lanka taxation?", "Yes. The app includes VAT 18%, WHT, SSCL, APIT, and EPF/ETF compliance modules."],
   ["Can pricing change later?", "Yes. Pricing is database-backed and owner changes are reflected on the public landing page."]
 ];
 
@@ -67,13 +67,13 @@ export default function PublicLandingPage({ onLogin, onSelectPlan }) {
           <div className="relative mx-auto grid max-w-7xl gap-10 px-5 py-20 lg:grid-cols-[1.1fr_0.9fr] lg:py-28">
             <div className="space-y-7">
               <div className="inline-flex rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-semibold text-white/90">
-                ERP, compliance, and management control for Saudi businesses
+                ERP, compliance, and management control for Sri Lanka businesses
               </div>
               <h1 className="max-w-4xl text-5xl font-bold leading-tight md:text-6xl">
                 HORIZON
               </h1>
               <p className="max-w-2xl text-xl leading-9 text-white/82">
-                Launch a tenant-ready business platform with guided onboarding, ZATCA setup, subscription plans, and operational dashboards.
+                Launch a tenant-ready business platform with guided onboarding, Sri Lanka tax setup, subscription plans, and operational dashboards.
               </p>
               <div className="flex flex-wrap gap-3">
                 <Button onClick={() => onSelectPlan(plans[1]?.id || "professional")} className="h-12 bg-[#d68f2b] px-6 text-slate-950 hover:bg-[#efaa42]">

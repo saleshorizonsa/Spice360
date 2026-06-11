@@ -66,7 +66,7 @@ export default function InvoiceClearingDialog({ open, onClose }) {
                 party_code: data.customerCode,
                 party_name: data.customerName,
                 amount: data.paymentAmount,
-                currency: 'SAR',
+                currency: 'LKR',
                 payment_method: data.paymentMethod,
                 status: 'cleared',
                 cleared_date: data.paymentDate,
@@ -89,7 +89,7 @@ export default function InvoiceClearingDialog({ open, onClose }) {
                     allocation_type: allocation.allocated_amount >= allocation.outstanding_amount ? 'full_clearing' : 'partial_clearing',
                     clearing_reference: clearingRef,
                     posted_by: user.email,
-                    notes: `Allocated SAR ${allocation.allocated_amount.toFixed(2)} from payment ${paymentNumber}`
+                    notes: `Allocated LKR ${allocation.allocated_amount.toFixed(2)} from payment ${paymentNumber}`
                 });
 
                 // Update AR record
@@ -236,7 +236,7 @@ export default function InvoiceClearingDialog({ open, onClose }) {
             return;
         }
 
-        if (window.confirm(`Post payment of SAR ${paymentAmount.toFixed(2)} and allocate to ${allocationData.length} invoice(s)?`)) {
+        if (window.confirm(`Post payment of LKR ${paymentAmount.toFixed(2)} and allocate to ${allocationData.length} invoice(s)?`)) {
             clearingMutation.mutate({
                 customerCode: selectedCustomer,
                 customerName: customer.customer_name,
@@ -296,7 +296,7 @@ export default function InvoiceClearingDialog({ open, onClose }) {
                                 </Select>
                             </div>
                             <div>
-                                <Label>Payment Amount (SAR) *</Label>
+                                <Label>Payment Amount (LKR) *</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -444,16 +444,16 @@ export default function InvoiceClearingDialog({ open, onClose }) {
                         <div className="bg-gray-50 p-4 rounded-lg border space-y-2">
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Payment Amount:</span>
-                                <span className="font-semibold">SAR {paymentAmount.toFixed(2)}</span>
+                                <span className="font-semibold">LKR {paymentAmount.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Total Allocated:</span>
-                                <span className="font-semibold text-emerald-600">SAR {totalAllocated.toFixed(2)}</span>
+                                <span className="font-semibold text-emerald-600">LKR {totalAllocated.toFixed(2)}</span>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span className="text-gray-600">Remaining Amount:</span>
                                 <span className={`font-semibold ${remainingAmount < 0 ? 'text-red-600' : 'text-blue-600'}`}>
-                                    SAR {remainingAmount.toFixed(2)}
+                                    LKR {remainingAmount.toFixed(2)}
                                 </span>
                             </div>
                             <div className="flex justify-between text-sm pt-2 border-t">

@@ -188,10 +188,10 @@ export default function AssetLifecycle() {
         { header: "Asset Name", key: "asset_name" },
         { header: "Type", key: "disposal_type", isBadge: true },
         { header: "Date", key: "disposal_date" },
-        { header: "NBV (SAR)", key: "net_book_value", render: (val) => val?.toLocaleString() },
-        { header: "Disposal Value (SAR)", key: "disposal_value", render: (val) => val?.toLocaleString() },
+        { header: "NBV (LKR)", key: "net_book_value", render: (val) => val?.toLocaleString() },
+        { header: "Disposal Value (LKR)", key: "disposal_value", render: (val) => val?.toLocaleString() },
         { 
-            header: "Gain/Loss (SAR)", 
+            header: "Gain/Loss (LKR)", 
             key: "gain_loss", 
             render: (val) => (
                 <span className={val >= 0 ? 'text-green-700 font-bold' : 'text-red-700 font-bold'}>
@@ -330,12 +330,12 @@ export default function AssetLifecycle() {
                         <div class="kpi-label">Assets Disposed</div>
                     </div>
                     <div class="kpi-card">
-                        <div class="kpi-value">SAR ${(totalDisposalValue / 1000000).toFixed(1)}M</div>
+                        <div class="kpi-value">LKR ${(totalDisposalValue / 1000000).toFixed(1)}M</div>
                         <div class="kpi-label">Disposal Value</div>
                     </div>
                     <div class="kpi-card">
                         <div class="kpi-value ${totalGainLoss >= 0 ? 'gain' : 'loss'}">
-                            SAR ${(totalGainLoss / 1000).toFixed(0)}K
+                            LKR ${(totalGainLoss / 1000).toFixed(0)}K
                         </div>
                         <div class="kpi-label">Total Gain/Loss</div>
                     </div>
@@ -366,10 +366,10 @@ export default function AssetLifecycle() {
                                 <td style="text-align: left;">${d.asset_name}</td>
                                 <td>${d.disposal_date}</td>
                                 <td style="text-align: center; text-transform: capitalize;">${d.disposal_type.replace('_', ' ')}</td>
-                                <td>SAR ${d.net_book_value.toLocaleString()}</td>
-                                <td>SAR ${d.disposal_value.toLocaleString()}</td>
+                                <td>LKR ${d.net_book_value.toLocaleString()}</td>
+                                <td>LKR ${d.disposal_value.toLocaleString()}</td>
                                 <td class="${d.gain_loss >= 0 ? 'gain' : 'loss'}">
-                                    ${d.gain_loss >= 0 ? '+' : ''}SAR ${d.gain_loss.toLocaleString()}
+                                    ${d.gain_loss >= 0 ? '+' : ''}LKR ${d.gain_loss.toLocaleString()}
                                 </td>
                                 <td style="text-align: center;" class="${d.roi_percentage >= 0 ? 'gain' : 'loss'}">
                                     ${d.roi_percentage?.toFixed(1)}%
@@ -571,10 +571,10 @@ export default function AssetLifecycle() {
                                             <div className="text-right">
                                                 <p className="font-bold">{item.count} assets</p>
                                                 <p className="text-sm text-gray-600">
-                                                    SAR {(item.value / 1000).toFixed(0)}K
+                                                    LKR {(item.value / 1000).toFixed(0)}K
                                                 </p>
                                                 <p className={`text-xs font-semibold ${item.gainLoss >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                                    {item.gainLoss >= 0 ? '+' : ''}SAR {(item.gainLoss / 1000).toFixed(0)}K
+                                                    {item.gainLoss >= 0 ? '+' : ''}LKR {(item.gainLoss / 1000).toFixed(0)}K
                                                 </p>
                                             </div>
                                         </div>
@@ -603,8 +603,8 @@ export default function AssetLifecycle() {
                                     <Tooltip formatter={(value) => value.toLocaleString()} />
                                     <Legend />
                                     <Bar yAxisId="left" dataKey="count" fill="#3b82f6" name="Asset Count" />
-                                    <Bar yAxisId="right" dataKey="disposalValue" fill="#059669" name="Disposal Value (SAR)" />
-                                    <Bar yAxisId="right" dataKey="gainLoss" fill="#f59e0b" name="Gain/Loss (SAR)" />
+                                    <Bar yAxisId="right" dataKey="disposalValue" fill="#059669" name="Disposal Value (LKR)" />
+                                    <Bar yAxisId="right" dataKey="gainLoss" fill="#f59e0b" name="Gain/Loss (LKR)" />
                                 </BarChart>
                             </ResponsiveContainer>
 
@@ -614,9 +614,9 @@ export default function AssetLifecycle() {
                                         <tr>
                                             <th className="p-2 text-center">Year</th>
                                             <th className="p-2 text-center">Count</th>
-                                            <th className="p-2 text-right">NBV (SAR)</th>
-                                            <th className="p-2 text-right">Disposal Value (SAR)</th>
-                                            <th className="p-2 text-right">Gain/Loss (SAR)</th>
+                                            <th className="p-2 text-right">NBV (LKR)</th>
+                                            <th className="p-2 text-right">Disposal Value (LKR)</th>
+                                            <th className="p-2 text-right">Gain/Loss (LKR)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -690,7 +690,7 @@ export default function AssetLifecycle() {
                                     <CardContent className="pt-4">
                                         <p className="text-sm text-gray-700">Total Gain/Loss</p>
                                         <p className={`text-3xl font-bold ${totalGainLoss >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                                            {totalGainLoss >= 0 ? '+' : ''}SAR {totalGainLoss.toLocaleString()}
+                                            {totalGainLoss >= 0 ? '+' : ''}LKR {totalGainLoss.toLocaleString()}
                                         </p>
                                     </CardContent>
                                 </Card>
@@ -728,7 +728,7 @@ export default function AssetLifecycle() {
                                         type="number" 
                                         dataKey="maintenanceCost" 
                                         name="Maintenance Cost" 
-                                        label={{ value: 'Maintenance Cost (SAR)', angle: -90, position: 'insideLeft' }}
+                                        label={{ value: 'Maintenance Cost (LKR)', angle: -90, position: 'insideLeft' }}
                                     />
                                     <Tooltip 
                                         cursor={{ strokeDasharray: '3 3' }}
@@ -739,8 +739,8 @@ export default function AssetLifecycle() {
                                                     <div className="bg-white p-3 border rounded shadow-lg">
                                                         <p className="font-semibold">{data.name}</p>
                                                         <p className="text-sm">Age: {data.age} years</p>
-                                                        <p className="text-sm">Maintenance: SAR {data.maintenanceCost.toLocaleString()}</p>
-                                                        <p className="text-sm">NBV: SAR {data.nbv.toLocaleString()}</p>
+                                                        <p className="text-sm">Maintenance: LKR {data.maintenanceCost.toLocaleString()}</p>
+                                                        <p className="text-sm">NBV: LKR {data.nbv.toLocaleString()}</p>
                                                     </div>
                                                 );
                                             }
@@ -756,7 +756,7 @@ export default function AssetLifecycle() {
                                 <ul className="text-sm text-blue-800 space-y-1">
                                     <li>• Assets older than 7 years typically show higher maintenance costs</li>
                                     <li>• Consider disposal when maintenance cost exceeds 20% of NBV annually</li>
-                                    <li>• Avg maintenance per active asset: SAR {activeAssets > 0 ? (
+                                    <li>• Avg maintenance per active asset: LKR {activeAssets > 0 ? (
                                         lifecycleAnalysis.reduce((sum, a) => sum + a.maintenanceCost, 0) / activeAssets
                                     ).toLocaleString(undefined, {maximumFractionDigits: 0}) : 0}</li>
                                 </ul>

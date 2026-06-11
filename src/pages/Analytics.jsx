@@ -276,7 +276,7 @@ export default function Analytics() {
                                         <XAxis dataKey="month" />
                                         <YAxis />
                                         <Tooltip />
-                                        <Area type="monotone" dataKey="revenue" stroke="#10b981" fill="#10b981" fillOpacity={0.3} name={`${t('revenue')} (SAR K)`} />
+                                        <Area type="monotone" dataKey="revenue" stroke="#10b981" fill="#10b981" fillOpacity={0.3} name={`${t('revenue')} (LKR K)`} />
                                     </AreaChart>
                                 </ResponsiveContainer>
                             </CardContent>
@@ -293,7 +293,7 @@ export default function Analytics() {
                                         <XAxis type="number" />
                                         <YAxis dataKey="product" type="category" width={100} />
                                         <Tooltip />
-                                        <Bar dataKey="revenue" fill="#3b82f6" name={`${t('revenue')} (SAR K)`} />
+                                        <Bar dataKey="revenue" fill="#3b82f6" name={`${t('revenue')} (LKR K)`} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </CardContent>
@@ -339,7 +339,7 @@ export default function Analytics() {
                                         <XAxis dataKey="bucket" />
                                         <YAxis />
                                         <Tooltip />
-                                        <Bar dataKey="amount" fill="#f59e0b" name={`${t('amount')} (SAR K)`} />
+                                        <Bar dataKey="amount" fill="#f59e0b" name={`${t('amount')} (LKR K)`} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </CardContent>
@@ -362,7 +362,7 @@ export default function Analytics() {
                                         <YAxis />
                                         <Tooltip />
                                         <Legend />
-                                        <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} name={`${t('revenue')} (SAR K)`} />
+                                        <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} name={`${t('revenue')} (LKR K)`} />
                                         <Line type="monotone" dataKey="orders" stroke="#3b82f6" strokeWidth={2} name={`# ${t('orders')}`} />
                                     </LineChart>
                                 </ResponsiveContainer>
@@ -400,7 +400,7 @@ export default function Analytics() {
                                             <p className="text-sm text-gray-600">{product.quantity} {t('unitsSold')}</p>
                                         </div>
                                         <p className="text-lg font-bold text-emerald-600">
-                                            SAR {product.revenue.toFixed(0)}K
+                                            LKR {product.revenue.toFixed(0)}K
                                         </p>
                                     </div>
                                 ))}
@@ -450,7 +450,7 @@ export default function Analytics() {
                                         <XAxis dataKey="category" />
                                         <YAxis />
                                         <Tooltip />
-                                        <Bar dataKey="value" fill="#6366f1" name={`${t('value')} (SAR K)`} />
+                                        <Bar dataKey="value" fill="#6366f1" name={`${t('value')} (LKR K)`} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </CardContent>
@@ -521,7 +521,7 @@ export default function Analytics() {
                                         <XAxis type="number" />
                                         <YAxis dataKey="vendor" type="category" width={100} />
                                         <Tooltip />
-                                        <Bar dataKey="amount" fill="#3b82f6" name={`${t('amount')} (SAR K)`} />
+                                        <Bar dataKey="amount" fill="#3b82f6" name={`${t('amount')} (LKR K)`} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </CardContent>
@@ -538,7 +538,7 @@ export default function Analytics() {
                                         <XAxis dataKey="bucket" />
                                         <YAxis />
                                         <Tooltip />
-                                        <Bar dataKey="amount" fill="#ef4444" name={`${t('amount')} (SAR K)`} />
+                                        <Bar dataKey="amount" fill="#ef4444" name={`${t('amount')} (LKR K)`} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </CardContent>
@@ -564,7 +564,7 @@ export default function Analytics() {
                                         <XAxis dataKey="name" />
                                         <YAxis />
                                         <Tooltip />
-                                        <Bar dataKey="value" fill="#10b981" name={`${t('amount')} (SAR K)`} />
+                                        <Bar dataKey="value" fill="#10b981" name={`${t('amount')} (LKR K)`} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </CardContent>
@@ -584,7 +584,7 @@ export default function Analytics() {
                                         <XAxis dataKey="name" />
                                         <YAxis />
                                         <Tooltip />
-                                        <Bar dataKey="value" fill="#3b82f6" name={`${t('amount')} (SAR K)`} />
+                                        <Bar dataKey="value" fill="#3b82f6" name={`${t('amount')} (LKR K)`} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </CardContent>
@@ -603,7 +603,7 @@ export default function Analytics() {
                                         <XAxis dataKey="bucket" />
                                         <YAxis />
                                         <Tooltip />
-                                        <Bar dataKey="amount" fill="#f59e0b" name={`${t('amount')} (SAR K)`} />
+                                        <Bar dataKey="amount" fill="#f59e0b" name={`${t('amount')} (LKR K)`} />
                                     </BarChart>
                                 </ResponsiveContainer>
                             </CardContent>
@@ -618,7 +618,7 @@ export default function Analytics() {
                                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                                         <span className="font-medium">{t('workingCapital')}</span>
                                         <span className="text-lg font-bold text-emerald-600">
-                                            SAR {((totalAR - totalAP) / 1000).toFixed(0)}K
+                                            LKR {((totalAR - totalAP) / 1000).toFixed(0)}K
                                         </span>
                                     </div>
                                     <div className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
@@ -713,7 +713,7 @@ export default function Analytics() {
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-lg font-bold text-emerald-600">
-                                                    SAR {((project.revenue_recognized || 0) / 1000).toFixed(0)}K
+                                                    LKR {((project.revenue_recognized || 0) / 1000).toFixed(0)}K
                                                 </p>
                                                 <p className="text-sm text-gray-600">{margin}% {t('margin')}</p>
                                             </div>

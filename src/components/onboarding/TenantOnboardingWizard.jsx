@@ -18,7 +18,6 @@ import { onboardingStatuses } from "@/lib/emailVerificationGate";
 const steps = [
     { key: "email", label: "Email Verification", icon: CheckCircle2 },
     { key: "company", label: "Company Data", icon: Building2 },
-    { key: "zatca", label: "ZATCA Setup", icon: FileCheck },
     { key: "modules", label: "Standard Modules", icon: Settings }
 ];
 
@@ -47,7 +46,7 @@ const documentSeriesTemplates = [
 
 const roleTemplates = [
     { role_code: "TENANT_ADMIN", role_name: "Tenant Administrator", description: "Full administration for this tenant" },
-    { role_code: "FIN_MGR", role_name: "Finance Manager", description: "Finance, ZATCA, period close, and reports" },
+    { role_code: "FIN_MGR", role_name: "Finance Manager", description: "Finance, tax compliance, period close, and reports" },
     { role_code: "SALES_MGR", role_name: "Sales Manager", description: "Sales orders, invoices, customers, and reports" },
     { role_code: "INV_CTRL", role_name: "Inventory Controller", description: "Stock, movements, cycle count, and warehouse reports" },
     { role_code: "HR_MGR", role_name: "HR Manager", description: "Employees, payroll, loans, and HR reports" }
@@ -61,7 +60,7 @@ const moduleDefaults = [
     "operations",
     "hr",
     "projects",
-    "zatca",
+    "compliance",
     "reports",
     "approvals",
     "admin"
@@ -73,7 +72,7 @@ const emptyCompanyForm = {
     organization_name_ar: "",
     commercial_registration_number: "",
     vat_number: "",
-    country: "Saudi Arabia",
+    country: "Sri Lanka",
     city: "",
     address: "",
     contact_name: "",
@@ -81,7 +80,7 @@ const emptyCompanyForm = {
     contact_phone: "",
     business_activity: "",
     preferred_language: "en",
-    currency: "SAR",
+    currency: "LKR",
     fiscal_year_start_month: "1"
 };
 
@@ -103,10 +102,10 @@ const emptyZatcaForm = {
 
 const getOrgName = (org) => org?.company_legal_name || org?.organization_name || org?.company_name || org?.trade_name;
 
-const getActiveStep = (user, organization, zatcaConfig) => {
+const getActiveStep = (user, organization) => {
     if (!user?.email_verified) return "email";
     if (!organization || organization.onboarding_status === onboardingStatuses.COMPANY) return "company";
-    if (!zatcaConfig || organization.onboarding_status === onboardingStatuses.ZATCA) return "zatca";
+    if (organization.onboarding_status === onboardingStatuses.ZATCA) return "modules";
     if (organization.onboarding_status === onboardingStatuses.MODULES) return "modules";
     if (organization.onboarding_status === onboardingStatuses.READY) return "ready";
     return "company";
@@ -345,7 +344,7 @@ function CompanyStep({ user, organization, onSaved }) {
                 email_verified: true,
                 status: "active",
                 selected_plan: getStoredSignupPlan(),
-                onboarding_status: onboardingStatuses.ZATCA
+                onboarding_status: onboardingStatuses.MODULES
             };
             const saved = organization
                 ? await matrixSales.entities.Organization.update(organization.id, payload)
@@ -354,12 +353,12 @@ function CompanyStep({ user, organization, onSaved }) {
                 ...saved,
                 tenant_id: saved.id,
                 organization_id: saved.id,
-                onboarding_status: onboardingStatuses.ZATCA
+                onboarding_status: onboardingStatuses.MODULES
             });
             localStorage.setItem("selected_organization_id", tenantReady.id);
             await createTenantSubscription(tenantReady, getStoredSignupPlan());
             window.dispatchEvent(new CustomEvent("matrixsales:organizations-changed"));
-            toast({ title: "Company profile saved", description: "Continue with ZATCA setup." });
+            toast({ title: "Company profile saved", description: "Continue to configure modules." });
             onSaved?.();
         } catch (error) {
             toast({ title: "Unable to save company", description: error.message || "Please try again.", variant: "destructive" });
@@ -427,9 +426,8 @@ function CompanyStep({ user, organization, onSaved }) {
                             <Select value={formData.currency} onValueChange={(value) => update("currency", value)}>
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="SAR">SAR</SelectItem>
-                                    <SelectItem value="USD">USD</SelectItem>
-                                    <SelectItem value="AED">AED</SelectItem>
+                                    <SelectItem value="LKR">LKR — Sri Lankan Rupee</SelectItem>
+                                    <SelectItem value="USD">USD — US Dollar</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -642,18 +640,15 @@ export function useTenantReadiness() {
             if (organization) {
                 localStorage.setItem("selected_organization_id", organization.id);
             }
-            const zatcaConfigs = organization
-                ? await matrixSales.entities.ZATCAConfiguration.filter({ organization_id: organization.id }).catch(() => [])
-                : [];
             return {
                 organization,
-                zatcaConfig: zatcaConfigs[0] || null
+                zatcaConfig: null
             };
         },
         initialData: { organization: null, zatcaConfig: null }
     });
 
-    const activeStep = getActiveStep(user, query.data?.organization, query.data?.zatcaConfig);
+    const activeStep = getActiveStep(user, query.data?.organization);
     return {
         ...query,
         activeStep,
@@ -694,9 +689,6 @@ export default function TenantOnboardingWizard({ onComplete }) {
             {activeStep === "email" && <EmailVerificationStep />}
             {activeStep === "company" && (
                 <CompanyStep user={user} organization={readiness.data?.organization} onSaved={refresh} />
-            )}
-            {activeStep === "zatca" && (
-                <ZatcaStep organization={readiness.data?.organization} existingConfig={readiness.data?.zatcaConfig} onSaved={refresh} />
             )}
             {activeStep === "modules" && (
                 <ModulesStep user={user} organization={readiness.data?.organization} onSaved={() => {

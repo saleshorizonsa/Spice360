@@ -186,7 +186,7 @@ export default function StockOnHandReport() {
                         <CardContent className="p-4">
                             <p className="text-sm text-gray-600">Total Value</p>
                             <p className="text-2xl font-bold text-indigo-700">
-                                SAR {(totalValue / 1000).toFixed(0)}K
+                                LKR {(totalValue / 1000).toFixed(0)}K
                             </p>
                         </CardContent>
                     </Card>

@@ -311,7 +311,7 @@ export default function LineItemsTable({
                                         </TableCell>
                                         <TableCell className="w-32">
                                             <div className="font-semibold">
-                                                SAR {(line.line_total || 0).toFixed(2)}
+                                                LKR {(line.line_total || 0).toFixed(2)}
                                             </div>
                                         </TableCell>
                                         <TableCell className="w-16">
@@ -346,7 +346,7 @@ export default function LineItemsTable({
                             </div>
                             <div className="text-right">
                                 <div className="text-sm text-gray-600">Total Amount</div>
-                                <div className="text-xl font-bold text-emerald-600">SAR {totalAmount.toFixed(2)}</div>
+                                <div className="text-xl font-bold text-emerald-600">LKR {totalAmount.toFixed(2)}</div>
                             </div>
                         </div>
                     </div>

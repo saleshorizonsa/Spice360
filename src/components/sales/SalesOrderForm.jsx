@@ -321,7 +321,7 @@ export default function SalesOrderForm({ order, onClose }) {
 
     const quotationOptions = acceptedQuotations.map(q => ({
         value: q.quotation_number,
-        label: `${q.quotation_number} - ${q.customer_name} - SAR ${q.total_amount?.toLocaleString() || '0'}`
+        label: `${q.quotation_number} - ${q.customer_name} - LKR ${q.total_amount?.toLocaleString() || '0'}`
     }));
 
     return (
@@ -478,7 +478,7 @@ export default function SalesOrderForm({ order, onClose }) {
                         <div className="bg-gray-50 p-4 rounded-lg flex justify-between items-center">
                             <Label className="text-lg">Total Amount</Label>
                             <div className="text-3xl font-bold text-emerald-600">
-                                SAR {formData.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                LKR {formData.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                         </div>
                     </div>

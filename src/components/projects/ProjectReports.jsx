@@ -246,7 +246,7 @@ export default function ProjectReports({ projects, tasks, expenses, timesheets, 
                                     <YAxis />
                                     <Tooltip />
                                     <Legend />
-                                    <Line type="monotone" dataKey="amount" stroke="#10b981" strokeWidth={2} name="Total Expenses (SAR)" />
+                                    <Line type="monotone" dataKey="amount" stroke="#10b981" strokeWidth={2} name="Total Expenses (LKR)" />
                                 </LineChart>
                             </ResponsiveContainer>
                         </CardContent>
@@ -258,7 +258,7 @@ export default function ProjectReports({ projects, tasks, expenses, timesheets, 
                                 <div>
                                     <p className="text-sm text-gray-600">Total Expenses</p>
                                     <p className="text-3xl font-bold text-gray-900 mt-2">
-                                        SAR {expenses.reduce((sum, e) => sum + (e.amount || 0), 0).toLocaleString()}
+                                        LKR {expenses.reduce((sum, e) => sum + (e.amount || 0), 0).toLocaleString()}
                                     </p>
                                 </div>
                             </CardContent>

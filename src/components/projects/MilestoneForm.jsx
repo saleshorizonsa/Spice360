@@ -217,7 +217,7 @@ export default function MilestoneForm({ item, onClose }) {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label>Milestone Value (SAR) *</Label>
+                            <Label>Milestone Value (LKR) *</Label>
                             <Input
                                 type="number"
                                 value={formData.milestone_value}
@@ -242,7 +242,7 @@ export default function MilestoneForm({ item, onClose }) {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label>Retention Amount (SAR)</Label>
+                            <Label>Retention Amount (LKR)</Label>
                             <Input
                                 type="number"
                                 value={formData.retention_amount}
@@ -251,7 +251,7 @@ export default function MilestoneForm({ item, onClose }) {
                             />
                         </div>
                         <div>
-                            <Label>Invoice Amount (SAR)</Label>
+                            <Label>Invoice Amount (LKR)</Label>
                             <Input
                                 type="number"
                                 value={formData.invoice_amount}

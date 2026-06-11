@@ -28,7 +28,7 @@ export default function CustomerForm({ customer, onClose }) {
         city: '',
         state: '',
         postal_code: '',
-        country: 'Saudi Arabia',
+        country: 'Sri Lanka',
         tax_id: '',
         credit_limit: 0,
         payment_terms: 'net_30',
@@ -273,7 +273,7 @@ export default function CustomerForm({ customer, onClose }) {
                         <h3 className="font-semibold text-lg border-b pb-2">Financial Information</h3>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label>Credit Limit (SAR)</Label>
+                                <Label>Credit Limit (LKR)</Label>
                                 <Input
                                     type="number"
                                     value={formData.credit_limit}

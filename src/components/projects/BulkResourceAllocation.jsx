@@ -254,7 +254,7 @@ export default function BulkResourceAllocation({ onClose }) {
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Billing Rate (SAR/hour)</Label>
+                                <Label>Billing Rate (LKR/hour)</Label>
                                 <Input
                                     type="number"
                                     value={commonData.billing_rate}
@@ -263,7 +263,7 @@ export default function BulkResourceAllocation({ onClose }) {
                             </div>
 
                             <div className="space-y-2">
-                                <Label>Cost Rate (SAR/hour)</Label>
+                                <Label>Cost Rate (LKR/hour)</Label>
                                 <Input
                                     type="number"
                                     value={commonData.cost_rate}

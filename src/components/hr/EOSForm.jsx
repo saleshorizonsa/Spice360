@@ -177,11 +177,11 @@ export default function EOSForm({ item, onClose }) {
                         </div>
                         <div className="flex justify-between text-lg border-t pt-2">
                             <span className="font-bold">Total EOS Amount:</span>
-                            <span className="font-bold text-emerald-600">SAR {formData.total_eos_amount.toLocaleString()}</span>
+                            <span className="font-bold text-emerald-600">LKR {formData.total_eos_amount.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between text-lg">
                             <span className="font-bold">Final Settlement:</span>
-                            <span className="font-bold text-emerald-600">SAR {formData.final_settlement_amount.toLocaleString()}</span>
+                            <span className="font-bold text-emerald-600">LKR {formData.final_settlement_amount.toLocaleString()}</span>
                         </div>
                     </div>
 

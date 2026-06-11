@@ -56,19 +56,19 @@ export default function ProjectBudgetTracker({ project }) {
                         <div>
                             <p className="text-xs text-gray-600">Budgeted</p>
                             <p className="text-lg font-semibold text-gray-900">
-                                SAR {project.budget_cost?.toLocaleString() || 0}
+                                LKR {project.budget_cost?.toLocaleString() || 0}
                             </p>
                         </div>
                         <div>
                             <p className="text-xs text-gray-600">Actual</p>
                             <p className="text-lg font-semibold text-blue-600">
-                                SAR {project.actual_cost?.toLocaleString() || 0}
+                                LKR {project.actual_cost?.toLocaleString() || 0}
                             </p>
                         </div>
                         <div>
                             <p className="text-xs text-gray-600">Variance</p>
                             <p className={`text-lg font-semibold ${budgetVariance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {budgetVariance >= 0 ? '+' : ''}SAR {budgetVariance?.toLocaleString() || 0}
+                                {budgetVariance >= 0 ? '+' : ''}LKR {budgetVariance?.toLocaleString() || 0}
                             </p>
                         </div>
                     </div>
@@ -130,19 +130,19 @@ export default function ProjectBudgetTracker({ project }) {
                         <div className="space-y-1">
                             <p className="text-xs text-gray-600">Revenue Recognized</p>
                             <p className="text-xl font-bold text-gray-900">
-                                SAR {project.revenue_recognized?.toLocaleString() || 0}
+                                LKR {project.revenue_recognized?.toLocaleString() || 0}
                             </p>
                         </div>
                         <div className="space-y-1">
                             <p className="text-xs text-gray-600">Billed Amount</p>
                             <p className="text-xl font-bold text-blue-600">
-                                SAR {project.billed_amount?.toLocaleString() || 0}
+                                LKR {project.billed_amount?.toLocaleString() || 0}
                             </p>
                         </div>
                         <div className="space-y-1">
                             <p className="text-xs text-gray-600">Unbilled Revenue</p>
                             <p className="text-xl font-bold text-amber-600">
-                                SAR {project.unbilled_revenue?.toLocaleString() || 0}
+                                LKR {project.unbilled_revenue?.toLocaleString() || 0}
                             </p>
                         </div>
                         <div className="space-y-1">

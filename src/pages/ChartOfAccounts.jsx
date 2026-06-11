@@ -16,46 +16,50 @@ import { useToast } from "@/components/ui/use-toast";
 import { useLanguage } from "@/components/utils/languageContext";
 import { useOrganization } from "@/components/utils/OrganizationContext";
 
-const fmt = (value) => `SAR ${Number(value || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const fmt = (value) => `LKR ${Number(value || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const seededAccounts = [
-  ["1000", "Assets", "الأصول", "asset", "", "", true, "debit"],
-  ["1010", "Cash & Bank", "النقد والبنوك", "asset", "cash", "1000", false, "debit"],
-  ["1020", "Petty Cash", "العهدة النقدية", "asset", "cash", "1000", false, "debit"],
-  ["1100", "Trade Receivables", "ذمم العملاء", "asset", "receivables", "1000", false, "debit"],
-  ["1110", "Other Receivables", "ذمم مدينة أخرى", "asset", "receivables", "1000", false, "debit"],
-  ["1200", "Inventory - Raw Materials", "مخزون مواد خام", "asset", "inventory", "1000", false, "debit"],
-  ["1210", "Inventory WIP", "مخزون تحت التشغيل", "asset", "inventory", "1000", false, "debit"],
-  ["1220", "Inventory Finished Goods", "مخزون تام", "asset", "inventory", "1000", false, "debit"],
-  ["1300", "Prepaid Expenses", "مصروفات مدفوعة مقدما", "asset", "prepaid", "1000", false, "debit"],
-  ["1400", "Fixed Assets", "أصول ثابتة", "asset", "fixed_asset", "1000", false, "debit"],
-  ["1410", "Accumulated Depreciation", "مجمع الإهلاك", "asset", "fixed_asset", "1000", false, "credit"],
-  ["1500", "Assets Under Construction", "أصول تحت الإنشاء", "asset", "auc", "1000", false, "debit"],
-  ["2000", "Liabilities", "الالتزامات", "liability", "", "", true, "credit"],
-  ["2100", "Trade Payables", "ذمم الموردين", "liability", "payables", "2000", false, "credit"],
-  ["2110", "Accrued Expenses", "مصروفات مستحقة", "liability", "accruals", "2000", false, "credit"],
-  ["2200", "VAT Payable", "ضريبة قيمة مضافة مستحقة", "liability", "vat", "2000", false, "credit"],
-  ["2210", "VAT Receivable", "ضريبة قيمة مضافة مدينة", "asset", "vat", "1000", false, "debit"],
-  ["2300", "Customer Advances", "دفعات عملاء مقدمة", "liability", "advances", "2000", false, "credit"],
-  ["2400", "GOSI Payable", "تأمينات اجتماعية مستحقة", "liability", "payroll", "2000", false, "credit"],
-  ["2410", "Salaries Payable", "رواتب مستحقة", "liability", "payroll", "2000", false, "credit"],
-  ["2500", "Long-Term Loans", "قروض طويلة الأجل", "liability", "loans", "2000", false, "credit"],
-  ["3000", "Equity", "حقوق الملكية", "equity", "", "", true, "credit"],
-  ["3001", "Share Capital", "رأس المال", "equity", "capital", "3000", false, "credit"],
-  ["3100", "Retained Earnings", "الأرباح المبقاة", "equity", "retained_earnings", "3000", false, "credit"],
-  ["3200", "Current Year Profit/Loss", "ربح أو خسارة السنة الحالية", "equity", "current_year_profit", "3000", false, "credit"],
-  ["4000", "Revenue", "الإيرادات", "revenue", "", "", true, "credit"],
-  ["4001", "Sales Revenue", "إيرادات المبيعات", "revenue", "sales", "4000", false, "credit"],
-  ["4010", "Service Revenue", "إيرادات الخدمات", "revenue", "services", "4000", false, "credit"],
-  ["4020", "Other Income", "إيرادات أخرى", "revenue", "other_income", "4000", false, "credit"],
-  ["5000", "Expenses", "المصروفات", "expense", "", "", true, "debit"],
-  ["5001", "Cost of Goods Sold", "تكلفة البضاعة المباعة", "expense", "cogs", "5000", false, "debit"],
-  ["5100", "Salaries & Wages", "الرواتب والأجور", "expense", "payroll", "5000", false, "debit"],
-  ["5200", "GOSI Employer Contribution", "حصة صاحب العمل في التأمينات", "expense", "payroll", "5000", false, "debit"],
-  ["5300", "Rent Expense", "مصروف الإيجار", "expense", "rent", "5000", false, "debit"],
-  ["5400", "Utilities", "مرافق", "expense", "utilities", "5000", false, "debit"],
-  ["5500", "Depreciation Expense", "مصروف الإهلاك", "expense", "depreciation", "5000", false, "debit"],
-  ["5600", "VAT Expense (irrecoverable)", "ضريبة غير قابلة للاسترداد", "expense", "vat", "5000", false, "debit"]
+  ["1000", "Assets", "", "asset", "", "", true, "debit"],
+  ["1010", "Cash & Bank", "", "asset", "cash", "1000", false, "debit"],
+  ["1020", "Petty Cash", "", "asset", "cash", "1000", false, "debit"],
+  ["1100", "Trade Receivables", "", "asset", "receivables", "1000", false, "debit"],
+  ["1110", "Other Receivables", "", "asset", "receivables", "1000", false, "debit"],
+  ["1200", "Inventory - Raw Materials", "", "asset", "inventory", "1000", false, "debit"],
+  ["1210", "Inventory WIP", "", "asset", "inventory", "1000", false, "debit"],
+  ["1220", "Inventory Finished Goods", "", "asset", "inventory", "1000", false, "debit"],
+  ["1300", "Prepaid Expenses", "", "asset", "prepaid", "1000", false, "debit"],
+  ["1400", "Fixed Assets", "", "asset", "fixed_asset", "1000", false, "debit"],
+  ["1410", "Accumulated Depreciation", "", "asset", "fixed_asset", "1000", false, "credit"],
+  ["1500", "Assets Under Construction", "", "asset", "auc", "1000", false, "debit"],
+  ["2000", "Liabilities", "", "liability", "", "", true, "credit"],
+  ["2100", "Trade Payables", "", "liability", "payables", "2000", false, "credit"],
+  ["2110", "Accrued Expenses", "", "liability", "accruals", "2000", false, "credit"],
+  ["2200", "VAT Payable", "", "liability", "vat", "2000", false, "credit"],
+  ["2210", "VAT Receivable", "", "asset", "vat", "1000", false, "debit"],
+  ["2300", "Customer Advances", "", "liability", "advances", "2000", false, "credit"],
+  ["2310", "APIT Payable", "", "liability", "payroll", "2000", false, "credit"],
+  ["2400", "EPF Payable", "", "liability", "payroll", "2000", false, "credit"],
+  ["2410", "Salaries Payable", "", "liability", "payroll", "2000", false, "credit"],
+  ["2420", "EPF Payable - Employee", "", "liability", "payroll", "2000", false, "credit"],
+  ["2430", "ETF Payable", "", "liability", "payroll", "2000", false, "credit"],
+  ["2500", "Long-Term Loans", "", "liability", "loans", "2000", false, "credit"],
+  ["3000", "Equity", "", "equity", "", "", true, "credit"],
+  ["3001", "Share Capital", "", "equity", "capital", "3000", false, "credit"],
+  ["3100", "Retained Earnings", "", "equity", "retained_earnings", "3000", false, "credit"],
+  ["3200", "Current Year Profit/Loss", "", "equity", "current_year_profit", "3000", false, "credit"],
+  ["4000", "Revenue", "", "revenue", "", "", true, "credit"],
+  ["4001", "Sales Revenue", "", "revenue", "sales", "4000", false, "credit"],
+  ["4010", "Service Revenue", "", "revenue", "services", "4000", false, "credit"],
+  ["4020", "Other Income", "", "revenue", "other_income", "4000", false, "credit"],
+  ["5000", "Expenses", "", "expense", "", "", true, "debit"],
+  ["5001", "Cost of Goods Sold", "", "expense", "cogs", "5000", false, "debit"],
+  ["5100", "Salaries & Wages", "", "expense", "payroll", "5000", false, "debit"],
+  ["5210", "EPF Employer Contribution", "", "expense", "payroll", "5000", false, "debit"],
+  ["5220", "ETF Employer Contribution", "", "expense", "payroll", "5000", false, "debit"],
+  ["5300", "Rent Expense", "", "expense", "rent", "5000", false, "debit"],
+  ["5400", "Utilities", "", "expense", "utilities", "5000", false, "debit"],
+  ["5500", "Depreciation Expense", "", "expense", "depreciation", "5000", false, "debit"],
+  ["5600", "VAT Expense (irrecoverable)", "", "expense", "vat", "5000", false, "debit"]
 ];
 
 export async function seedChartOfAccounts(orgId) {
@@ -73,7 +77,7 @@ export async function seedChartOfAccounts(orgId) {
       allow_direct_posting: !is_header,
       cost_center_required: false,
       opening_balance: 0,
-      currency: "SAR",
+      currency: "LKR",
       organization_id: orgId
     })
   ));
@@ -95,7 +99,7 @@ function AccountForm({ account, accounts, orgId, onClose }) {
     allow_direct_posting: true,
     cost_center_required: false,
     opening_balance: 0,
-    currency: "SAR",
+    currency: "LKR",
     organization_id: orgId
   });
 
@@ -154,7 +158,7 @@ function AccountForm({ account, accounts, orgId, onClose }) {
               </Select>
             </div>
             <div><Label>Opening Balance</Label><Input type="number" step="0.01" value={form.opening_balance} onChange={(e) => update("opening_balance", Number(e.target.value || 0))} /></div>
-            <div><Label>Currency</Label><Input value={form.currency || "SAR"} onChange={(e) => update("currency", e.target.value)} /></div>
+            <div><Label>Currency</Label><Input value={form.currency || "LKR"} onChange={(e) => update("currency", e.target.value)} /></div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             {[

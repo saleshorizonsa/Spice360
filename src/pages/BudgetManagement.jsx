@@ -126,12 +126,12 @@ export default function BudgetManagement() {
         { 
             header: "Budgeted", 
             key: "budgeted_amount", 
-            render: (val) => `SAR ${val?.toLocaleString() || 0}` 
+            render: (val) => `LKR ${val?.toLocaleString() || 0}` 
         },
         { 
             header: "Actual", 
             key: "actual_amount", 
-            render: (val) => `SAR ${val?.toLocaleString() || 0}` 
+            render: (val) => `LKR ${val?.toLocaleString() || 0}` 
         },
         { 
             header: "Variance", 
@@ -155,7 +155,7 @@ export default function BudgetManagement() {
         { header: "Request ID", key: "request_id" },
         { header: "Budget ID", key: "document_number" },
         { header: "Requester", key: "requester_name" },
-        { header: "Amount", key: "amount", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: "Amount", key: "amount", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: "Submission Date", key: "submission_date" },
         { header: "Status", key: "status", isBadge: true },
         {

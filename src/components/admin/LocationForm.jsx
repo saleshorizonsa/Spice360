@@ -21,7 +21,7 @@ export default function LocationForm({ item, onClose }) {
         address: '',
         city: '',
         state: '',
-        country: 'Saudi Arabia',
+        country: 'Sri Lanka',
         capacity: '',
         manager_name: '',
         phone: '',

@@ -104,15 +104,15 @@ export default function DepreciationReport({ assets, depreciation, period }) {
                         <div class="kpi-label">Total Assets</div>
                     </div>
                     <div class="kpi-card">
-                        <div class="kpi-value">SAR ${(totalAcquisitionCost / 1000000).toFixed(1)}M</div>
+                        <div class="kpi-value">LKR ${(totalAcquisitionCost / 1000000).toFixed(1)}M</div>
                         <div class="kpi-label">Acquisition Cost</div>
                     </div>
                     <div class="kpi-card">
-                        <div class="kpi-value">SAR ${(totalAccumulatedDep / 1000000).toFixed(1)}M</div>
+                        <div class="kpi-value">LKR ${(totalAccumulatedDep / 1000000).toFixed(1)}M</div>
                         <div class="kpi-label">Accumulated Depreciation</div>
                     </div>
                     <div class="kpi-card">
-                        <div class="kpi-value">SAR ${(totalNBV / 1000000).toFixed(1)}M</div>
+                        <div class="kpi-value">LKR ${(totalNBV / 1000000).toFixed(1)}M</div>
                         <div class="kpi-label">Net Book Value</div>
                     </div>
                 </div>
@@ -120,7 +120,7 @@ export default function DepreciationReport({ assets, depreciation, period }) {
                 ${period ? `
                     <h2>Period Depreciation Summary</h2>
                     <div class="kpi-card" style="max-width: 300px; margin: 15px 0;">
-                        <div class="kpi-value">SAR ${totalPeriodDep.toLocaleString()}</div>
+                        <div class="kpi-value">LKR ${totalPeriodDep.toLocaleString()}</div>
                         <div class="kpi-label">Total Depreciation for ${period.year}-${period.month}</div>
                     </div>
                 ` : ''}
@@ -131,9 +131,9 @@ export default function DepreciationReport({ assets, depreciation, period }) {
                         <tr>
                             <th style="text-align: left;">Asset Class</th>
                             <th>Count</th>
-                            <th>Acquisition Cost (SAR)</th>
-                            <th>Accumulated Dep. (SAR)</th>
-                            <th>NBV (SAR)</th>
+                            <th>Acquisition Cost (LKR)</th>
+                            <th>Accumulated Dep. (LKR)</th>
+                            <th>NBV (LKR)</th>
                             <th>Dep. %</th>
                         </tr>
                     </thead>
@@ -276,21 +276,21 @@ export default function DepreciationReport({ assets, depreciation, period }) {
                     <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                         <TrendingDown className="w-5 h-5 text-blue-600 mb-2" />
                         <p className="text-2xl font-bold text-blue-900">
-                            SAR {(totalAcquisitionCost / 1000000).toFixed(1)}M
+                            LKR {(totalAcquisitionCost / 1000000).toFixed(1)}M
                         </p>
                         <p className="text-xs text-blue-600">Acquisition Cost</p>
                     </div>
                     <div className="bg-red-50 p-4 rounded-lg border border-red-200">
                         <TrendingDown className="w-5 h-5 text-red-600 mb-2" />
                         <p className="text-2xl font-bold text-red-900">
-                            SAR {(totalAccumulatedDep / 1000000).toFixed(1)}M
+                            LKR {(totalAccumulatedDep / 1000000).toFixed(1)}M
                         </p>
                         <p className="text-xs text-red-600">Accumulated Depreciation</p>
                     </div>
                     <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-200">
                         <TrendingDown className="w-5 h-5 text-emerald-600 mb-2" />
                         <p className="text-2xl font-bold text-emerald-900">
-                            SAR {(totalNBV / 1000000).toFixed(1)}M
+                            LKR {(totalNBV / 1000000).toFixed(1)}M
                         </p>
                         <p className="text-xs text-emerald-600">Net Book Value</p>
                     </div>
@@ -311,7 +311,7 @@ export default function DepreciationReport({ assets, depreciation, period }) {
                                 </div>
                             </div>
                             <p className="text-2xl font-bold text-indigo-900">
-                                SAR {totalPeriodDep.toLocaleString()}
+                                LKR {totalPeriodDep.toLocaleString()}
                             </p>
                         </div>
                     </div>
@@ -326,9 +326,9 @@ export default function DepreciationReport({ assets, depreciation, period }) {
                                 <tr className="bg-gray-50">
                                     <th className="border p-2 text-left">Asset Class</th>
                                     <th className="border p-2 text-center">Count</th>
-                                    <th className="border p-2 text-right">Acq. Cost (SAR)</th>
-                                    <th className="border p-2 text-right">Accum. Dep. (SAR)</th>
-                                    <th className="border p-2 text-right">NBV (SAR)</th>
+                                    <th className="border p-2 text-right">Acq. Cost (LKR)</th>
+                                    <th className="border p-2 text-right">Accum. Dep. (LKR)</th>
+                                    <th className="border p-2 text-right">NBV (LKR)</th>
                                     <th className="border p-2 text-center">Dep. %</th>
                                 </tr>
                             </thead>

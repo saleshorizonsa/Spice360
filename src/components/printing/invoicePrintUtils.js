@@ -117,7 +117,7 @@ export const getLabel = (key, language = "bilingual") => {
 export const getPrintDirection = (language = "bilingual") =>
   language === "ar" ? "rtl" : "ltr";
 
-export const formatMoney = (value, currency = "SAR") =>
+export const formatMoney = (value, currency = "LKR") =>
   `${currency} ${Number(value || 0).toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2

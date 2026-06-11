@@ -162,7 +162,7 @@ export default function ApprovalWorkflowBuilder({ documentType, onSave }) {
                             <CardContent className="space-y-4">
                                 <div className="grid grid-cols-3 gap-4">
                                     <div>
-                                        <Label>Min Amount (SAR)</Label>
+                                        <Label>Min Amount (LKR)</Label>
                                         <Input
                                             type="number"
                                             value={level.threshold_min}
@@ -170,7 +170,7 @@ export default function ApprovalWorkflowBuilder({ documentType, onSave }) {
                                         />
                                     </div>
                                     <div>
-                                        <Label>Max Amount (SAR)</Label>
+                                        <Label>Max Amount (LKR)</Label>
                                         <Input
                                             type="number"
                                             value={level.threshold_max || ''}

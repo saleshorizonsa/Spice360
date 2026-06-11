@@ -34,7 +34,7 @@ export default function ServiceOrderForm({ item, onClose }) {
         end_date: '',
         billing_type: 'fixed_price',
         total_contract_value: 0,
-        currency: 'SAR',
+        currency: 'LKR',
         milestones: [],
         billed_amount: 0,
         assigned_to: '',
@@ -308,7 +308,7 @@ export default function ServiceOrderForm({ item, onClose }) {
                                 </Select>
                             </div>
                             <div>
-                                <Label>Total Contract Value (SAR) *</Label>
+                                <Label>Total Contract Value (LKR) *</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -320,7 +320,7 @@ export default function ServiceOrderForm({ item, onClose }) {
                         </div>
 
                         <div>
-                            <Label>Billed Amount (SAR)</Label>
+                            <Label>Billed Amount (LKR)</Label>
                             <Input
                                 type="number"
                                 step="0.01"
@@ -374,7 +374,7 @@ export default function ServiceOrderForm({ item, onClose }) {
                                             />
                                         </div>
                                         <div>
-                                            <Label>Value (SAR)</Label>
+                                            <Label>Value (LKR)</Label>
                                             <Input
                                                 type="number"
                                                 step="0.01"

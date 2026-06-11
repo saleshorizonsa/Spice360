@@ -281,7 +281,7 @@ export default function BudgetManagementForm({ item, onClose, open }) {
                     </div>
 
                     <div>
-                        <Label>Budgeted Amount (SAR) *</Label>
+                        <Label>Budgeted Amount (LKR) *</Label>
                         <Input
                             type="number"
                             step="0.01"

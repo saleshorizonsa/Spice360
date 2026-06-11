@@ -22,9 +22,9 @@ function UtilizationBar({ used, limit }) {
                 <div className={`${color} h-2 rounded-full transition-all`} style={{ width: `${pct}%` }} />
             </div>
             <div className="flex justify-between text-xs text-gray-500">
-                <span>SAR {(used || 0).toLocaleString()}</span>
+                <span>LKR {(used || 0).toLocaleString()}</span>
                 <span className={pct >= 100 ? "text-red-600 font-bold" : ""}>{pct.toFixed(0)}%</span>
-                <span>SAR {limit.toLocaleString()}</span>
+                <span>LKR {limit.toLocaleString()}</span>
             </div>
         </div>
     );
@@ -163,7 +163,7 @@ export default function CreditLimitManager() {
                     <CardContent className="p-4 flex items-center gap-3">
                         <div className="bg-blue-100 p-2 rounded-lg"><TrendingUp className="w-5 h-5 text-blue-600" /></div>
                         <div>
-                            <p className="text-2xl font-bold text-blue-700">SAR {(totalExposure / 1000).toFixed(0)}K</p>
+                            <p className="text-2xl font-bold text-blue-700">LKR {(totalExposure / 1000).toFixed(0)}K</p>
                             <p className="text-xs text-gray-500">Total Exposure</p>
                         </div>
                     </CardContent>
@@ -239,7 +239,7 @@ export default function CreditLimitManager() {
                                     {isEditing ? (
                                         <div className="flex items-end gap-2 shrink-0">
                                             <div className="space-y-1">
-                                                <label className="text-xs text-gray-500">Credit Limit (SAR)</label>
+                                                <label className="text-xs text-gray-500">Credit Limit (LKR)</label>
                                                 <Input
                                                     type="number"
                                                     value={editValues.credit_limit}
@@ -248,7 +248,7 @@ export default function CreditLimitManager() {
                                                 />
                                             </div>
                                             <div className="space-y-1">
-                                                <label className="text-xs text-gray-500">Outstanding (SAR)</label>
+                                                <label className="text-xs text-gray-500">Outstanding (LKR)</label>
                                                 <Input
                                                     type="number"
                                                     value={editValues.outstanding_balance}
@@ -267,15 +267,15 @@ export default function CreditLimitManager() {
                                         <div className="flex items-start gap-6 shrink-0 text-right">
                                             <div>
                                                 <p className="text-xs text-gray-400">Credit Limit</p>
-                                                <p className="text-base font-bold text-gray-800">SAR {limit.toLocaleString()}</p>
+                                                <p className="text-base font-bold text-gray-800">LKR {limit.toLocaleString()}</p>
                                             </div>
                                             <div>
                                                 <p className="text-xs text-gray-400">Outstanding</p>
-                                                <p className={`text-base font-bold ${used >= limit && limit > 0 ? 'text-red-600' : 'text-gray-800'}`}>SAR {used.toLocaleString()}</p>
+                                                <p className={`text-base font-bold ${used >= limit && limit > 0 ? 'text-red-600' : 'text-gray-800'}`}>LKR {used.toLocaleString()}</p>
                                             </div>
                                             <div>
                                                 <p className="text-xs text-gray-400">Available</p>
-                                                <p className={`text-base font-bold ${available === 0 ? 'text-red-600' : 'text-emerald-600'}`}>SAR {available.toLocaleString()}</p>
+                                                <p className={`text-base font-bold ${available === 0 ? 'text-red-600' : 'text-emerald-600'}`}>LKR {available.toLocaleString()}</p>
                                             </div>
                                             <div className="flex flex-col gap-1 mt-1">
                                                 <Button size="sm" variant="outline" className="h-8 text-xs gap-1" onClick={() => handleEdit(customer)}>

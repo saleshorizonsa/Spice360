@@ -172,7 +172,7 @@ export default function SalesmanForm({ item, onClose }) {
                                 />
                             </div>
                             <div>
-                                <Label>Monthly Target (SAR)</Label>
+                                <Label>Monthly Target (LKR)</Label>
                                 <Input
                                     type="number"
                                     value={formData.monthly_target}

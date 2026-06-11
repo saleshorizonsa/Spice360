@@ -285,7 +285,7 @@ export default function ProjectTaskForm({ item, onClose, projectCode }) {
                         </div>
 
                         <div className="space-y-2">
-                            <Label>Billing Rate (SAR/hour)</Label>
+                            <Label>Billing Rate (LKR/hour)</Label>
                             <Input
                                 type="number"
                                 value={formData.billing_rate}

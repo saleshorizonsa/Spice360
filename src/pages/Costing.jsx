@@ -98,11 +98,11 @@ export default function Costing() {
         { header: "Material Name", key: "material_name" },
         { header: "Version", key: "costing_version" },
         { header: "Method", key: "costing_method", isBadge: true },
-        { header: "Material Cost", key: "direct_material_cost", render: (val) => `SAR ${val?.toFixed(2) || 0}` },
-        { header: "Labor Cost", key: "direct_labor_cost", render: (val) => `SAR ${val?.toFixed(2) || 0}` },
-        { header: "Overhead", key: "fixed_overhead", render: (val) => `SAR ${((val || 0) + 0).toFixed(2)}` },
-        { header: "Total Cost/Unit", key: "total_cost_per_unit", render: (val) => `SAR ${val?.toFixed(2) || 0}` },
-        { header: "Selling Price", key: "actual_selling_price", render: (val) => `SAR ${val?.toFixed(2) || 0}` },
+        { header: "Material Cost", key: "direct_material_cost", render: (val) => `LKR ${val?.toFixed(2) || 0}` },
+        { header: "Labor Cost", key: "direct_labor_cost", render: (val) => `LKR ${val?.toFixed(2) || 0}` },
+        { header: "Overhead", key: "fixed_overhead", render: (val) => `LKR ${((val || 0) + 0).toFixed(2)}` },
+        { header: "Total Cost/Unit", key: "total_cost_per_unit", render: (val) => `LKR ${val?.toFixed(2) || 0}` },
+        { header: "Selling Price", key: "actual_selling_price", render: (val) => `LKR ${val?.toFixed(2) || 0}` },
         { header: "Margin %", key: "actual_margin_percent", render: (val) => `${val?.toFixed(1) || 0}%` },
         { header: "Status", key: "status", isBadge: true }
     ];
@@ -112,11 +112,11 @@ export default function Costing() {
         { header: "Type", key: "document_type", isBadge: true },
         { header: "Material", key: "material_name" },
         { header: "Quantity", key: "quantity" },
-        { header: "Material Cost", key: "direct_material_cost", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
-        { header: "Labor Cost", key: "direct_labor_cost", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
-        { header: "Overhead", key: "overhead_cost", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
-        { header: "Total Cost", key: "total_actual_cost", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
-        { header: "Cost/Unit", key: "cost_per_unit", render: (val) => `SAR ${val?.toFixed(2) || 0}` },
+        { header: "Material Cost", key: "direct_material_cost", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: "Labor Cost", key: "direct_labor_cost", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: "Overhead", key: "overhead_cost", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: "Total Cost", key: "total_actual_cost", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: "Cost/Unit", key: "cost_per_unit", render: (val) => `LKR ${val?.toFixed(2) || 0}` },
         { header: "Date", key: "posting_date" },
         { header: "Status", key: "status", isBadge: true }
     ];
@@ -125,11 +125,11 @@ export default function Costing() {
         { header: "Document", key: "document_number" },
         { header: "Material", key: "material_name" },
         { header: "Period", key: "variance_period" },
-        { header: "Std Cost", key: "total_standard_cost", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
-        { header: "Act Cost", key: "total_actual_cost", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: "Std Cost", key: "total_standard_cost", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: "Act Cost", key: "total_actual_cost", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: "Variance", key: "total_variance", render: (val) => {
             const color = val > 0 ? 'text-red-600' : 'text-green-600';
-            return <span className={color}>SAR {val?.toLocaleString() || 0}</span>;
+            return <span className={color}>LKR {val?.toLocaleString() || 0}</span>;
         }},
         { header: "Variance %", key: "variance_percent", render: (val) => `${val?.toFixed(1) || 0}%` },
         { header: "Type", key: "variance_type", isBadge: true },
@@ -141,9 +141,9 @@ export default function Costing() {
         { header: "Name", key: "cost_pool_name" },
         { header: "Type", key: "cost_pool_type", isBadge: true },
         { header: "Allocation Base", key: "allocation_base" },
-        { header: "Budgeted Cost", key: "budgeted_cost", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
-        { header: "Actual Cost", key: "actual_cost", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
-        { header: "Overhead Rate", key: "overhead_rate", render: (val) => `SAR ${val?.toFixed(2) || 0}` },
+        { header: "Budgeted Cost", key: "budgeted_cost", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: "Actual Cost", key: "actual_cost", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: "Overhead Rate", key: "overhead_rate", render: (val) => `LKR ${val?.toFixed(2) || 0}` },
         { header: "Period", key: "period" },
         { header: "Status", key: "status", isBadge: true }
     ];
@@ -153,12 +153,12 @@ export default function Costing() {
         { header: "Type", key: "rate_type", isBadge: true },
         { header: "Cost Center", key: "cost_center_code" },
         { header: "Allocation Base", key: "allocation_base" },
-        { header: "Predetermined Rate", key: "predetermined_rate", render: (val) => `SAR ${val?.toFixed(2) || 0}` },
-        { header: "Actual Rate", key: "actual_rate", render: (val) => `SAR ${val?.toFixed(2) || 0}` },
+        { header: "Predetermined Rate", key: "predetermined_rate", render: (val) => `LKR ${val?.toFixed(2) || 0}` },
+        { header: "Actual Rate", key: "actual_rate", render: (val) => `LKR ${val?.toFixed(2) || 0}` },
         { header: "Under/Over Applied", key: "under_over_applied", render: (val) => {
-            if (!val) return 'SAR 0.00';
+            if (!val) return 'LKR 0.00';
             const color = val < 0 ? 'text-red-600' : 'text-green-600';
-            return <span className={color}>SAR {val?.toLocaleString()}</span>;
+            return <span className={color}>LKR {val?.toLocaleString()}</span>;
         }},
         { header: "Period", key: "period" },
         { header: "Status", key: "status", isBadge: true }
@@ -169,14 +169,14 @@ export default function Costing() {
         { header: "Job Name", key: "job_name" },
         { header: "Type", key: "job_type", isBadge: true },
         { header: "Customer", key: "customer_name" },
-        { header: "Budgeted Cost", key: "total_budgeted_cost", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
-        { header: "Actual Cost", key: "total_actual_cost", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: "Budgeted Cost", key: "total_budgeted_cost", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: "Actual Cost", key: "total_actual_cost", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: "Variance", key: "cost_variance", render: (val) => {
             const color = val > 0 ? 'text-red-600' : 'text-green-600';
-            return <span className={color}>SAR {val?.toLocaleString() || 0}</span>;
+            return <span className={color}>LKR {val?.toLocaleString() || 0}</span>;
         }},
-        { header: "Contract Value", key: "contract_value", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
-        { header: "Profit Margin", key: "profit_margin", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: "Contract Value", key: "contract_value", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: "Profit Margin", key: "profit_margin", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: "Completion %", key: "completion_percent", render: (val) => `${val || 0}%` },
         { header: "Status", key: "status", isBadge: true }
     ];

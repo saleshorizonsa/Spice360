@@ -132,17 +132,17 @@ export default function Production() {
         { header: "Variance #", key: "variance_number" },
         { header: "Production Order", key: "production_order_number" },
         { header: "Type", key: "variance_type", isBadge: true },
-        { header: "Amount", key: "variance_amount", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: "Amount", key: "variance_amount", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: "Date", key: "variance_date" }
     ];
 
     const costColumns = [
         { header: "Material", key: "material_code" },
         { header: "Name", key: "material_name" },
-        { header: "Material Cost", key: "material_cost", render: (val) => `SAR ${val?.toFixed(2) || 0}` },
-        { header: "Labor Cost", key: "labor_cost", render: (val) => `SAR ${val?.toFixed(2) || 0}` },
-        { header: "Overhead Cost", key: "overhead_cost", render: (val) => `SAR ${val?.toFixed(2) || 0}` },
-        { header: "Total Cost", key: "total_standard_cost", render: (val) => `SAR ${val?.toFixed(2) || 0}` }
+        { header: "Material Cost", key: "material_cost", render: (val) => `LKR ${val?.toFixed(2) || 0}` },
+        { header: "Labor Cost", key: "labor_cost", render: (val) => `LKR ${val?.toFixed(2) || 0}` },
+        { header: "Overhead Cost", key: "overhead_cost", render: (val) => `LKR ${val?.toFixed(2) || 0}` },
+        { header: "Total Cost", key: "total_standard_cost", render: (val) => `LKR ${val?.toFixed(2) || 0}` }
     ];
 
     const handleCreate = (type) => {

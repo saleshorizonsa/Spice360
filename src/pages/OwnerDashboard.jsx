@@ -61,7 +61,7 @@ const saveSubscription = async (orgId, data) => {
 
 const BLANK_SUB = {
   plan: "professional", plan_name: "Professional", status: "trialing",
-  monthly_price: 799, currency: "SAR", trial_end_date: "", renewal_date: "", billing_notes: ""
+  monthly_price: 799, currency: "LKR", trial_end_date: "", renewal_date: "", billing_notes: ""
 };
 
 function SubscriptionPanel({ tenant, plans, onClose, onSaved }) {
@@ -173,13 +173,13 @@ function SubscriptionPanel({ tenant, plans, onClose, onSaved }) {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Monthly Price (SAR)</Label>
+            <Label>Monthly Price (LKR)</Label>
             <Input type="number" value={form.monthly_price ?? ""} onChange={(e) => set("monthly_price", e.target.value)} />
           </div>
 
           <div className="space-y-1.5">
             <Label>Currency</Label>
-            <Input value={form.currency || "SAR"} onChange={(e) => set("currency", e.target.value)} />
+            <Input value={form.currency || "LKR"} onChange={(e) => set("currency", e.target.value)} />
           </div>
 
           <div className="space-y-1.5">
@@ -258,7 +258,7 @@ export default function OwnerDashboard() {
       const payload = {
         plan_id: String(plan.id).trim().toLowerCase(), plan_name: plan.name,
         monthly_price: plan.monthlyPrice === "" ? null : Number(plan.monthlyPrice),
-        currency: plan.currency || "SAR", billing_cycle: plan.billingCycle || "monthly",
+        currency: plan.currency || "LKR", billing_cycle: plan.billingCycle || "monthly",
         trial_days: Number(plan.trialDays) || 14, user_limit: plan.userLimit,
         invoice_limit: plan.invoiceLimit, support_level: plan.supportLevel,
         modules: Array.isArray(plan.modules) ? plan.modules : String(plan.modules || "").split(",").map((s) => s.trim()).filter(Boolean),
@@ -330,7 +330,7 @@ export default function OwnerDashboard() {
         <StatCard title="Total Customers" value={tenantList.length} icon={Building2} trend="All tenants" color="blue" />
         <StatCard title="Active Subscriptions" value={activeCount} icon={CreditCard} trend="Paid accounts" color="emerald" />
         <StatCard title="Trial Users" value={trialCount} icon={Users} trend="Trialing tenants" color="amber" />
-        <StatCard title="MRR" value={`SAR ${mrr.toLocaleString()}`} icon={BarChart3} trend="Active plans only" color="purple" />
+        <StatCard title="MRR" value={`LKR ${mrr.toLocaleString()}`} icon={BarChart3} trend="Active plans only" color="purple" />
       </div>
 
       {/* Tenant list */}
@@ -361,7 +361,7 @@ export default function OwnerDashboard() {
                 },
                 { header: "Trial End", key: "trial_end_date" },
                 { header: "Renewal", key: "renewal_date" },
-                { header: "MRR (SAR)", key: "monthly_price" },
+                { header: "MRR (LKR)", key: "monthly_price" },
                 {
                   header: "Actions",
                   key: "actions",
@@ -411,7 +411,7 @@ export default function OwnerDashboard() {
               ["Trial End", selectedTenant.trial_end_date],
               ["Renewal Date", selectedTenant.renewal_date],
               ["Active Users", selectedTenant.user_count],
-              ["MRR (SAR)", selectedTenant.monthly_price],
+              ["MRR (LKR)", selectedTenant.monthly_price],
             ].map(([label, value]) => (
               <div key={label} className="rounded-lg border border-slate-200 bg-white p-3">
                 <p className="text-xs font-semibold uppercase text-slate-500">{label}</p>
@@ -445,7 +445,7 @@ export default function OwnerDashboard() {
               <Button size="sm" className="bg-[#24466f] hover:bg-[#193658]" onClick={() => {
                 setIsNewPlan(true);
                 setEditingPlan({
-                  id: "", name: "", monthlyPrice: 0, currency: "SAR",
+                  id: "", name: "", monthlyPrice: 0, currency: "LKR",
                   billingCycle: "monthly", trialDays: 14, userLimit: 5,
                   invoiceLimit: 500, supportLevel: "Email support",
                   modules: [], status: "active", display_order: planRows.length + 1
@@ -507,7 +507,7 @@ export default function OwnerDashboard() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label>Monthly Price (SAR)</Label>
+                    <Label>Monthly Price (LKR)</Label>
                     <Input type="number" value={editingPlan.monthlyPrice ?? ""} onChange={(e) => setEditingPlan({ ...editingPlan, monthlyPrice: e.target.value })} />
                   </div>
                   <div className="space-y-1.5">

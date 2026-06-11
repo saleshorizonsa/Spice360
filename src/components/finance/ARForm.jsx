@@ -33,7 +33,7 @@ export default function ARForm({ item, onClose }) {
         aging_days: 0,
         aging_bucket: 'current',
         vat_amount: 0,
-        currency: 'SAR',
+        currency: 'LKR',
         status: 'open',
         notes: ''
     });
@@ -166,7 +166,7 @@ export default function ARForm({ item, onClose }) {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label>Invoice Amount (SAR) *</Label>
+                            <Label>Invoice Amount (LKR) *</Label>
                             <Input
                                 type="number"
                                 step="0.01"
@@ -176,7 +176,7 @@ export default function ARForm({ item, onClose }) {
                             />
                         </div>
                         <div>
-                            <Label>Paid Amount (SAR)</Label>
+                            <Label>Paid Amount (LKR)</Label>
                             <Input
                                 type="number"
                                 step="0.01"
@@ -189,12 +189,12 @@ export default function ARForm({ item, onClose }) {
                     <div className="bg-gray-50 p-4 rounded-lg space-y-2">
                         <div className="flex justify-between">
                             <span className="text-gray-600">VAT (15%):</span>
-                            <span className="font-semibold">SAR {formData.vat_amount.toFixed(2)}</span>
+                            <span className="font-semibold">LKR {formData.vat_amount.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-lg border-t pt-2">
                             <span className="font-bold">Outstanding:</span>
                             <span className="font-bold text-red-600">
-                                SAR {formData.outstanding_amount.toFixed(2)}
+                                LKR {formData.outstanding_amount.toFixed(2)}
                             </span>
                         </div>
                     </div>

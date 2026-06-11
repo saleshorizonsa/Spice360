@@ -190,7 +190,7 @@ export default function MaterialForm({ material, initialValues = {}, onClose, on
 
                     <div className="grid grid-cols-3 gap-4">
                         <div>
-                            <Label>Unit Price (SAR)</Label>
+                            <Label>Unit Price (LKR)</Label>
                             <Input
                                 type="number"
                                 step="0.01"
@@ -199,7 +199,7 @@ export default function MaterialForm({ material, initialValues = {}, onClose, on
                             />
                         </div>
                         <div>
-                            <Label>Unit Cost (SAR)</Label>
+                            <Label>Unit Cost (LKR)</Label>
                             <Input
                                 type="number"
                                 step="0.01"

@@ -105,10 +105,10 @@ export default function DepreciationScheduleViewer({ asset, onClose }) {
                     </div>
                     <div>
                         <div class="info-item">
-                            <span class="label">Acquisition Cost:</span> SAR ${asset.acquisition_cost.toLocaleString()}
+                            <span class="label">Acquisition Cost:</span> LKR ${asset.acquisition_cost.toLocaleString()}
                         </div>
                         <div class="info-item">
-                            <span class="label">Salvage Value:</span> SAR ${(asset.salvage_value || 0).toLocaleString()}
+                            <span class="label">Salvage Value:</span> LKR ${(asset.salvage_value || 0).toLocaleString()}
                         </div>
                         <div class="info-item">
                             <span class="label">Useful Life:</span> ${asset.useful_life_years} years
@@ -124,9 +124,9 @@ export default function DepreciationScheduleViewer({ asset, onClose }) {
                     <thead>
                         <tr>
                             <th>Year</th>
-                            <th>Depreciation (SAR)</th>
-                            <th>Accumulated Dep. (SAR)</th>
-                            <th>Net Book Value (SAR)</th>
+                            <th>Depreciation (LKR)</th>
+                            <th>Accumulated Dep. (LKR)</th>
+                            <th>Net Book Value (LKR)</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -167,8 +167,8 @@ export default function DepreciationScheduleViewer({ asset, onClose }) {
         const data = viewMode === 'monthly' ? schedule : annualData;
         
         const headers = viewMode === 'monthly' 
-            ? ['Year', 'Period', 'Date', 'Depreciation (SAR)', 'Accumulated (SAR)', 'NBV (SAR)']
-            : ['Year', 'Total Depreciation (SAR)', 'Accumulated (SAR)', 'Ending NBV (SAR)'];
+            ? ['Year', 'Period', 'Date', 'Depreciation (LKR)', 'Accumulated (LKR)', 'NBV (LKR)']
+            : ['Year', 'Total Depreciation (LKR)', 'Accumulated (LKR)', 'Ending NBV (LKR)'];
         
         const rows = viewMode === 'monthly'
             ? schedule.map(s => [
@@ -233,18 +233,18 @@ export default function DepreciationScheduleViewer({ asset, onClose }) {
                     <div className="grid grid-cols-4 gap-4">
                         <div className="bg-gray-50 p-3 rounded">
                             <p className="text-xs text-gray-600">Acquisition Cost</p>
-                            <p className="text-lg font-bold">SAR {asset.acquisition_cost.toLocaleString()}</p>
+                            <p className="text-lg font-bold">LKR {asset.acquisition_cost.toLocaleString()}</p>
                         </div>
                         <div className="bg-blue-50 p-3 rounded">
                             <p className="text-xs text-blue-700">Depreciable Amount</p>
                             <p className="text-lg font-bold text-blue-900">
-                                SAR {(asset.acquisition_cost - (asset.salvage_value || 0)).toLocaleString()}
+                                LKR {(asset.acquisition_cost - (asset.salvage_value || 0)).toLocaleString()}
                             </p>
                         </div>
                         <div className="bg-emerald-50 p-3 rounded">
                             <p className="text-xs text-emerald-700">Current NBV</p>
                             <p className="text-lg font-bold text-emerald-900">
-                                SAR {asset.net_book_value.toLocaleString()}
+                                LKR {asset.net_book_value.toLocaleString()}
                             </p>
                         </div>
                         <div className="bg-purple-50 p-3 rounded">
@@ -268,9 +268,9 @@ export default function DepreciationScheduleViewer({ asset, onClose }) {
                                     <thead>
                                         <tr className="bg-gray-50">
                                             <th className="border p-2 text-center">Year</th>
-                                            <th className="border p-2 text-right">Depreciation (SAR)</th>
-                                            <th className="border p-2 text-right">Accumulated (SAR)</th>
-                                            <th className="border p-2 text-right">NBV (SAR)</th>
+                                            <th className="border p-2 text-right">Depreciation (LKR)</th>
+                                            <th className="border p-2 text-right">Accumulated (LKR)</th>
+                                            <th className="border p-2 text-right">NBV (LKR)</th>
                                         </tr>
                                     </thead>
                                     <tbody>

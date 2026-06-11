@@ -90,7 +90,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
         vat_percent: 15,
         vat_amount: 0,
         total_amount: 0,
-        currency: 'SAR',
+        currency: 'LKR',
         exchange_rate: 1,
         payment_terms: 'net_30',
         delivery_date: '',
@@ -467,7 +467,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
                                         />
                                     </div>
                                     <div>
-                                        <Label>Unit Price (SAR) *</Label>
+                                        <Label>Unit Price (LKR) *</Label>
                                         <Input
                                             type="number"
                                             value={formData.unit_price}
@@ -478,7 +478,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
                                         />
                                     </div>
                                     <div>
-                                        <Label>Subtotal (SAR)</Label>
+                                        <Label>Subtotal (LKR)</Label>
                                         <Input
                                             type="number"
                                             value={formData.subtotal.toFixed(2)}
@@ -496,7 +496,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
                                 </h3>
                                 <div className="grid grid-cols-3 gap-4">
                                     <div>
-                                        <Label>Freight Cost (SAR)</Label>
+                                        <Label>Freight Cost (LKR)</Label>
                                         <Input
                                             type="number"
                                             value={formData.freight_cost}
@@ -506,7 +506,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
                                         />
                                     </div>
                                     <div>
-                                        <Label>Duty Cost (SAR)</Label>
+                                        <Label>Duty Cost (LKR)</Label>
                                         <Input
                                             type="number"
                                             value={formData.duty_cost}
@@ -516,7 +516,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
                                         />
                                     </div>
                                     <div>
-                                        <Label>Other Costs (SAR)</Label>
+                                        <Label>Other Costs (LKR)</Label>
                                         <Input
                                             type="number"
                                             value={formData.other_costs}
@@ -542,7 +542,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
                                         />
                                     </div>
                                     <div>
-                                        <Label>VAT Amount (SAR)</Label>
+                                        <Label>VAT Amount (LKR)</Label>
                                         <Input
                                             type="number"
                                             value={formData.vat_amount.toFixed(2)}
@@ -550,7 +550,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
                                         />
                                     </div>
                                     <div>
-                                        <Label className="font-bold">Total Amount (SAR)</Label>
+                                        <Label className="font-bold">Total Amount (LKR)</Label>
                                         <Input
                                             type="number"
                                             value={formData.total_amount.toFixed(2)}

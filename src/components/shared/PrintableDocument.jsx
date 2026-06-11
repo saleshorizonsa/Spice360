@@ -145,25 +145,25 @@ export default function PrintableDocument({
                         {totals.subtotal != null && (
                             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "5px 0", color: "#475569" }}>
                                 <span>{isRTL ? "المجموع الفرعي" : "Subtotal"}</span>
-                                <span>{totals.currency || "SAR"} {Number(totals.subtotal).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                <span>{totals.currency || "LKR"} {Number(totals.subtotal).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                             </div>
                         )}
                         {totals.discount > 0 && (
                             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "5px 0", color: "#dc2626" }}>
                                 <span>{isRTL ? "الخصم" : "Discount"}</span>
-                                <span>- {totals.currency || "SAR"} {Number(totals.discount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                <span>- {totals.currency || "LKR"} {Number(totals.discount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                             </div>
                         )}
                         {totals.vat_amount != null && (
                             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "5px 0", color: "#475569" }}>
                                 <span>{isRTL ? "ضريبة القيمة المضافة" : "VAT"} ({totals.vat_percent || 15}%)</span>
-                                <span>{totals.currency || "SAR"} {Number(totals.vat_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                <span>{totals.currency || "LKR"} {Number(totals.vat_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                             </div>
                         )}
                         <div style={{ display: "flex", justifyContent: "space-between", fontSize: "16px", fontWeight: "700", borderTop: "2px solid #0f172a", paddingTop: "8px", marginTop: "6px", color: "#0f172a" }}>
                             <span>{isRTL ? "الإجمالي" : "Total"}</span>
                             <span style={{ color: "#059669" }}>
-                                {totals.currency || "SAR"} {Number(totals.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                {totals.currency || "LKR"} {Number(totals.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                             </span>
                         </div>
                     </div>

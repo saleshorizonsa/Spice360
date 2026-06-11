@@ -40,7 +40,7 @@ export default function DocumentPrintPreview({
             vat_amount: document.tax_amount || document.vat_amount || null,
             vat_percent: document.tax_percent || document.vat_percent || 15,
             total: document.total_amount,
-            currency: document.currency || "SAR",
+            currency: document.currency || "LKR",
             qr_code: document.zatca_qr_code
         } : null;
 

@@ -219,7 +219,7 @@ export default function LeadForm({ item, onClose }) {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label>Estimated Value (SAR)</Label>
+                            <Label>Estimated Value (LKR)</Label>
                             <Input
                                 type="number"
                                 value={formData.estimated_value}

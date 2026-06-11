@@ -30,7 +30,7 @@ export default function PaymentForm({ item, onClose }) {
         party_code: '',
         party_name: '',
         amount: 0,
-        currency: 'SAR',
+        currency: 'LKR',
         payment_method: 'bank_transfer',
         bank_account: '',
         check_number: '',
@@ -178,7 +178,7 @@ export default function PaymentForm({ item, onClose }) {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label>Amount (SAR) *</Label>
+                            <Label>Amount (LKR) *</Label>
                             <Input
                                 type="number"
                                 step="0.01"

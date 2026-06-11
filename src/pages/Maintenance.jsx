@@ -148,7 +148,7 @@ export default function Maintenance() {
         { header: t('created'), key: "created_date" },
         { header: t('requiredBy'), key: "required_date" },
         { header: t('laborHrs'), key: "labor_hours" },
-        { header: t('totalCost'), key: "total_cost", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: t('totalCost'), key: "total_cost", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: t('status'), key: "status", isBadge: true }
     ];
 
@@ -185,7 +185,7 @@ export default function Maintenance() {
         { header: t('manufacturer'), key: "manufacturer" },
         { header: t('currentStock'), key: "current_stock" },
         { header: t('minStock'), key: "minimum_stock" },
-        { header: t('unitCost'), key: "unit_cost", render: (val) => `SAR ${val?.toFixed(2) || 0}` },
+        { header: t('unitCost'), key: "unit_cost", render: (val) => `LKR ${val?.toFixed(2) || 0}` },
         { header: t('criticality'), key: "criticality", isBadge: true },
         { header: t('status'), key: "status", isBadge: true }
     ];
@@ -198,7 +198,7 @@ export default function Maintenance() {
         { header: t('end'), key: "downtime_end" },
         { header: t('hours'), key: "downtime_hours", render: (val) => val?.toFixed(2) || 0 },
         { header: t('type'), key: "downtime_type", isBadge: true },
-        { header: t('productionLoss'), key: "production_loss_value", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: t('productionLoss'), key: "production_loss_value", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: t('rootCause'), key: "root_cause" }
     ];
 
@@ -208,8 +208,8 @@ export default function Maintenance() {
         { header: t('equipment'), key: "equipment_code" },
         { header: t('part'), key: "part_name" },
         { header: t('quantity'), key: "quantity_consumed" },
-        { header: t('unitCost'), key: "unit_cost", render: (val) => `SAR ${val?.toFixed(2) || 0}` },
-        { header: t('totalCost'), key: "total_cost", render: (val) => `SAR ${val?.toFixed(2) || 0}` },
+        { header: t('unitCost'), key: "unit_cost", render: (val) => `LKR ${val?.toFixed(2) || 0}` },
+        { header: t('totalCost'), key: "total_cost", render: (val) => `LKR ${val?.toFixed(2) || 0}` },
         { header: t('date'), key: "consumption_date" },
         { header: t('consumedBy'), key: "consumed_by" }
     ];

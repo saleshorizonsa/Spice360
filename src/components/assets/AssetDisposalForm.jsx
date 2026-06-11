@@ -239,7 +239,7 @@ export default function AssetDisposalForm({ asset, onClose }) {
                             <CardContent className="pt-4">
                                 <p className="text-xs text-blue-700">Original Cost</p>
                                 <p className="text-lg font-bold text-blue-900">
-                                    SAR {formData.original_acquisition_cost.toLocaleString()}
+                                    LKR {formData.original_acquisition_cost.toLocaleString()}
                                 </p>
                             </CardContent>
                         </Card>
@@ -247,7 +247,7 @@ export default function AssetDisposalForm({ asset, onClose }) {
                             <CardContent className="pt-4">
                                 <p className="text-xs text-red-700">Accumulated Dep.</p>
                                 <p className="text-lg font-bold text-red-900">
-                                    SAR {formData.accumulated_depreciation.toLocaleString()}
+                                    LKR {formData.accumulated_depreciation.toLocaleString()}
                                 </p>
                             </CardContent>
                         </Card>
@@ -255,7 +255,7 @@ export default function AssetDisposalForm({ asset, onClose }) {
                             <CardContent className="pt-4">
                                 <p className="text-xs text-emerald-700">Current NBV</p>
                                 <p className="text-lg font-bold text-emerald-900">
-                                    SAR {formData.net_book_value.toLocaleString()}
+                                    LKR {formData.net_book_value.toLocaleString()}
                                 </p>
                             </CardContent>
                         </Card>
@@ -263,7 +263,7 @@ export default function AssetDisposalForm({ asset, onClose }) {
                             <CardContent className="pt-4">
                                 <p className="text-xs text-purple-700">Maintenance Cost</p>
                                 <p className="text-lg font-bold text-purple-900">
-                                    SAR {totalMaintenanceCost.toLocaleString()}
+                                    LKR {totalMaintenanceCost.toLocaleString()}
                                 </p>
                                 <p className="text-xs text-purple-600">{maintenanceCount} services</p>
                             </CardContent>
@@ -373,7 +373,7 @@ export default function AssetDisposalForm({ asset, onClose }) {
                         
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label>Disposal Value (SAR) *</Label>
+                                <Label>Disposal Value (LKR) *</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -399,7 +399,7 @@ export default function AssetDisposalForm({ asset, onClose }) {
                                 <CardContent className="pt-4">
                                     <p className="text-xs text-gray-700">Gain/Loss on Disposal</p>
                                     <p className={`text-xl font-bold ${formData.gain_loss >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                                        {formData.gain_loss >= 0 ? '+' : ''}SAR {formData.gain_loss.toLocaleString()}
+                                        {formData.gain_loss >= 0 ? '+' : ''}LKR {formData.gain_loss.toLocaleString()}
                                     </p>
                                 </CardContent>
                             </Card>
@@ -408,7 +408,7 @@ export default function AssetDisposalForm({ asset, onClose }) {
                                 <CardContent className="pt-4">
                                     <p className="text-xs text-purple-700">Total Investment</p>
                                     <p className="text-xl font-bold text-purple-900">
-                                        SAR {totalCost.toLocaleString()}
+                                        LKR {totalCost.toLocaleString()}
                                     </p>
                                     <p className="text-xs text-purple-600">Cost + Maintenance</p>
                                 </CardContent>
@@ -427,7 +427,7 @@ export default function AssetDisposalForm({ asset, onClose }) {
                         {formData.disposal_type === 'sale' && (
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label>Payment Received (SAR)</Label>
+                                    <Label>Payment Received (LKR)</Label>
                                     <Input
                                         type="number"
                                         step="0.01"
@@ -543,12 +543,12 @@ export default function AssetDisposalForm({ asset, onClose }) {
                                     </div>
                                     <div>
                                         <p className="text-gray-600">Total Maintenance Cost</p>
-                                        <p className="font-bold">SAR {totalMaintenanceCost.toLocaleString()}</p>
+                                        <p className="font-bold">LKR {totalMaintenanceCost.toLocaleString()}</p>
                                     </div>
                                     <div>
                                         <p className="text-gray-600">Cost per Year</p>
                                         <p className="font-bold">
-                                            SAR {yearsInUse > 0 ? (totalMaintenanceCost / yearsInUse).toLocaleString(undefined, {maximumFractionDigits: 0}) : 0}
+                                            LKR {yearsInUse > 0 ? (totalMaintenanceCost / yearsInUse).toLocaleString(undefined, {maximumFractionDigits: 0}) : 0}
                                         </p>
                                     </div>
                                 </div>

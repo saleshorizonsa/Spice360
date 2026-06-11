@@ -240,7 +240,7 @@ export default function POS() {
         { header: "Date", key: "transaction_date", render: (v) => v ? new Date(v).toLocaleString() : '-' },
         { header: "Customer", key: "customer_name" },
         { header: "Items", key: "items", render: (v) => v?.length || 0 },
-        { header: "Total (SAR)", key: "total_amount", render: (v) => v?.toFixed(2) },
+        { header: "Total (LKR)", key: "total_amount", render: (v) => v?.toFixed(2) },
         { header: "Payment", key: "payment_method", isBadge: true },
         { header: "Status", key: "status", isBadge: true }
     ];
@@ -358,7 +358,7 @@ export default function POS() {
                                             <div className="p-2.5 flex-1">
                                                 <p className="text-xs font-bold text-gray-800 leading-tight line-clamp-2">{item.name}</p>
                                                 <p className="text-[10px] text-gray-400 mt-0.5 font-mono">{item.code}</p>
-                                                <p className="text-sm font-extrabold text-emerald-700 mt-1">SAR {item.price?.toFixed(2)}</p>
+                                                <p className="text-sm font-extrabold text-emerald-700 mt-1">LKR {item.price?.toFixed(2)}</p>
                                             </div>
                                             {/* Stock badge */}
                                             {item.stock !== undefined && (
@@ -423,7 +423,7 @@ export default function POS() {
                                     <div key={item.product_code} className="flex items-center gap-2 bg-gray-50 rounded-xl p-2">
                                         <div className="flex-1 min-w-0">
                                             <p className="text-xs font-semibold text-gray-800 truncate">{item.product_name}</p>
-                                            <p className="text-xs text-gray-400">SAR {item.unit_price?.toFixed(2)} each</p>
+                                            <p className="text-xs text-gray-400">LKR {item.unit_price?.toFixed(2)} each</p>
                                         </div>
                                         {/* Touch-friendly qty buttons */}
                                         <div className="flex items-center gap-0.5">
@@ -435,7 +435,7 @@ export default function POS() {
                                                 <Plus className="w-3 h-3" />
                                             </button>
                                         </div>
-                                        <p className="text-sm font-bold text-emerald-700 w-16 text-right shrink-0">SAR {item.line_total?.toFixed(2)}</p>
+                                        <p className="text-sm font-bold text-emerald-700 w-16 text-right shrink-0">LKR {item.line_total?.toFixed(2)}</p>
                                         <button onClick={() => removeFromCart(item.product_code)} className="text-gray-300 hover:text-red-400 transition-colors">
                                             <X className="w-4 h-4" />
                                         </button>
@@ -456,12 +456,12 @@ export default function POS() {
                                     />
                                 </div>
                                 <div className="space-y-0.5 text-sm">
-                                    <div className="flex justify-between text-gray-500"><span>Subtotal</span><span>SAR {cartSubtotal.toFixed(2)}</span></div>
-                                    {discountAmount > 0 && <div className="flex justify-between text-red-500"><span>Discount ({discountPercent}%)</span><span>−SAR {discountAmount.toFixed(2)}</span></div>}
-                                    <div className="flex justify-between text-gray-500"><span>VAT 15%</span><span>SAR {vatAmount.toFixed(2)}</span></div>
+                                    <div className="flex justify-between text-gray-500"><span>Subtotal</span><span>LKR {cartSubtotal.toFixed(2)}</span></div>
+                                    {discountAmount > 0 && <div className="flex justify-between text-red-500"><span>Discount ({discountPercent}%)</span><span>−LKR {discountAmount.toFixed(2)}</span></div>}
+                                    <div className="flex justify-between text-gray-500"><span>VAT 18%</span><span>LKR {vatAmount.toFixed(2)}</span></div>
                                 </div>
                                 <div className="flex justify-between font-extrabold text-xl border-t pt-1.5 text-emerald-700">
-                                    <span>Total</span><span>SAR {totalAmount.toFixed(2)}</span>
+                                    <span>Total</span><span>LKR {totalAmount.toFixed(2)}</span>
                                 </div>
                             </div>
 
@@ -486,7 +486,7 @@ export default function POS() {
 
                                 {paymentMethod === 'cash' && (
                                     <div className="flex items-center gap-2">
-                                        <span className="text-xs text-gray-500 whitespace-nowrap">Received SAR</span>
+                                        <span className="text-xs text-gray-500 whitespace-nowrap">Received LKR</span>
                                         <Input type="number" placeholder="0.00" value={cashReceived}
                                             onChange={e => setCashReceived(e.target.value)}
                                             className="h-9 text-sm font-bold text-right" />
@@ -495,7 +495,7 @@ export default function POS() {
 
                                 {paymentMethod === 'cash' && parseFloat(cashReceived || 0) >= totalAmount && totalAmount > 0 && (
                                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-2 text-center text-blue-700 font-bold text-base">
-                                        Change: SAR {changeGiven.toFixed(2)}
+                                        Change: LKR {changeGiven.toFixed(2)}
                                     </div>
                                 )}
 
@@ -506,7 +506,7 @@ export default function POS() {
                                     className="w-full bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 h-14 text-lg font-extrabold rounded-xl shadow-lg transition-all active:scale-[0.98]"
                                 >
                                     <CheckCircle2 className="w-5 h-5 mr-2" />
-                                    {createTransactionMutation.isPending ? "Processing…" : `Charge SAR ${totalAmount.toFixed(2)}`}
+                                    {createTransactionMutation.isPending ? "Processing…" : `Charge LKR ${totalAmount.toFixed(2)}`}
                                 </Button>
                             </div>
                         </div>
@@ -603,12 +603,12 @@ export default function POS() {
                         <div className="border rounded-xl p-4 space-y-2 text-sm bg-gray-50">
                             <div className="flex justify-between"><span className="text-gray-500">Customer</span><span className="font-medium">{lastTransaction.customer_name}</span></div>
                             <div className="flex justify-between"><span className="text-gray-500">Items</span><span>{lastTransaction.items?.length}</span></div>
-                            <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>SAR {lastTransaction.subtotal?.toFixed(2)}</span></div>
-                            {lastTransaction.discount_amount > 0 && <div className="flex justify-between text-red-500"><span>Discount</span><span>−SAR {lastTransaction.discount_amount?.toFixed(2)}</span></div>}
-                            <div className="flex justify-between"><span className="text-gray-500">VAT 15%</span><span>SAR {lastTransaction.vat_amount?.toFixed(2)}</span></div>
-                            <div className="flex justify-between font-extrabold text-lg border-t pt-2"><span>Total</span><span className="text-emerald-700">SAR {lastTransaction.total_amount?.toFixed(2)}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>LKR {lastTransaction.subtotal?.toFixed(2)}</span></div>
+                            {lastTransaction.discount_amount > 0 && <div className="flex justify-between text-red-500"><span>Discount</span><span>−LKR {lastTransaction.discount_amount?.toFixed(2)}</span></div>}
+                            <div className="flex justify-between"><span className="text-gray-500">VAT 18%</span><span>LKR {lastTransaction.vat_amount?.toFixed(2)}</span></div>
+                            <div className="flex justify-between font-extrabold text-lg border-t pt-2"><span>Total</span><span className="text-emerald-700">LKR {lastTransaction.total_amount?.toFixed(2)}</span></div>
                             {lastTransaction.payment_method === 'cash' && lastTransaction.change_given > 0 && (
-                                <div className="flex justify-between text-blue-600 font-bold"><span>Change</span><span>SAR {lastTransaction.change_given?.toFixed(2)}</span></div>
+                                <div className="flex justify-between text-blue-600 font-bold"><span>Change</span><span>LKR {lastTransaction.change_given?.toFixed(2)}</span></div>
                             )}
                         </div>
                         <div className="flex gap-2">

@@ -67,7 +67,7 @@ export default function StockLevelCard({ stockLevel }) {
                     <div>
                         <p className="text-xs text-gray-500">Value</p>
                         <p className="text-lg font-bold text-emerald-600">
-                            SAR {stockLevel.total_value?.toLocaleString() || 0}
+                            LKR {stockLevel.total_value?.toLocaleString() || 0}
                         </p>
                     </div>
                     <div className="flex gap-2">

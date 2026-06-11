@@ -123,7 +123,7 @@ export default function MarginReport() {
                         <CardContent className="p-4">
                             <p className="text-sm text-gray-600">Total Revenue</p>
                             <p className="text-2xl font-bold text-blue-700">
-                                SAR {(totalRevenue / 1000).toFixed(0)}K
+                                LKR {(totalRevenue / 1000).toFixed(0)}K
                             </p>
                         </CardContent>
                     </Card>
@@ -131,7 +131,7 @@ export default function MarginReport() {
                         <CardContent className="p-4">
                             <p className="text-sm text-gray-600">Total Cost</p>
                             <p className="text-2xl font-bold text-orange-700">
-                                SAR {(totalCost / 1000).toFixed(0)}K
+                                LKR {(totalCost / 1000).toFixed(0)}K
                             </p>
                         </CardContent>
                     </Card>
@@ -139,7 +139,7 @@ export default function MarginReport() {
                         <CardContent className="p-4">
                             <p className="text-sm text-gray-600">Total Margin</p>
                             <p className="text-2xl font-bold text-emerald-700">
-                                SAR {(totalMargin / 1000).toFixed(0)}K
+                                LKR {(totalMargin / 1000).toFixed(0)}K
                             </p>
                         </CardContent>
                     </Card>
@@ -164,7 +164,7 @@ export default function MarginReport() {
                                 <TableHead className="text-right">Qty</TableHead>
                                 <TableHead className="text-right">Revenue</TableHead>
                                 <TableHead className="text-right">Cost</TableHead>
-                                <TableHead className="text-right">Margin (SAR)</TableHead>
+                                <TableHead className="text-right">Margin (LKR)</TableHead>
                                 <TableHead className="text-right">Margin %</TableHead>
                                 <TableHead>Trend</TableHead>
                             </TableRow>

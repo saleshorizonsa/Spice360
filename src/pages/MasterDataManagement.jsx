@@ -259,7 +259,7 @@ M002,piece,box,10,true,"10 pieces per box",active`;
         { key: 'subgroup_name', label: 'Sub-Group' }, // New
         { key: 'material_type', label: 'Type' },
         { key: 'unit_of_measure', label: 'UOM' },
-        { key: 'unit_price', label: 'Price (SAR)', render: (val) => val?.toLocaleString() },
+        { key: 'unit_price', label: 'Price (LKR)', render: (val) => val?.toLocaleString() },
         { key: 'current_stock', label: 'Stock', render: (val) => val?.toLocaleString() || 0 },
         { key: 'status', label: 'Status', render: (val) => (
             <span className={`px-2 py-1 rounded text-xs ${
@@ -277,7 +277,7 @@ M002,piece,box,10,true,"10 pieces per box",active`;
         { key: 'contact_person', label: 'Contact' },
         { key: 'email', label: 'Email' },
         { key: 'phone', label: 'Phone' },
-        { key: 'credit_limit', label: 'Credit Limit', render: (val) => `SAR ${val?.toLocaleString()}` },
+        { key: 'credit_limit', label: 'Credit Limit', render: (val) => `LKR ${val?.toLocaleString()}` },
         // Removed outstanding_balance column
         { key: 'status', label: 'Status', render: (val) => (
             <span className={`px-2 py-1 rounded text-xs ${
@@ -310,7 +310,7 @@ M002,piece,box,10,true,"10 pieces per box",active`;
         { key: 'territory', label: 'Territory' },
         { key: 'phone', label: 'Phone' },
         { key: 'commission_percent', label: 'Commission %' },
-        { key: 'monthly_target', label: 'Target (SAR)', render: (val) => val?.toLocaleString() },
+        { key: 'monthly_target', label: 'Target (LKR)', render: (val) => val?.toLocaleString() },
         { key: 'status', label: 'Status', render: (val) => (
             <span className={`px-2 py-1 rounded text-xs ${
                 val === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'

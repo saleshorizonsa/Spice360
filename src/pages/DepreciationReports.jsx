@@ -288,15 +288,15 @@ export default function DepreciationReports() {
                         <div class="kpi-label">Assets</div>
                     </div>
                     <div class="kpi-card">
-                        <div class="kpi-value">SAR ${(totalAcquisitionCost / 1000000).toFixed(1)}M</div>
+                        <div class="kpi-value">LKR ${(totalAcquisitionCost / 1000000).toFixed(1)}M</div>
                         <div class="kpi-label">Acquisition Cost</div>
                     </div>
                     <div class="kpi-card">
-                        <div class="kpi-value">SAR ${(totalAccumulatedDep / 1000000).toFixed(1)}M</div>
+                        <div class="kpi-value">LKR ${(totalAccumulatedDep / 1000000).toFixed(1)}M</div>
                         <div class="kpi-label">Accumulated Dep.</div>
                     </div>
                     <div class="kpi-card">
-                        <div class="kpi-value">SAR ${(totalNBV / 1000000).toFixed(1)}M</div>
+                        <div class="kpi-value">LKR ${(totalNBV / 1000000).toFixed(1)}M</div>
                         <div class="kpi-label">Net Book Value</div>
                     </div>
                     <div class="kpi-card">
@@ -326,9 +326,9 @@ export default function DepreciationReports() {
                                 <tr>
                                     <td style="text-align: left; text-transform: capitalize;">${item.class}</td>
                                     <td style="text-align: center;">${item.count}</td>
-                                    <td>SAR ${item.acquisition_cost.toLocaleString()}</td>
-                                    <td>SAR ${item.accumulated_depreciation.toLocaleString()}</td>
-                                    <td>SAR ${item.nbv.toLocaleString()}</td>
+                                    <td>LKR ${item.acquisition_cost.toLocaleString()}</td>
+                                    <td>LKR ${item.accumulated_depreciation.toLocaleString()}</td>
+                                    <td>LKR ${item.nbv.toLocaleString()}</td>
                                     <td style="text-align: center;">${depPercent}%</td>
                                 </tr>
                             `;
@@ -336,9 +336,9 @@ export default function DepreciationReports() {
                         <tr class="total-row">
                             <td style="text-align: left;">TOTAL</td>
                             <td style="text-align: center;">${filteredAssets.length}</td>
-                            <td>SAR ${totalAcquisitionCost.toLocaleString()}</td>
-                            <td>SAR ${totalAccumulatedDep.toLocaleString()}</td>
-                            <td>SAR ${totalNBV.toLocaleString()}</td>
+                            <td>LKR ${totalAcquisitionCost.toLocaleString()}</td>
+                            <td>LKR ${totalAccumulatedDep.toLocaleString()}</td>
+                            <td>LKR ${totalNBV.toLocaleString()}</td>
                             <td style="text-align: center;">${avgDepreciationRate}%</td>
                         </tr>
                     </tbody>
@@ -369,9 +369,9 @@ export default function DepreciationReports() {
                                     <td style="text-align: left;">${asset.asset_name}</td>
                                     <td style="text-align: center; text-transform: capitalize;">${asset.asset_class}</td>
                                     <td style="text-align: center; text-transform: capitalize;">${asset.depreciation_method.replace('_', ' ')}</td>
-                                    <td>SAR ${asset.acquisition_cost.toLocaleString()}</td>
-                                    <td>SAR ${(asset.accumulated_depreciation || 0).toLocaleString()}</td>
-                                    <td>SAR ${asset.net_book_value.toLocaleString()}</td>
+                                    <td>LKR ${asset.acquisition_cost.toLocaleString()}</td>
+                                    <td>LKR ${(asset.accumulated_depreciation || 0).toLocaleString()}</td>
+                                    <td>LKR ${asset.net_book_value.toLocaleString()}</td>
                                     <td style="text-align: center;">${depPercent}%</td>
                                 </tr>
                             `;
@@ -584,7 +584,7 @@ export default function DepreciationReports() {
                             <div>
                                 <p className="text-sm text-gray-600">Acquisition Cost</p>
                                 <p className="text-2xl font-bold text-blue-900">
-                                    SAR {(totalAcquisitionCost / 1000000).toFixed(1)}M
+                                    LKR {(totalAcquisitionCost / 1000000).toFixed(1)}M
                                 </p>
                             </div>
                             <TrendingDown className="w-8 h-8 text-blue-600" />
@@ -598,7 +598,7 @@ export default function DepreciationReports() {
                             <div>
                                 <p className="text-sm text-gray-600">Accumulated Dep.</p>
                                 <p className="text-2xl font-bold text-red-900">
-                                    SAR {(totalAccumulatedDep / 1000000).toFixed(1)}M
+                                    LKR {(totalAccumulatedDep / 1000000).toFixed(1)}M
                                 </p>
                             </div>
                             <TrendingDown className="w-8 h-8 text-red-600" />
@@ -612,7 +612,7 @@ export default function DepreciationReports() {
                             <div>
                                 <p className="text-sm text-gray-600">Net Book Value</p>
                                 <p className="text-2xl font-bold text-emerald-900">
-                                    SAR {(totalNBV / 1000000).toFixed(1)}M
+                                    LKR {(totalNBV / 1000000).toFixed(1)}M
                                 </p>
                             </div>
                             <TrendingDown className="w-8 h-8 text-emerald-600" />
@@ -663,7 +663,7 @@ export default function DepreciationReports() {
                                     />
                                     <YAxis tick={{ fontSize: 12 }} />
                                     <Tooltip 
-                                        formatter={(value) => `SAR ${value.toLocaleString()}`}
+                                        formatter={(value) => `LKR ${value.toLocaleString()}`}
                                         contentStyle={{ fontSize: 12 }}
                                     />
                                     <Legend />
@@ -734,7 +734,7 @@ export default function DepreciationReports() {
                                     />
                                     <YAxis tick={{ fontSize: 12 }} />
                                     <Tooltip 
-                                        formatter={(value) => `SAR ${value.toLocaleString()}`}
+                                        formatter={(value) => `LKR ${value.toLocaleString()}`}
                                         contentStyle={{ fontSize: 12 }}
                                     />
                                     <Legend />
@@ -758,13 +758,13 @@ export default function DepreciationReports() {
                                     <div>
                                         <p className="text-sm text-blue-700">Total Depreciation</p>
                                         <p className="text-2xl font-bold text-blue-900">
-                                            SAR {totalPeriodDep.toLocaleString()}
+                                            LKR {totalPeriodDep.toLocaleString()}
                                         </p>
                                     </div>
                                     <div>
                                         <p className="text-sm text-blue-700">Avg. per Period</p>
                                         <p className="text-2xl font-bold text-blue-900">
-                                            SAR {monthlyTrend.length > 0 
+                                            LKR {monthlyTrend.length > 0 
                                                 ? (totalPeriodDep / monthlyTrend.length).toLocaleString(undefined, {
                                                     maximumFractionDigits: 0
                                                 })
@@ -805,7 +805,7 @@ export default function DepreciationReports() {
                                             ))}
                                         </Pie>
                                         <Tooltip 
-                                            formatter={(value) => `SAR ${value.toLocaleString()}`}
+                                            formatter={(value) => `LKR ${value.toLocaleString()}`}
                                         />
                                     </PieChart>
                                 </ResponsiveContainer>
@@ -826,7 +826,7 @@ export default function DepreciationReports() {
                                                     {item.count} assets
                                                 </p>
                                                 <p className="text-sm text-gray-600">
-                                                    SAR {(item.value / 1000000).toFixed(1)}M
+                                                    LKR {(item.value / 1000000).toFixed(1)}M
                                                 </p>
                                             </div>
                                         </div>
@@ -858,7 +858,7 @@ export default function DepreciationReports() {
                                     />
                                     <YAxis tick={{ fontSize: 12 }} />
                                     <Tooltip 
-                                        formatter={(value) => `SAR ${value.toLocaleString()}`}
+                                        formatter={(value) => `LKR ${value.toLocaleString()}`}
                                         contentStyle={{ fontSize: 12 }}
                                     />
                                     <Legend />
@@ -871,7 +871,7 @@ export default function DepreciationReports() {
                                 <div className="bg-emerald-50 p-4 rounded-lg border-2 border-emerald-200">
                                     <p className="text-sm text-emerald-700 font-medium">Total Net Book Value</p>
                                     <p className="text-3xl font-bold text-emerald-900 mt-2">
-                                        SAR {(totalNBV / 1000000).toFixed(2)}M
+                                        LKR {(totalNBV / 1000000).toFixed(2)}M
                                     </p>
                                     <p className="text-xs text-emerald-600 mt-1">
                                         {((totalNBV / totalAcquisitionCost) * 100).toFixed(1)}% of acquisition cost
@@ -880,7 +880,7 @@ export default function DepreciationReports() {
                                 <div className="bg-red-50 p-4 rounded-lg border-2 border-red-200">
                                     <p className="text-sm text-red-700 font-medium">Total Accumulated Depreciation</p>
                                     <p className="text-3xl font-bold text-red-900 mt-2">
-                                        SAR {(totalAccumulatedDep / 1000000).toFixed(2)}M
+                                        LKR {(totalAccumulatedDep / 1000000).toFixed(2)}M
                                     </p>
                                     <p className="text-xs text-red-600 mt-1">
                                         {((totalAccumulatedDep / totalAcquisitionCost) * 100).toFixed(1)}% of acquisition cost

@@ -153,7 +153,7 @@ export default function Purchasing() {
         {
             header: `${t('total')} ${t('amount')}`,
             key: "total_amount",
-            render: (val) => `SAR ${val?.toLocaleString() || 0}`
+            render: (val) => `LKR ${val?.toLocaleString() || 0}`
         },
         { header: "PO Date", key: "po_date" },
         { header: t('status'), key: "status", isBadge: true },
@@ -201,7 +201,7 @@ export default function Purchasing() {
         { header: "PO #", key: "po_number" },
         { header: "GRN #", key: "grn_number" },
         { header: t('vendor'), key: "vendor_name" },
-        { header: `${t('amount')} (SAR)`, key: "total_amount", render: (val) => `${val?.toLocaleString() || 0}` },
+        { header: `${t('amount')} (LKR)`, key: "total_amount", render: (val) => `${val?.toLocaleString() || 0}` },
         { header: t('threeWayMatch'), key: "three_way_match_status", isBadge: true },
         { header: t('status'), key: "status", isBadge: true }
     ];
@@ -378,14 +378,14 @@ export default function Purchasing() {
                                 <td>${item.material_name}</td>
                                 <td>${item.quantity}</td>
                                 <td>${item.unit_of_measure}</td>
-                                <td>SAR ${item.unit_price?.toFixed(2) || '0.00'}</td>
-                                <td>SAR ${item.subtotal?.toFixed(2) || '0.00'}</td>
+                                <td>LKR ${item.unit_price?.toFixed(2) || '0.00'}</td>
+                                <td>LKR ${item.subtotal?.toFixed(2) || '0.00'}</td>
                             </tr>
                         </table>
                         <div class="totals">
-                            <p>Subtotal: SAR ${item.subtotal?.toFixed(2) || '0.00'}</p>
-                            <p>VAT (${item.vat_percent || 0}%): SAR ${item.vat_amount?.toFixed(2) || '0.00'}</p>
-                            <p><strong>Total Amount: SAR ${item.total_amount?.toFixed(2) || '0.00'}</strong></p>
+                            <p>Subtotal: LKR ${item.subtotal?.toFixed(2) || '0.00'}</p>
+                            <p>VAT (${item.vat_percent || 0}%): LKR ${item.vat_amount?.toFixed(2) || '0.00'}</p>
+                            <p><strong>Total Amount: LKR ${item.total_amount?.toFixed(2) || '0.00'}</strong></p>
                         </div>
                         <p style="margin-top: 30px;"><strong>Delivery Date:</strong> ${item.delivery_date}</p>
                         <p><strong>Payment Terms:</strong> ${item.payment_terms}</p>
@@ -474,14 +474,14 @@ export default function Purchasing() {
                             <tr>
                                 <td>${item.material_name}</td>
                                 <td>${item.invoiced_quantity}</td>
-                                <td>SAR ${item.unit_price?.toFixed(2) || '0.00'}</td>
-                                <td>SAR ${item.subtotal?.toFixed(2) || '0.00'}</td>
+                                <td>LKR ${item.unit_price?.toFixed(2) || '0.00'}</td>
+                                <td>LKR ${item.subtotal?.toFixed(2) || '0.00'}</td>
                             </tr>
                         </table>
                         <div style="text-align: right; margin-top: 20px;">
-                            <p>Subtotal: SAR ${item.subtotal?.toFixed(2) || '0.00'}</p>
-                            <p>VAT: SAR ${item.vat_amount?.toFixed(2) || '0.00'}</p>
-                            <p><strong>Total: SAR ${item.total_amount?.toFixed(2) || '0.00'}</strong></p>
+                            <p>Subtotal: LKR ${item.subtotal?.toFixed(2) || '0.00'}</p>
+                            <p>VAT: LKR ${item.vat_amount?.toFixed(2) || '0.00'}</p>
+                            <p><strong>Total: LKR ${item.total_amount?.toFixed(2) || '0.00'}</strong></p>
                         </div>
                     </body>
                 </html>

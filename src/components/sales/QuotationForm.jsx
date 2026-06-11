@@ -282,15 +282,15 @@ export default function QuotationForm({ item, onClose }) {
                     <div className="bg-gray-50 p-4 rounded-lg space-y-2">
                         <div className="flex justify-between">
                             <span>Subtotal:</span>
-                            <span className="font-semibold">SAR {subtotal.toFixed(2)}</span>
+                            <span className="font-semibold">LKR {subtotal.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between">
                             <span>VAT (15%):</span>
-                            <span className="font-semibold">SAR {vatAmount.toFixed(2)}</span>
+                            <span className="font-semibold">LKR {vatAmount.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-lg font-bold border-t pt-2">
                             <span>Total Amount:</span>
-                            <span className="text-emerald-600">SAR {totalAmount.toFixed(2)}</span>
+                            <span className="text-emerald-600">LKR {totalAmount.toFixed(2)}</span>
                         </div>
                     </div>
 

@@ -248,7 +248,7 @@ export default function AUCExpenditureForm({ aucNumber, onClose }) {
                         <h3 className="font-semibold text-lg border-b pb-2">Amount</h3>
                         <div className="grid grid-cols-3 gap-4">
                             <div>
-                                <Label>Amount (SAR) *</Label>
+                                <Label>Amount (LKR) *</Label>
                                 <Input
                                     type="number"
                                     step="0.01"

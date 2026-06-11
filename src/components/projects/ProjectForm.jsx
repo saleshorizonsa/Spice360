@@ -307,7 +307,7 @@ export default function ProjectForm({ item, onClose }) {
                                     </Select>
                                 </div>
                                 <div>
-                                    <Label>Contract Value (SAR)</Label>
+                                    <Label>Contract Value (LKR)</Label>
                                     <Input
                                         type="number"
                                         value={formData.contract_value}
@@ -320,7 +320,7 @@ export default function ProjectForm({ item, onClose }) {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label>Hourly Rate (SAR)</Label>
+                                    <Label>Hourly Rate (LKR)</Label>
                                     <Input
                                         type="number"
                                         value={formData.hourly_rate}
@@ -330,7 +330,7 @@ export default function ProjectForm({ item, onClose }) {
                                     />
                                 </div>
                                 <div>
-                                    <Label>Daily Rate (SAR)</Label>
+                                    <Label>Daily Rate (LKR)</Label>
                                     <Input
                                         type="number"
                                         value={formData.daily_rate}
@@ -402,7 +402,7 @@ export default function ProjectForm({ item, onClose }) {
                                     />
                                 </div>
                                 <div>
-                                    <Label>Budget Cost (SAR)</Label>
+                                    <Label>Budget Cost (LKR)</Label>
                                     <Input
                                         type="number"
                                         value={formData.budget_cost}

@@ -25,10 +25,10 @@ export default function VendorForm({ item, onClose }) {
         city: '',
         state: '',
         postal_code: '',
-        country: 'Saudi Arabia',
+        country: 'Sri Lanka',
         tax_id: '',
         payment_terms: 'net_30',
-        currency: 'SAR',
+        currency: 'LKR',
         rating: 3,
         status: 'active',
         notes: ''

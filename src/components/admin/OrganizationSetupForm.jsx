@@ -45,9 +45,9 @@ export default function OrganizationSetupForm() {
         paid_capital: 0,
         fiscal_year_start: '01-01',
         fiscal_year_end: '12-31',
-        base_currency: 'SAR',
+        base_currency: 'LKR',
         default_language: 'en',
-        country: 'Saudi Arabia',
+        country: 'Sri Lanka',
         headquarters_address: '',
         headquarters_address_ar: '',
         building_number: '',
@@ -440,7 +440,7 @@ export default function OrganizationSetupForm() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label>Authorized Capital (SAR)</Label>
+                                    <Label>Authorized Capital (LKR)</Label>
                                     <Input
                                         type="number"
                                         value={formData.authorized_capital}
@@ -449,7 +449,7 @@ export default function OrganizationSetupForm() {
                                     />
                                 </div>
                                 <div>
-                                    <Label>Paid-up Capital (SAR)</Label>
+                                    <Label>Paid-up Capital (LKR)</Label>
                                     <Input
                                         type="number"
                                         value={formData.paid_capital}

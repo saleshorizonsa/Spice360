@@ -203,7 +203,7 @@ export const NotificationTemplates = {
         notificationType: 'depreciation_completed',
         priority: 'medium',
         title: 'Depreciation Run Complete',
-        message: `Depreciation for period ${period} completed. ${assetCount} assets, Total: SAR ${totalDepreciation.toFixed(2)}`,
+        message: `Depreciation for period ${period} completed. ${assetCount} assets, Total: LKR ${totalDepreciation.toFixed(2)}`,
         actionUrl: '/FixedAssets'
     }),
 
@@ -212,7 +212,7 @@ export const NotificationTemplates = {
         notificationType: 'payment_due',
         priority: 'high',
         title: 'Payment Due',
-        message: `Payment for Invoice ${invoiceNumber} (SAR ${amount}) is due on ${dueDate}`,
+        message: `Payment for Invoice ${invoiceNumber} (LKR ${amount}) is due on ${dueDate}`,
         actionUrl: '/Finance'
     })
 };

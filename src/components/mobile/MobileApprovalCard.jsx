@@ -42,7 +42,7 @@ export default function MobileApprovalCard({ request, onApprove, onReject, onVie
                     </div>
                     <div className="text-right">
                         <p className="font-bold text-lg text-gray-900">
-                            SAR {request.document_amount?.toLocaleString() || 0}
+                            LKR {request.document_amount?.toLocaleString() || 0}
                         </p>
                         <p className="text-xs text-gray-500 flex items-center justify-end gap-1 mt-1">
                             <Clock className="w-3 h-3" />

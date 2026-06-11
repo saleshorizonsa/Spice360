@@ -151,7 +151,7 @@ export default function SparePartForm({ item, onClose }) {
 
                     <div className="grid grid-cols-3 gap-4">
                         <div>
-                            <Label>Unit Cost (SAR)</Label>
+                            <Label>Unit Cost (LKR)</Label>
                             <Input
                                 type="number"
                                 value={formData.unit_cost}

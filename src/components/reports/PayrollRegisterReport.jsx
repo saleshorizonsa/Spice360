@@ -133,8 +133,8 @@ export default function PayrollRegisterReport() {
                                 <tr class="section-header">
                                     <th>Account</th>
                                     <th>Description</th>
-                                    <th class="number">Debit (SAR)</th>
-                                    <th class="number">Credit (SAR)</th>
+                                    <th class="number">Debit (LKR)</th>
+                                    <th class="number">Credit (LKR)</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -235,7 +235,7 @@ export default function PayrollRegisterReport() {
                         <CardContent className="p-4">
                             <p className="text-sm text-gray-600">Gross Salary</p>
                             <p className="text-xl font-bold text-emerald-700">
-                                SAR {(totals.gross_salary / 1000).toFixed(0)}K
+                                LKR {(totals.gross_salary / 1000).toFixed(0)}K
                             </p>
                         </CardContent>
                     </Card>
@@ -243,7 +243,7 @@ export default function PayrollRegisterReport() {
                         <CardContent className="p-4">
                             <p className="text-sm text-gray-600">Total Deductions</p>
                             <p className="text-xl font-bold text-red-700">
-                                SAR {(totals.total_deductions / 1000).toFixed(0)}K
+                                LKR {(totals.total_deductions / 1000).toFixed(0)}K
                             </p>
                         </CardContent>
                     </Card>
@@ -251,7 +251,7 @@ export default function PayrollRegisterReport() {
                         <CardContent className="p-4">
                             <p className="text-sm text-gray-600">Net Salary</p>
                             <p className="text-xl font-bold text-indigo-700">
-                                SAR {(totals.net_salary / 1000).toFixed(0)}K
+                                LKR {(totals.net_salary / 1000).toFixed(0)}K
                             </p>
                         </CardContent>
                     </Card>
@@ -364,8 +364,8 @@ export default function PayrollRegisterReport() {
                                     <TableRow className="bg-emerald-100">
                                         <TableHead>Account Code</TableHead>
                                         <TableHead>Description</TableHead>
-                                        <TableHead className="text-right">Debit (SAR)</TableHead>
-                                        <TableHead className="text-right">Credit (SAR)</TableHead>
+                                        <TableHead className="text-right">Debit (LKR)</TableHead>
+                                        <TableHead className="text-right">Credit (LKR)</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>

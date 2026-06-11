@@ -157,7 +157,7 @@ export default function WorkCenterForm({ item, onClose }) {
                             />
                         </div>
                         <div>
-                            <Label>Hourly Rate (SAR)</Label>
+                            <Label>Hourly Rate (LKR)</Label>
                             <Input 
                                 type="number"
                                 value={formData.hourly_rate_sar}

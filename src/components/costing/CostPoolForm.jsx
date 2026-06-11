@@ -166,7 +166,7 @@ export default function CostPoolForm({ item, onClose }) {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label>Budgeted Cost (SAR)</Label>
+                            <Label>Budgeted Cost (LKR)</Label>
                             <Input
                                 type="number"
                                 step="0.01"
@@ -175,7 +175,7 @@ export default function CostPoolForm({ item, onClose }) {
                             />
                         </div>
                         <div>
-                            <Label>Actual Cost (SAR)</Label>
+                            <Label>Actual Cost (LKR)</Label>
                             <Input
                                 type="number"
                                 step="0.01"
@@ -210,7 +210,7 @@ export default function CostPoolForm({ item, onClose }) {
                         <div className="flex justify-between items-center">
                             <span className="font-semibold">Calculated Overhead Rate:</span>
                             <span className="text-2xl font-bold text-emerald-600">
-                                SAR {formData.overhead_rate.toFixed(2)}
+                                LKR {formData.overhead_rate.toFixed(2)}
                             </span>
                         </div>
                         <p className="text-sm text-gray-600 mt-1">per {formData.allocation_base.replace('_', ' ')}</p>

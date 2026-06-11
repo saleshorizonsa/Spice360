@@ -124,7 +124,7 @@ export default function ServiceContractsPanel({ invoices = [] }) {
     { header: "Customer", key: "customer_name" },
     { header: "Service Type", key: "service_type", isBadge: true },
     { header: "Cycle", key: "billing_cycle" },
-    { header: "Amount", key: "monthly_amount", render: (value) => `SAR ${Number(value || 0).toLocaleString()}` },
+    { header: "Amount", key: "monthly_amount", render: (value) => `LKR ${Number(value || 0).toLocaleString()}` },
     { header: "Next Billing", key: "next_billing_date" },
     { header: "End Date", key: "end_date" },
     { header: "Status", key: "status", isBadge: true }
@@ -133,8 +133,8 @@ export default function ServiceContractsPanel({ invoices = [] }) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
-        <Card><CardContent className="p-4"><p className="text-sm text-slate-500">MRR</p><p className="text-xl font-bold">SAR {kpis.monthlyRecurringRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></CardContent></Card>
-        <Card><CardContent className="p-4"><p className="text-sm text-slate-500">ARR</p><p className="text-xl font-bold">SAR {kpis.annualRecurringRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-sm text-slate-500">MRR</p><p className="text-xl font-bold">LKR {kpis.monthlyRecurringRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-sm text-slate-500">ARR</p><p className="text-xl font-bold">LKR {kpis.annualRecurringRevenue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-sm text-slate-500">Active Contracts</p><p className="text-xl font-bold">{kpis.activeContracts}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-sm text-slate-500">Renewals 30d</p><p className="text-xl font-bold">{kpis.upcomingRenewals}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-sm text-slate-500">Overdue Invoices</p><p className="text-xl font-bold">{kpis.overdueInvoices}</p></CardContent></Card>
@@ -165,7 +165,7 @@ export default function ServiceContractsPanel({ invoices = [] }) {
                 <div key={invoice.id || invoice.invoice_number} className="flex flex-col gap-3 rounded-md border bg-white px-3 py-2 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium">{invoice.invoice_number || "Generated invoice"}</p>
-                    <p className="truncate text-xs text-slate-500">{invoice.customer_name} · SAR {Number(invoice.total_amount || 0).toLocaleString()}</p>
+                    <p className="truncate text-xs text-slate-500">{invoice.customer_name} · LKR {Number(invoice.total_amount || 0).toLocaleString()}</p>
                   </div>
                   <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={() => setPrintInvoice(invoice)}>
                     <Printer className="mr-2 h-4 w-4" />
@@ -235,7 +235,7 @@ export default function ServiceContractsPanel({ invoices = [] }) {
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Amount</p>
-                  <p className="font-medium">SAR {Number(contract.monthly_amount || 0).toLocaleString()}</p>
+                  <p className="font-medium">LKR {Number(contract.monthly_amount || 0).toLocaleString()}</p>
                 </div>
                 <div>
                   <p className="text-xs text-slate-500">Next billing</p>

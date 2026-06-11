@@ -43,11 +43,11 @@ export default function AssetCard({ asset, onEdit, onAllocate, onMaintenance, on
                 <div className="grid grid-cols-2 gap-3">
                     <div className="bg-gray-50 p-3 rounded">
                         <p className="text-xs text-gray-500">Acquisition Cost</p>
-                        <p className="text-sm font-bold">SAR {asset.acquisition_cost?.toLocaleString()}</p>
+                        <p className="text-sm font-bold">LKR {asset.acquisition_cost?.toLocaleString()}</p>
                     </div>
                     <div className="bg-emerald-50 p-3 rounded">
                         <p className="text-xs text-gray-500">Net Book Value</p>
-                        <p className="text-sm font-bold text-emerald-700">SAR {asset.net_book_value?.toLocaleString()}</p>
+                        <p className="text-sm font-bold text-emerald-700">LKR {asset.net_book_value?.toLocaleString()}</p>
                     </div>
                 </div>
 
@@ -55,7 +55,7 @@ export default function AssetCard({ asset, onEdit, onAllocate, onMaintenance, on
                 <div className="bg-blue-50 p-3 rounded">
                     <p className="text-xs text-blue-700">Accumulated Depreciation</p>
                     <p className="text-sm font-bold text-blue-900">
-                        SAR {asset.accumulated_depreciation?.toLocaleString()} ({depreciationPercent.toFixed(0)}%)
+                        LKR {asset.accumulated_depreciation?.toLocaleString()} ({depreciationPercent.toFixed(0)}%)
                     </p>
                 </div>
 

@@ -146,7 +146,7 @@ export default function CRM() {
         { header: t('contact'), key: "contact_person" },
         { header: t('phone'), key: "phone" },
         { header: t('source'), key: "lead_source" },
-        { header: t('value'), key: "estimated_value", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: t('value'), key: "estimated_value", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: t('score'), key: "lead_score" },
         { header: t('assignedTo'), key: "assigned_to" },
         { header: t('qualification'), key: "qualification_status", isBadge: true },
@@ -158,9 +158,9 @@ export default function CRM() {
         { header: t('name'), key: "opportunity_name" },
         { header: t('company'), key: "company_name" },
         { header: t('stage'), key: "stage", isBadge: true },
-        { header: t('value'), key: "estimated_value", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: t('value'), key: "estimated_value", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: t('probability'), key: "probability", render: (val) => `${val || 0}%` },
-        { header: t('weighted'), key: "weighted_value", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: t('weighted'), key: "weighted_value", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: t('closeDate'), key: "expected_close_date" },
         { header: t('assignedTo'), key: "assigned_to" },
         { header: t('status'), key: "status", isBadge: true }
@@ -245,7 +245,7 @@ export default function CRM() {
                             <p><strong>Phone:</strong> ${item.phone || 'N/A'}</p>
                             <p><strong>Industry:</strong> ${item.industry || 'N/A'}</p>
                             <p><strong>Lead Source:</strong> ${item.lead_source || 'N/A'}</p>
-                            <p><strong>Estimated Value:</strong> SAR ${item.estimated_value?.toLocaleString() || 0}</p>
+                            <p><strong>Estimated Value:</strong> LKR ${item.estimated_value?.toLocaleString() || 0}</p>
                             <p><strong>Assigned To:</strong> ${item.assigned_to || 'N/A'}</p>
                             <p><strong>Qualification Status:</strong> ${item.qualification_status || 'N/A'}</p>
                             <p><strong>Status:</strong> ${item.status || 'N/A'}</p>
@@ -266,8 +266,8 @@ export default function CRM() {
                         <div class="section">
                             <p><strong>Stage:</strong> ${item.stage || 'N/A'}</p>
                             <p><strong>Probability:</strong> ${item.probability || 0}%</p>
-                            <p><strong>Estimated Value:</strong> SAR ${item.estimated_value?.toLocaleString() || 0}</p>
-                            <p><strong>Weighted Value:</strong> SAR ${item.weighted_value?.toLocaleString() || 0}</p>
+                            <p><strong>Estimated Value:</strong> LKR ${item.estimated_value?.toLocaleString() || 0}</p>
+                            <p><strong>Weighted Value:</strong> LKR ${item.weighted_value?.toLocaleString() || 0}</p>
                             <p><strong>Expected Close Date:</strong> ${item.expected_close_date ? new Date(item.expected_close_date).toLocaleDateString() : 'N/A'}</p>
                             <p><strong>Assigned To:</strong> ${item.assigned_to || 'N/A'}</p>
                             <p><strong>Status:</strong> ${item.status || 'N/A'}</p>
@@ -364,7 +364,7 @@ export default function CRM() {
                                 <XAxis dataKey="stage" angle={-45} textAnchor="end" height={80} />
                                 <YAxis />
                                 <Tooltip />
-                                <Bar dataKey="value" fill="#10b981" name="Value (SAR K)" />
+                                <Bar dataKey="value" fill="#10b981" name="Value (LKR K)" />
                             </BarChart>
                         </ResponsiveContainer>
                     </CardContent>
@@ -423,14 +423,14 @@ export default function CRM() {
                                                 <h3 className="font-semibold capitalize">{stage.replace('_', ' ')}</h3>
                                                 <div className="text-right">
                                                     <p className="text-sm text-gray-600">{stageOpps.length} opportunities</p>
-                                                    <p className="font-semibold">SAR {stageValue.toLocaleString()}</p>
+                                                    <p className="font-semibold">LKR {stageValue.toLocaleString()}</p>
                                                 </div>
                                             </div>
                                             <div className="space-y-2">
                                                 {stageOpps.slice(0, 3).map(opp => (
                                                     <div key={opp.id} className="flex justify-between items-center bg-gray-50 p-2 rounded">
                                                         <span className="text-sm">{opp.opportunity_name}</span>
-                                                        <span className="text-sm font-medium">SAR {opp.estimated_value?.toLocaleString()}</span>
+                                                        <span className="text-sm font-medium">LKR {opp.estimated_value?.toLocaleString()}</span>
                                                     </div>
                                                 ))}
                                             </div>

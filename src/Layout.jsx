@@ -115,7 +115,7 @@ function LayoutContent({ children, currentPageName }) {
 
         { name: t('hrPayroll'), path: "HR", icon: Users, section: "HR" },
         { name: "Sri Lanka Tax", path: "SriLankaTax", icon: Calculator, section: "Compliance" },
-        { name: t('zatca'), path: "ZATCA", icon: FileCheck, section: "Compliance" },
+        { name: "Compliance Reports", path: "ComplianceReports", icon: FileCheck, section: "Compliance" },
         { name: t('reports'), path: "Reports", icon: FileCheck, section: "Reports" },
         { name: t('approvals'), path: "Approvals", icon: Clock, section: "Workflow" },
         { name: "Approval Workflows", path: "ApprovalWorkflows", icon: Settings, section: "Workflow" },

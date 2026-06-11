@@ -711,7 +711,7 @@ export default function EmployeeForm({ item, onClose }) {
 
                             <div className="grid grid-cols-3 gap-4">
                                 <div>
-                                    <Label>Basic Salary (SAR) *</Label>
+                                    <Label>Basic Salary (LKR) *</Label>
                                     <Input
                                         type="number"
                                         value={formData.basic_salary}

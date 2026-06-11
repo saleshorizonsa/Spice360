@@ -283,7 +283,7 @@ export default function AUCForm({ item, onClose }) {
                         <h3 className="font-semibold text-lg border-b pb-2">Cost Breakdown</h3>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label>Total Budgeted Cost (SAR) *</Label>
+                                <Label>Total Budgeted Cost (LKR) *</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -295,7 +295,7 @@ export default function AUCForm({ item, onClose }) {
                             <div className="bg-gray-50 p-3 rounded">
                                 <Label>Total Actual Cost</Label>
                                 <div className="text-2xl font-bold text-emerald-600 mt-1">
-                                    SAR {formData.total_actual_cost.toLocaleString()}
+                                    LKR {formData.total_actual_cost.toLocaleString()}
                                 </div>
                             </div>
                         </div>
@@ -344,7 +344,7 @@ export default function AUCForm({ item, onClose }) {
                                 <div className="flex justify-between">
                                     <span className="font-semibold">Cost Variance:</span>
                                     <span className={`font-bold ${costVariance > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                                        SAR {Math.abs(costVariance).toLocaleString()} ({costVariancePercent.toFixed(1)}%)
+                                        LKR {Math.abs(costVariance).toLocaleString()} ({costVariancePercent.toFixed(1)}%)
                                         {costVariance > 0 ? ' Over Budget' : ' Under Budget'}
                                     </span>
                                 </div>
@@ -363,7 +363,7 @@ export default function AUCForm({ item, onClose }) {
                                 />
                             </div>
                             <div>
-                                <Label>Contract Value (SAR)</Label>
+                                <Label>Contract Value (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"

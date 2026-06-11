@@ -151,7 +151,7 @@ export default function Projects() {
         { header: t('type'), key: "project_type", isBadge: true },
         { header: t('customer'), key: "customer_name" },
         { header: t('manager'), key: "project_manager" },
-        { header: t('contractValue'), key: "contract_value", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: t('contractValue'), key: "contract_value", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: t('completionPercent'), key: "completion_percent", render: (val) => `${val || 0}%` },
         { header: t('startDate'), key: "start_date" },
         { header: t('status'), key: "status", isBadge: true },
@@ -176,7 +176,7 @@ export default function Projects() {
         { header: t('employee'), key: "employee_name" },
         { header: t('category'), key: "expense_category", isBadge: true },
         { header: t('date'), key: "expense_date" },
-        { header: t('amount'), key: "amount", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: t('amount'), key: "amount", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: t('billable'), key: "billable", render: (val) => val ? t('yes') : t('no') },
         { header: t('receipt'), key: "receipt_attached", render: (val) => val ? "✓" : "✗" },
         { header: t('status'), key: "status", isBadge: true }
@@ -189,8 +189,8 @@ export default function Projects() {
         { header: t('sequence'), key: "sequence_number" },
         { header: t('plannedDate'), key: "planned_date" },
         { header: t('actualDate'), key: "actual_date" },
-        { header: t('value'), key: "milestone_value", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
-        { header: t('retention'), key: "retention_amount", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: t('value'), key: "milestone_value", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: t('retention'), key: "retention_amount", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: t('completionPercent'), key: "completion_percent", render: (val) => `${val || 0}%` },
         { header: t('status'), key: "status", isBadge: true }
     ];
@@ -202,9 +202,9 @@ export default function Projects() {
         { header: t('periodStart'), key: "billing_period_start" },
         { header: t('periodEnd'), key: "billing_period_end" },
         { header: t('laborHours'), key: "labor_hours" },
-        { header: t('subtotal'), key: "subtotal", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
-        { header: t('retention'), key: "retention_amount", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
-        { header: t('total'), key: "total_amount", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: t('subtotal'), key: "subtotal", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: t('retention'), key: "retention_amount", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: t('total'), key: "total_amount", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: t('payment'), key: "payment_status", isBadge: true },
         { header: t('status'), key: "status", isBadge: true }
     ];
@@ -394,7 +394,7 @@ export default function Projects() {
                                     { header: 'Allocation %', key: 'allocation_percent', render: (val) => `${val}%` },
                                     { header: 'Start Date', key: 'start_date' },
                                     { header: 'End Date', key: 'end_date' },
-                                    { header: 'Billing Rate', key: 'billing_rate', render: (val) => `SAR ${val}/hr` },
+                                    { header: 'Billing Rate', key: 'billing_rate', render: (val) => `LKR ${val}/hr` },
                                     { header: 'Billable', key: 'is_billable', render: (val) => val ? 'Yes' : 'No' },
                                     { header: 'Status', key: 'status', isBadge: true }
                                 ]}

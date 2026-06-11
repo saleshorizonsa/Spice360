@@ -32,7 +32,7 @@ export default function ChartOfAccountsForm({ item, onClose }) {
         parent_account: '',
         level: 1,
         is_control_account: false,
-        currency: 'SAR',
+        currency: 'LKR',
         opening_balance: 0,
         current_balance: 0,
         status: 'active',
@@ -315,7 +315,7 @@ export default function ChartOfAccountsForm({ item, onClose }) {
                                 <Input
                                     value={formData.currency}
                                     onChange={(e) => handleChange('currency', e.target.value)}
-                                    placeholder="SAR"
+                                    placeholder="LKR"
                                 />
                             </div>
                             <div>

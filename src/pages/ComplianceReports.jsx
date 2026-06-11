@@ -3,19 +3,15 @@ import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-    FileText, 
+import {
+    FileText,
     Users,
     AlertTriangle,
     CheckCircle2,
     Clock
 } from "lucide-react";
 import VATReturnReport from "../components/reports/VATReturnReport";
-import ZATCAInvoiceLogsReport from "../components/reports/ZATCAInvoiceLogsReport";
 import CreditDebitNoteRegister from "../components/reports/CreditDebitNoteRegister";
-import WPSReport from "../components/reports/WPSReport";
-import GOSIReport from "../components/reports/GOSIReport";
-import NitaqatReport from "../components/reports/NitaqatReport";
 import DocumentExpiryReport from "../components/reports/DocumentExpiryReport";
 import DocumentArchivalReport from "../components/reports/DocumentArchivalReport";
 
@@ -28,21 +24,21 @@ export default function ComplianceReports() {
         initialData: []
     });
 
-    const { data: invoiceLogs = [] } = useQuery({
-        queryKey: ['zatcaLogs'],
-        queryFn: () => matrixSales.entities.ZATCASubmissionLog.list('-submission_date'),
+    const { data: slVatReturns = [] } = useQuery({
+        queryKey: ['slVatReturns'],
+        queryFn: () => matrixSales.entities.SLVATReturn.list('-period_month'),
         initialData: []
     });
 
-    const { data: gosiRecords = [] } = useQuery({
-        queryKey: ['gosi'],
-        queryFn: () => matrixSales.entities.GOSIContribution.list('-contribution_month'),
+    const { data: slWhtReturns = [] } = useQuery({
+        queryKey: ['slWhtReturns'],
+        queryFn: () => matrixSales.entities.SLWHTReturn.list('-period_month'),
         initialData: []
     });
 
-    const { data: nitaqatSnapshots = [] } = useQuery({
-        queryKey: ['nitaqat'],
-        queryFn: () => matrixSales.entities.NitaqatSnapshot.list('-snapshot_date'),
+    const { data: slEpfContributions = [] } = useQuery({
+        queryKey: ['slEpfContributions'],
+        queryFn: () => matrixSales.entities.SLEPFContribution.list('-period_month'),
         initialData: []
     });
 
@@ -52,24 +48,21 @@ export default function ComplianceReports() {
         initialData: []
     });
 
-    // KPIs
-    const pendingVAT = vatReturns.filter(v => v.filing_status === 'draft').length;
-    const zatcaSuccess = invoiceLogs.filter(l => l.validation_status === 'pass').length;
-    const zatcaFailed = invoiceLogs.filter(l => l.validation_status === 'fail').length;
-    const latestNitaqat = nitaqatSnapshots[0] || {};
+    const pendingVAT = slVatReturns.filter(v => v.status === 'draft').length;
+    const pendingWHT = slWhtReturns.filter(w => w.status === 'draft').length;
+    const pendingEPF = slEpfContributions.filter(e => e.status === 'draft').length;
     const criticalExpiries = expiringDocs.filter(d => d.alert_level === 'red').length;
 
     return (
         <div className="p-6 space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">Saudi Compliance Reports</h1>
-                    <p className="text-gray-600 mt-1">VAT, ZATCA, GOSI, Nitaqat & Document Management</p>
+                    <h1 className="text-3xl font-bold text-gray-900">Sri Lanka Compliance Reports</h1>
+                    <p className="text-gray-600 mt-1">VAT, WHT, EPF/ETF, SSCL & Document Management</p>
                 </div>
             </div>
 
-            {/* KPI Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card className="bg-white">
                     <CardContent className="p-4">
                         <div className="flex items-center justify-between">
@@ -86,10 +79,10 @@ export default function ComplianceReports() {
                     <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-gray-600">ZATCA Success</p>
-                                <p className="text-2xl font-bold text-green-600">{zatcaSuccess}</p>
+                                <p className="text-sm text-gray-600">Pending WHT Returns</p>
+                                <p className="text-2xl font-bold text-amber-600">{pendingWHT}</p>
                             </div>
-                            <CheckCircle2 className="w-8 h-8 text-green-600" />
+                            <CheckCircle2 className="w-8 h-8 text-amber-600" />
                         </div>
                     </CardContent>
                 </Card>
@@ -98,22 +91,8 @@ export default function ComplianceReports() {
                     <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-gray-600">ZATCA Failed</p>
-                                <p className="text-2xl font-bold text-red-600">{zatcaFailed}</p>
-                            </div>
-                            <AlertTriangle className="w-8 h-8 text-red-600" />
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="bg-white">
-                    <CardContent className="p-4">
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm text-gray-600">Saudization Rate</p>
-                                <p className="text-2xl font-bold text-gray-900">
-                                    {latestNitaqat.saudization_percentage?.toFixed(1) || 0}%
-                                </p>
+                                <p className="text-sm text-gray-600">Pending EPF Returns</p>
+                                <p className="text-2xl font-bold text-indigo-600">{pendingEPF}</p>
                             </div>
                             <Users className="w-8 h-8 text-indigo-600" />
                         </div>
@@ -134,13 +113,10 @@ export default function ComplianceReports() {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="grid grid-cols-4 lg:grid-cols-8 w-full">
+                <TabsList className="grid grid-cols-5 w-full">
                     <TabsTrigger value="vat">VAT Returns</TabsTrigger>
-                    <TabsTrigger value="zatca">ZATCA Logs</TabsTrigger>
                     <TabsTrigger value="credit_debit">Credit/Debit Notes</TabsTrigger>
-                    <TabsTrigger value="wps">WPS Payroll</TabsTrigger>
-                    <TabsTrigger value="gosi">GOSI</TabsTrigger>
-                    <TabsTrigger value="nitaqat">Nitaqat</TabsTrigger>
+                    <TabsTrigger value="wht">WHT Returns</TabsTrigger>
                     <TabsTrigger value="expiry">Document Expiry</TabsTrigger>
                     <TabsTrigger value="archival">Archival Index</TabsTrigger>
                 </TabsList>
@@ -149,24 +125,22 @@ export default function ComplianceReports() {
                     <VATReturnReport />
                 </TabsContent>
 
-                <TabsContent value="zatca">
-                    <ZATCAInvoiceLogsReport />
-                </TabsContent>
-
                 <TabsContent value="credit_debit">
                     <CreditDebitNoteRegister />
                 </TabsContent>
 
-                <TabsContent value="wps">
-                    <WPSReport />
-                </TabsContent>
-
-                <TabsContent value="gosi">
-                    <GOSIReport />
-                </TabsContent>
-
-                <TabsContent value="nitaqat">
-                    <NitaqatReport />
+                <TabsContent value="wht">
+                    <Card>
+                        <CardContent className="p-6">
+                            <div className="text-center py-8">
+                                <FileText className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                                <p className="text-gray-500 font-medium">WHT Return Register</p>
+                                <p className="text-gray-400 text-sm mt-1">
+                                    Withholding tax returns filed under the Inland Revenue Act. Track 5–14% WHT deductions on payments to vendors and contractors.
+                                </p>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </TabsContent>
 
                 <TabsContent value="expiry">

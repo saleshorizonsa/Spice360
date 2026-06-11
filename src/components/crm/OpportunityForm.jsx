@@ -263,7 +263,7 @@ export default function OpportunityForm({ item, onClose }) {
 
                     <div className="grid grid-cols-3 gap-4">
                         <div>
-                            <Label>Estimated Value (SAR) *</Label>
+                            <Label>Estimated Value (LKR) *</Label>
                             <Input
                                 type="number"
                                 value={formData.estimated_value}
@@ -273,7 +273,7 @@ export default function OpportunityForm({ item, onClose }) {
                             />
                         </div>
                         <div>
-                            <Label>Weighted Value (SAR)</Label>
+                            <Label>Weighted Value (LKR)</Label>
                             <Input
                                 type="number"
                                 value={formData.weighted_value.toFixed(2)}

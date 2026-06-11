@@ -625,7 +625,7 @@ export default function ARAgingReport() {
                         <CardContent className="p-3">
                             <p className="text-xs text-gray-600">Current</p>
                             <p className="text-lg font-bold text-green-700">
-                                SAR {(totals.current / 1000).toFixed(0)}K
+                                LKR {(totals.current / 1000).toFixed(0)}K
                             </p>
                         </CardContent>
                     </Card>
@@ -633,7 +633,7 @@ export default function ARAgingReport() {
                         <CardContent className="p-3">
                             <p className="text-xs text-gray-600">1-30 Days</p>
                             <p className="text-lg font-bold text-blue-700">
-                                SAR {(totals.days_1_30 / 1000).toFixed(0)}K
+                                LKR {(totals.days_1_30 / 1000).toFixed(0)}K
                             </p>
                         </CardContent>
                     </Card>
@@ -641,7 +641,7 @@ export default function ARAgingReport() {
                         <CardContent className="p-3">
                             <p className="text-xs text-gray-600">31-60 Days</p>
                             <p className="text-lg font-bold text-yellow-700">
-                                SAR {(totals.days_31_60 / 1000).toFixed(0)}K
+                                LKR {(totals.days_31_60 / 1000).toFixed(0)}K
                             </p>
                         </CardContent>
                     </Card>
@@ -649,7 +649,7 @@ export default function ARAgingReport() {
                         <CardContent className="p-3">
                             <p className="text-xs text-gray-600">61-90 Days</p>
                             <p className="text-lg font-bold text-orange-700">
-                                SAR {(totals.days_61_90 / 1000).toFixed(0)}K
+                                LKR {(totals.days_61_90 / 1000).toFixed(0)}K
                             </p>
                         </CardContent>
                     </Card>
@@ -657,7 +657,7 @@ export default function ARAgingReport() {
                         <CardContent className="p-3">
                             <p className="text-xs text-gray-600">{">"} 90 Days</p>
                             <p className="text-lg font-bold text-red-700">
-                                SAR {(totals.days_90_plus / 1000).toFixed(0)}K
+                                LKR {(totals.days_90_plus / 1000).toFixed(0)}K
                             </p>
                         </CardContent>
                     </Card>
@@ -665,7 +665,7 @@ export default function ARAgingReport() {
                         <CardContent className="p-3">
                             <p className="text-xs text-gray-600">Total</p>
                             <p className="text-lg font-bold text-indigo-700">
-                                SAR {(totals.total / 1000).toFixed(0)}K
+                                LKR {(totals.total / 1000).toFixed(0)}K
                             </p>
                         </CardContent>
                     </Card>
@@ -784,7 +784,7 @@ export default function ARAgingReport() {
                                         </div>
                                         <div className="text-right">
                                             <p className="text-lg font-bold text-red-700">
-                                                SAR {customer.days_90_plus.toLocaleString('en-US', {minimumFractionDigits: 2})}
+                                                LKR {customer.days_90_plus.toLocaleString('en-US', {minimumFractionDigits: 2})}
                                             </p>
                                             <p className="text-xs text-red-600">{">"} 90 days overdue</p>
                                         </div>

@@ -170,7 +170,7 @@ export default function FixedAssets() {
             queryClient.invalidateQueries();
             toast({
                 title: t('success'),
-                description: `Depreciation posted for ${depEntries.length} assets - SAR ${depEntries.reduce((sum, e) => sum + e.depreciation_amount, 0).toLocaleString()}`,
+                description: `Depreciation posted for ${depEntries.length} assets - LKR ${depEntries.reduce((sum, e) => sum + e.depreciation_amount, 0).toLocaleString()}`,
             });
         } catch (error) {
             console.error('Error running depreciation:', error);
@@ -302,8 +302,8 @@ export default function FixedAssets() {
         { header: t('assetNumber'), key: "asset_number" },
         { header: t('assetName'), key: "asset_name" },
         { header: t('assetClass'), key: "asset_class" },
-        { header: `${t('acquisitionCost')} (SAR)`, key: "acquisition_cost", render: (val) => val?.toLocaleString() },
-        { header: `${t('netBookValue')} (SAR)`, key: "net_book_value", render: (val) => val?.toLocaleString() },
+        { header: `${t('acquisitionCost')} (LKR)`, key: "acquisition_cost", render: (val) => val?.toLocaleString() },
+        { header: `${t('netBookValue')} (LKR)`, key: "net_book_value", render: (val) => val?.toLocaleString() },
         { header: t('location'), key: "location_code" },
         { header: t('status'), key: "status", isBadge: true }
     ];
@@ -338,7 +338,7 @@ export default function FixedAssets() {
         { header: t('assetNumber'), key: "asset_number" },
         { header: t('type'), key: "maintenance_type" },
         { header: "Scheduled", key: "scheduled_date" },
-        { header: `${t('cost')} (SAR)`, key: "total_cost", render: (val) => val?.toLocaleString() },
+        { header: `${t('cost')} (LKR)`, key: "total_cost", render: (val) => val?.toLocaleString() },
         { header: t('priority'), key: "priority", isBadge: true },
         { header: t('status'), key: "status", isBadge: true }
     ];
@@ -346,8 +346,8 @@ export default function FixedAssets() {
     const aucColumns = [
         { header: "AUC #", key: "auc_number" },
         { header: "AUC Name", key: "auc_name" },
-        { header: `${t('budgeted')} (SAR)`, key: "total_budgeted_cost", render: (val) => val?.toLocaleString() },
-        { header: `${t('actualCost')} (SAR)`, key: "total_actual_cost", render: (val) => val?.toLocaleString() },
+        { header: `${t('budgeted')} (LKR)`, key: "total_budgeted_cost", render: (val) => val?.toLocaleString() },
+        { header: `${t('actualCost')} (LKR)`, key: "total_actual_cost", render: (val) => val?.toLocaleString() },
         { header: "Completion %", key: "completion_percentage", render: (val) => `${val}%` },
         { header: t('status'), key: "status", isBadge: true }
     ];
@@ -357,7 +357,7 @@ export default function FixedAssets() {
         { header: "AUC #", key: "auc_number" },
         { header: t('date'), key: "expenditure_date" },
         { header: t('type'), key: "expenditure_type" },
-        { header: `${t('amount')} (SAR)`, key: "amount", render: (val) => val?.toLocaleString() },
+        { header: `${t('amount')} (LKR)`, key: "amount", render: (val) => val?.toLocaleString() },
         { header: "Payment", key: "payment_status", isBadge: true }
     ];
 
@@ -365,8 +365,8 @@ export default function FixedAssets() {
         { header: t('assetNumber'), key: "asset_number" },
         { header: "Year", key: "fiscal_year" },
         { header: "Period", key: "period" },
-        { header: `${t('depreciationAmount')} (SAR)`, key: "depreciation_amount", render: (val) => val?.toLocaleString() },
-        { header: `${t('netBookValue')} (SAR)`, key: "net_book_value", render: (val) => val?.toLocaleString() },
+        { header: `${t('depreciationAmount')} (LKR)`, key: "depreciation_amount", render: (val) => val?.toLocaleString() },
+        { header: `${t('netBookValue')} (LKR)`, key: "net_book_value", render: (val) => val?.toLocaleString() },
         { header: "Posted", key: "gl_posted", render: (val) => val ? "✓" : "✗" }
     ];
 
@@ -376,8 +376,8 @@ export default function FixedAssets() {
         { header: t('assetName'), key: "asset_name" },
         { header: t('type'), key: "disposal_type", isBadge: true },
         { header: t('date'), key: "disposal_date" },
-        { header: `${t('netBookValue')} (SAR)`, key: "net_book_value", render: (val) => val?.toLocaleString() },
-        { header: `${t('disposalValue')} (SAR)`, key: "disposal_value", render: (val) => val?.toLocaleString() },
+        { header: `${t('netBookValue')} (LKR)`, key: "net_book_value", render: (val) => val?.toLocaleString() },
+        { header: `${t('disposalValue')} (LKR)`, key: "disposal_value", render: (val) => val?.toLocaleString() },
         { 
             header: "Gain/Loss", 
             key: "gain_loss", 

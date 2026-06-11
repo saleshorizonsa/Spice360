@@ -33,7 +33,7 @@ Scenario Parameters:
 - Overtime Hours: ${scenario.overtime_hours}
 - Machine Efficiency: ${scenario.machine_efficiency}%
 - Material Cost Variation: ${scenario.material_cost_variation}%
-- Labor Cost: SAR ${scenario.labor_cost_per_hour}/hour
+- Labor Cost: LKR ${scenario.labor_cost_per_hour}/hour
 
 Provide comprehensive analysis with:
 1. Total production cost breakdown
@@ -167,7 +167,7 @@ Return in JSON format:`,
                         />
                     </div>
                     <div>
-                        <Label>Labor Cost (SAR/hour)</Label>
+                        <Label>Labor Cost (LKR/hour)</Label>
                         <Input
                             type="number"
                             value={scenario.labor_cost_per_hour}
@@ -202,9 +202,9 @@ Return in JSON format:`,
                                     <DollarSign className="w-5 h-5 text-green-600" />
                                     <h4 className="font-semibold">Total Cost</h4>
                                 </div>
-                                <p className="text-2xl font-bold">SAR {results.cost_analysis?.total_cost?.toLocaleString()}</p>
+                                <p className="text-2xl font-bold">LKR {results.cost_analysis?.total_cost?.toLocaleString()}</p>
                                 <p className="text-sm text-gray-600">
-                                    Cost per unit: SAR {results.cost_analysis?.cost_per_unit?.toFixed(2)}
+                                    Cost per unit: LKR {results.cost_analysis?.cost_per_unit?.toFixed(2)}
                                 </p>
                             </div>
                             <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
@@ -224,15 +224,15 @@ Return in JSON format:`,
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between">
                                     <span>Material Cost:</span>
-                                    <span className="font-medium">SAR {results.cost_analysis?.material_cost?.toLocaleString()}</span>
+                                    <span className="font-medium">LKR {results.cost_analysis?.material_cost?.toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Labor Cost:</span>
-                                    <span className="font-medium">SAR {results.cost_analysis?.labor_cost?.toLocaleString()}</span>
+                                    <span className="font-medium">LKR {results.cost_analysis?.labor_cost?.toLocaleString()}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>Overhead Cost:</span>
-                                    <span className="font-medium">SAR {results.cost_analysis?.overhead_cost?.toLocaleString()}</span>
+                                    <span className="font-medium">LKR {results.cost_analysis?.overhead_cost?.toLocaleString()}</span>
                                 </div>
                             </div>
                         </div>
@@ -250,7 +250,7 @@ Return in JSON format:`,
                             <h4 className="font-semibold mb-3">Break-Even Analysis</h4>
                             <div className="space-y-2 text-sm">
                                 <p>Units to Break Even: {results.break_even?.units_to_break_even}</p>
-                                <p>Revenue Required: SAR {results.break_even?.revenue_required?.toLocaleString()}</p>
+                                <p>Revenue Required: LKR {results.break_even?.revenue_required?.toLocaleString()}</p>
                                 <p>Profit Margin: {results.break_even?.profit_margin_percent}%</p>
                             </div>
                         </div>

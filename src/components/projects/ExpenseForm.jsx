@@ -24,7 +24,7 @@ export default function ExpenseForm({ item, onClose }) {
         expense_category: 'travel',
         description: '',
         amount: 0,
-        currency: 'SAR',
+        currency: 'LKR',
         vat_amount: 0,
         total_amount: 0,
         billable: true,
@@ -213,7 +213,7 @@ export default function ExpenseForm({ item, onClose }) {
 
                     <div className="grid grid-cols-3 gap-4">
                         <div>
-                            <Label>Amount (SAR) *</Label>
+                            <Label>Amount (LKR) *</Label>
                             <Input
                                 type="number"
                                 value={formData.amount}
@@ -265,7 +265,7 @@ export default function ExpenseForm({ item, onClose }) {
                                     />
                                 </div>
                                 <div>
-                                    <Label>Billing Amount (SAR)</Label>
+                                    <Label>Billing Amount (LKR)</Label>
                                     <Input
                                         type="number"
                                         value={formData.billing_amount}

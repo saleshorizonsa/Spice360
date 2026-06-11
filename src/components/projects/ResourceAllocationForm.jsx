@@ -196,7 +196,7 @@ export default function ResourceAllocationForm({ item, onClose, projectCode }) {
                         </div>
 
                         <div className="space-y-2">
-                            <Label>Billing Rate (SAR/hour)</Label>
+                            <Label>Billing Rate (LKR/hour)</Label>
                             <Input
                                 type="number"
                                 value={formData.billing_rate}
@@ -205,7 +205,7 @@ export default function ResourceAllocationForm({ item, onClose, projectCode }) {
                         </div>
 
                         <div className="space-y-2">
-                            <Label>Cost Rate (SAR/hour)</Label>
+                            <Label>Cost Rate (LKR/hour)</Label>
                             <Input
                                 type="number"
                                 value={formData.cost_rate}

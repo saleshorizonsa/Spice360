@@ -22,7 +22,7 @@ export default function PlantForm({ item, onClose, open }) {
         company_code: '',
         address: '',
         city: '',
-        country: 'Saudi Arabia',
+        country: 'Sri Lanka',
         contact_person: '',
         contact_phone: '',
         contact_email: '',

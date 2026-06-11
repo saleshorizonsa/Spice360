@@ -375,13 +375,13 @@ export default function MobileAssetScanner() {
                                             <div>
                                                 <p className="text-gray-600 text-xs">Acquisition Cost</p>
                                                 <p className="font-bold text-lg">
-                                                    SAR {searchResults.acquisition_cost?.toLocaleString()}
+                                                    LKR {searchResults.acquisition_cost?.toLocaleString()}
                                                 </p>
                                             </div>
                                             <div>
                                                 <p className="text-gray-600 text-xs">Net Book Value</p>
                                                 <p className="font-bold text-lg text-emerald-600">
-                                                    SAR {searchResults.net_book_value?.toLocaleString()}
+                                                    LKR {searchResults.net_book_value?.toLocaleString()}
                                                 </p>
                                             </div>
                                         </div>

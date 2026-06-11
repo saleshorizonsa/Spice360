@@ -79,7 +79,7 @@ export default function SwipeableApprovalList({ requests, onApprove, onReject, o
                                 </div>
                                 <div className="text-right flex-shrink-0">
                                     <p className="font-bold text-lg text-gray-900">
-                                        SAR {request.document_amount?.toLocaleString() || 0}
+                                        LKR {request.document_amount?.toLocaleString() || 0}
                                     </p>
                                     <p className="text-xs text-gray-500">
                                         Level {request.approval_level}/{request.total_levels_required}

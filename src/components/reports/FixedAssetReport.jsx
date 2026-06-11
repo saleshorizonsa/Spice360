@@ -44,7 +44,7 @@ export default function FixedAssetReport() {
                         <CardContent className="p-4">
                             <p className="text-sm text-gray-600">Total Cost</p>
                             <p className="text-2xl font-bold text-blue-700">
-                                SAR {(totalCost / 1000).toFixed(0)}K
+                                LKR {(totalCost / 1000).toFixed(0)}K
                             </p>
                         </CardContent>
                     </Card>
@@ -52,7 +52,7 @@ export default function FixedAssetReport() {
                         <CardContent className="p-4">
                             <p className="text-sm text-gray-600">Accumulated Depreciation</p>
                             <p className="text-2xl font-bold text-red-700">
-                                SAR {(totalDepreciation / 1000).toFixed(0)}K
+                                LKR {(totalDepreciation / 1000).toFixed(0)}K
                             </p>
                         </CardContent>
                     </Card>
@@ -60,7 +60,7 @@ export default function FixedAssetReport() {
                         <CardContent className="p-4">
                             <p className="text-sm text-gray-600">Net Book Value</p>
                             <p className="text-2xl font-bold text-emerald-700">
-                                SAR {(totalNBV / 1000).toFixed(0)}K
+                                LKR {(totalNBV / 1000).toFixed(0)}K
                             </p>
                         </CardContent>
                     </Card>
@@ -75,9 +75,9 @@ export default function FixedAssetReport() {
                                 <TableHead>Asset Name</TableHead>
                                 <TableHead>Class</TableHead>
                                 <TableHead>Acquisition Date</TableHead>
-                                <TableHead className="text-right">Cost (SAR)</TableHead>
-                                <TableHead className="text-right">Depreciation (SAR)</TableHead>
-                                <TableHead className="text-right">NBV (SAR)</TableHead>
+                                <TableHead className="text-right">Cost (LKR)</TableHead>
+                                <TableHead className="text-right">Depreciation (LKR)</TableHead>
+                                <TableHead className="text-right">NBV (LKR)</TableHead>
                                 <TableHead>Status</TableHead>
                             </TableRow>
                         </TableHeader>

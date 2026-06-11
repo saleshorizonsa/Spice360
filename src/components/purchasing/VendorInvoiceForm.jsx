@@ -50,7 +50,7 @@ export default function VendorInvoiceForm({ item, onClose }) {
         vat_amount: 0,
         total_amount: 0,
         po_total_amount: 0,
-        currency: 'SAR',
+        currency: 'LKR',
         due_date: '',
         three_way_match_status: 'pending',
         quantity_variance: 0,
@@ -259,7 +259,7 @@ export default function VendorInvoiceForm({ item, onClose }) {
                                         <p className="font-semibold">3-Way Match Status: {formData.three_way_match_status.replace(/_/g, ' ').toUpperCase()}</p>
                                         <AlertDescription>
                                             Quantity Variance: {formData.quantity_variance.toFixed(2)} | 
-                                            Price Variance: SAR {formData.price_variance.toFixed(2)}
+                                            Price Variance: LKR {formData.price_variance.toFixed(2)}
                                         </AlertDescription>
                                     </div>
                                 </div>
@@ -315,10 +315,10 @@ export default function VendorInvoiceForm({ item, onClose }) {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="p-3 bg-blue-50 rounded">
                                         <Label className="text-xs">PO Unit Price</Label>
-                                        <p className="text-lg font-bold">SAR {formData.po_unit_price.toFixed(2)}</p>
+                                        <p className="text-lg font-bold">LKR {formData.po_unit_price.toFixed(2)}</p>
                                     </div>
                                     <div>
-                                        <Label>Invoice Unit Price (SAR) *</Label>
+                                        <Label>Invoice Unit Price (LKR) *</Label>
                                         <Input
                                             type="number"
                                             value={formData.unit_price}
@@ -336,7 +336,7 @@ export default function VendorInvoiceForm({ item, onClose }) {
                                 <h3 className="font-semibold text-lg border-b pb-2">Additional Charges</h3>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <Label>Freight Cost (SAR)</Label>
+                                        <Label>Freight Cost (LKR)</Label>
                                         <Input
                                             type="number"
                                             value={formData.freight_cost}
@@ -346,7 +346,7 @@ export default function VendorInvoiceForm({ item, onClose }) {
                                         />
                                     </div>
                                     <div>
-                                        <Label>Other Charges (SAR)</Label>
+                                        <Label>Other Charges (LKR)</Label>
                                         <Input
                                             type="number"
                                             value={formData.other_charges}
@@ -362,19 +362,19 @@ export default function VendorInvoiceForm({ item, onClose }) {
                             <div className="p-4 bg-emerald-50 rounded-lg space-y-2">
                                 <div className="flex justify-between">
                                     <span>Subtotal:</span>
-                                    <span className="font-semibold">SAR {formData.subtotal.toFixed(2)}</span>
+                                    <span className="font-semibold">LKR {formData.subtotal.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between">
                                     <span>VAT (15%):</span>
-                                    <span className="font-semibold">SAR {formData.vat_amount.toFixed(2)}</span>
+                                    <span className="font-semibold">LKR {formData.vat_amount.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-lg font-bold border-t pt-2">
                                     <span>Total Amount:</span>
-                                    <span>SAR {formData.total_amount.toFixed(2)}</span>
+                                    <span>LKR {formData.total_amount.toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-sm text-gray-600">
                                     <span>PO Total:</span>
-                                    <span>SAR {formData.po_total_amount.toFixed(2)}</span>
+                                    <span>LKR {formData.po_total_amount.toFixed(2)}</span>
                                 </div>
                             </div>
 

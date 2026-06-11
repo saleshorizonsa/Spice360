@@ -102,7 +102,7 @@ export default function MultiLocationStockView() {
                                                 Available: {material.total_available} | Reserved: {material.total_reserved}
                                             </div>
                                             <div className="text-sm font-semibold text-gray-700">
-                                                Value: SAR {material.total_value.toLocaleString()}
+                                                Value: LKR {material.total_value.toLocaleString()}
                                             </div>
                                         </div>
                                     </div>
@@ -116,7 +116,7 @@ export default function MultiLocationStockView() {
                                             <TableHead className="text-right">Quantity</TableHead>
                                             <TableHead className="text-right">Available</TableHead>
                                             <TableHead className="text-right">Reserved</TableHead>
-                                            <TableHead className="text-right">Value (SAR)</TableHead>
+                                            <TableHead className="text-right">Value (LKR)</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>

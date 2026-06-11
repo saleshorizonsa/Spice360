@@ -98,7 +98,7 @@ export default function ManufacturingReports() {
                             <div>
                                 <p className="text-sm text-gray-600">Cost Variance</p>
                                 <p className="text-2xl font-bold text-red-600">
-                                    SAR {(totalVariance / 1000).toFixed(0)}K
+                                    LKR {(totalVariance / 1000).toFixed(0)}K
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">Standard vs Actual</p>
                             </div>

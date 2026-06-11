@@ -164,7 +164,7 @@ export default function InventoryValuationReport() {
                         <div>
                             <div className="text-sm text-gray-600">Total Inventory Value</div>
                             <div className="text-3xl font-bold text-indigo-700">
-                                SAR {totalInventoryValue.toLocaleString()}
+                                LKR {totalInventoryValue.toLocaleString()}
                             </div>
                         </div>
                         <div className="text-right">
@@ -206,7 +206,7 @@ export default function InventoryValuationReport() {
                             <TableRow className="bg-gray-100 font-bold">
                                 <TableCell colSpan={5}>TOTAL</TableCell>
                                 <TableCell className="text-right">
-                                    SAR {totalInventoryValue.toLocaleString()}
+                                    LKR {totalInventoryValue.toLocaleString()}
                                 </TableCell>
                             </TableRow>
                         </TableBody>

@@ -201,7 +201,7 @@ export default function GeneralLedgerReport() {
                         <CardContent className="p-4">
                             <p className="text-sm text-gray-600">Total Debit</p>
                             <p className="text-xl font-bold text-emerald-700">
-                                SAR {ledgerData.reduce((sum, e) => sum + (e.debit_amount || 0), 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                                LKR {ledgerData.reduce((sum, e) => sum + (e.debit_amount || 0), 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
                             </p>
                         </CardContent>
                     </Card>
@@ -209,7 +209,7 @@ export default function GeneralLedgerReport() {
                         <CardContent className="p-4">
                             <p className="text-sm text-gray-600">Total Credit</p>
                             <p className="text-xl font-bold text-amber-700">
-                                SAR {ledgerData.reduce((sum, e) => sum + (e.credit_amount || 0), 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                                LKR {ledgerData.reduce((sum, e) => sum + (e.credit_amount || 0), 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
                             </p>
                         </CardContent>
                     </Card>
@@ -217,7 +217,7 @@ export default function GeneralLedgerReport() {
                         <CardContent className="p-4">
                             <p className="text-sm text-gray-600">Ending Balance</p>
                             <p className="text-xl font-bold text-indigo-700">
-                                SAR {(ledgerData[ledgerData.length - 1]?.running_balance || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                                LKR {(ledgerData[ledgerData.length - 1]?.running_balance || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
                             </p>
                         </CardContent>
                     </Card>
@@ -233,9 +233,9 @@ export default function GeneralLedgerReport() {
                                 <TableHead>Description</TableHead>
                                 <TableHead>Account</TableHead>
                                 <TableHead>Cost Center</TableHead>
-                                <TableHead className="text-right">Debit (SAR)</TableHead>
-                                <TableHead className="text-right">Credit (SAR)</TableHead>
-                                <TableHead className="text-right">Balance (SAR)</TableHead>
+                                <TableHead className="text-right">Debit (LKR)</TableHead>
+                                <TableHead className="text-right">Credit (LKR)</TableHead>
+                                <TableHead className="text-right">Balance (LKR)</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>

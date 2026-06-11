@@ -152,11 +152,11 @@ td{padding:10px;border-bottom:1px solid #e2e8f0}.num{text-align:right;font-famil
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-500">{isRTL ? "المبيعات الخاضعة للضريبة" : "Taxable Sales"}</span>
-                <span className="font-mono font-medium">SAR {fmt(stats.outputTaxBase)}</span>
+                <span className="font-mono font-medium">LKR {fmt(stats.outputTaxBase)}</span>
               </div>
               <div className="flex justify-between border-t border-emerald-100 pt-2">
                 <span className="font-semibold text-emerald-700">{isRTL ? "ضريبة القيمة المضافة 15%" : "VAT @ 15%"}</span>
-                <span className="font-mono font-bold text-emerald-700">SAR {fmt(stats.outputVAT)}</span>
+                <span className="font-mono font-bold text-emerald-700">LKR {fmt(stats.outputVAT)}</span>
               </div>
               <p className="text-xs text-slate-400">{stats.outboundRaw.length} {isRTL ? "فاتورة" : "invoices"}</p>
             </CardContent>
@@ -172,11 +172,11 @@ td{padding:10px;border-bottom:1px solid #e2e8f0}.num{text-align:right;font-famil
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-500">{isRTL ? "المشتريات الخاضعة للضريبة" : "Taxable Purchases"}</span>
-                <span className="font-mono font-medium">SAR {fmt(stats.inputTaxBase)}</span>
+                <span className="font-mono font-medium">LKR {fmt(stats.inputTaxBase)}</span>
               </div>
               <div className="flex justify-between border-t border-amber-100 pt-2">
                 <span className="font-semibold text-amber-700">{isRTL ? "ضريبة قابلة للاسترداد" : "Recoverable VAT"}</span>
-                <span className="font-mono font-bold text-amber-700">SAR {fmt(stats.inputVAT)}</span>
+                <span className="font-mono font-bold text-amber-700">LKR {fmt(stats.inputVAT)}</span>
               </div>
               <p className="text-xs text-slate-400">{stats.inboundRaw.length} {isRTL ? "فاتورة مورد" : "vendor invoices"}</p>
             </CardContent>
@@ -192,11 +192,11 @@ td{padding:10px;border-bottom:1px solid #e2e8f0}.num{text-align:right;font-famil
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-slate-500">{isRTL ? "ضريبة المخرجات" : "Output VAT"}</span>
-                <span className="font-mono">SAR {fmt(stats.outputVAT)}</span>
+                <span className="font-mono">LKR {fmt(stats.outputVAT)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-500">{isRTL ? "ناقص: ضريبة المدخلات" : "Less: Input VAT"}</span>
-                <span className="font-mono">(SAR {fmt(stats.inputVAT)})</span>
+                <span className="font-mono">(LKR {fmt(stats.inputVAT)})</span>
               </div>
               <div className={`flex justify-between border-t pt-2 ${stats.netVAT >= 0 ? "border-red-200" : "border-blue-200"}`}>
                 <span className={`font-bold ${stats.netVAT >= 0 ? "text-red-700" : "text-blue-700"}`}>
@@ -205,7 +205,7 @@ td{padding:10px;border-bottom:1px solid #e2e8f0}.num{text-align:right;font-famil
                     : (isRTL ? "مستحق الاسترداد" : "Refundable")}
                 </span>
                 <span className={`font-mono font-bold text-lg ${stats.netVAT >= 0 ? "text-red-700" : "text-blue-700"}`}>
-                  SAR {fmt(Math.abs(stats.netVAT))}
+                  LKR {fmt(Math.abs(stats.netVAT))}
                 </span>
               </div>
             </CardContent>
@@ -251,9 +251,9 @@ td{padding:10px;border-bottom:1px solid #e2e8f0}.num{text-align:right;font-famil
                     <td colSpan={3} className="py-2 text-slate-600">
                       {isRTL ? "الإجمالي" : "Total"} ({stats.outboundRaw.length})
                     </td>
-                    <td className="py-2 text-right font-mono">SAR {fmt(stats.outputTaxBase)}</td>
-                    <td className="py-2 text-right font-mono text-emerald-600">SAR {fmt(stats.outputVAT)}</td>
-                    <td className="py-2 text-right font-mono">SAR {fmt(stats.outputTotal)}</td>
+                    <td className="py-2 text-right font-mono">LKR {fmt(stats.outputTaxBase)}</td>
+                    <td className="py-2 text-right font-mono text-emerald-600">LKR {fmt(stats.outputVAT)}</td>
+                    <td className="py-2 text-right font-mono">LKR {fmt(stats.outputTotal)}</td>
                   </tr>
                 </tfoot>
               </table>

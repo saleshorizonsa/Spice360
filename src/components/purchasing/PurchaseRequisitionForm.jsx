@@ -247,7 +247,7 @@ export default function PurchaseRequisitionForm({ item, onClose }) {
                             />
                         </div>
                         <div>
-                            <Label htmlFor="estimated_cost">Estimated Cost (SAR)</Label>
+                            <Label htmlFor="estimated_cost">Estimated Cost (LKR)</Label>
                             <Input
                                 id="estimated_cost"
                                 type="number"

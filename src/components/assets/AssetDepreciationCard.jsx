@@ -31,13 +31,13 @@ export default function AssetDepreciationCard({ asset }) {
                     <div>
                         <p className="text-xs text-gray-500">Acquisition Cost</p>
                         <p className="text-lg font-bold text-gray-900">
-                            SAR {(asset.acquisition_cost || 0).toLocaleString()}
+                            LKR {(asset.acquisition_cost || 0).toLocaleString()}
                         </p>
                     </div>
                     <div>
                         <p className="text-xs text-gray-500">Net Book Value</p>
                         <p className="text-lg font-bold text-emerald-600">
-                            SAR {(asset.net_book_value || 0).toLocaleString()}
+                            LKR {(asset.net_book_value || 0).toLocaleString()}
                         </p>
                     </div>
                 </div>
@@ -50,7 +50,7 @@ export default function AssetDepreciationCard({ asset }) {
                     </div>
                     <Progress value={depreciationPercent} className="h-2" />
                     <p className="text-xs text-gray-500 mt-1">
-                        SAR {(asset.accumulated_depreciation || 0).toLocaleString()} accumulated
+                        LKR {(asset.accumulated_depreciation || 0).toLocaleString()} accumulated
                     </p>
                 </div>
 

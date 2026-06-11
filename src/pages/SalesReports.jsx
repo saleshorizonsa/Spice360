@@ -74,7 +74,7 @@ export default function SalesReports() {
                             <div>
                                 <p className="text-sm text-gray-600">Today's Sales</p>
                                 <p className="text-2xl font-bold text-gray-900">
-                                    SAR {(todayRevenue / 1000).toFixed(0)}K
+                                    LKR {(todayRevenue / 1000).toFixed(0)}K
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">{todaySales.length} orders</p>
                             </div>
@@ -102,7 +102,7 @@ export default function SalesReports() {
                             <div>
                                 <p className="text-sm text-gray-600">Overdue Amount</p>
                                 <p className="text-2xl font-bold text-red-600">
-                                    SAR {(overdueAmount / 1000).toFixed(0)}K
+                                    LKR {(overdueAmount / 1000).toFixed(0)}K
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">Requires action</p>
                             </div>

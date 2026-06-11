@@ -181,7 +181,7 @@ export default function DailySalesRegister() {
                         <CardContent className="p-4">
                             <p className="text-sm text-gray-600">Amount Before VAT</p>
                             <p className="text-2xl font-bold text-emerald-700">
-                                SAR {(totalBeforeVAT / 1000).toFixed(0)}K
+                                LKR {(totalBeforeVAT / 1000).toFixed(0)}K
                             </p>
                         </CardContent>
                     </Card>
@@ -189,7 +189,7 @@ export default function DailySalesRegister() {
                         <CardContent className="p-4">
                             <p className="text-sm text-gray-600">Total Sales (Inc. VAT)</p>
                             <p className="text-2xl font-bold text-indigo-700">
-                                SAR {(totalSales / 1000).toFixed(0)}K
+                                LKR {(totalSales / 1000).toFixed(0)}K
                             </p>
                         </CardContent>
                     </Card>

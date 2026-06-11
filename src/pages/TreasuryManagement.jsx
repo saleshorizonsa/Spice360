@@ -124,13 +124,13 @@ export default function TreasuryManagement() {
         { header: "Forecast ID", key: "forecast_id" },
         { header: "Period", key: "forecast_period" },
         { header: "Scenario", key: "scenario", isBadge: true },
-        { header: "Opening", key: "opening_balance", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
-        { header: "Inflows", key: "projected_inflows", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
-        { header: "Outflows", key: "projected_outflows", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: "Opening", key: "opening_balance", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: "Inflows", key: "projected_inflows", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: "Outflows", key: "projected_outflows", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: "Closing", key: "closing_balance", render: (val) => {
             const amount = val || 0;
             return <span className={amount < 0 ? 'text-red-600 font-semibold' : 'text-green-600 font-semibold'}>
-                SAR {amount.toLocaleString()}
+                LKR {amount.toLocaleString()}
             </span>;
         }},
         { header: "Confidence", key: "confidence_level", render: (val) => `${val}%` },
@@ -190,7 +190,7 @@ export default function TreasuryManagement() {
                                                 <div className="text-xs text-gray-500">{bank.bank_name} - {bank.account_number}</div>
                                             </div>
                                             <div className="text-right">
-                                                <div className="font-bold text-lg">SAR {bank.current_balance?.toLocaleString()}</div>
+                                                <div className="font-bold text-lg">LKR {bank.current_balance?.toLocaleString()}</div>
                                                 <div className="text-xs text-gray-500">{bank.currency}</div>
                                             </div>
                                         </div>
@@ -210,14 +210,14 @@ export default function TreasuryManagement() {
                                 <div className="space-y-4">
                                     <div className="p-4 bg-green-50 rounded-lg">
                                         <div className="text-sm text-gray-600">Cash Inflows</div>
-                                        <div className="text-2xl font-bold text-green-700">SAR {inflows.toLocaleString()}</div>
+                                        <div className="text-2xl font-bold text-green-700">LKR {inflows.toLocaleString()}</div>
                                         <div className="text-xs text-gray-500 mt-1">
                                             {payments.filter(p => p.payment_type === 'incoming' && p.status === 'cleared').length} transactions
                                         </div>
                                     </div>
                                     <div className="p-4 bg-red-50 rounded-lg">
                                         <div className="text-sm text-gray-600">Cash Outflows</div>
-                                        <div className="text-2xl font-bold text-red-700">SAR {outflows.toLocaleString()}</div>
+                                        <div className="text-2xl font-bold text-red-700">LKR {outflows.toLocaleString()}</div>
                                         <div className="text-xs text-gray-500 mt-1">
                                             {payments.filter(p => p.payment_type === 'outgoing' && p.status === 'cleared').length} transactions
                                         </div>
@@ -225,7 +225,7 @@ export default function TreasuryManagement() {
                                     <div className="p-4 bg-blue-50 rounded-lg border-2 border-blue-200">
                                         <div className="text-sm text-gray-600">Net Cash Flow</div>
                                         <div className={`text-2xl font-bold ${inflows - outflows >= 0 ? 'text-blue-700' : 'text-red-700'}`}>
-                                            SAR {(inflows - outflows).toLocaleString()}
+                                            LKR {(inflows - outflows).toLocaleString()}
                                         </div>
                                     </div>
                                 </div>
@@ -314,7 +314,7 @@ export default function TreasuryManagement() {
                                     <div className="p-4 bg-gray-50 rounded-lg">
                                         <div className="text-sm text-gray-600">Working Capital</div>
                                         <div className={`text-2xl font-bold ${netPosition >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                                            SAR {netPosition.toLocaleString()}
+                                            LKR {netPosition.toLocaleString()}
                                         </div>
                                         <div className="text-xs text-gray-500 mt-1">
                                             {netPosition >= 0 ? '✓ Positive' : '⚠️ Negative'}

@@ -99,12 +99,12 @@ export default function Finance() {
         { 
             header: "Debit", 
             key: "debit_amount", 
-            render: (val) => val ? `SAR ${val.toLocaleString()}` : '-'
+            render: (val) => val ? `LKR ${val.toLocaleString()}` : '-'
         },
         { 
             header: "Credit", 
             key: "credit_amount", 
-            render: (val) => val ? `SAR ${val.toLocaleString()}` : '-'
+            render: (val) => val ? `LKR ${val.toLocaleString()}` : '-'
         },
         { header: t('status'), key: "status", isBadge: true },
         {
@@ -138,8 +138,8 @@ export default function Finance() {
         { header: t('customer'), key: "customer_name" },
         { header: "Invoice Date", key: "invoice_date" },
         { header: "Due Date", key: "due_date" },
-        { header: t('amount'), key: "invoice_amount", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
-        { header: "Outstanding", key: "outstanding_amount", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: t('amount'), key: "invoice_amount", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: "Outstanding", key: "outstanding_amount", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: "Aging", key: "aging_bucket", isBadge: true },
         { header: t('status'), key: "status", isBadge: true }
     ];
@@ -150,8 +150,8 @@ export default function Finance() {
         { header: t('vendor'), key: "vendor_name" },
         { header: "Invoice Date", key: "invoice_date" },
         { header: "Due Date", key: "due_date" },
-        { header: t('amount'), key: "invoice_amount", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
-        { header: "Outstanding", key: "outstanding_amount", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: t('amount'), key: "invoice_amount", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: "Outstanding", key: "outstanding_amount", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: "Aging", key: "aging_bucket", isBadge: true },
         { header: t('status'), key: "payment_status", isBadge: true }
     ];
@@ -161,7 +161,7 @@ export default function Finance() {
         { header: t('type'), key: "payment_type", isBadge: true },
         { header: t('date'), key: "payment_date" },
         { header: "Party", key: "party_name" },
-        { header: t('amount'), key: "amount", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: t('amount'), key: "amount", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: "Method", key: "payment_method", isBadge: true },
         { header: "Bank Account", key: "bank_account" },
         { header: t('status'), key: "status", isBadge: true }
@@ -172,9 +172,9 @@ export default function Finance() {
         { header: t('assetName'), key: "asset_name" },
         { header: "Class", key: "asset_class", isBadge: true },
         { header: t('acquisitionDate'), key: "acquisition_date" },
-        { header: "Cost", key: "acquisition_cost", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
-        { header: "Depreciation", key: "accumulated_depreciation", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
-        { header: "NBV", key: "net_book_value", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: "Cost", key: "acquisition_cost", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: "Depreciation", key: "accumulated_depreciation", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: "NBV", key: "net_book_value", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: t('status'), key: "status", isBadge: true }
     ];
 
@@ -184,7 +184,7 @@ export default function Finance() {
         { header: "Bank", key: "bank_name" },
         { header: "IBAN", key: "iban" },
         { header: "Currency", key: "currency" },
-        { header: "Balance", key: "current_balance", render: (val) => `SAR ${val?.toLocaleString() || 0}` },
+        { header: "Balance", key: "current_balance", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: t('status'), key: "status", isBadge: true }
     ];
 
@@ -292,14 +292,14 @@ export default function Finance() {
         let content = '';
         
         if (type === 'Journal Entry') {
-            content = `<html><head><title>Journal Entry</title><style>body{font-family:Arial,sans-serif;padding:40px}h1{color:#059669}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ddd;padding:10px;text-align:left}th{background-color:#f3f4f6}.debit{color:#059669}.credit{color:#dc2626}</style></head><body><h1>Journal Entry</h1><p><strong>JE #:</strong> ${item.journal_number}</p><p><strong>Posting Date:</strong> ${item.posting_date}</p><p><strong>Description:</strong> ${item.description || 'N/A'}</p><table><tr><th>Account Code</th><th>Account Name</th><th>Debit</th><th>Credit</th></tr><tr><td>${item.account_code || ''}</td><td>${item.account_name || 'N/A'}</td><td class="debit">SAR ${(item.debit_amount || 0).toFixed(2)}</td><td class="credit">SAR ${(item.credit_amount || 0).toFixed(2)}</td></tr></table><p style="margin-top:20px"><strong>Reference:</strong> ${item.reference || 'N/A'}</p></body></html>`;
+            content = `<html><head><title>Journal Entry</title><style>body{font-family:Arial,sans-serif;padding:40px}h1{color:#059669}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ddd;padding:10px;text-align:left}th{background-color:#f3f4f6}.debit{color:#059669}.credit{color:#dc2626}</style></head><body><h1>Journal Entry</h1><p><strong>JE #:</strong> ${item.journal_number}</p><p><strong>Posting Date:</strong> ${item.posting_date}</p><p><strong>Description:</strong> ${item.description || 'N/A'}</p><table><tr><th>Account Code</th><th>Account Name</th><th>Debit</th><th>Credit</th></tr><tr><td>${item.account_code || ''}</td><td>${item.account_name || 'N/A'}</td><td class="debit">LKR ${(item.debit_amount || 0).toFixed(2)}</td><td class="credit">LKR ${(item.credit_amount || 0).toFixed(2)}</td></tr></table><p style="margin-top:20px"><strong>Reference:</strong> ${item.reference || 'N/A'}</p></body></html>`;
         } else if (type === 'AR' || type === 'AP') {
             const isAR = type === 'AR';
-            content = `<html><head><title>${isAR ? 'AR' : 'AP'}</title><style>body{font-family:Arial,sans-serif;padding:40px}h1{color:#059669}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ddd;padding:10px;text-align:left}th{background-color:#f3f4f6}.overdue{color:#dc2626;font-weight:bold}</style></head><body><h1>${isAR ? 'Accounts Receivable' : 'Accounts Payable'}</h1><p><strong>Number:</strong> ${item[isAR ? 'ar_number' : 'ap_number']}</p><p><strong>Invoice #:</strong> ${item[isAR ? 'invoice_number' : 'vendor_invoice_number']}</p><p><strong>${isAR ? 'Customer' : 'Vendor'}:</strong> ${item[isAR ? 'customer_name' : 'vendor_name']}</p><p><strong>Invoice Date:</strong> ${item.invoice_date}</p><p><strong>Due Date:</strong> ${item.due_date}</p><table><tr><th>Invoice Amount</th><th>Paid Amount</th><th>Outstanding</th><th>Aging</th></tr><tr><td>SAR ${(item.invoice_amount || 0).toFixed(2)}</td><td>SAR ${(item.paid_amount || 0).toFixed(2)}</td><td class="${item.aging_bucket && item.aging_bucket !== 'current' ? 'overdue' : ''}">SAR ${(item.outstanding_amount || 0).toFixed(2)}</td><td class="${item.aging_bucket && item.aging_bucket !== 'current' ? 'overdue' : ''}">${item.aging_bucket || 'N/A'}</td></tr></table><p style="margin-top:20px"><strong>Payment Terms:</strong> ${item.payment_terms || 'N/A'}</p></body></html>`;
+            content = `<html><head><title>${isAR ? 'AR' : 'AP'}</title><style>body{font-family:Arial,sans-serif;padding:40px}h1{color:#059669}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ddd;padding:10px;text-align:left}th{background-color:#f3f4f6}.overdue{color:#dc2626;font-weight:bold}</style></head><body><h1>${isAR ? 'Accounts Receivable' : 'Accounts Payable'}</h1><p><strong>Number:</strong> ${item[isAR ? 'ar_number' : 'ap_number']}</p><p><strong>Invoice #:</strong> ${item[isAR ? 'invoice_number' : 'vendor_invoice_number']}</p><p><strong>${isAR ? 'Customer' : 'Vendor'}:</strong> ${item[isAR ? 'customer_name' : 'vendor_name']}</p><p><strong>Invoice Date:</strong> ${item.invoice_date}</p><p><strong>Due Date:</strong> ${item.due_date}</p><table><tr><th>Invoice Amount</th><th>Paid Amount</th><th>Outstanding</th><th>Aging</th></tr><tr><td>LKR ${(item.invoice_amount || 0).toFixed(2)}</td><td>LKR ${(item.paid_amount || 0).toFixed(2)}</td><td class="${item.aging_bucket && item.aging_bucket !== 'current' ? 'overdue' : ''}">LKR ${(item.outstanding_amount || 0).toFixed(2)}</td><td class="${item.aging_bucket && item.aging_bucket !== 'current' ? 'overdue' : ''}">${item.aging_bucket || 'N/A'}</td></tr></table><p style="margin-top:20px"><strong>Payment Terms:</strong> ${item.payment_terms || 'N/A'}</p></body></html>`;
         } else if (type === 'Payment') {
-            content = `<html><head><title>Payment</title><style>body{font-family:Arial,sans-serif;padding:40px}h1{color:#059669}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ddd;padding:10px;text-align:left}th{background-color:#f3f4f6}</style></head><body><h1>Payment Receipt</h1><p><strong>Payment #:</strong> ${item.payment_number}</p><p><strong>Date:</strong> ${item.payment_date}</p><p><strong>Type:</strong> ${item.payment_type}</p><p><strong>${item.payment_type === 'incoming' ? 'From' : 'To'}:</strong> ${item.party_name}</p><table><tr><th>Amount</th><th>Method</th><th>Reference</th><th>Status</th></tr><tr><td>SAR ${(item.amount || 0).toFixed(2)}</td><td>${item.payment_method || 'N/A'}</td><td>${item.reference_number || 'N/A'}</td><td>${item.status || 'N/A'}</td></tr></table><p style="margin-top:20px"><strong>Bank Account:</strong> ${item.bank_account || 'N/A'}</p></body></html>`;
+            content = `<html><head><title>Payment</title><style>body{font-family:Arial,sans-serif;padding:40px}h1{color:#059669}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ddd;padding:10px;text-align:left}th{background-color:#f3f4f6}</style></head><body><h1>Payment Receipt</h1><p><strong>Payment #:</strong> ${item.payment_number}</p><p><strong>Date:</strong> ${item.payment_date}</p><p><strong>Type:</strong> ${item.payment_type}</p><p><strong>${item.payment_type === 'incoming' ? 'From' : 'To'}:</strong> ${item.party_name}</p><table><tr><th>Amount</th><th>Method</th><th>Reference</th><th>Status</th></tr><tr><td>LKR ${(item.amount || 0).toFixed(2)}</td><td>${item.payment_method || 'N/A'}</td><td>${item.reference_number || 'N/A'}</td><td>${item.status || 'N/A'}</td></tr></table><p style="margin-top:20px"><strong>Bank Account:</strong> ${item.bank_account || 'N/A'}</p></body></html>`;
         } else if (type === 'Fixed Asset') {
-            content = `<html><head><title>Fixed Asset</title><style>body{font-family:Arial,sans-serif;padding:40px}h1{color:#059669}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ddd;padding:10px;text-align:left}th{background-color:#f3f4f6}</style></head><body><h1>Fixed Asset Card</h1><p><strong>Asset #:</strong> ${item.asset_number}</p><p><strong>Name:</strong> ${item.asset_name}</p><p><strong>Class:</strong> ${item.asset_class}</p><table><tr><th>Acquisition Cost</th><th>Accumulated Depreciation</th><th>Net Book Value</th></tr><tr><td>SAR ${(item.acquisition_cost || 0).toFixed(2)}</td><td>SAR ${(item.accumulated_depreciation || 0).toFixed(2)}</td><td>SAR ${(item.net_book_value || 0).toFixed(2)}</td></tr></table><p style="margin-top:20px"><strong>Acquisition Date:</strong> ${item.acquisition_date}</p><p><strong>Useful Life:</strong> ${item.useful_life_years || 'N/A'} years</p><p><strong>Location:</strong> ${item.location_code || 'N/A'}</p></body></html>`;
+            content = `<html><head><title>Fixed Asset</title><style>body{font-family:Arial,sans-serif;padding:40px}h1{color:#059669}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ddd;padding:10px;text-align:left}th{background-color:#f3f4f6}</style></head><body><h1>Fixed Asset Card</h1><p><strong>Asset #:</strong> ${item.asset_number}</p><p><strong>Name:</strong> ${item.asset_name}</p><p><strong>Class:</strong> ${item.asset_class}</p><table><tr><th>Acquisition Cost</th><th>Accumulated Depreciation</th><th>Net Book Value</th></tr><tr><td>LKR ${(item.acquisition_cost || 0).toFixed(2)}</td><td>LKR ${(item.accumulated_depreciation || 0).toFixed(2)}</td><td>LKR ${(item.net_book_value || 0).toFixed(2)}</td></tr></table><p style="margin-top:20px"><strong>Acquisition Date:</strong> ${item.acquisition_date}</p><p><strong>Useful Life:</strong> ${item.useful_life_years || 'N/A'} years</p><p><strong>Location:</strong> ${item.location_code || 'N/A'}</p></body></html>`;
         }
         
         printWindow.document.write(content);
@@ -319,8 +319,8 @@ export default function Finance() {
             <Alert className="bg-blue-50 border-blue-200">
                 <AlertCircle className="h-4 w-4 text-blue-600" />
                 <AlertDescription className="text-blue-900">
-                    <strong>VAT:</strong> Saudi Arabia VAT rate is 15%. Ensure all transactions include proper VAT calculations.
-                    <strong className="ml-4">Currency:</strong> All amounts are in SAR (Saudi Riyal).
+                    <strong>VAT:</strong> Sri Lanka VAT rate is 18%. Ensure all transactions include proper VAT calculations.
+                    <strong className="ml-4">Currency:</strong> All amounts are in LKR (Sri Lankan Rupee).
                 </AlertDescription>
             </Alert>
 
@@ -524,7 +524,7 @@ export default function Finance() {
                                         return (
                                             <div key={bucket} className="flex justify-between items-center p-3 bg-gray-50 rounded">
                                                 <span className="font-medium capitalize">{bucket} days</span>
-                                                <span className="text-lg font-bold">SAR {amount.toLocaleString()}</span>
+                                                <span className="text-lg font-bold">LKR {amount.toLocaleString()}</span>
                                             </div>
                                         );
                                     })}
@@ -545,7 +545,7 @@ export default function Finance() {
                                         return (
                                             <div key={bucket} className="flex justify-between items-center p-3 bg-gray-50 rounded">
                                                 <span className="font-medium capitalize">{bucket} days</span>
-                                                <span className="text-lg font-bold">SAR {amount.toLocaleString()}</span>
+                                                <span className="text-lg font-bold">LKR {amount.toLocaleString()}</span>
                                             </div>
                                         );
                                     })}
@@ -570,8 +570,8 @@ export default function Finance() {
                                                     <span className="text-sm text-gray-600">{classAssets.length} assets</span>
                                                 </div>
                                                 <div className="flex justify-between text-sm">
-                                                    <span>Cost: SAR {totalCost.toLocaleString()}</span>
-                                                    <span>Depreciation: SAR {totalDep.toLocaleString()}</span>
+                                                    <span>Cost: LKR {totalCost.toLocaleString()}</span>
+                                                    <span>Depreciation: LKR {totalDep.toLocaleString()}</span>
                                                 </div>
                                             </div>
                                         ) : null;
@@ -589,7 +589,7 @@ export default function Finance() {
                                     <div className="p-3 bg-green-50 rounded">
                                         <div className="text-sm text-gray-600">Cash Inflows</div>
                                         <div className="text-2xl font-bold text-green-700">
-                                            SAR {payments
+                                            LKR {payments
                                                 .filter(p => p.payment_type === 'incoming' && p.status === 'cleared')
                                                 .reduce((sum, p) => sum + (p.amount || 0), 0)
                                                 .toLocaleString()}
@@ -598,7 +598,7 @@ export default function Finance() {
                                     <div className="p-3 bg-red-50 rounded">
                                         <div className="text-sm text-gray-600">Cash Outflows</div>
                                         <div className="text-2xl font-bold text-red-700">
-                                            SAR {payments
+                                            LKR {payments
                                                 .filter(p => p.payment_type === 'outgoing' && p.status === 'cleared')
                                                 .reduce((sum, p) => sum + (p.amount || 0), 0)
                                                 .toLocaleString()}
@@ -607,7 +607,7 @@ export default function Finance() {
                                     <div className="p-3 bg-blue-50 rounded">
                                         <div className="text-sm text-gray-600">Net Cash Position</div>
                                         <div className="text-2xl font-bold text-blue-700">
-                                            SAR {banks.reduce((sum, b) => sum + (b.current_balance || 0), 0).toLocaleString()}
+                                            LKR {banks.reduce((sum, b) => sum + (b.current_balance || 0), 0).toLocaleString()}
                                         </div>
                                     </div>
                                 </div>

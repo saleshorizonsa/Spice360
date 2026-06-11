@@ -334,7 +334,7 @@ export default function Reports() {
                             <div>
                                 <p className="text-sm text-emerald-100">Total Revenue</p>
                                 <p className="text-2xl font-bold">
-                                    SAR {(totalRevenue / 1000000).toFixed(1)}M
+                                    LKR {(totalRevenue / 1000000).toFixed(1)}M
                                 </p>
                             </div>
                             <DollarSign className="w-8 h-8 text-emerald-100" />
@@ -348,7 +348,7 @@ export default function Reports() {
                             <div>
                                 <p className="text-sm text-blue-100">Stock Value</p>
                                 <p className="text-2xl font-bold">
-                                    SAR {(totalStockValue / 1000000).toFixed(1)}M
+                                    LKR {(totalStockValue / 1000000).toFixed(1)}M
                                 </p>
                             </div>
                             <Package className="w-8 h-8 text-blue-100" />

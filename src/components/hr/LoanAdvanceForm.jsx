@@ -125,7 +125,7 @@ export default function LoanAdvanceForm({ item, onClose }) {
                             </Select>
                         </div>
                         <div>
-                            <Label>Amount (SAR)</Label>
+                            <Label>Amount (LKR)</Label>
                             <Input
                                 type="number"
                                 value={formData.loan_amount}
@@ -147,7 +147,7 @@ export default function LoanAdvanceForm({ item, onClose }) {
                     <div className="p-4 bg-blue-50 rounded">
                         <div className="flex justify-between">
                             <span>Monthly Installment:</span>
-                            <span className="font-bold text-lg">SAR {formData.installment_amount.toFixed(2)}</span>
+                            <span className="font-bold text-lg">LKR {formData.installment_amount.toFixed(2)}</span>
                         </div>
                     </div>
 

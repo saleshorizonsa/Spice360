@@ -75,7 +75,7 @@ export default function QuickApprovalWidget() {
                                     <span className="font-semibold text-sm">{request.document_number}</span>
                                 </div>
                                 <p className="text-sm text-gray-600">
-                                    SAR {request.document_amount?.toLocaleString()} • {request.requested_by_name}
+                                    LKR {request.document_amount?.toLocaleString()} • {request.requested_by_name}
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">
                                     Level {request.approval_level} of {request.total_levels_required}

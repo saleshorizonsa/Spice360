@@ -131,7 +131,7 @@ export default function ApprovalMatrixForm({ item, onClose }) {
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label>Minimum Amount (SAR)</Label>
+                                <Label>Minimum Amount (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -141,7 +141,7 @@ export default function ApprovalMatrixForm({ item, onClose }) {
                             </div>
 
                             <div>
-                                <Label>Maximum Amount (SAR)</Label>
+                                <Label>Maximum Amount (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -290,7 +290,7 @@ export default function ApprovalMatrixForm({ item, onClose }) {
                             </div>
 
                             <div>
-                                <Label>Auto-Approve Threshold (SAR)</Label>
+                                <Label>Auto-Approve Threshold (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"

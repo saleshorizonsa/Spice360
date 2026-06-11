@@ -135,7 +135,7 @@ export default function ProductCostForm({ item, onClose }) {
             
             toast({
                 title: "BOM Loaded",
-                description: `Material cost calculated from BOM: SAR ${materialCost.toFixed(2)}`,
+                description: `Material cost calculated from BOM: LKR ${materialCost.toFixed(2)}`,
                 variant: "default"
             });
         } catch (error) {
@@ -259,7 +259,7 @@ export default function ProductCostForm({ item, onClose }) {
                         <h3 className="font-semibold text-lg border-b pb-2">Cost Components</h3>
                         <div className="grid grid-cols-3 gap-4">
                             <div>
-                                <Label>Direct Material Cost (SAR)</Label>
+                                <Label>Direct Material Cost (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -268,7 +268,7 @@ export default function ProductCostForm({ item, onClose }) {
                                 />
                             </div>
                             <div>
-                                <Label>Direct Labor Cost (SAR)</Label>
+                                <Label>Direct Labor Cost (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -277,7 +277,7 @@ export default function ProductCostForm({ item, onClose }) {
                                 />
                             </div>
                             <div>
-                                <Label>Machine Cost (SAR)</Label>
+                                <Label>Machine Cost (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -289,7 +289,7 @@ export default function ProductCostForm({ item, onClose }) {
 
                         <div className="grid grid-cols-3 gap-4">
                             <div>
-                                <Label>Variable Overhead (SAR)</Label>
+                                <Label>Variable Overhead (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -298,7 +298,7 @@ export default function ProductCostForm({ item, onClose }) {
                                 />
                             </div>
                             <div>
-                                <Label>Fixed Overhead (SAR)</Label>
+                                <Label>Fixed Overhead (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -307,7 +307,7 @@ export default function ProductCostForm({ item, onClose }) {
                                 />
                             </div>
                             <div>
-                                <Label>Subcontractor Cost (SAR)</Label>
+                                <Label>Subcontractor Cost (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -319,7 +319,7 @@ export default function ProductCostForm({ item, onClose }) {
 
                         <div className="grid grid-cols-3 gap-4">
                             <div>
-                                <Label>Packaging Cost (SAR)</Label>
+                                <Label>Packaging Cost (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -328,7 +328,7 @@ export default function ProductCostForm({ item, onClose }) {
                                 />
                             </div>
                             <div>
-                                <Label>Freight Cost (SAR)</Label>
+                                <Label>Freight Cost (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -337,7 +337,7 @@ export default function ProductCostForm({ item, onClose }) {
                                 />
                             </div>
                             <div>
-                                <Label>Other Costs (SAR)</Label>
+                                <Label>Other Costs (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -352,7 +352,7 @@ export default function ProductCostForm({ item, onClose }) {
                     <div className="bg-gray-50 p-4 rounded-lg space-y-3">
                         <div className="flex justify-between items-center text-lg font-semibold border-b pb-2">
                             <span>Total Cost Per Unit:</span>
-                            <span className="text-emerald-600">SAR {formData.total_cost_per_unit.toFixed(2)}</span>
+                            <span className="text-emerald-600">LKR {formData.total_cost_per_unit.toFixed(2)}</span>
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">

@@ -118,7 +118,7 @@ export default function Approvals() {
         { 
             header: "Amount", 
             key: "document_amount", 
-            render: (val) => `SAR ${val?.toLocaleString() || 0}` 
+            render: (val) => `LKR ${val?.toLocaleString() || 0}` 
         },
         { 
             header: "Level", 
@@ -360,7 +360,7 @@ export default function Approvals() {
                                     </div>
                                     <div>
                                         <Label className="text-xs text-gray-500">Amount</Label>
-                                        <p className="font-medium">SAR {selectedRequest.document_amount?.toLocaleString()}</p>
+                                        <p className="font-medium">LKR {selectedRequest.document_amount?.toLocaleString()}</p>
                                     </div>
                                     <div>
                                         <Label className="text-xs text-gray-500">Requestor</Label>

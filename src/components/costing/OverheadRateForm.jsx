@@ -204,7 +204,7 @@ export default function OverheadRateForm({ item, onClose }) {
                         <h3 className="font-semibold text-lg border-b pb-2">Budgeted (Predetermined)</h3>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label>Budgeted Overhead (SAR)</Label>
+                                <Label>Budgeted Overhead (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -226,7 +226,7 @@ export default function OverheadRateForm({ item, onClose }) {
                             <div className="flex justify-between items-center">
                                 <span className="font-semibold">Predetermined Rate:</span>
                                 <span className="text-xl font-bold text-blue-600">
-                                    SAR {formData.predetermined_rate.toFixed(2)}
+                                    LKR {formData.predetermined_rate.toFixed(2)}
                                 </span>
                             </div>
                         </div>
@@ -236,7 +236,7 @@ export default function OverheadRateForm({ item, onClose }) {
                         <h3 className="font-semibold text-lg border-b pb-2">Actual</h3>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label>Actual Overhead (SAR)</Label>
+                                <Label>Actual Overhead (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -258,7 +258,7 @@ export default function OverheadRateForm({ item, onClose }) {
                             <div className="flex justify-between items-center">
                                 <span className="font-semibold">Actual Rate:</span>
                                 <span className="text-xl font-bold text-green-600">
-                                    SAR {formData.actual_rate.toFixed(2)}
+                                    LKR {formData.actual_rate.toFixed(2)}
                                 </span>
                             </div>
                         </div>
@@ -266,7 +266,7 @@ export default function OverheadRateForm({ item, onClose }) {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label>Applied Overhead (SAR)</Label>
+                            <Label>Applied Overhead (LKR)</Label>
                             <Input
                                 type="number"
                                 step="0.01"
@@ -275,7 +275,7 @@ export default function OverheadRateForm({ item, onClose }) {
                             />
                         </div>
                         <div>
-                            <Label>Under/Over Applied (SAR)</Label>
+                            <Label>Under/Over Applied (LKR)</Label>
                             <Input
                                 type="number"
                                 value={formData.under_over_applied.toFixed(2)}

@@ -15,7 +15,7 @@ import { Building2, Globe, CreditCard, Phone, Save, RefreshCw, Image } from "luc
 const COUNTRIES = ["Sri Lanka", "Saudi Arabia", "UAE", "Kuwait", "Bahrain", "Oman", "Qatar", "Egypt", "Jordan", "Lebanon", "Other"];
 const CURRENCIES = [
     { value: "LKR", label: "LKR — Sri Lanka Rupee" },
-    { value: "SAR", label: "SAR — Saudi Riyal" },
+    { value: "LKR", label: "SAR — Saudi Riyal" },
     { value: "USD", label: "USD — US Dollar" },
     { value: "EUR", label: "EUR — Euro" },
     { value: "AED", label: "AED — UAE Dirham" },

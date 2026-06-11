@@ -72,7 +72,7 @@ export default function ApprovalWorkflows() {
     const matrixColumns = [
         { header: "Document Type", key: "document_type", isBadge: true },
         { 
-            header: "Amount Range (SAR)", 
+            header: "Amount Range (LKR)", 
             key: "threshold_min", 
             render: (val, row) => `${val?.toLocaleString() || 0} - ${row.threshold_max?.toLocaleString() || '∞'}` 
         },

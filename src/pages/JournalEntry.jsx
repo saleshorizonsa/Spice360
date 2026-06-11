@@ -16,8 +16,8 @@ import { getNextDocumentNumber } from "@/components/utils/documentNumberGenerato
 import { postJournalEntry, reverseJournalEntry } from "@/components/utils/journalService";
 import { useOrganization } from "@/components/utils/OrganizationContext";
 
-const fmt = (value) => `SAR ${Number(value || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const blankLine = { account_code: "", account_name: "", description: "", debit: 0, credit: 0, cost_center: "", vat_code: "", currency: "SAR" };
+const fmt = (value) => `LKR ${Number(value || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const blankLine = { account_code: "", account_name: "", description: "", debit: 0, credit: 0, cost_center: "", vat_code: "", currency: "LKR" };
 
 function JournalDetail({ journal, lines, onClose }) {
   return (

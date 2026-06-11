@@ -73,7 +73,7 @@ export default function InventoryReports() {
                             <div>
                                 <p className="text-sm text-gray-600">Total Stock Value</p>
                                 <p className="text-2xl font-bold text-gray-900">
-                                    SAR {(totalStockValue / 1000000).toFixed(1)}M
+                                    LKR {(totalStockValue / 1000000).toFixed(1)}M
                                 </p>
                                 <p className="text-xs text-gray-500 mt-1">{stockLevels.length} stock locations</p>
                             </div>

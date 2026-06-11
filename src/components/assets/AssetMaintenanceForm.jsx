@@ -302,7 +302,7 @@ export default function AssetMaintenanceForm({ item, onClose }) {
                         <h3 className="font-semibold text-lg border-b pb-2">Costs & Downtime</h3>
                         <div className="grid grid-cols-4 gap-4">
                             <div>
-                                <Label>Parts Cost (SAR)</Label>
+                                <Label>Parts Cost (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -311,7 +311,7 @@ export default function AssetMaintenanceForm({ item, onClose }) {
                                 />
                             </div>
                             <div>
-                                <Label>Labor Cost (SAR)</Label>
+                                <Label>Labor Cost (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -320,7 +320,7 @@ export default function AssetMaintenanceForm({ item, onClose }) {
                                 />
                             </div>
                             <div>
-                                <Label>Other Costs (SAR)</Label>
+                                <Label>Other Costs (LKR)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"
@@ -342,7 +342,7 @@ export default function AssetMaintenanceForm({ item, onClose }) {
                         <div className="bg-gray-50 p-4 rounded-lg">
                             <Label className="text-lg">Total Maintenance Cost</Label>
                             <div className="text-2xl font-bold text-emerald-600 mt-2">
-                                SAR {formData.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                LKR {formData.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                         </div>
 

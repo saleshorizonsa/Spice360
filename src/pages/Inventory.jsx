@@ -141,7 +141,7 @@ export default function Inventory() {
             );
         }},
         { header: "Reserved", key: "reserved_quantity" },
-        { header: "Value (SAR)", key: "total_value", render: (val) => `${val?.toLocaleString() || 0}` },
+        { header: "Value (LKR)", key: "total_value", render: (val) => `${val?.toLocaleString() || 0}` },
         { header: "Aging (Days)", key: "aging_days", render: (val) => {
             const isSlow = val > 90;
             return (
@@ -177,7 +177,7 @@ export default function Inventory() {
         { header: "From", key: "from_warehouse" },
         { header: "To", key: "to_warehouse" },
         { header: "Reference", key: "reference_document" },
-        { header: "Value (SAR)", key: "total_value", render: (val) => `${val?.toLocaleString() || 0}` },
+        { header: "Value (LKR)", key: "total_value", render: (val) => `${val?.toLocaleString() || 0}` },
         { header: t('status'), key: "status", isBadge: true }
     ];
 
@@ -387,7 +387,7 @@ export default function Inventory() {
                                 <td>${item.quantity} ${item.unit_of_measure || ''}</td>
                                 <td>${item.from_warehouse || 'N/A'}</td>
                                 <td>${item.to_warehouse || 'N/A'}</td>
-                                <td>SAR ${(item.total_value || 0).toLocaleString()}</td>
+                                <td>LKR ${(item.total_value || 0).toLocaleString()}</td>
                             </tr>
                         </table>
                         <p style="margin-top: 20px;"><strong>Reference:</strong> ${item.reference_document || 'N/A'}</p>
