@@ -1,17 +1,20 @@
-name: Deploy to Hostinger
+name: Build & Deploy to Hostinger
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
@@ -19,35 +22,23 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Generate PHP config from secrets
+      - name: Build
         env:
-          DB_HOST:              ${{ secrets.DB_HOST }}
-          DB_NAME:              ${{ secrets.DB_NAME }}
-          DB_USER:              ${{ secrets.DB_USER }}
-          DB_PASS:              ${{ secrets.DB_PASS }}
-          JWT_SECRET:           ${{ secrets.JWT_SECRET }}
-          MAIL_FROM:            ${{ secrets.MAIL_FROM }}
-          ADMIN_EMAILS:         ${{ secrets.ADMIN_EMAILS }}
-          PLATFORM_OWNER_EMAIL: ${{ secrets.PLATFORM_OWNER_EMAIL }}
-          SETUP_SECRET:         ${{ secrets.SETUP_SECRET }}
-        run: envsubst < api/config/config.php.template > api/config/config.php
-
-      - name: Build React app
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_APP_URL: ${{ secrets.VITE_APP_URL }}
+          VITE_SUPABASE_AUTH_REDIRECT_URL: ${{ secrets.VITE_SUPABASE_AUTH_REDIRECT_URL }}
+          VITE_MATRIXSALES_ADMIN_EMAILS: ${{ secrets.VITE_MATRIXSALES_ADMIN_EMAILS }}
         run: npm run build
-        env:
-          VITE_APP_URL:  https://erp.horizon-sa.net
-          VITE_API_URL:  https://erp.horizon-sa.net/api
-
-      - name: Copy PHP API into build
-        run: cp -r api dist/api
 
       - name: Deploy to Hostinger via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
-          server:       ${{ secrets.FTP_SERVER }}
-          username:     ${{ secrets.FTP_USERNAME }}
-          password:     ${{ secrets.FTP_PASSWORD }}
-          local-dir:    ./dist/
-          server-dir:   /public_html/
-          dangerous-clean-slate: false
-
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./dist/
+          server-dir: /public_html/
+          exclude: |
+            **/.git*
+            **/.git*/**
