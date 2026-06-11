@@ -13,11 +13,13 @@ import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
 import SearchableSelect from "../shared/SearchableSelect";
 import LineItemsTable from "../shared/LineItemsTable";
 import { useOrganization } from "../utils/OrganizationContext";
+import { useTaxConfig } from "@/hooks/useTaxConfig";
 
 export default function QuotationForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
+    const taxConfig = useTaxConfig();
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
 
     const { data: materials = [] } = useQuery({
@@ -150,7 +152,7 @@ export default function QuotationForm({ item, onClose }) {
 
         // Calculate totals from line items
         const subtotal = lineItems.reduce((sum, line) => sum + (line.line_total || 0), 0);
-        const vatAmount = subtotal * 0.15;
+        const vatAmount = subtotal * (taxConfig.vat_standard_rate / 100);
         const totalAmount = subtotal + vatAmount;
 
         saveMutation.mutate({
@@ -172,7 +174,7 @@ export default function QuotationForm({ item, onClose }) {
 
     // Calculate totals
     const subtotal = lineItems.reduce((sum, line) => sum + (line.line_total || 0), 0);
-    const vatAmount = subtotal * 0.15;
+    const vatAmount = subtotal * (taxConfig.vat_standard_rate / 100);
     const totalAmount = subtotal + vatAmount;
 
     return (

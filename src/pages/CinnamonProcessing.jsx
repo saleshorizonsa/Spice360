@@ -45,10 +45,15 @@ export default function CinnamonProcessing() {
         initialData: [],
     });
 
+    const safeBatches        = Array.isArray(batches)        ? batches        : [];
+    const safeGradingOutputs = Array.isArray(gradingOutputs) ? gradingOutputs : [];
+    const safeProcessSteps   = Array.isArray(processSteps)   ? processSteps   : [];
+    const safePackaging      = Array.isArray(packaging)      ? packaging      : [];
+
     // KPIs
-    const activeBatches   = batches.filter((b) => b.status === "active").length;
-    const totalInputKg    = batches.reduce((s, b) => s + (parseFloat(b.input_weight_kg) || 0), 0);
-    const totalOutputKg   = gradingOutputs.reduce((s, g) => s + (parseFloat(g.output_weight_kg) || 0), 0);
+    const activeBatches   = safeBatches.filter((b) => b.status === "active").length;
+    const totalInputKg    = safeBatches.reduce((s, b) => s + (parseFloat(b.input_weight_kg) || 0), 0);
+    const totalOutputKg   = safeGradingOutputs.reduce((s, g) => s + (parseFloat(g.output_weight_kg) || 0), 0);
     const overallYield    = totalInputKg > 0
         ? ((totalOutputKg / totalInputKg) * 100).toFixed(1)
         : "—";
@@ -225,7 +230,7 @@ export default function CinnamonProcessing() {
                         </CardHeader>
                         <CardContent>
                             <DataTable
-                                data={batches}
+                                data={safeBatches}
                                 columns={batchColumns}
                                 getBadgeColor={getBadgeColor}
                                 onEdit={handleEdit}
@@ -249,7 +254,7 @@ export default function CinnamonProcessing() {
                         </CardHeader>
                         <CardContent>
                             <DataTable
-                                data={processSteps}
+                                data={safeProcessSteps}
                                 columns={stepColumns}
                                 getBadgeColor={getBadgeColor}
                                 onEdit={handleEdit}
@@ -273,7 +278,7 @@ export default function CinnamonProcessing() {
                         </CardHeader>
                         <CardContent>
                             <DataTable
-                                data={gradingOutputs}
+                                data={safeGradingOutputs}
                                 columns={gradingColumns}
                                 getBadgeColor={getBadgeColor}
                                 onDelete={(item) => handleDelete(item, "CinnamonGradingOutput")}
@@ -296,7 +301,7 @@ export default function CinnamonProcessing() {
                         </CardHeader>
                         <CardContent>
                             <DataTable
-                                data={processSteps.filter((s) => s.stage === "moisture_qc")}
+                                data={safeProcessSteps.filter((s) => s.stage === "moisture_qc")}
                                 columns={qcColumns}
                                 getBadgeColor={getBadgeColor}
                             />
@@ -318,7 +323,7 @@ export default function CinnamonProcessing() {
                         </CardHeader>
                         <CardContent>
                             <DataTable
-                                data={packaging}
+                                data={safePackaging}
                                 columns={packagingColumns}
                                 getBadgeColor={getBadgeColor}
                                 onEdit={handleEdit}

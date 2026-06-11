@@ -137,7 +137,6 @@ const periodControlledEntityConfig = {
   ProductionOrder: { module: 'operations', dateFields: ['planned_start_date', 'start_date', 'posting_date', 'document_date'] },
   WorkOrder: { module: 'operations', dateFields: ['scheduled_date', 'completion_date', 'posting_date', 'document_date'] },
   Payroll: { module: 'hr', dateFields: ['payroll_date', 'period_start', 'posting_date', 'document_date'] },
-  GOSIContribution: { module: 'hr', dateFields: ['contribution_date', 'period_start', 'posting_date'] },
   LeaveRequest: { module: 'hr', dateFields: ['start_date', 'request_date', 'document_date'] },
   LoanAdvance: { module: 'hr', dateFields: ['request_date', 'posting_date', 'document_date'] },
   ProjectExpense: { module: 'projects', dateFields: ['expense_date', 'posting_date', 'document_date'] },
@@ -1126,13 +1125,13 @@ const createPhpApiEntity = (entityName) => ({
     if (sort)  params.set('sort', sort);
     if (limit) params.set('limit', limit);
     const qs = params.toString();
-    return apiFetch(`/entities/${entityName}${qs ? '?' + qs : ''}`);
+    return apiFetch(`/entities/${entityName}${qs ? '?' + qs : ''}`).then(normalizeList);
   },
   filter: (filters = {}, sort, limit) =>
     apiFetch(`/entities/${entityName}/filter`, {
       method: 'POST',
       body: JSON.stringify({ filters, sort, limit })
-    }),
+    }).then(normalizeList),
   create: (data) =>
     apiFetch(`/entities/${entityName}`, { method: 'POST', body: JSON.stringify(data) }),
   bulkCreate: (records) =>

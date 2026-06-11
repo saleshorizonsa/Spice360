@@ -39,12 +39,16 @@ export default function CinnamonGradingForm({ onClose }) {
     const [gradeRows, setGradeRows] = useState([{ grade_code: "", output_weight_kg: "" }]);
     const [gradingNumber] = useState(`CIN-GRD-${Date.now()}`);
 
+    const safeBatches      = Array.isArray(batches)      ? batches      : [];
+    const safeGrades       = Array.isArray(grades)       ? grades       : [];
+    const safeProcessSteps = Array.isArray(processSteps) ? processSteps : [];
+
     const handleBatchSelect = (batchNumber) => {
-        const batch = batches.find((b) => b.batch_number === batchNumber);
+        const batch = safeBatches.find((b) => b.batch_number === batchNumber);
         setSelectedBatch(batch || null);
 
         // Available weight = last completed process step's output, or raw intake weight
-        const batchSteps = processSteps
+        const batchSteps = safeProcessSteps
             .filter((s) => s.batch_number === batchNumber && s.stage !== "moisture_qc")
             .sort((a, b) => new Date(b.completed_at || b.created_at) - new Date(a.completed_at || a.created_at));
 
@@ -141,7 +145,7 @@ export default function CinnamonGradingForm({ onClose }) {
                                     <SelectValue placeholder="Select batch" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {batches.map((b) => (
+                                    {safeBatches.map((b) => (
                                         <SelectItem key={b.id} value={b.batch_number}>
                                             {b.batch_number} — {b.supplier}
                                         </SelectItem>
@@ -201,7 +205,7 @@ export default function CinnamonGradingForm({ onClose }) {
                                                 <SelectValue placeholder="Select grade" />
                                             </SelectTrigger>
                                             <SelectContent>
-                                                {grades.map((g) => (
+                                                {safeGrades.map((g) => (
                                                     <SelectItem key={g.id} value={g.grade_code}>
                                                         {g.grade_name} ({g.category})
                                                     </SelectItem>

@@ -33,6 +33,8 @@ export default function CinnamonMoistureQCForm({ onClose }) {
     const isAboveThreshold = moisture > MOISTURE_THRESHOLD;
     const isAbsoluteMax    = moisture > MOISTURE_HARD_MAX;
 
+    const safeBatches = Array.isArray(batches) ? batches : [];
+
     const saveMutation = useMutation({
         mutationFn: async () => {
             if (!batchNumber) throw new Error("Select a batch");
@@ -42,7 +44,7 @@ export default function CinnamonMoistureQCForm({ onClose }) {
                 );
             }
 
-            const batch = batches.find((b) => b.batch_number === batchNumber);
+            const batch = safeBatches.find((b) => b.batch_number === batchNumber);
             if (!batch) throw new Error("Batch not found");
 
             const reading = `Moisture QC: ${moisture}% | Instrument: ${instrument || "—"} | ${notes}`.trim();
@@ -93,7 +95,7 @@ export default function CinnamonMoistureQCForm({ onClose }) {
                                 <SelectValue placeholder="Select batch" />
                             </SelectTrigger>
                             <SelectContent>
-                                {batches.map((b) => (
+                                {safeBatches.map((b) => (
                                     <SelectItem key={b.id} value={b.batch_number}>
                                         {b.batch_number} — {b.supplier}
                                     </SelectItem>

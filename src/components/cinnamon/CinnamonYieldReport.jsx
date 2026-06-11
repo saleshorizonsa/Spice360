@@ -17,11 +17,14 @@ export default function CinnamonYieldReport() {
         initialData: [],
     });
 
-    // All grade codes present across all grading outputs (for dynamic columns)
-    const allGrades = [...new Set(gradingOutputs.map((g) => g.grade_code))].sort();
+    const safeBatches        = Array.isArray(batches)        ? batches        : [];
+    const safeGradingOutputs = Array.isArray(gradingOutputs) ? gradingOutputs : [];
 
-    const reportRows = batches.map((batch) => {
-        const batchOutputs = gradingOutputs.filter((g) => g.batch_number === batch.batch_number);
+    // All grade codes present across all grading outputs (for dynamic columns)
+    const allGrades = [...new Set(safeGradingOutputs.map((g) => g.grade_code))].sort();
+
+    const reportRows = safeBatches.map((batch) => {
+        const batchOutputs = safeGradingOutputs.filter((g) => g.batch_number === batch.batch_number);
         const totalOutputKg = batchOutputs.reduce(
             (sum, g) => sum + (parseFloat(g.output_weight_kg) || 0),
             0

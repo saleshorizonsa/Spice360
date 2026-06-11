@@ -61,8 +61,6 @@ export default function OrganizationForm({ item, onClose }) {
         authorized_signatory: '',
         authorized_signatory_title: '',
         logo_url: '',
-        gosi_establishment_number: '',
-        gosi_registration_date: '',
         mol_establishment_number: '',
         chamber_of_commerce_number: '',
         chamber_membership_expiry: '',

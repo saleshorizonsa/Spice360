@@ -39,12 +39,14 @@ export default function PayrollRegisterReport() {
         other_allowances: filteredPayrolls.reduce((sum, p) => sum + (p.other_allowances || 0), 0),
         overtime: filteredPayrolls.reduce((sum, p) => sum + (p.overtime_amount || 0), 0),
         gross_salary: filteredPayrolls.reduce((sum, p) => sum + (p.gross_salary || 0), 0),
-        gosi_employee: filteredPayrolls.reduce((sum, p) => sum + (p.gosi_employee_deduction || 0), 0),
+        epf_employee: filteredPayrolls.reduce((sum, p) => sum + (p.epf_employee || 0), 0),
+        apit_tax: filteredPayrolls.reduce((sum, p) => sum + (p.apit_tax || 0), 0),
         loan_deduction: filteredPayrolls.reduce((sum, p) => sum + (p.loan_deduction || 0), 0),
         other_deductions: filteredPayrolls.reduce((sum, p) => sum + (p.other_deductions || 0), 0),
         total_deductions: filteredPayrolls.reduce((sum, p) => sum + (p.total_deductions || 0), 0),
         net_salary: filteredPayrolls.reduce((sum, p) => sum + (p.net_salary || 0), 0),
-        gosi_employer: filteredPayrolls.reduce((sum, p) => sum + (p.gosi_employer_contribution || 0), 0)
+        epf_employer: filteredPayrolls.reduce((sum, p) => sum + (p.epf_employer || 0), 0),
+        etf_employer: filteredPayrolls.reduce((sum, p) => sum + (p.etf_employer || 0), 0)
     };
 
     const handleExportPDF = () => {
@@ -83,7 +85,7 @@ export default function PayrollRegisterReport() {
                                 <th class="number">Other Allow</th>
                                 <th class="number">OT</th>
                                 <th class="number">Gross</th>
-                                <th class="number">GOSI</th>
+                                <th class="number">EPF Emp</th>
                                 <th class="number">Loan</th>
                                 <th class="number">Other Ded</th>
                                 <th class="number">Total Ded</th>
@@ -102,7 +104,7 @@ export default function PayrollRegisterReport() {
                                     <td class="number">${(p.other_allowances || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                                     <td class="number">${(p.overtime_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                                     <td class="number">${(p.gross_salary || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                                    <td class="number">${(p.gosi_employee_deduction || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                    <td class="number">${(p.epf_employee || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                                     <td class="number">${(p.loan_deduction || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                                     <td class="number">${(p.other_deductions || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                                     <td class="number">${(p.total_deductions || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
@@ -117,7 +119,7 @@ export default function PayrollRegisterReport() {
                                 <td class="number">${totals.other_allowances.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                                 <td class="number">${totals.overtime.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                                 <td class="number">${totals.gross_salary.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                                <td class="number">${totals.gosi_employee.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                <td class="number">${totals.epf_employee.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                                 <td class="number">${totals.loan_deduction.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                                 <td class="number">${totals.other_deductions.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                                 <td class="number">${totals.total_deductions.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
@@ -138,16 +140,19 @@ export default function PayrollRegisterReport() {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr><td>6010</td><td>Salaries & Wages</td><td class="number">${totals.gross_salary.toLocaleString('en-US', {minimumFractionDigits: 2})}</td><td class="number">-</td></tr>
-                                <tr><td>6020</td><td>GOSI Employer Contribution</td><td class="number">${totals.gosi_employer.toLocaleString('en-US', {minimumFractionDigits: 2})}</td><td class="number">-</td></tr>
-                                <tr><td>2010</td><td>Salaries Payable</td><td class="number">-</td><td class="number">${totals.net_salary.toLocaleString('en-US', {minimumFractionDigits: 2})}</td></tr>
-                                <tr><td>2020</td><td>GOSI Payable</td><td class="number">-</td><td class="number">${(totals.gosi_employee + totals.gosi_employer).toLocaleString('en-US', {minimumFractionDigits: 2})}</td></tr>
+                                <tr><td>5100</td><td>Salaries & Wages</td><td class="number">${totals.gross_salary.toLocaleString('en-US', {minimumFractionDigits: 2})}</td><td class="number">-</td></tr>
+                                <tr><td>5210</td><td>EPF Employer Contribution</td><td class="number">${totals.epf_employer.toLocaleString('en-US', {minimumFractionDigits: 2})}</td><td class="number">-</td></tr>
+                                <tr><td>5220</td><td>ETF Employer Contribution</td><td class="number">${totals.etf_employer.toLocaleString('en-US', {minimumFractionDigits: 2})}</td><td class="number">-</td></tr>
+                                <tr><td>2410</td><td>Salaries Payable</td><td class="number">-</td><td class="number">${totals.net_salary.toLocaleString('en-US', {minimumFractionDigits: 2})}</td></tr>
+                                <tr><td>2420</td><td>EPF Payable</td><td class="number">-</td><td class="number">${(totals.epf_employee + totals.epf_employer).toLocaleString('en-US', {minimumFractionDigits: 2})}</td></tr>
+                                <tr><td>2430</td><td>ETF Payable</td><td class="number">-</td><td class="number">${totals.etf_employer.toLocaleString('en-US', {minimumFractionDigits: 2})}</td></tr>
+                                <tr><td>2310</td><td>APIT Payable (IRD)</td><td class="number">-</td><td class="number">${totals.apit_tax.toLocaleString('en-US', {minimumFractionDigits: 2})}</td></tr>
                                 <tr><td>2030</td><td>Loan Recoveries</td><td class="number">-</td><td class="number">${totals.loan_deduction.toLocaleString('en-US', {minimumFractionDigits: 2})}</td></tr>
                                 <tr><td>2040</td><td>Other Deductions</td><td class="number">-</td><td class="number">${totals.other_deductions.toLocaleString('en-US', {minimumFractionDigits: 2})}</td></tr>
                                 <tr class="total-row">
                                     <td colspan="2">TOTAL</td>
-                                    <td class="number">${(totals.gross_salary + totals.gosi_employer).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
-                                    <td class="number">${(totals.net_salary + totals.gosi_employee + totals.gosi_employer + totals.loan_deduction + totals.other_deductions).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                    <td class="number">${(totals.gross_salary + totals.epf_employer + totals.etf_employer).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
+                                    <td class="number">${(totals.net_salary + totals.epf_employee + totals.epf_employer + totals.etf_employer + totals.apit_tax + totals.loan_deduction + totals.other_deductions).toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -271,7 +276,7 @@ export default function PayrollRegisterReport() {
                                 <TableHead className="text-right">Other</TableHead>
                                 <TableHead className="text-right">OT</TableHead>
                                 <TableHead className="text-right">Gross</TableHead>
-                                <TableHead className="text-right">GOSI</TableHead>
+                                <TableHead className="text-right">EPF Emp</TableHead>
                                 <TableHead className="text-right">Loan</TableHead>
                                 <TableHead className="text-right">Other Ded</TableHead>
                                 <TableHead className="text-right">Net</TableHead>
@@ -302,7 +307,7 @@ export default function PayrollRegisterReport() {
                                         {(payroll.gross_salary || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
                                     </TableCell>
                                     <TableCell className="text-right font-mono text-red-600">
-                                        {(payroll.gosi_employee_deduction || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                                        {(payroll.epf_employee || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
                                     </TableCell>
                                     <TableCell className="text-right font-mono text-red-600">
                                         {(payroll.loan_deduction || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
@@ -336,7 +341,7 @@ export default function PayrollRegisterReport() {
                                     {totals.gross_salary.toLocaleString('en-US', {minimumFractionDigits: 2})}
                                 </TableCell>
                                 <TableCell className="text-right font-mono">
-                                    {totals.gosi_employee.toLocaleString('en-US', {minimumFractionDigits: 2})}
+                                    {totals.epf_employee.toLocaleString('en-US', {minimumFractionDigits: 2})}
                                 </TableCell>
                                 <TableCell className="text-right font-mono">
                                     {totals.loan_deduction.toLocaleString('en-US', {minimumFractionDigits: 2})}
@@ -370,7 +375,7 @@ export default function PayrollRegisterReport() {
                                 </TableHeader>
                                 <TableBody>
                                     <TableRow>
-                                        <TableCell className="font-medium">6010</TableCell>
+                                        <TableCell className="font-medium">5100</TableCell>
                                         <TableCell>Salaries & Wages</TableCell>
                                         <TableCell className="text-right font-mono">
                                             {totals.gross_salary.toLocaleString('en-US', {minimumFractionDigits: 2})}
@@ -378,15 +383,23 @@ export default function PayrollRegisterReport() {
                                         <TableCell className="text-right text-gray-400">-</TableCell>
                                     </TableRow>
                                     <TableRow>
-                                        <TableCell className="font-medium">6020</TableCell>
-                                        <TableCell>GOSI Employer Contribution</TableCell>
+                                        <TableCell className="font-medium">5210</TableCell>
+                                        <TableCell>EPF Employer Contribution</TableCell>
                                         <TableCell className="text-right font-mono">
-                                            {totals.gosi_employer.toLocaleString('en-US', {minimumFractionDigits: 2})}
+                                            {totals.epf_employer.toLocaleString('en-US', {minimumFractionDigits: 2})}
                                         </TableCell>
                                         <TableCell className="text-right text-gray-400">-</TableCell>
                                     </TableRow>
                                     <TableRow>
-                                        <TableCell className="font-medium">2010</TableCell>
+                                        <TableCell className="font-medium">5220</TableCell>
+                                        <TableCell>ETF Employer Contribution</TableCell>
+                                        <TableCell className="text-right font-mono">
+                                            {totals.etf_employer.toLocaleString('en-US', {minimumFractionDigits: 2})}
+                                        </TableCell>
+                                        <TableCell className="text-right text-gray-400">-</TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell className="font-medium">2410</TableCell>
                                         <TableCell>Salaries Payable</TableCell>
                                         <TableCell className="text-right text-gray-400">-</TableCell>
                                         <TableCell className="text-right font-mono">
@@ -394,11 +407,27 @@ export default function PayrollRegisterReport() {
                                         </TableCell>
                                     </TableRow>
                                     <TableRow>
-                                        <TableCell className="font-medium">2020</TableCell>
-                                        <TableCell>GOSI Payable (Employee + Employer)</TableCell>
+                                        <TableCell className="font-medium">2420</TableCell>
+                                        <TableCell>EPF Payable</TableCell>
                                         <TableCell className="text-right text-gray-400">-</TableCell>
                                         <TableCell className="text-right font-mono">
-                                            {(totals.gosi_employee + totals.gosi_employer).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                                            {(totals.epf_employee + totals.epf_employer).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                                        </TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell className="font-medium">2430</TableCell>
+                                        <TableCell>ETF Payable</TableCell>
+                                        <TableCell className="text-right text-gray-400">-</TableCell>
+                                        <TableCell className="text-right font-mono">
+                                            {totals.etf_employer.toLocaleString('en-US', {minimumFractionDigits: 2})}
+                                        </TableCell>
+                                    </TableRow>
+                                    <TableRow>
+                                        <TableCell className="font-medium">2310</TableCell>
+                                        <TableCell>APIT Payable (IRD)</TableCell>
+                                        <TableCell className="text-right text-gray-400">-</TableCell>
+                                        <TableCell className="text-right font-mono">
+                                            {totals.apit_tax.toLocaleString('en-US', {minimumFractionDigits: 2})}
                                         </TableCell>
                                     </TableRow>
                                     <TableRow>
@@ -420,10 +449,10 @@ export default function PayrollRegisterReport() {
                                     <TableRow className="bg-gray-100 font-bold">
                                         <TableCell colSpan={2}>TOTAL</TableCell>
                                         <TableCell className="text-right font-mono">
-                                            {(totals.gross_salary + totals.gosi_employer).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                                            {(totals.gross_salary + totals.epf_employer + totals.etf_employer).toLocaleString('en-US', {minimumFractionDigits: 2})}
                                         </TableCell>
                                         <TableCell className="text-right font-mono">
-                                            {(totals.net_salary + totals.gosi_employee + totals.gosi_employer + totals.loan_deduction + totals.other_deductions).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                                            {(totals.net_salary + totals.epf_employee + totals.epf_employer + totals.etf_employer + totals.apit_tax + totals.loan_deduction + totals.other_deductions).toLocaleString('en-US', {minimumFractionDigits: 2})}
                                         </TableCell>
                                     </TableRow>
                                 </TableBody>

@@ -34,7 +34,7 @@ export const materialToSalesLinePatch = (material = {}) => {
     description: material.description || material.specifications || material.material_type || "",
     unit_of_measure: material.unit_of_measure || "piece",
     unit_price: price,
-    vat_rate: Number(material.vat_rate ?? 15) || 0
+    vat_rate: Number(material.vat_rate ?? 18) || 0
   };
 };
 

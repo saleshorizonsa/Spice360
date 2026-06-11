@@ -9,10 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
+import { useTaxConfig } from "@/hooks/useTaxConfig";
 
 export default function ExpenseForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const taxConfig = useTaxConfig();
 
     const [formData, setFormData] = useState({
         expense_number: '',
@@ -75,7 +77,7 @@ export default function ExpenseForm({ item, onClose }) {
             
             // Auto-calculate VAT and totals
             if (field === 'amount') {
-                updated.vat_amount = value * 0.15;
+                updated.vat_amount = value * (taxConfig.vat_standard_rate / 100);
                 updated.total_amount = value + updated.vat_amount;
                 if (updated.billable) {
                     updated.billing_amount = updated.total_amount * (1 + (updated.markup_percent / 100));

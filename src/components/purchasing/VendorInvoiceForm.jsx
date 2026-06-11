@@ -12,11 +12,13 @@ import { AlertCircle, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
+import { useTaxConfig } from "@/hooks/useTaxConfig";
 
 export default function VendorInvoiceForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
+    const taxConfig = useTaxConfig();
 
     const { data: pos = [] } = useQuery({
         queryKey: ['purchaseOrders'],
@@ -69,7 +71,7 @@ export default function VendorInvoiceForm({ item, onClose }) {
     useEffect(() => {
         const subtotal = (formData.invoiced_quantity || 0) * (formData.unit_price || 0);
         const totalBeforeVat = subtotal + (formData.freight_cost || 0) + (formData.other_charges || 0);
-        const vatAmount = totalBeforeVat * 0.15;
+        const vatAmount = totalBeforeVat * (taxConfig.vat_standard_rate / 100);
         const total = totalBeforeVat + vatAmount;
 
         const qtyVariance = (formData.invoiced_quantity || 0) - (formData.grn_quantity || 0);
@@ -103,15 +105,16 @@ export default function VendorInvoiceForm({ item, onClose }) {
             three_way_match_status: matchStatus
         }));
     }, [
-        formData.invoiced_quantity, 
-        formData.unit_price, 
-        formData.freight_cost, 
+        formData.invoiced_quantity,
+        formData.unit_price,
+        formData.freight_cost,
         formData.other_charges,
         formData.grn_quantity,
         formData.po_unit_price,
         formData.po_number,
         formData.grn_number,
-        formData.po_total_amount
+        formData.po_total_amount,
+        taxConfig.vat_standard_rate
     ]);
 
     const handlePOSelect = (poNumber) => {

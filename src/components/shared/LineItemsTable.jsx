@@ -10,9 +10,10 @@ import { usePermissions } from "@/components/utils/usePermissions";
 import { useOrganization } from "@/components/utils/OrganizationContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { getItemCode, itemToSelectOption, materialToSalesLinePatch, normalizeItemCode } from "@/lib/itemSelection";
+import { useTaxConfig } from "@/hooks/useTaxConfig";
 
-export default function LineItemsTable({ 
-    lineItems = [], 
+export default function LineItemsTable({
+    lineItems = [],
     onLineItemsChange,
     availableItems = [], // Products/Materials to select from
     itemType = "product" // "product", "material", or "sales_item"
@@ -23,6 +24,7 @@ export default function LineItemsTable({
     const { hasPermission, isAdmin, loading: permissionsLoading } = usePermissions();
     const { currentOrg } = useOrganization();
     const queryClient = useQueryClient();
+    const taxConfig = useTaxConfig();
 
     useEffect(() => {
         setEditingLines(lineItems);
@@ -162,7 +164,7 @@ export default function LineItemsTable({
             tenant_id: currentOrg?.id,
             status: "active",
             inventory_tracking_enabled: true,
-            vat_rate: 15
+            vat_rate: taxConfig.vat_standard_rate
         };
     };
 

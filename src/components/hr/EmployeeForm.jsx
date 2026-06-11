@@ -27,7 +27,6 @@ export default function EmployeeForm({ item, onClose }) {
     const [formData, setFormData] = useState({
         employee_number: '',
         employee_name: '',
-        employee_name_ar: '',
         nationality: 'Sri Lankan',
         national_id: '',
         nic_number: '',
@@ -226,7 +225,7 @@ export default function EmployeeForm({ item, onClose }) {
 
                         {/* Personal Information */}
                         <TabsContent value="personal" className="space-y-4 mt-4">
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <Label>Employee Number *</Label>
                                     <Input
@@ -243,15 +242,6 @@ export default function EmployeeForm({ item, onClose }) {
                                         onChange={(e) => setFormData({...formData, employee_name: e.target.value})}
                                         required
                                         placeholder="Ahmed Mohammed Ali"
-                                    />
-                                </div>
-                                <div>
-                                    <Label>Full Name (Arabic)</Label>
-                                    <Input
-                                        value={formData.employee_name_ar}
-                                        onChange={(e) => setFormData({...formData, employee_name_ar: e.target.value})}
-                                        placeholder="Kamal Perera"
-                                        dir="rtl"
                                     />
                                 </div>
                             </div>

@@ -15,8 +15,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import DataTable from "@/components/erp/DataTable";
-
-const VAT_RATE = 0.15;
+import { useTaxConfig } from "@/hooks/useTaxConfig";
 
 // Category color map for touch tiles
 const CATEGORY_COLORS = {
@@ -56,6 +55,8 @@ export default function POS() {
     const searchRef = useRef(null);
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const taxConfig = useTaxConfig();
+    const vatRate = taxConfig.vat_standard_rate / 100;
 
     const { data: products = [] } = useQuery({
         queryKey: ['posProducts'],
@@ -143,7 +144,7 @@ export default function POS() {
     const cartSubtotal = cart.reduce((sum, item) => sum + item.line_total, 0);
     const discountAmount = (cartSubtotal * discountPercent) / 100;
     const taxableAmount = cartSubtotal - discountAmount;
-    const vatAmount = taxableAmount * VAT_RATE;
+    const vatAmount = taxableAmount * vatRate;
     const totalAmount = taxableAmount + vatAmount;
     const changeGiven = paymentMethod === 'cash' ? Math.max(0, parseFloat(cashReceived || 0) - totalAmount) : 0;
 
@@ -163,10 +164,10 @@ export default function POS() {
                 unit_price: item.price,
                 discount_percent: 0,
                 line_total: item.price,
-                vat_amount: item.price * VAT_RATE
+                vat_amount: item.price * vatRate
             }];
         });
-    }, []);
+    }, [vatRate]);
 
     const updateQty = (code, delta) => {
         setCart(prev => prev

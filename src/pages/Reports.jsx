@@ -34,7 +34,6 @@ import VATReturnReport from "../components/reports/VATReturnReport";
 import ZATCAInvoiceLogsReport from "../components/reports/ZATCAInvoiceLogsReport";
 import CreditDebitNoteRegister from "../components/reports/CreditDebitNoteRegister";
 import WPSReport from "../components/reports/WPSReport";
-import GOSIReport from "../components/reports/GOSIReport";
 import NitaqatReport from "../components/reports/NitaqatReport";
 import DocumentExpiryReport from "../components/reports/DocumentExpiryReport";
 import DocumentArchivalReport from "../components/reports/DocumentArchivalReport";
@@ -171,7 +170,6 @@ export default function Reports() {
                             <TabsTrigger value="zatca_logs">ZATCA Logs</TabsTrigger>
                             <TabsTrigger value="credit_debit">Credit/Debit Notes</TabsTrigger>
                             <TabsTrigger value="wps">WPS</TabsTrigger>
-                            <TabsTrigger value="gosi">GOSI</TabsTrigger>
                             <TabsTrigger value="nitaqat">Nitaqat</TabsTrigger>
                             <TabsTrigger value="doc_expiry">Document Expiry</TabsTrigger>
                             <TabsTrigger value="archival">Document Archival</TabsTrigger>
@@ -181,7 +179,6 @@ export default function Reports() {
                         <TabsContent value="zatca_logs"><ZATCAInvoiceLogsReport /></TabsContent>
                         <TabsContent value="credit_debit"><CreditDebitNoteRegister /></TabsContent>
                         <TabsContent value="wps"><WPSReport /></TabsContent>
-                        <TabsContent value="gosi"><GOSIReport /></TabsContent>
                         <TabsContent value="nitaqat"><NitaqatReport /></TabsContent>
                         <TabsContent value="doc_expiry"><DocumentExpiryReport /></TabsContent>
                         <TabsContent value="archival"><DocumentArchivalReport /></TabsContent>

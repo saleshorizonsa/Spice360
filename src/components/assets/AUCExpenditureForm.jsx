@@ -11,12 +11,14 @@ import { useToast } from "@/components/ui/use-toast";
 import { useOrganization } from "../utils/OrganizationContext";
 import { Receipt } from "lucide-react";
 import { logAuditTrail } from "../utils/auditTrail";
+import { useTaxConfig } from "@/hooks/useTaxConfig";
 
 export default function AUCExpenditureForm({ aucNumber, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
     const [currentUser, setCurrentUser] = useState(null);
+    const taxConfig = useTaxConfig();
     
     useEffect(() => {
         const fetchUser = async () => {
@@ -74,14 +76,14 @@ export default function AUCExpenditureForm({ aucNumber, onClose }) {
     }, [aucNumber, aucs]);
 
     useEffect(() => {
-        const vat = formData.amount * 0.15;
+        const vat = formData.amount * (taxConfig.vat_standard_rate / 100);
         const total = formData.amount + vat;
         setFormData(prev => ({
             ...prev,
             vat_amount: vat,
             total_amount: total
         }));
-    }, [formData.amount]);
+    }, [formData.amount, taxConfig.vat_standard_rate]);
 
     const saveMutation = useMutation({
         mutationFn: async (data) => {

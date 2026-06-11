@@ -70,8 +70,6 @@ export default function OrganizationSetupForm() {
         authorized_signatory: '',
         authorized_signatory_title: '',
         logo_url: '',
-        gosi_establishment_number: '',
-        gosi_registration_date: '',
         mol_establishment_number: '',
         chamber_of_commerce_number: '',
         chamber_membership_expiry: '',
@@ -409,14 +407,6 @@ export default function OrganizationSetupForm() {
                                         </SelectContent>
                                     </Select>
                                 </div>
-                                <div>
-                                    <Label>GOSI Establishment Number</Label>
-                                    <Input
-                                        value={formData.gosi_establishment_number}
-                                        onChange={(e) => setFormData({...formData, gosi_establishment_number: e.target.value})}
-                                        placeholder="123456"
-                                    />
-                                </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -668,14 +658,6 @@ export default function OrganizationSetupForm() {
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label>GOSI Registration Date</Label>
-                                    <Input
-                                        type="date"
-                                        value={formData.gosi_registration_date}
-                                        onChange={(e) => setFormData({...formData, gosi_registration_date: e.target.value})}
-                                    />
-                                </div>
                                 <div>
                                     <Label>ZATCA Environment</Label>
                                     <Select value={formData.zatca_environment} onValueChange={(val) => setFormData({...formData, zatca_environment: val})}>

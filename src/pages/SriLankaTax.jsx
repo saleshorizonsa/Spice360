@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 import DataTable from "@/components/erp/DataTable";
 import { useOrganization } from "@/components/utils/OrganizationContext";
 import { postJournalEntry } from "@/components/utils/journalService";
+import { useTaxConfig } from "@/hooks/useTaxConfig";
 
 const fmt = (n) => `LKR ${Number(n || 0).toLocaleString("en-LK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -47,6 +48,19 @@ function WHTForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
+    const taxConfig = useTaxConfig();
+
+    const WHT_RATES = {
+        dividends:     taxConfig.wht_dividends,
+        interest:      taxConfig.wht_interest,
+        rent:          taxConfig.wht_rent,
+        service_fees:  taxConfig.wht_service_fees,
+        technical_fees: taxConfig.wht_service_fees, // no separate config key; mirrors service_fees
+        commissions:   taxConfig.wht_commissions,
+        construction:  taxConfig.wht_construction,
+        royalties:     taxConfig.wht_service_fees,  // no separate config key; mirrors service_fees
+    };
+
     const [form, setForm] = useState({
         wht_number: item?.wht_number || `WHT-${Date.now()}`,
         period_month: item?.period_month || new Date().toISOString().substring(0, 7),
@@ -54,7 +68,7 @@ function WHTForm({ item, onClose }) {
         payee_tin: item?.payee_tin || "",
         payment_type: item?.payment_type || "service_fees",
         gross_payment: item?.gross_payment || 0,
-        wht_rate: item?.wht_rate || 14,
+        wht_rate: item?.wht_rate ?? taxConfig.wht_service_fees,
         wht_amount: item?.wht_amount || 0,
         net_payment: item?.net_payment || 0,
         due_date: item?.due_date || "",
@@ -62,19 +76,8 @@ function WHTForm({ item, onClose }) {
         notes: item?.notes || "",
     });
 
-    const WHT_RATES = {
-        dividends: 14,
-        interest: 14,
-        rent: 14,
-        service_fees: 14,
-        technical_fees: 14,
-        commissions: 5,
-        construction: 2.5,
-        royalties: 14,
-    };
-
     const handlePaymentTypeChange = (val) => {
-        const rate = WHT_RATES[val] ?? 14;
+        const rate = WHT_RATES[val] ?? taxConfig.wht_service_fees;
         const gross = parseFloat(form.gross_payment) || 0;
         const wht = (gross * rate) / 100;
         setForm(f => ({ ...f, payment_type: val, wht_rate: rate, wht_amount: wht, net_payment: gross - wht }));
@@ -181,27 +184,52 @@ function WHTForm({ item, onClose }) {
 }
 
 // ── SSCL Form ─────────────────────────────────────────────────────────────────
+// Activity fractions per SSCL Act: liable_turnover = gross * fraction; SSCL = liable * rate/100
+const SSCL_FRACTIONS = {
+    importation:      { label: "Importation",                               fraction: 1.00 },
+    manufacture:      { label: "Manufacture / Production",                  fraction: 0.85 },
+    distributor:      { label: "Sale by Registered Distributor / Producer", fraction: 0.25 },
+    wholesale_retail: { label: "Wholesale / Retail",                        fraction: 0.50 },
+};
+
 function SSCLForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
-    const SSCL_RATE = 2.5;
-    const QUARTERLY_THRESHOLD = 120000000;
+    const taxConfig = useTaxConfig();
+    const ssclRate = taxConfig.sscl_rate;
+    const threshold = taxConfig.sscl_threshold_quarterly;
+
+    const defaultActivity = item?.activity_type || "manufacture";
 
     const [form, setForm] = useState({
-        sscl_number: item?.sscl_number || `SSCL-${Date.now()}`,
-        quarter: item?.quarter || "",
-        taxable_turnover: item?.taxable_turnover || 0,
-        exempt_turnover: item?.exempt_turnover || 0,
-        total_turnover: item?.total_turnover || 0,
-        sscl_amount: item?.sscl_amount || 0,
-        due_date: item?.due_date || "",
-        status: item?.status || "draft",
+        sscl_number:      item?.sscl_number || `SSCL-${Date.now()}`,
+        quarter:          item?.quarter || "",
+        activity_type:    defaultActivity,
+        taxable_turnover: item?.taxable_turnover || 0,    // gross turnover input
+        exempt_turnover:  item?.exempt_turnover || 0,
+        total_turnover:   item?.total_turnover || 0,
+        liable_fraction:  item?.liable_fraction ?? SSCL_FRACTIONS[defaultActivity].fraction,
+        liable_turnover:  item?.liable_turnover || 0,
+        sscl_amount:      item?.sscl_amount || 0,
+        due_date:         item?.due_date || "",
+        status:           item?.status || "draft",
     });
 
-    const recalc = (taxable, exempt) => {
-        const total = taxable + exempt;
-        const sscl = taxable > QUARTERLY_THRESHOLD ? (taxable - QUARTERLY_THRESHOLD) * (SSCL_RATE / 100) : 0;
-        setForm(f => ({ ...f, taxable_turnover: taxable, exempt_turnover: exempt, total_turnover: total, sscl_amount: sscl }));
+    const recalc = (gross, exempt, activityType) => {
+        const total = gross + exempt;
+        const fraction = SSCL_FRACTIONS[activityType]?.fraction ?? 1.0;
+        const liableTurnover = gross * fraction;
+        const sscl = liableTurnover * (ssclRate / 100);
+        setForm(f => ({
+            ...f,
+            taxable_turnover: gross,
+            exempt_turnover:  exempt,
+            total_turnover:   total,
+            activity_type:    activityType,
+            liable_fraction:  fraction,
+            liable_turnover:  liableTurnover,
+            sscl_amount:      sscl,
+        }));
     };
 
     const saveMutation = useMutation({
@@ -215,7 +243,8 @@ function SSCLForm({ item, onClose }) {
         },
     });
 
-    const liable = form.taxable_turnover > QUARTERLY_THRESHOLD;
+    const aboveThreshold = threshold > 0 && form.liable_turnover >= threshold;
+    const currentFraction = SSCL_FRACTIONS[form.activity_type] ?? SSCL_FRACTIONS.manufacture;
 
     return (
         <Dialog open onOpenChange={onClose}>
@@ -226,35 +255,66 @@ function SSCLForm({ item, onClose }) {
                         <div><Label>SSCL Number</Label><Input value={form.sscl_number} disabled /></div>
                         <div><Label>Quarter *</Label><Input value={form.quarter} onChange={e => setForm(f => ({ ...f, quarter: e.target.value }))} placeholder="e.g. 2024-Q1" required /></div>
                     </div>
+
+                    <div>
+                        <Label>Activity Type *</Label>
+                        <Select value={form.activity_type} onValueChange={val => recalc(form.taxable_turnover, form.exempt_turnover, val)}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                                {Object.entries(SSCL_FRACTIONS).map(([key, { label, fraction }]) => (
+                                    <SelectItem key={key} value={key}>
+                                        {label} — {(fraction * 100).toFixed(0)}% liable
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label>Taxable Turnover (LKR)</Label>
+                            <Label>Gross Turnover (LKR) *</Label>
                             <Input type="number" step="0.01" value={form.taxable_turnover}
-                                onChange={e => recalc(parseFloat(e.target.value) || 0, form.exempt_turnover)} />
+                                onChange={e => recalc(parseFloat(e.target.value) || 0, form.exempt_turnover, form.activity_type)} />
                         </div>
                         <div>
                             <Label>Exempt Turnover (LKR)</Label>
                             <Input type="number" step="0.01" value={form.exempt_turnover}
-                                onChange={e => recalc(form.taxable_turnover, parseFloat(e.target.value) || 0)} />
+                                onChange={e => recalc(form.taxable_turnover, parseFloat(e.target.value) || 0, form.activity_type)} />
                         </div>
                     </div>
-                    <div className={`rounded-lg p-4 border space-y-2 text-sm ${liable ? "bg-orange-50 border-orange-200" : "bg-green-50 border-green-200"}`}>
-                        {!liable && (
+
+                    {/* Auditable breakdown */}
+                    <div className={`rounded-lg p-4 border space-y-2 text-sm ${aboveThreshold ? "bg-orange-50 border-orange-200" : "bg-green-50 border-green-200"}`}>
+                        {threshold > 0 && !aboveThreshold && (
                             <div className="flex items-center gap-2 text-green-700 font-semibold">
                                 <CheckCircle2 className="w-4 h-4" />
-                                Below LKR 120M threshold — SSCL not applicable this quarter
+                                Liable turnover below registration threshold — SSCL not applicable
                             </div>
                         )}
-                        {liable && (
-                            <div className="flex items-center gap-2 text-orange-700 font-semibold">
+                        {aboveThreshold && (
+                            <div className="flex items-center gap-2 text-orange-700 font-semibold mb-1">
                                 <AlertCircle className="w-4 h-4" />
-                                SSCL applies on turnover above LKR 120,000,000
+                                SSCL applies — liable turnover exceeds registration threshold
                             </div>
                         )}
-                        <div className="flex justify-between"><span>Total Turnover:</span><span className="font-semibold">{fmt(form.total_turnover)}</span></div>
-                        <div className="flex justify-between"><span>Threshold:</span><span>LKR 120,000,000.00</span></div>
-                        <div className="flex justify-between text-lg font-bold border-t pt-2"><span>SSCL @ 2.5%:</span><span className="text-orange-700">{fmt(form.sscl_amount)}</span></div>
+                        <div className="flex justify-between">
+                            <span>Gross Turnover:</span>
+                            <span className="font-semibold">{fmt(form.taxable_turnover)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span>Liable Fraction ({currentFraction.label}):</span>
+                            <span className="font-semibold">{(currentFraction.fraction * 100).toFixed(0)}%</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span>Liable Turnover:</span>
+                            <span className="font-semibold">{fmt(form.liable_turnover)}</span>
+                        </div>
+                        <div className="flex justify-between text-lg font-bold border-t pt-2">
+                            <span>SSCL @ {ssclRate}%:</span>
+                            <span className="text-orange-700">{fmt(form.sscl_amount)}</span>
+                        </div>
                     </div>
+
                     <div className="grid grid-cols-2 gap-4">
                         <div><Label>Due Date</Label><Input type="date" value={form.due_date} onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))} /></div>
                         <div>
@@ -494,6 +554,7 @@ export default function SriLankaTax() {
     const [editingItem, setEditingItem] = useState(null);
     const { toast } = useToast();
     const queryClient = useQueryClient();
+    const taxConfig = useTaxConfig();
 
     const { data: whtRecords = [] } = useQuery({
         queryKey: ["slWHT"],
@@ -543,7 +604,7 @@ export default function SriLankaTax() {
         { header: "SSCL #", key: "sscl_number" },
         { header: "Quarter", key: "quarter" },
         { header: "Taxable Turnover", key: "taxable_turnover", render: v => Number(v || 0).toLocaleString() },
-        { header: "SSCL @ 2.5%", key: "sscl_amount", render: v => Number(v || 0).toLocaleString() },
+        { header: `SSCL @ ${taxConfig.sscl_rate}%`, key: "sscl_amount", render: v => Number(v || 0).toLocaleString() },
         { header: "Status", key: "status", isBadge: true },
     ];
 
@@ -575,7 +636,7 @@ export default function SriLankaTax() {
                     <Building2 className="w-8 h-8 text-emerald-600" />
                     Sri Lanka Taxation
                 </h1>
-                <p className="text-gray-600 mt-1">VAT (18%), WHT, SSCL (2.5%), APIT, EPF/ETF compliance for Sri Lanka IRD</p>
+                <p className="text-gray-600 mt-1">VAT (18%), WHT, SSCL ({taxConfig.sscl_rate}%), APIT, EPF/ETF compliance for Sri Lanka IRD</p>
             </div>
 
             {/* Summary KPIs */}
@@ -597,14 +658,14 @@ export default function SriLankaTax() {
                 <Card className="border-l-4 border-l-orange-500">
                     <CardContent className="pt-4">
                         <p className="text-xs text-gray-500">SSCL Rate</p>
-                        <p className="text-2xl font-bold text-orange-700">2.5%</p>
-                        <p className="text-xs text-gray-500">Turnover &gt; LKR 120M/qtr</p>
+                        <p className="text-2xl font-bold text-orange-700">{taxConfig.sscl_rate}%</p>
+                        <p className="text-xs text-gray-500">Liable turnover</p>
                     </CardContent>
                 </Card>
                 <Card className="border-l-4 border-l-red-500">
                     <CardContent className="pt-4">
                         <p className="text-xs text-gray-500">WHT (Service Fees)</p>
-                        <p className="text-2xl font-bold text-red-700">14%</p>
+                        <p className="text-2xl font-bold text-red-700">{taxConfig.wht_service_fees}%</p>
                         <p className="text-xs text-gray-500">On payments &gt; LKR 50K/mo</p>
                     </CardContent>
                 </Card>
@@ -686,7 +747,7 @@ export default function SriLankaTax() {
                         </CardHeader>
                         <CardContent>
                             <div className="mb-4 p-3 bg-orange-50 border border-orange-200 rounded text-sm text-orange-800">
-                                SSCL at 2.5% applies on quarterly turnover exceeding LKR 120,000,000. Quarterly returns due by the 20th of the month following the quarter.
+                                SSCL at {taxConfig.sscl_rate}% applies on liable turnover (gross turnover × activity fraction). Quarterly returns due by the 20th of the month following the quarter.
                             </div>
                             <DataTable data={ssclRecords} columns={ssclColumns} getBadgeColor={getBadge}
                                 onEdit={handleEdit} onDelete={(item) => {

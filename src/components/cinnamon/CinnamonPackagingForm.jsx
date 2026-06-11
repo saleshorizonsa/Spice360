@@ -61,11 +61,15 @@ export default function CinnamonPackagingForm({ item, onClose }) {
     const handleChange = (field, value) =>
         setFormData((prev) => ({ ...prev, [field]: value }));
 
-    const selectedBatch  = batches.find((b) => b.batch_number === formData.batch_number);
-    const batchGrades    = gradingOutputs.filter((g) => g.batch_number === formData.batch_number);
+    const safeBatches        = Array.isArray(batches)        ? batches        : [];
+    const safeGradingOutputs = Array.isArray(gradingOutputs) ? gradingOutputs : [];
+    const safeProcessSteps   = Array.isArray(processSteps)   ? processSteps   : [];
+
+    const selectedBatch  = safeBatches.find((b) => b.batch_number === formData.batch_number);
+    const batchGrades    = safeGradingOutputs.filter((g) => g.batch_number === formData.batch_number);
 
     // Latest moisture QC reading for this batch
-    const latestMoistureStep = processSteps
+    const latestMoistureStep = safeProcessSteps
         .filter((s) => s.batch_number === formData.batch_number && s.stage === "moisture_qc")
         .sort((a, b) => new Date(b.completed_at || b.created_at) - new Date(a.completed_at || a.created_at))[0];
 
@@ -175,7 +179,7 @@ export default function CinnamonPackagingForm({ item, onClose }) {
                                     <SelectValue placeholder="Select batch" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {batches.map((b) => (
+                                    {safeBatches.map((b) => (
                                         <SelectItem key={b.id} value={b.batch_number}>
                                             {b.batch_number} — {b.supplier}
                                         </SelectItem>

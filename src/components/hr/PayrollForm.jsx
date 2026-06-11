@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,41 +10,49 @@ import { useToast } from "@/components/ui/use-toast";
 import { Shield } from "lucide-react";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
+import { useTaxConfig } from "@/hooks/useTaxConfig";
 
-// Sri Lanka statutory rates
-const EPF_EMPLOYEE_RATE = 8;   // % of gross — employee deduction
-const EPF_EMPLOYER_RATE = 12;  // % of gross — employer cost
-const ETF_EMPLOYER_RATE = 3;   // % of gross — employer cost only
-
-// APIT progressive tax brackets (annual income, LKR)
-const APIT_BRACKETS = [
-    { from: 0,       to: 1200000,  rate: 0,  taxOnLower: 0      },
-    { from: 1200000, to: 1800000,  rate: 6,  taxOnLower: 0      },
-    { from: 1800000, to: 3000000,  rate: 12, taxOnLower: 36000  },
-    { from: 3000000, to: 4200000,  rate: 18, taxOnLower: 180000 },
-    { from: 4200000, to: 6000000,  rate: 24, taxOnLower: 396000 },
-    { from: 6000000, to: Infinity, rate: 36, taxOnLower: 828000 },
+// Fallback APIT brackets — used only when SLTaxConfiguration.apit_brackets is unavailable
+const APIT_BRACKETS_FALLBACK = [
+    { from: 0,       to: 1200000,  rate: 0,  tax_on_lower: 0      },
+    { from: 1200000, to: 1800000,  rate: 6,  tax_on_lower: 0      },
+    { from: 1800000, to: 3000000,  rate: 12, tax_on_lower: 36000  },
+    { from: 3000000, to: 4200000,  rate: 18, tax_on_lower: 180000 },
+    { from: 4200000, to: 6000000,  rate: 24, tax_on_lower: 396000 },
+    { from: 6000000, to: Infinity, rate: 36, tax_on_lower: 828000 },
 ];
 
-function calcAPIT(annualIncome) {
-    if (annualIncome <= 1200000) return 0;
-    for (const b of APIT_BRACKETS) {
-        if (annualIncome <= b.to) {
-            return b.taxOnLower + (annualIncome - b.from) * (b.rate / 100);
+// brackets param: array of {from, to, rate, tax_on_lower} from SLTaxConfiguration
+function calcAPIT(annualIncome, brackets) {
+    if (!brackets || brackets.length === 0) return 0;
+    if (annualIncome <= (brackets[0]?.to ?? 0)) return 0;
+    for (const b of brackets) {
+        if (annualIncome <= (b.to ?? Infinity)) {
+            return (b.tax_on_lower ?? b.taxOnLower ?? 0) + (annualIncome - b.from) * (b.rate / 100);
         }
     }
-    const last = APIT_BRACKETS[APIT_BRACKETS.length - 1];
-    return last.taxOnLower + (annualIncome - last.from) * (last.rate / 100);
+    const last = brackets[brackets.length - 1];
+    return (last.tax_on_lower ?? last.taxOnLower ?? 0) + (annualIncome - last.from) * (last.rate / 100);
 }
 
-function calcMonthlyAPIT(monthlyGross) {
-    return calcAPIT(monthlyGross * 12) / 12;
+function calcMonthlyAPIT(monthlyGross, brackets) {
+    return calcAPIT(monthlyGross * 12, brackets) / 12;
 }
 
 export default function PayrollForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
+    const taxConfig = useTaxConfig();
+
+    // Memoised on JSON equality so array identity stays stable between renders
+    const brackets = useMemo(() => {
+        const cb = taxConfig.apit_brackets;
+        if (Array.isArray(cb) && cb.length > 0) return cb;
+        console.warn('[APIT] apit_brackets missing from SLTaxConfiguration — using hardcoded fallback');
+        return APIT_BRACKETS_FALLBACK;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [JSON.stringify(taxConfig.apit_brackets)]);
 
     const { data: employees = [] } = useQuery({
         queryKey: ["employees"],
@@ -78,10 +86,10 @@ export default function PayrollForm({ item, onClose }) {
         const other = parseFloat(formData.other_allowances) || 0;
 
         const gross = basic + transport + other;
-        const epfEmp = (gross * EPF_EMPLOYEE_RATE) / 100;
-        const epfEmployer = (gross * EPF_EMPLOYER_RATE) / 100;
-        const etf = (gross * ETF_EMPLOYER_RATE) / 100;
-        const apit = calcMonthlyAPIT(gross);
+        const epfEmp = (gross * taxConfig.epf_employee_rate) / 100;
+        const epfEmployer = (gross * taxConfig.epf_employer_rate) / 100;
+        const etf = (gross * taxConfig.etf_employer_rate) / 100;
+        const apit = calcMonthlyAPIT(gross, brackets);
         const otherDed = parseFloat(formData.other_deductions) || 0;
         const totalDed = epfEmp + apit + otherDed;
         const net = gross - totalDed;
@@ -101,6 +109,10 @@ export default function PayrollForm({ item, onClose }) {
         formData.transport_allowance,
         formData.other_allowances,
         formData.other_deductions,
+        taxConfig.epf_employee_rate,
+        taxConfig.epf_employer_rate,
+        taxConfig.etf_employer_rate,
+        brackets,
     ]);
 
     const handleEmployeeSelect = (empId) => {
@@ -251,7 +263,7 @@ export default function PayrollForm({ item, onClose }) {
                             Statutory Deductions (Auto-calculated)
                         </h4>
                         <div className="flex justify-between">
-                            <span>EPF Employee ({EPF_EMPLOYEE_RATE}%):</span>
+                            <span>EPF Employee ({taxConfig.epf_employee_rate}%):</span>
                             <span className="font-semibold text-red-700">− {fmt(formData.epf_employee)}</span>
                         </div>
                         <div className="flex justify-between">
@@ -273,11 +285,11 @@ export default function PayrollForm({ item, onClose }) {
                     <div className="bg-slate-50 p-4 rounded-lg border text-sm space-y-2">
                         <h4 className="font-semibold text-slate-700">Employer Statutory Cost (not deducted from employee)</h4>
                         <div className="flex justify-between">
-                            <span>EPF Employer ({EPF_EMPLOYER_RATE}%):</span>
+                            <span>EPF Employer ({taxConfig.epf_employer_rate}%):</span>
                             <span className="font-semibold text-blue-600">{fmt(formData.epf_employer)}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span>ETF Employer ({ETF_EMPLOYER_RATE}%):</span>
+                            <span>ETF Employer ({taxConfig.etf_employer_rate}%):</span>
                             <span className="font-semibold text-blue-600">{fmt(formData.etf_employer)}</span>
                         </div>
                         <div className="flex justify-between font-bold border-t pt-2">

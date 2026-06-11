@@ -10,15 +10,13 @@ import { useToast } from "@/components/ui/use-toast";
 import { Shield } from "lucide-react";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
-
-const EPF_EMPLOYEE_RATE = 8;   // % of gross
-const EPF_EMPLOYER_RATE = 12;  // % of gross
-const ETF_EMPLOYER_RATE = 3;   // % of gross (employer only)
+import { useTaxConfig } from "@/hooks/useTaxConfig";
 
 export default function EPFETFForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
+    const taxConfig = useTaxConfig();
 
     const { data: employees = [] } = useQuery({
         queryKey: ["employees"],
@@ -44,9 +42,9 @@ export default function EPFETFForm({ item, onClose }) {
 
     useEffect(() => {
         const gross = parseFloat(form.gross_salary) || 0;
-        const epfEmp = (gross * EPF_EMPLOYEE_RATE) / 100;
-        const epfEmployer = (gross * EPF_EMPLOYER_RATE) / 100;
-        const etfEmployer = (gross * ETF_EMPLOYER_RATE) / 100;
+        const epfEmp = (gross * taxConfig.epf_employee_rate) / 100;
+        const epfEmployer = (gross * taxConfig.epf_employer_rate) / 100;
+        const etfEmployer = (gross * taxConfig.etf_employer_rate) / 100;
         setForm(f => ({
             ...f,
             epf_employee: epfEmp,
@@ -55,7 +53,7 @@ export default function EPFETFForm({ item, onClose }) {
             total_epf: epfEmp + epfEmployer,
             total_employer_cost: epfEmployer + etfEmployer,
         }));
-    }, [form.gross_salary]);
+    }, [form.gross_salary, taxConfig.epf_employee_rate, taxConfig.epf_employer_rate, taxConfig.etf_employer_rate]);
 
     const handleEmployeeSelect = (empId) => {
         const emp = employees.find(e => e.employee_id === empId);
@@ -157,11 +155,11 @@ export default function EPFETFForm({ item, onClose }) {
                     <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 space-y-2 text-sm">
                         <h4 className="font-semibold text-emerald-900 mb-3">EPF Contributions (Employee Provident Fund)</h4>
                         <div className="flex justify-between">
-                            <span>Employee Contribution ({EPF_EMPLOYEE_RATE}% of gross):</span>
+                            <span>Employee Contribution ({taxConfig.epf_employee_rate}% of gross):</span>
                             <span className="font-semibold text-red-600">LKR {fmt(form.epf_employee)}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span>Employer Contribution ({EPF_EMPLOYER_RATE}% of gross):</span>
+                            <span>Employer Contribution ({taxConfig.epf_employer_rate}% of gross):</span>
                             <span className="font-semibold text-blue-600">LKR {fmt(form.epf_employer)}</span>
                         </div>
                         <div className="flex justify-between font-bold border-t pt-2">
@@ -174,7 +172,7 @@ export default function EPFETFForm({ item, onClose }) {
                     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-2 text-sm">
                         <h4 className="font-semibold text-blue-900 mb-3">ETF (Employee Trust Fund) — Employer Only</h4>
                         <div className="flex justify-between">
-                            <span>Employer ETF ({ETF_EMPLOYER_RATE}% of gross):</span>
+                            <span>Employer ETF ({taxConfig.etf_employer_rate}% of gross):</span>
                             <span className="font-semibold text-blue-600">LKR {fmt(form.etf_employer)}</span>
                         </div>
                         <p className="text-xs text-blue-700">No employee deduction. Employer bears full ETF cost.</p>

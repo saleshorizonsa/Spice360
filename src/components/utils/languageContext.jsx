@@ -239,7 +239,7 @@ export const translations = {
         monthlyDepreciation: "Monthly Depreciation", yearlyDepreciation: "Yearly Depreciation",
         payslip: "Payslip", attendanceRegister: "Attendance Register",
         leaveBalance: "Leave Balance", endOfServiceBenefit: "End of Service Benefit",
-        wps: "WPS", gosi: "EPF/ETF",
+        wps: "WPS",
         zatcaCompliant: "Tax Compliant", einvoicing: "E-Invoicing", qrCode: "QR Code",
         submissionStatus: "Submission Status", clearanceStatus: "Clearance Status",
         nationalityDistribution: "Nationality Distribution",

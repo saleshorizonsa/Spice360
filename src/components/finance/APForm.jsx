@@ -8,10 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { useTaxConfig } from "@/hooks/useTaxConfig";
 
 export default function APForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const taxConfig = useTaxConfig();
 
     const { data: vendors = [] } = useQuery({
         queryKey: ['vendors'],
@@ -48,13 +50,13 @@ export default function APForm({ item, onClose }) {
 
     useEffect(() => {
         const outstanding = (formData.invoice_amount || 0) - (formData.paid_amount || 0);
-        const vat = (formData.invoice_amount || 0) * 0.15;
-        setFormData(prev => ({ 
-            ...prev, 
+        const vat = (formData.invoice_amount || 0) * (taxConfig.vat_standard_rate / 100);
+        setFormData(prev => ({
+            ...prev,
             outstanding_amount: outstanding,
             vat_amount: vat
         }));
-    }, [formData.invoice_amount, formData.paid_amount]);
+    }, [formData.invoice_amount, formData.paid_amount, taxConfig.vat_standard_rate]);
 
     const handleVendorSelect = (vendorCode) => {
         const vendor = vendors.find(v => v.vendor_code === vendorCode);

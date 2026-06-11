@@ -50,6 +50,8 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
     const yieldPct = inputKg > 0 ? ((outputKg / inputKg) * 100).toFixed(1) : null;
     const isOverweight = outputKg + wasteKg > inputKg && inputKg > 0;
 
+    const safeBatches = Array.isArray(batches) ? batches : [];
+
     const saveMutation = useMutation({
         mutationFn: async (data) => {
             const step = await (isEdit
@@ -57,7 +59,7 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
                 : matrixSales.entities.CinnamonProcessStep.create(data));
 
             if (!isEdit) {
-                const batch = batches.find((b) => b.batch_number === data.batch_number);
+                const batch = safeBatches.find((b) => b.batch_number === data.batch_number);
                 if (batch) {
                     await matrixSales.entities.CinnamonBatch.update(batch.id, {
                         current_stage: data.stage,
@@ -114,7 +116,7 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
                                     <SelectValue placeholder="Select batch" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {batches.map((b) => (
+                                    {safeBatches.map((b) => (
                                         <SelectItem key={b.id} value={b.batch_number}>
                                             {b.batch_number} — {b.supplier}
                                         </SelectItem>
