@@ -11,12 +11,14 @@ import { Shield } from "lucide-react";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
+import { useGLAccounts } from "@/hooks/useGLAccounts";
 
 export default function EPFETFForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
     const taxConfig = useTaxConfig();
+    const gl = useGLAccounts();
 
     const { data: employees = [] } = useQuery({
         queryKey: ["employees"],
@@ -77,11 +79,11 @@ export default function EPFETFForm({ item, onClose }) {
                 try {
                     await postJournalEntry({
                         lines: [
-                            { account_code: "5100", account_name: "Salaries & Wages", debit: saved.gross_salary, credit: 0 },
-                            { account_code: "5210", account_name: "EPF Employer Contribution", debit: saved.epf_employer, credit: 0 },
-                            { account_code: "5220", account_name: "ETF Employer Contribution", debit: saved.etf_employer, credit: 0 },
-                            { account_code: "2420", account_name: "EPF Payable", debit: 0, credit: saved.total_epf },
-                            { account_code: "2430", account_name: "ETF Payable", debit: 0, credit: saved.etf_employer },
+                            { account_code: gl.salaries_expense, account_name: "Salaries & Wages",          debit: saved.gross_salary, credit: 0 },
+                            { account_code: gl.epf_employer_exp, account_name: "EPF Employer Contribution", debit: saved.epf_employer, credit: 0 },
+                            { account_code: gl.etf_employer_exp, account_name: "ETF Employer Contribution", debit: saved.etf_employer, credit: 0 },
+                            { account_code: gl.epf_payable,      account_name: "EPF Payable",               debit: 0, credit: saved.total_epf },
+                            { account_code: gl.etf_payable,      account_name: "ETF Payable",               debit: 0, credit: saved.etf_employer },
                         ].filter(l => Number(l.debit || l.credit || 0) > 0),
                         referenceType: "epf_etf",
                         referenceId: saved.contribution_id,

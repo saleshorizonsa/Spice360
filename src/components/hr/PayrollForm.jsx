@@ -11,6 +11,7 @@ import { Shield } from "lucide-react";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
+import { useGLAccounts } from "@/hooks/useGLAccounts";
 
 // Fallback APIT brackets — used only when SLTaxConfiguration.apit_brackets is unavailable
 const APIT_BRACKETS_FALLBACK = [
@@ -44,6 +45,7 @@ export default function PayrollForm({ item, onClose }) {
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
     const taxConfig = useTaxConfig();
+    const gl = useGLAccounts();
 
     // Memoised on JSON equality so array identity stays stable between renders
     const brackets = useMemo(() => {
@@ -167,13 +169,13 @@ export default function PayrollForm({ item, onClose }) {
                 try {
                     await postJournalEntry({
                         lines: [
-                            { account_code: "5100", account_name: "Salaries & Wages", debit: saved.gross_earnings, credit: 0 },
-                            { account_code: "5210", account_name: "EPF Employer Contribution", debit: saved.epf_employer, credit: 0 },
-                            { account_code: "5220", account_name: "ETF Employer Contribution", debit: saved.etf_employer, credit: 0 },
-                            { account_code: "2410", account_name: "Salaries Payable", debit: 0, credit: saved.net_salary },
-                            { account_code: "2420", account_name: "EPF Payable", debit: 0, credit: saved.epf_employee + saved.epf_employer },
-                            { account_code: "2430", account_name: "ETF Payable", debit: 0, credit: saved.etf_employer },
-                            { account_code: "2310", account_name: "APIT Payable (IRD)", debit: 0, credit: saved.apit_tax },
+                            { account_code: gl.salaries_expense,  account_name: "Salaries & Wages",           debit: saved.gross_earnings,                  credit: 0 },
+                            { account_code: gl.epf_employer_exp,  account_name: "EPF Employer Contribution",  debit: saved.epf_employer,                    credit: 0 },
+                            { account_code: gl.etf_employer_exp,  account_name: "ETF Employer Contribution",  debit: saved.etf_employer,                    credit: 0 },
+                            { account_code: gl.salaries_payable,  account_name: "Salaries Payable",           debit: 0, credit: saved.net_salary },
+                            { account_code: gl.epf_payable,       account_name: "EPF Payable",               debit: 0, credit: saved.epf_employee + saved.epf_employer },
+                            { account_code: gl.etf_payable,       account_name: "ETF Payable",               debit: 0, credit: saved.etf_employer },
+                            { account_code: gl.apit_payable,      account_name: "APIT Payable (IRD)",        debit: 0, credit: saved.apit_tax },
                         ].filter(l => Number(l.debit || l.credit || 0) > 0),
                         referenceType: "payroll",
                         referenceId: saved.payroll_number,

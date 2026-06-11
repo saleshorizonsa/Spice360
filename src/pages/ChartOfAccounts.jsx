@@ -117,6 +117,34 @@ export async function seedChartOfAccounts(orgId) {
   return { inserted: toInsert.length, skipped: existingCodes.size };
 }
 
+const GL_MAPPING_DEFAULTS = {
+  ar_receivables:     "1100",
+  sales_revenue:      "4001",
+  vat_output:         "2200",
+  cogs_general:       "5001",
+  vat_input:          "2210",
+  trade_payables:     "2100",
+  salaries_expense:   "5100",
+  epf_employer_exp:   "5210",
+  etf_employer_exp:   "5220",
+  salaries_payable:   "2410",
+  epf_payable:        "2420",
+  etf_payable:        "2430",
+  apit_payable:       "2310",
+  cash_bank:          "1010",
+  depreciation_exp:   "5500",
+  accum_depreciation: "1410",
+  wht_expense:        "5900",
+  wht_net_payable:    "2100",
+};
+
+export async function seedGLAccountMapping(orgId) {
+  const existing = await matrixSales.entities.GLAccountMapping.filter({ organization_id: orgId });
+  if (existing && existing.length > 0) return { inserted: 0, skipped: 1 };
+  await matrixSales.entities.GLAccountMapping.create({ ...GL_MAPPING_DEFAULTS, organization_id: orgId });
+  return { inserted: 1, skipped: 0 };
+}
+
 function AccountForm({ account, accounts, orgId, onClose }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -294,6 +322,19 @@ export default function ChartOfAccounts() {
     },
   });
 
+  const glSeedMutation = useMutation({
+    mutationFn: () => seedGLAccountMapping(orgId),
+    onSuccess: ({ inserted, skipped }) => {
+      toast({
+        title: "GL account mapping seeded",
+        description: inserted ? "Default GL mapping created." : "GL mapping already exists — skipped.",
+      });
+    },
+    onError: (error) => {
+      toast({ title: "GL mapping seed failed", description: error.message, variant: "destructive" });
+    },
+  });
+
   return (
     <div className="space-y-6 p-6" dir={isRTL ? "rtl" : "ltr"}>
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -305,6 +346,10 @@ export default function ChartOfAccounts() {
           <Button variant="outline" onClick={() => seedMutation.mutate()} disabled={!orgId || seedMutation.isPending}>
             <FolderTree className="mr-2 h-4 w-4" />
             Seed Sri Lanka CoA
+          </Button>
+          <Button variant="outline" onClick={() => glSeedMutation.mutate()} disabled={!orgId || glSeedMutation.isPending}>
+            <FolderTree className="mr-2 h-4 w-4" />
+            Seed GL Mapping
           </Button>
           <Button onClick={() => { setEditing(null); setShowForm(true); }}>
             <Plus className="mr-2 h-4 w-4" />

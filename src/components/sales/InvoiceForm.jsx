@@ -15,6 +15,7 @@ import { useToast } from "@/components/ui/use-toast";
 import DocumentList from "../shared/DocumentList";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
+import { useGLAccounts } from "@/hooks/useGLAccounts";
 import { useSubscription } from "@/lib/SubscriptionContext";
 
 export default function InvoiceForm({ item, onClose }) {
@@ -22,6 +23,7 @@ export default function InvoiceForm({ item, onClose }) {
     const { atInvoiceLimit, invoiceLimit } = useSubscription();
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
+    const gl = useGLAccounts();
     const [activeTab, setActiveTab] = useState("details");
     
     const { data: salesOrders = [] } = useQuery({
@@ -146,9 +148,9 @@ export default function InvoiceForm({ item, onClose }) {
                 try {
                     await postJournalEntry({
                         lines: [
-                            { account_code: '1100', account_name: 'Trade Receivables', debit: savedInvoice.total_amount, credit: 0 },
-                            { account_code: '4001', account_name: 'Sales Revenue', debit: 0, credit: savedInvoice.subtotal },
-                            { account_code: '2200', account_name: 'VAT Payable', debit: 0, credit: savedInvoice.tax_amount || savedInvoice.vat_amount || 0 }
+                            { account_code: gl.ar_receivables, account_name: 'Trade Receivables', debit: savedInvoice.total_amount, credit: 0 },
+                            { account_code: gl.sales_revenue,  account_name: 'Sales Revenue',     debit: 0, credit: savedInvoice.subtotal },
+                            { account_code: gl.vat_output,     account_name: 'VAT Payable',       debit: 0, credit: savedInvoice.tax_amount || savedInvoice.vat_amount || 0 }
                         ].filter(line => Number(line.debit || line.credit || 0) > 0),
                         referenceType: 'sales_invoice',
                         referenceId: savedInvoice.invoice_number,

@@ -10,11 +10,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
+import { useGLAccounts } from "@/hooks/useGLAccounts";
 
 export default function PaymentForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
+    const gl = useGLAccounts();
 
     const { data: banks = [] } = useQuery({
         queryKey: ['banks'],
@@ -60,12 +62,12 @@ export default function PaymentForm({ item, onClose }) {
                     await postJournalEntry({
                         lines: isIncoming
                             ? [
-                                { account_code: '1010', account_name: 'Cash & Bank', debit: savedPayment.amount, credit: 0 },
-                                { account_code: '1100', account_name: 'Trade Receivables', debit: 0, credit: savedPayment.amount }
+                                { account_code: gl.cash_bank,       account_name: 'Cash & Bank',       debit: savedPayment.amount, credit: 0 },
+                                { account_code: gl.ar_receivables,  account_name: 'Trade Receivables', debit: 0, credit: savedPayment.amount }
                             ]
                             : [
-                                { account_code: '2100', account_name: 'Trade Payables', debit: savedPayment.amount, credit: 0 },
-                                { account_code: '1010', account_name: 'Cash & Bank', debit: 0, credit: savedPayment.amount }
+                                { account_code: gl.trade_payables, account_name: 'Trade Payables', debit: savedPayment.amount, credit: 0 },
+                                { account_code: gl.cash_bank,      account_name: 'Cash & Bank',    debit: 0, credit: savedPayment.amount }
                             ],
                         referenceType: isIncoming ? 'customer_payment' : 'vendor_payment',
                         referenceId: savedPayment.payment_number,

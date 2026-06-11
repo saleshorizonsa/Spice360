@@ -28,6 +28,7 @@ import { usePermissions, PermissionGate } from "../components/utils/usePermissio
 import { useLanguage } from "../components/utils/languageContext";
 import { useOrganization } from "../components/utils/OrganizationContext";
 import { postJournalEntry } from "../components/utils/journalService";
+import { useGLAccounts } from "@/hooks/useGLAccounts";
 
 export default function FixedAssets() {
     const [activeTab, setActiveTab] = useState("assets");
@@ -49,6 +50,7 @@ export default function FixedAssets() {
     const { hasPermission, isAdmin, loading: permissionsLoading } = usePermissions();
     const { t } = useLanguage();
     const { currentOrg } = useOrganization();
+    const gl = useGLAccounts();
 
     const { data: assets = [] } = useQuery({
         queryKey: ['assets'],
@@ -155,8 +157,8 @@ export default function FixedAssets() {
             if (totalDepreciation > 0) {
                 await postJournalEntry({
                     lines: [
-                        { account_code: '5500', account_name: 'Depreciation Expense', debit: totalDepreciation, credit: 0 },
-                        { account_code: '1410', account_name: 'Accumulated Depreciation', debit: 0, credit: totalDepreciation }
+                        { account_code: gl.depreciation_exp,   account_name: 'Depreciation Expense',      debit: totalDepreciation, credit: 0 },
+                        { account_code: gl.accum_depreciation, account_name: 'Accumulated Depreciation',  debit: 0, credit: totalDepreciation }
                     ],
                     referenceType: 'asset_depreciation',
                     referenceId: `${fiscalYear}-${period}`,

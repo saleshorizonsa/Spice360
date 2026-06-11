@@ -15,6 +15,7 @@ import DataTable from "@/components/erp/DataTable";
 import { useOrganization } from "@/components/utils/OrganizationContext";
 import { postJournalEntry } from "@/components/utils/journalService";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
+import { useGLAccounts } from "@/hooks/useGLAccounts";
 
 const fmt = (n) => `LKR ${Number(n || 0).toLocaleString("en-LK", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -49,6 +50,7 @@ function WHTForm({ item, onClose }) {
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
     const taxConfig = useTaxConfig();
+    const gl = useGLAccounts();
 
     const WHT_RATES = {
         dividends:     taxConfig.wht_dividends,
@@ -98,9 +100,9 @@ function WHTForm({ item, onClose }) {
                 try {
                     await postJournalEntry({
                         lines: [
-                            { account_code: "2310", account_name: "WHT Payable (IRD)", debit: 0, credit: saved.wht_amount },
-                            { account_code: "2000", account_name: "Accounts Payable", debit: 0, credit: saved.net_payment },
-                            { account_code: "5900", account_name: "Gross Payment Expense", debit: saved.gross_payment, credit: 0 },
+                            { account_code: gl.apit_payable,    account_name: "WHT Payable (IRD)",      debit: 0, credit: saved.wht_amount },
+                            { account_code: gl.wht_net_payable, account_name: "Trade Payables",         debit: 0, credit: saved.net_payment },
+                            { account_code: gl.wht_expense,     account_name: "Gross Payment Expense",  debit: saved.gross_payment, credit: 0 },
                         ].filter(l => Number(l.debit || l.credit || 0) > 0),
                         referenceType: "wht",
                         referenceId: saved.wht_number,

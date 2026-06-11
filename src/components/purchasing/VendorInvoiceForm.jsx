@@ -13,12 +13,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
+import { useGLAccounts } from "@/hooks/useGLAccounts";
 
 export default function VendorInvoiceForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
     const taxConfig = useTaxConfig();
+    const gl = useGLAccounts();
 
     const { data: pos = [] } = useQuery({
         queryKey: ['purchaseOrders'],
@@ -152,9 +154,9 @@ export default function VendorInvoiceForm({ item, onClose }) {
                 try {
                     await postJournalEntry({
                         lines: [
-                            { account_code: '5001', account_name: 'Cost of Goods Sold', debit: savedInvoice.subtotal, credit: 0 },
-                            { account_code: '2210', account_name: 'VAT Receivable', debit: savedInvoice.vat_amount || 0, credit: 0 },
-                            { account_code: '2100', account_name: 'Trade Payables', debit: 0, credit: savedInvoice.total_amount }
+                            { account_code: gl.cogs_general,   account_name: 'Cost of Goods Sold', debit: savedInvoice.subtotal,          credit: 0 },
+                            { account_code: gl.vat_input,      account_name: 'VAT Receivable',      debit: savedInvoice.vat_amount || 0,   credit: 0 },
+                            { account_code: gl.trade_payables, account_name: 'Trade Payables',      debit: 0, credit: savedInvoice.total_amount }
                         ].filter(line => Number(line.debit || line.credit || 0) > 0),
                         referenceType: 'vendor_invoice',
                         referenceId: savedInvoice.vendor_invoice_number,
