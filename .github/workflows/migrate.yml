@@ -1,0 +1,21 @@
+name: Run Supabase Migrations
+
+on:
+  workflow_dispatch:
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run migrations via psql
+        env:
+          PGPASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          cat supabase/migrations/*.sql | psql \
+            "postgresql://postgres@db.kvrwpvavqmcliiuaczvy.supabase.co:5432/postgres" \
+            --set ON_ERROR_STOP=off \
+            -v ON_ERROR_STOP=off
