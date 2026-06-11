@@ -145,7 +145,11 @@ const periodControlledEntityConfig = {
   Timesheet: { module: 'projects', dateFields: ['timesheet_date', 'week_start', 'posting_date'] },
   VATReturn: { module: 'compliance', dateFields: ['period_start', 'filing_date', 'document_date'] },
   ZATCASubmissionLog: { module: 'compliance', dateFields: ['submission_date', 'invoice_date', 'document_date'] },
-  ZakatComputation: { module: 'compliance', dateFields: ['period_start', 'computation_date'] }
+  ZakatComputation: { module: 'compliance', dateFields: ['period_start', 'computation_date'] },
+  SLEPFContribution: { module: 'hr', dateFields: ['period_month', 'due_date'] },
+  SLWHTReturn: { module: 'compliance', dateFields: ['period_month', 'due_date'] },
+  SLSSCLReturn: { module: 'compliance', dateFields: ['due_date'] },
+  SLVATReturn: { module: 'compliance', dateFields: ['period_month', 'due_date'] }
 };
 
 const lockedRecordStatusValues = new Set([

@@ -12,14 +12,15 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
 import { Building2, Globe, CreditCard, Phone, Save, RefreshCw, Image } from "lucide-react";
 
-const COUNTRIES = ["Saudi Arabia", "UAE", "Kuwait", "Bahrain", "Oman", "Qatar", "Egypt", "Jordan", "Lebanon", "Other"];
+const COUNTRIES = ["Sri Lanka", "Saudi Arabia", "UAE", "Kuwait", "Bahrain", "Oman", "Qatar", "Egypt", "Jordan", "Lebanon", "Other"];
 const CURRENCIES = [
+    { value: "LKR", label: "LKR — Sri Lanka Rupee" },
     { value: "SAR", label: "SAR — Saudi Riyal" },
     { value: "USD", label: "USD — US Dollar" },
     { value: "EUR", label: "EUR — Euro" },
     { value: "AED", label: "AED — UAE Dirham" },
     { value: "KWD", label: "KWD — Kuwaiti Dinar" },
-    { value: "BHD", label: "BHD — Bahraini Dinar" },
+    { value: "GBP", label: "GBP — British Pound" },
 ];
 const LANGUAGES = [
     { value: "en", label: "English" },
@@ -39,8 +40,9 @@ const EMPTY = {
     organization_name_ar: "",
     company_legal_name: "",
     vat_number: "",
+    tin_number: "",
     cr_number: "",
-    country: "Saudi Arabia",
+    country: "Sri Lanka",
     city: "",
     address: "",
     contact_name: "",
@@ -48,7 +50,7 @@ const EMPTY = {
     contact_phone: "",
     website: "",
     logo_url: "",
-    currency: "SAR",
+    currency: "LKR",
     preferred_language: "en",
     fiscal_year_start_month: "1",
     bank_name: "",
@@ -180,11 +182,14 @@ export default function OrganizationSettings() {
                     <Field label="Legal Company Name" fullWidth>
                         <Input value={form.company_legal_name} onChange={set("company_legal_name")} placeholder="ACME Trading Company Ltd." />
                     </Field>
-                    <Field label="VAT Registration Number">
-                        <Input value={form.vat_number} onChange={set("vat_number")} placeholder="300000000000003" />
+                    <Field label="VAT Registration Number (IRD)">
+                        <Input value={form.vat_number} onChange={set("vat_number")} placeholder="e.g. 000-000-000" />
                     </Field>
-                    <Field label="Commercial Registration (CR) Number">
-                        <Input value={form.cr_number} onChange={set("cr_number")} placeholder="1010123456" />
+                    <Field label="Tax Identification Number (TIN)">
+                        <Input value={form.tin_number} onChange={set("tin_number")} placeholder="e.g. 000000000" />
+                    </Field>
+                    <Field label="Business Registration Number (BRC)">
+                        <Input value={form.cr_number} onChange={set("cr_number")} placeholder="e.g. PV/00000" />
                     </Field>
                     <Field label="Business Activity" fullWidth>
                         <Input value={form.business_activity} onChange={set("business_activity")} placeholder="Trading, Manufacturing, Services…" />

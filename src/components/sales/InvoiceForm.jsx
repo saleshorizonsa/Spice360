@@ -50,7 +50,8 @@ export default function InvoiceForm({ item, onClose }) {
         quantity: 0,
         unit_price: 0,
         subtotal: 0,
-        tax_percent: 0,
+        tax_type: 'standard',
+        tax_percent: 18,
         tax_amount: 0,
         total_amount: 0,
         payment_terms: 'net_30',
@@ -74,17 +75,29 @@ export default function InvoiceForm({ item, onClose }) {
         }
     }, [item]);
 
+    const TAX_TYPES = {
+        standard:  { label: "Standard Rate (18%)", rate: 18 },
+        export:    { label: "Export — Zero Rated (0%)", rate: 0 },
+        exempt:    { label: "Exempt (0%)", rate: 0 },
+        outside:   { label: "Outside Scope (0%)", rate: 0 },
+    };
+
     useEffect(() => {
         const subtotal = (formData.quantity || 0) * (formData.unit_price || 0);
         const taxAmount = subtotal * ((formData.tax_percent || 0) / 100);
         const total = subtotal + taxAmount;
-        setFormData(prev => ({ 
-            ...prev, 
-            subtotal, 
+        setFormData(prev => ({
+            ...prev,
+            subtotal,
             tax_amount: taxAmount,
-            total_amount: total 
+            total_amount: total
         }));
     }, [formData.quantity, formData.unit_price, formData.tax_percent]);
+
+    const handleTaxTypeChange = (taxType) => {
+        const rate = TAX_TYPES[taxType]?.rate ?? 18;
+        setFormData(prev => ({ ...prev, tax_type: taxType, tax_percent: rate }));
+    };
 
     const handleSalesOrderSelect = (orderNumber) => {
         const selectedOrder = salesOrders.find(o => o.order_number === orderNumber);
@@ -192,7 +205,7 @@ export default function InvoiceForm({ item, onClose }) {
         const vatNo = org.vat_registration_number || '';
         const crNo = org.cr_number || '';
         const address = [org.address_line1, org.city, org.country].filter(Boolean).join(', ');
-        const fmt = (n) => Number(n || 0).toLocaleString('en-SA', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        const fmt = (n) => Number(n || 0).toLocaleString('en-LK', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         const printWindow = window.open('', '_blank');
         printWindow.document.write(`<!DOCTYPE html>
 <html lang="en" dir="ltr">
@@ -246,7 +259,7 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
     <div class="brand-meta">${vatNo ? `VAT: ${vatNo}<br>` : ''}${crNo ? `CR: ${crNo}<br>` : ''}${address}</div>
   </div>
   <div class="inv-title">
-    <h1>TAX INVOICE<span>فاتورة ضريبية</span></h1>
+    <h1>TAX INVOICE</h1>
     <div class="inv-no"># ${formData.invoice_number}</div>
     <div class="inv-date">Date: ${formData.invoice_date} &nbsp;|&nbsp; Due: ${formData.due_date || '—'}</div>
   </div>
@@ -264,7 +277,7 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
   </div>
 </div>
 <table>
-  <thead><tr><th>#</th><th>Description / الوصف</th><th style="text-align:right">Qty</th><th style="text-align:right">Unit Price (SAR)</th><th style="text-align:right">Amount (SAR)</th></tr></thead>
+  <thead><tr><th>#</th><th>Description / الوصف</th><th style="text-align:right">Qty</th><th style="text-align:right">Unit Price (LKR)</th><th style="text-align:right">Amount (LKR)</th></tr></thead>
   <tbody>
     <tr>
       <td>1</td>
@@ -277,11 +290,11 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
 </table>
 <div class="totals-wrap">
   <table class="tot">
-    <tr><td>Subtotal / قبل الضريبة</td><td>SAR ${fmt(formData.subtotal)}</td></tr>
-    <tr><td>VAT (${formData.tax_percent}%) / ضريبة القيمة المضافة</td><td>SAR ${fmt(formData.tax_amount)}</td></tr>
-    ${Number(formData.discount_amount) > 0 ? `<tr><td>Discount / خصم</td><td>− SAR ${fmt(formData.discount_amount)}</td></tr>` : ''}
-    <tr class="tot-grand"><td>Total / الإجمالي</td><td>SAR ${fmt(formData.total_amount)}</td></tr>
-    ${Number(formData.amount_paid) > 0 ? `<tr><td>Paid / مدفوع</td><td>SAR ${fmt(formData.amount_paid)}</td></tr><tr><td>Balance Due / الرصيد المستحق</td><td>SAR ${fmt(Number(formData.total_amount) - Number(formData.amount_paid))}</td></tr>` : ''}
+    <tr><td>Subtotal / قبل الضريبة</td><td>LKR ${fmt(formData.subtotal)}</td></tr>
+    <tr><td>VAT (${formData.tax_percent}%)</td><td>LKR ${fmt(formData.tax_amount)}</td></tr>
+    ${Number(formData.discount_amount) > 0 ? `<tr><td>Discount / خصم</td><td>− LKR ${fmt(formData.discount_amount)}</td></tr>` : ''}
+    <tr class="tot-grand"><td>Total / الإجمالي</td><td>LKR ${fmt(formData.total_amount)}</td></tr>
+    ${Number(formData.amount_paid) > 0 ? `<tr><td>Paid / مدفوع</td><td>LKR ${fmt(formData.amount_paid)}</td></tr><tr><td>Balance Due / الرصيد المستحق</td><td>LKR ${fmt(Number(formData.total_amount) - Number(formData.amount_paid))}</td></tr>` : ''}
   </table>
 </div>
 <div class="inv-footer">
@@ -339,7 +352,7 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
                                         <SelectContent>
                                             {deliveredOrders.map(o => (
                                                 <SelectItem key={o.id} value={o.order_number}>
-                                                    {o.order_number} - {o.customer_name} - SAR {parseFloat(o.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                                    {o.order_number} - {o.customer_name} - LKR {parseFloat(o.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                                 </SelectItem>
                                             ))}
                                             {deliveredOrders.length === 0 && (
@@ -470,7 +483,7 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
                                         />
                                     </div>
                                     <div>
-                                        <Label>Unit Price *</Label>
+                                        <Label>Unit Price (LKR) *</Label>
                                         <Input
                                             type="number"
                                             step="0.01"
@@ -481,29 +494,37 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
                                         />
                                     </div>
                                     <div>
-                                        <Label>Tax %</Label>
-                                        <Input
-                                            type="number"
-                                            step="0.01"
-                                            value={formData.tax_percent}
-                                            onChange={(e) => handleChange('tax_percent', parseFloat(e.target.value) || 0)}
-                                        />
+                                        <Label>VAT Type</Label>
+                                        <Select
+                                            value={formData.tax_type || 'standard'}
+                                            onValueChange={handleTaxTypeChange}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="standard">Standard 18%</SelectItem>
+                                                <SelectItem value="export">Export 0%</SelectItem>
+                                                <SelectItem value="exempt">Exempt 0%</SelectItem>
+                                                <SelectItem value="outside">Outside Scope 0%</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </div>
                                 </div>
 
                                 <div className="bg-gray-50 p-4 rounded-lg space-y-2">
                                     <div className="flex justify-between">
                                         <span className="text-gray-600">Subtotal:</span>
-                                        <span className="font-semibold">SAR {formData.subtotal.toFixed(2)}</span>
+                                        <span className="font-semibold">LKR {formData.subtotal.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between">
-                                        <span className="text-gray-600">Tax:</span>
-                                        <span className="font-semibold">SAR {formData.tax_amount.toFixed(2)}</span>
+                                        <span className="text-gray-600">VAT ({formData.tax_percent}%):</span>
+                                        <span className="font-semibold">LKR {formData.tax_amount.toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-lg border-t pt-2">
                                         <span className="font-bold">Total Amount:</span>
                                         <span className="font-bold text-emerald-600">
-                                            SAR {formData.total_amount.toFixed(2)}
+                                            LKR {formData.total_amount.toFixed(2)}
                                         </span>
                                     </div>
                                 </div>

@@ -97,6 +97,7 @@ import Profile from './pages/Profile';
 import OrganizationSettings from './pages/OrganizationSettings';
 import AuditTrail from './pages/AuditTrail';
 import CinnamonProcessing from './pages/CinnamonProcessing';
+import SriLankaTax from './pages/SriLankaTax';
 import __Layout from './Layout.jsx';
 
 
@@ -151,6 +152,7 @@ export const PAGES = {
     "OrganizationSettings": OrganizationSettings,
     "AuditTrail": AuditTrail,
     "CinnamonProcessing": CinnamonProcessing,
+    "SriLankaTax": SriLankaTax,
 }
 
 export const pagesConfig = {

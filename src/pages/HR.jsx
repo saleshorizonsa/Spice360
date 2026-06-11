@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, Calendar, DollarSign, UserCheck, Shield, Calculator } from "lucide-react";
+import { Plus, Users, DollarSign, Shield, Calculator } from "lucide-react";
 import DataTable from "@/components/erp/DataTable";
 import { useToast } from "@/components/ui/use-toast";
 import EmployeeForm from "@/components/hr/EmployeeForm";
@@ -12,15 +12,13 @@ import LeaveRequestForm from "@/components/hr/LeaveRequestForm";
 import PayrollForm from "@/components/hr/PayrollForm";
 import LoanAdvanceForm from "@/components/hr/LoanAdvanceForm";
 import EOSForm from "@/components/hr/EOSForm";
-import GOSIContributionForm from "@/components/hr/GOSIContributionForm";
-import GOSIBulkCalculation from "@/components/hr/GOSIBulkCalculation";
+import EPFETFForm from "@/components/hr/EPFETFForm";
 import { Clock, CheckCircle, XCircle } from "lucide-react";
 import { useLanguage } from "@/components/utils/languageContext";
 
 export default function HR() {
     const [activeTab, setActiveTab] = useState("employees");
     const [showDialog, setShowDialog] = useState(false);
-    const [showBulkGOSI, setShowBulkGOSI] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const queryClient = useQueryClient();
     const { toast } = useToast();
@@ -56,20 +54,18 @@ export default function HR() {
         initialData: []
     });
 
-    const { data: gosiContributions = [] } = useQuery({
-        queryKey: ['gosiContributions'],
-        queryFn: () => matrixSales.entities.GOSIContribution.list('-month'),
+    const { data: epfContributions = [] } = useQuery({
+        queryKey: ['epfContributions'],
+        queryFn: () => matrixSales.entities.SLEPFContribution.list('-period_month'),
         initialData: []
     });
 
     // KPIs
     const activeEmployees = employees.filter(e => e.employment_status === 'active').length;
-    const saudiEmployees = employees.filter(e => e.is_saudi && e.employment_status === 'active').length;
-    const saudizationRate = activeEmployees > 0 ? Math.round((saudiEmployees / activeEmployees) * 100) : 0;
     const pendingLeaves = leaveRequests.filter(l => l.status === 'submitted').length;
     const pendingPayrolls = payrolls.filter(p => p.status === 'draft' || p.status === 'calculated').length;
     const activeLoans = loans.filter(l => l.status === 'active').length;
-    const currentMonthGOSI = gosiContributions.filter(g => g.month === new Date().toISOString().substring(0, 7) && g.status === 'calculated').length;
+    const currentMonthEPF = epfContributions.filter(g => g.period_month === new Date().toISOString().substring(0, 7) && g.status === 'calculated').length;
 
     const deleteMutation = useMutation({
         mutationFn: ({ entity, id }) => matrixSales.entities[entity].delete(id),
@@ -115,7 +111,7 @@ export default function HR() {
         { header: "Designation", key: "designation" },
         { header: "Nationality", key: "nationality" },
         { header: "Joining Date", key: "joining_date" },
-        { header: "Basic Salary", key: "basic_salary", render: (val) => `SAR ${val?.toLocaleString()}` },
+        { header: "Basic Salary", key: "basic_salary", render: (val) => `LKR ${val?.toLocaleString()}` },
         { header: "Status", key: "employment_status", isBadge: true }
     ];
 
@@ -164,9 +160,9 @@ export default function HR() {
         { header: "Payroll #", key: "payroll_number" },
         { header: "Month", key: "payroll_month" },
         { header: "Employee", key: "employee_name" },
-        { header: "Gross", key: "gross_earnings", render: (val) => `SAR ${val?.toLocaleString()}` },
-        { header: "Deductions", key: "total_deductions", render: (val) => `SAR ${val?.toLocaleString()}` },
-        { header: "Net Salary", key: "net_salary", render: (val) => `SAR ${val?.toLocaleString()}` },
+        { header: "Gross", key: "gross_earnings", render: (val) => `LKR ${val?.toLocaleString()}` },
+        { header: "Deductions", key: "total_deductions", render: (val) => `LKR ${val?.toLocaleString()}` },
+        { header: "Net Salary", key: "net_salary", render: (val) => `LKR ${val?.toLocaleString()}` },
         { header: "Status", key: "status", isBadge: true }
     ];
 
@@ -174,9 +170,9 @@ export default function HR() {
         { header: "Loan #", key: "loan_number" },
         { header: "Employee", key: "employee_name" },
         { header: "Type", key: "loan_type" },
-        { header: "Approved", key: "amount_approved", render: (val) => `SAR ${val?.toLocaleString()}` },
-        { header: "Repaid", key: "amount_repaid", render: (val) => `SAR ${val?.toLocaleString()}` },
-        { header: "Outstanding", key: "balance_outstanding", render: (val) => `SAR ${val?.toLocaleString()}` },
+        { header: "Approved", key: "amount_approved", render: (val) => `LKR ${val?.toLocaleString()}` },
+        { header: "Repaid", key: "amount_repaid", render: (val) => `LKR ${val?.toLocaleString()}` },
+        { header: "Outstanding", key: "balance_outstanding", render: (val) => `LKR ${val?.toLocaleString()}` },
         { header: "Status", key: "status", isBadge: true }
     ];
 
@@ -184,20 +180,21 @@ export default function HR() {
         { header: "EOS #", key: "eos_number" },
         { header: "Employee", key: "employee_name" },
         { header: "Service Years", key: "total_service_years" },
-        { header: "EOS Amount", key: "total_eos_amount", render: (val) => `SAR ${val?.toLocaleString()}` },
-        { header: "Net Settlement", key: "net_settlement_amount", render: (val) => `SAR ${val?.toLocaleString()}` },
+        { header: "EOS Amount", key: "total_eos_amount", render: (val) => `LKR ${val?.toLocaleString()}` },
+        { header: "Net Settlement", key: "net_settlement_amount", render: (val) => `LKR ${val?.toLocaleString()}` },
         { header: "Type", key: "termination_type" },
         { header: "Status", key: "status", isBadge: true }
     ];
 
-    const gosiColumns = [
+    const epfColumns = [
         { header: "Contribution ID", key: "contribution_id" },
-        { header: "Month", key: "month" },
+        { header: "Month", key: "period_month" },
         { header: "Employee", key: "employee_name" },
-        { header: "GOSI Wage", key: "gosi_wage", render: (val) => `SAR ${val?.toLocaleString()}` },
-        { header: "Employee", key: "employee_contribution", render: (val) => `SAR ${val?.toLocaleString()}` },
-        { header: "Employer", key: "employer_contribution", render: (val) => `SAR ${val?.toLocaleString()}` },
-        { header: "Total", key: "total_contribution", render: (val) => `SAR ${val?.toLocaleString()}` },
+        { header: "EPF #", key: "epf_number" },
+        { header: "Gross Salary", key: "gross_salary", render: (val) => `LKR ${Number(val || 0).toLocaleString()}` },
+        { header: "EPF Employee (8%)", key: "epf_employee", render: (val) => `LKR ${Number(val || 0).toLocaleString()}` },
+        { header: "EPF Employer (12%)", key: "epf_employer", render: (val) => `LKR ${Number(val || 0).toLocaleString()}` },
+        { header: "ETF Employer (3%)", key: "etf_employer", render: (val) => `LKR ${Number(val || 0).toLocaleString()}` },
         { header: "Status", key: "status", isBadge: true }
     ];
 
@@ -245,8 +242,8 @@ export default function HR() {
         <div className="p-6 space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900">HR & Payroll (KSA)</h1>
-                    <p className="text-gray-600 mt-1">Manage employees, payroll, leaves, and GOSI contributions</p>
+                    <h1 className="text-3xl font-bold text-gray-900">HR & Payroll</h1>
+                    <p className="text-gray-600 mt-1">Manage employees, payroll, leaves, EPF/ETF contributions — Sri Lanka</p>
                 </div>
             </div>
 
@@ -259,7 +256,7 @@ export default function HR() {
                     <TabsTrigger value="payroll">Payroll</TabsTrigger>
                     <TabsTrigger value="loans">Loans</TabsTrigger>
                     <TabsTrigger value="eos">EOS</TabsTrigger>
-                    <TabsTrigger value="gosi">GOSI</TabsTrigger>
+                    <TabsTrigger value="epf">EPF / ETF</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="employees">
@@ -386,35 +383,28 @@ export default function HR() {
                     </Card>
                 </TabsContent>
 
-                <TabsContent value="gosi">
+                <TabsContent value="epf">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle>GOSI Contributions</CardTitle>
-                            <div className="flex gap-2">
-                                <Button
-                                    onClick={() => setShowBulkGOSI(true)}
-                                    variant="outline"
-                                    className="border-emerald-600 text-emerald-600"
-                                >
-                                    <Calculator className="w-4 h-4 mr-2" />
-                                    Bulk Calculate
-                                </Button>
-                                <Button 
-                                    onClick={() => handleCreate('gosi')}
-                                    className="bg-emerald-600 hover:bg-emerald-700"
-                                >
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    New Contribution
-                                </Button>
-                            </div>
+                            <CardTitle>EPF / ETF Contributions</CardTitle>
+                            <Button
+                                onClick={() => handleCreate('epf')}
+                                className="bg-emerald-600 hover:bg-emerald-700"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                New Contribution
+                            </Button>
                         </CardHeader>
                         <CardContent>
+                            <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded text-sm text-emerald-800">
+                                EPF: Employee 8% + Employer 12% = 20% total &nbsp;|&nbsp; ETF: Employer 3% only. Due last working day of following month.
+                            </div>
                             <DataTable
-                                data={gosiContributions}
-                                columns={gosiColumns}
+                                data={epfContributions}
+                                columns={epfColumns}
                                 getBadgeColor={getBadgeColor}
-                                onEdit={(item) => handleEdit(item, 'gosi')}
-                                onDelete={(item) => handleDelete(item, 'GOSIContribution')}
+                                onEdit={(item) => handleEdit(item, 'epf')}
+                                onDelete={(item) => handleDelete(item, 'SLEPFContribution')}
                             />
                         </CardContent>
                     </Card>
@@ -437,11 +427,8 @@ export default function HR() {
             {showDialog && activeTab === 'eos' && (
                 <EOSForm item={editingItem} onClose={handleCloseDialog} />
             )}
-            {showDialog && activeTab === 'gosi' && (
-                <GOSIContributionForm item={editingItem} onClose={handleCloseDialog} />
-            )}
-            {showBulkGOSI && (
-                <GOSIBulkCalculation onClose={() => setShowBulkGOSI(false)} />
+            {showDialog && activeTab === 'epf' && (
+                <EPFETFForm item={editingItem} onClose={handleCloseDialog} />
             )}
         </div>
     );
