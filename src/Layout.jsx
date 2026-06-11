@@ -21,7 +21,6 @@ import {
     BarChart3,
     Clock,
     Database,
-    Languages,
     Calculator,
     TrendingDown,
     Recycle,
@@ -29,7 +28,6 @@ import {
     ArrowLeft,
     Brain,
     Landmark,
-    LogOut,
     ChevronDown,
     Shield,
     List,
@@ -235,8 +233,8 @@ function LayoutContent({ children, currentPageName }) {
     );
 
     return (
-        <div className={`min-h-screen bg-[#f5f7fb] ${isRTL ? 'rtl' : 'ltr'}`} dir={isRTL ? 'rtl' : 'ltr'}>
-            <aside className={`hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col ${isRTL ? 'lg:right-0' : 'lg:left-0'}`}>
+        <div className="min-h-screen bg-[#f5f7fb]">
+            <aside className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col lg:left-0">
                 <div className="flex flex-grow flex-col overflow-y-auto border-r border-slate-200 bg-white shadow-xl shadow-slate-200/60">
                     <div className="border-b border-slate-100 px-5 py-5">
                         <div className="rounded-2xl bg-white p-2 shadow-sm ring-1 ring-slate-100">
@@ -244,29 +242,6 @@ function LayoutContent({ children, currentPageName }) {
                         </div>
                     </div>
                     
-                    <div className="hidden">
-                        <Button
-                            onClick={toggleLanguage}
-                            variant="outline"
-                            size="sm"
-                            className="w-full justify-start gap-2 border-slate-200 bg-[#f8fafc]"
-                        >
-                            <Languages className="w-4 h-4" />
-                            <span className="flex-1 text-start">{language === 'en' ? 'العربية' : 'English'}</span>
-                            <span className="text-xs text-gray-500">
-                                {language === 'en' ? 'AR' : 'EN'}
-                            </span>
-                        </Button>
-                        <Button
-                            onClick={() => logout()}
-                            variant="ghost"
-                            size="sm"
-                            className="mt-2 w-full justify-start gap-2 text-red-600 hover:bg-red-50 hover:text-red-700"
-                        >
-                            <LogOut className="w-4 h-4" />
-                            <span className="flex-1 truncate text-start">Logout</span>
-                        </Button>
-                    </div>
 
                     <nav className="flex-1 overflow-y-auto py-5">
                         <NavContent />
@@ -281,31 +256,18 @@ function LayoutContent({ children, currentPageName }) {
                     
                     <div className="flex items-center gap-2">
                         <NotificationBell />
-                        
-                        <Button
-                            onClick={toggleLanguage}
-                            variant="ghost"
-                            size="icon"
-                            className="relative"
-                        >
-                            <Languages className="w-5 h-5" />
-                            <span className="absolute -bottom-1 -right-1 text-[10px] font-bold bg-emerald-600 text-white rounded px-1">
-                                {language.toUpperCase()}
-                            </span>
-                        </Button>
+                        <UserMenu onLogout={logout} isRTL={false} />
 
-                        <UserMenu onLogout={logout} isRTL={isRTL} />
-                        
                         <Sheet>
                             <SheetTrigger asChild>
                                 <Button variant="ghost" size="icon">
                                     <Menu className="w-6 h-6" />
                                 </Button>
                             </SheetTrigger>
-                            <SheetContent side={isRTL ? "right" : "left"} className="w-64 p-0">
+                            <SheetContent side="left" className="w-64 p-0">
                                 <div className="flex flex-col h-full">
                                     <div className="px-6 py-6 border-b">
-                                        <h2 className="text-lg font-semibold">{isRTL ? 'القائمة' : 'Navigation'}</h2>
+                                        <h2 className="text-lg font-semibold">Navigation</h2>
                                     </div>
                                     <nav className="flex-1 py-6 overflow-y-auto">
                                         <NavContent />
@@ -317,7 +279,7 @@ function LayoutContent({ children, currentPageName }) {
                 </div>
             </div>
 
-            <main className={`min-w-0 overflow-x-hidden lg:pt-0 pt-16 ${isRTL ? 'lg:pr-64' : 'lg:pl-64'}`}>
+            <main className="min-w-0 overflow-x-hidden lg:pt-0 pt-16 lg:pl-64">
                 <div className="min-h-screen min-w-0 overflow-x-hidden bg-[#f5f7fb]">
                     <div className="sticky top-16 z-40 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/90 px-3 py-3 shadow-sm backdrop-blur sm:px-6 lg:top-0">
                         <Button
@@ -332,19 +294,7 @@ function LayoutContent({ children, currentPageName }) {
                         <GlobalSearch />
                         <div className="hidden items-center gap-2 lg:flex">
                             <NotificationBell />
-                            <Button
-                                onClick={toggleLanguage}
-                                variant="outline"
-                                size="sm"
-                                className="gap-2 border-slate-200 bg-white"
-                            >
-                                <Languages className="w-4 h-4" />
-                                <span>{language === 'en' ? 'العربية' : 'English'}</span>
-                                <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-semibold text-slate-500">
-                                    {language === 'en' ? 'AR' : 'EN'}
-                                </span>
-                            </Button>
-                            <UserMenu onLogout={logout} isRTL={isRTL} />
+                            <UserMenu onLogout={logout} isRTL={false} />
                         </div>
                     </div>
                     <TrialBanner />
@@ -378,53 +328,6 @@ function LayoutContent({ children, currentPageName }) {
             <Toaster />
 
             <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&display=swap');
-                
-                .rtl {
-                    font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
-                }
-                
-                .rtl * {
-                    font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
-                }
-                
-                .rtl table {
-                    direction: rtl;
-                }
-                
-                .rtl th, .rtl td {
-                    text-align: right;
-                }
-                
-                .rtl input, .rtl textarea, .rtl select {
-                    direction: rtl;
-                    text-align: right;
-                }
-                
-                .rtl input[type="number"] {
-                    direction: ltr;
-                    text-align: left;
-                }
-                
-                .rtl .flex-row-reverse {
-                    flex-direction: row-reverse;
-                }
-                
-                .rtl [role="menu"] {
-                    text-align: right;
-                }
-                
-                .rtl .gap-2 > svg {
-                    margin-left: 0;
-                    margin-right: 0;
-                }
-                
-                .rtl .numeric {
-                    font-family: 'Courier New', monospace;
-                    direction: ltr;
-                    display: inline-block;
-                }
-
                 html, body, #root {
                     width: 100%;
                     min-height: 100%;
