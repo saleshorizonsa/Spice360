@@ -28,7 +28,6 @@ export const PAGE_MODULE_MAP = {
   AssetVerification: "Finance",
   DepreciationReports: "Finance",
   BudgetManagement: "Finance",
-  ZakatManagement: "Finance",
 
   // Purchasing / Supply Chain
   Purchasing: "Purchasing",
@@ -42,9 +41,10 @@ export const PAGE_MODULE_MAP = {
   // Projects
   Projects: "Projects",
 
-  // ZATCA / Compliance
+  // Compliance
+  SriLankaTax: null,
+  ComplianceReports: null,
   ZATCA: "ZATCA",
-  ComplianceReports: "ZATCA",
 
   // Reports (Professional+)
   Reports: "Reports",
@@ -95,13 +95,13 @@ export function getModuleForPage(pageName) {
  * Module display names and descriptions shown on the locked-module screen.
  */
 export const MODULE_INFO = {
-  Sales:      { label: "Sales & Invoicing",   description: "Quotations, sales orders, invoices, POS, and ZATCA invoice flow." },
+  Sales:      { label: "Sales & Invoicing",   description: "Quotations, sales orders, VAT invoices, POS, and delivery." },
   Inventory:  { label: "Inventory",           description: "Stock levels, movements, transfers, cycle counts, and valuation." },
   Finance:    { label: "Finance",             description: "AR, AP, journal entries, payments, fixed assets, and reports." },
   Purchasing: { label: "Purchasing & Supply Chain", description: "Requisitions, RFQs, purchase orders, GRN, and vendor invoices." },
-  HR:         { label: "HR & Payroll",        description: "Employees, payroll, leave, loans, and HR reports." },
+  HR:         { label: "HR & Payroll",        description: "Employees, EPF/ETF/APIT payroll, leave, loans, and HR reports." },
   Projects:   { label: "Projects",            description: "Project planning, expenses, milestones, and timesheets." },
-  ZATCA:      { label: "ZATCA Compliance",    description: "Phase 1 QR readiness, Phase 2 setup, and submission logs." },
+  ZATCA:      { label: "ZATCA Compliance",    description: "Saudi Arabia e-invoicing compliance (Phase 1 & 2)." },
   Reports:    { label: "Advanced Reports",    description: "Sales, inventory, HR, and compliance analytics reports." },
   Production: { label: "Production",          description: "Manufacturing orders, BOM, routing, and production reporting." },
   Maintenance:{ label: "Maintenance",         description: "Preventive maintenance, work orders, and asset uptime tracking." },

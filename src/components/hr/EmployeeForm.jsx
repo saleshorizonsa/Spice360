@@ -12,15 +12,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-// Saudi Arabian nationality list
 const nationalities = [
-    "Saudi Arabian", "Egyptian", "Indian", "Pakistani", "Bangladeshi", "Filipino", 
-    "Jordanian", "Palestinian", "Syrian", "Lebanese", "Yemeni", "Sudanese",
-    "American", "British", "Canadian", "Australian", "French", "German",
-    "Indonesian", "Sri Lankan", "Nepalese", "Ethiopian", "Eritrean", "Somali",
-    "Turkish", "Iranian", "Iraqi", "Kuwaiti", "Bahraini", "Qatari", "Emirati",
-    "Omani", "Moroccan", "Algerian", "Tunisian", "Libyan", "Other"
-].sort();
+    "Sri Lankan", "Indian", "Pakistani", "Bangladeshi", "Filipino", "Nepalese",
+    "Chinese", "Japanese", "Korean", "Indonesian", "Malaysian", "Vietnamese",
+    "British", "American", "Canadian", "Australian", "German", "French",
+    "Nigerian", "Ghanaian", "South African", "Egyptian", "Jordanian", "Lebanese",
+    "Other"
+].sort((a, b) => a === "Sri Lankan" ? -1 : b === "Sri Lankan" ? 1 : a.localeCompare(b));
 
 export default function EmployeeForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -30,13 +28,10 @@ export default function EmployeeForm({ item, onClose }) {
         employee_number: '',
         employee_name: '',
         employee_name_ar: '',
-        nationality: '',
-        is_saudi: false,
+        nationality: 'Sri Lankan',
         national_id: '',
-        iqama_number: '',
-        iqama_issue_date: '',
-        iqama_expiry_date: '',
-        iqama_profession: '',
+        nic_number: '',
+        epf_number: '',
         passport_number: '',
         passport_issue_date: '',
         passport_expiry_date: '',
@@ -81,13 +76,6 @@ export default function EmployeeForm({ item, onClose }) {
         bank_branch: '',
         iban: '',
         bank_account_number: '',
-        gosi_number: '',
-        gosi_registration_date: '',
-        gosi_applicable: true,
-        gosi_subscription_number: '',
-        qiwa_number: '',
-        qiwa_unified_number: '',
-        qiwa_registration_date: '',
         medical_insurance_provider: '',
         medical_insurance_number: '',
         medical_insurance_class: 'basic',
@@ -148,14 +136,6 @@ export default function EmployeeForm({ item, onClose }) {
         const today = new Date();
         const thirtyDaysFromNow = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
 
-        if (formData.iqama_expiry_date) {
-            const expiryDate = new Date(formData.iqama_expiry_date);
-            if (expiryDate < today) {
-                alerts.push({ type: 'error', message: 'Iqama has expired!' });
-            } else if (expiryDate < thirtyDaysFromNow) {
-                alerts.push({ type: 'warning', message: 'Iqama expiring soon!' });
-            }
-        }
 
         if (formData.passport_expiry_date) {
             const expiryDate = new Date(formData.passport_expiry_date);
@@ -176,15 +156,10 @@ export default function EmployeeForm({ item, onClose }) {
         }
 
         setExpiryAlerts(alerts);
-    }, [formData.iqama_expiry_date, formData.passport_expiry_date, formData.medical_insurance_expiry_date]);
+    }, [formData.passport_expiry_date, formData.medical_insurance_expiry_date]);
 
-    // Handle nationality selection
     const handleNationalityChange = (value) => {
-        setFormData(prev => ({
-            ...prev,
-            nationality: value,
-            is_saudi: value === 'Saudi Arabian'
-        }));
+        setFormData(prev => ({ ...prev, nationality: value }));
     };
 
     const saveMutation = useMutation({
@@ -275,7 +250,7 @@ export default function EmployeeForm({ item, onClose }) {
                                     <Input
                                         value={formData.employee_name_ar}
                                         onChange={(e) => setFormData({...formData, employee_name_ar: e.target.value})}
-                                        placeholder="أحمد محمد علي"
+                                        placeholder="Kamal Perera"
                                         dir="rtl"
                                     />
                                 </div>
@@ -383,45 +358,24 @@ export default function EmployeeForm({ item, onClose }) {
                         {/* Documents */}
                         <TabsContent value="documents" className="space-y-4 mt-4">
                             <div className="border-b pb-4">
-                                <h3 className="font-semibold text-lg mb-4">Iqama Details (Expatriates Only)</h3>
-                                <div className="grid grid-cols-3 gap-4">
+                                <h3 className="font-semibold text-lg mb-4">National Identity Card (NIC)</h3>
+                                <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <Label>Iqama Number</Label>
+                                        <Label>NIC Number</Label>
                                         <Input
-                                            value={formData.iqama_number}
-                                            onChange={(e) => setFormData({...formData, iqama_number: e.target.value})}
-                                            placeholder="2345678901"
-                                            disabled={formData.is_saudi}
+                                            value={formData.nic_number || ''}
+                                            onChange={(e) => setFormData({...formData, nic_number: e.target.value})}
+                                            placeholder="199012345678 or 901234567V"
                                         />
                                     </div>
                                     <div>
-                                        <Label>Iqama Issue Date</Label>
+                                        <Label>National ID Number</Label>
                                         <Input
-                                            type="date"
-                                            value={formData.iqama_issue_date}
-                                            onChange={(e) => setFormData({...formData, iqama_issue_date: e.target.value})}
-                                            disabled={formData.is_saudi}
+                                            value={formData.national_id || ''}
+                                            onChange={(e) => setFormData({...formData, national_id: e.target.value})}
+                                            placeholder="Alternative ID"
                                         />
                                     </div>
-                                    <div>
-                                        <Label>Iqama Expiry Date</Label>
-                                        <Input
-                                            type="date"
-                                            value={formData.iqama_expiry_date}
-                                            onChange={(e) => setFormData({...formData, iqama_expiry_date: e.target.value})}
-                                            disabled={formData.is_saudi}
-                                            className={formData.iqama_expiry_date && new Date(formData.iqama_expiry_date) < new Date() ? 'border-red-500' : ''}
-                                        />
-                                    </div>
-                                </div>
-                                <div className="mt-4">
-                                    <Label>Profession on Iqama</Label>
-                                    <Input
-                                        value={formData.iqama_profession}
-                                        onChange={(e) => setFormData({...formData, iqama_profession: e.target.value})}
-                                        placeholder="Engineer, Manager, etc."
-                                        disabled={formData.is_saudi}
-                                    />
                                 </div>
                             </div>
 
@@ -480,7 +434,7 @@ export default function EmployeeForm({ item, onClose }) {
                                             value={formData.email}
                                             onChange={(e) => setFormData({...formData, email: e.target.value})}
                                             required
-                                            placeholder="ahmed@company.com"
+                                            placeholder="kamal@company.lk"
                                         />
                                     </div>
                                     <div>
@@ -489,7 +443,7 @@ export default function EmployeeForm({ item, onClose }) {
                                             type="email"
                                             value={formData.personal_email}
                                             onChange={(e) => setFormData({...formData, personal_email: e.target.value})}
-                                            placeholder="ahmed@gmail.com"
+                                            placeholder="kamal@gmail.com"
                                         />
                                     </div>
                                     <div>
@@ -498,7 +452,7 @@ export default function EmployeeForm({ item, onClose }) {
                                             value={formData.mobile}
                                             onChange={(e) => setFormData({...formData, mobile: e.target.value})}
                                             required
-                                            placeholder="+966501234567"
+                                            placeholder="+94712345678"
                                         />
                                     </div>
                                 </div>
@@ -508,7 +462,7 @@ export default function EmployeeForm({ item, onClose }) {
                                         <Input
                                             value={formData.whatsapp}
                                             onChange={(e) => setFormData({...formData, whatsapp: e.target.value})}
-                                            placeholder="+966501234567"
+                                            placeholder="+94712345678"
                                         />
                                     </div>
                                     <div>
@@ -516,7 +470,7 @@ export default function EmployeeForm({ item, onClose }) {
                                         <Input
                                             value={formData.phone}
                                             onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                                            placeholder="+966112345678"
+                                            placeholder="+94112345678"
                                         />
                                     </div>
                                 </div>
@@ -599,7 +553,7 @@ export default function EmployeeForm({ item, onClose }) {
                                         <Input
                                             value={formData.emergency_contact_phone}
                                             onChange={(e) => setFormData({...formData, emergency_contact_phone: e.target.value})}
-                                            placeholder="+966501234567"
+                                            placeholder="+94712345678"
                                         />
                                     </div>
                                     <div>
@@ -849,62 +803,35 @@ export default function EmployeeForm({ item, onClose }) {
                         {/* Compliance */}
                         <TabsContent value="compliance" className="space-y-4 mt-4">
                             <div className="border-b pb-4">
-                                <h3 className="font-semibold text-lg mb-4">GOSI Details</h3>
+                                <h3 className="font-semibold text-lg mb-4">EPF / ETF Details</h3>
                                 <div className="grid grid-cols-3 gap-4">
                                     <div>
-                                        <Label>GOSI Number</Label>
+                                        <Label>EPF Member Number</Label>
                                         <Input
-                                            value={formData.gosi_number}
-                                            onChange={(e) => setFormData({...formData, gosi_number: e.target.value})}
-                                            placeholder="123456789"
+                                            value={formData.epf_number || ''}
+                                            onChange={(e) => setFormData({...formData, epf_number: e.target.value})}
+                                            placeholder="EPF-123456"
                                         />
                                     </div>
                                     <div>
-                                        <Label>GOSI Registration Date</Label>
+                                        <Label>EPF Registration Date</Label>
                                         <Input
                                             type="date"
-                                            value={formData.gosi_registration_date}
-                                            onChange={(e) => setFormData({...formData, gosi_registration_date: e.target.value})}
+                                            value={formData.epf_registration_date || ''}
+                                            onChange={(e) => setFormData({...formData, epf_registration_date: e.target.value})}
                                         />
                                     </div>
                                     <div>
-                                        <Label>GOSI Subscription Number</Label>
+                                        <Label>ETF Number</Label>
                                         <Input
-                                            value={formData.gosi_subscription_number}
-                                            onChange={(e) => setFormData({...formData, gosi_subscription_number: e.target.value})}
-                                            placeholder="Sub-123456"
+                                            value={formData.etf_number || ''}
+                                            onChange={(e) => setFormData({...formData, etf_number: e.target.value})}
+                                            placeholder="ETF-123456"
                                         />
                                     </div>
                                 </div>
-                            </div>
-
-                            <div className="border-b pb-4">
-                                <h3 className="font-semibold text-lg mb-4">QIWA Details</h3>
-                                <div className="grid grid-cols-3 gap-4">
-                                    <div>
-                                        <Label>QIWA Number</Label>
-                                        <Input
-                                            value={formData.qiwa_number}
-                                            onChange={(e) => setFormData({...formData, qiwa_number: e.target.value})}
-                                            placeholder="QIWA-123456"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label>QIWA Unified Number</Label>
-                                        <Input
-                                            value={formData.qiwa_unified_number}
-                                            onChange={(e) => setFormData({...formData, qiwa_unified_number: e.target.value})}
-                                            placeholder="700-123456"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label>QIWA Registration Date</Label>
-                                        <Input
-                                            type="date"
-                                            value={formData.qiwa_registration_date}
-                                            onChange={(e) => setFormData({...formData, qiwa_registration_date: e.target.value})}
-                                        />
-                                    </div>
+                                <div className="mt-3 p-3 bg-blue-50 rounded text-sm text-blue-800">
+                                    EPF: 8% employee + 12% employer. ETF: 3% employer. APIT withheld at source based on progressive brackets.
                                 </div>
                             </div>
 

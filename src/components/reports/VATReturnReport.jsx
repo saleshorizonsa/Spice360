@@ -9,7 +9,7 @@ import { FileCheck, Printer, TrendingUp, TrendingDown, Calculator } from "lucide
 import { useLanguage } from "@/components/utils/languageContext";
 
 const fmt = (n) =>
-  Number(n || 0).toLocaleString("en-SA", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  Number(n || 0).toLocaleString("en-LK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 function getQuarterRange(year, quarter) {
   const m = (quarter - 1) * 3;
