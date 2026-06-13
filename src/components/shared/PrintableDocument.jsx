@@ -12,10 +12,8 @@ export default function PrintableDocument({
     children,
     language = "en"
 }) {
-    const isRTL = language === "ar";
     const company = companyInfo || {};
     const companyName = company.organization_name || company.company_legal_name || company.name || "HORIZON ERP";
-    const companyNameAr = company.organization_name_ar || "";
     const vatNo = company.vat_number || company.vat_registration_number || "";
     const crNo = company.cr_number || company.commercial_registration_number || "";
     const phone = company.phone || company.contact_phone || "";
@@ -34,7 +32,6 @@ export default function PrintableDocument({
                 )}
                 <div style={{ textAlign: "left" }}>
                     <div style={{ fontSize: "22px", fontWeight: "700", color: "#0f172a" }}>{companyName}</div>
-                    {companyNameAr && <div style={{ fontSize: "14px", color: "#475569", direction: "rtl" }}>{companyNameAr}</div>}
                 </div>
             </div>
             <div style={{ fontSize: "12px", color: "#64748b", lineHeight: "1.8" }}>
@@ -52,7 +49,7 @@ export default function PrintableDocument({
     );
 
     return (
-        <div className="print-document bg-white p-8" dir={isRTL ? "rtl" : "ltr"}>
+        <div className="print-document bg-white p-8">
             <style>{`
                 @media print {
                     body * { visibility: hidden !important; }
@@ -76,7 +73,7 @@ export default function PrintableDocument({
                     <div style={{ fontSize: "20px", fontWeight: "700", color: "#059669" }}>{title}</div>
                     <div style={{ fontSize: "16px", fontWeight: "600", color: "#334155", marginTop: "4px" }}>{documentNumber}</div>
                     <div style={{ fontSize: "13px", color: "#64748b", marginTop: "2px" }}>
-                        {isRTL ? "التاريخ" : "Date"}: {documentDate}
+                        Date: {documentDate}
                     </div>
                 </div>
             </div>
@@ -84,7 +81,7 @@ export default function PrintableDocument({
             {customerInfo && (
                 <div style={{ background: "#f8fafc", borderRadius: "6px", padding: "14px 16px", marginBottom: "20px", border: "1px solid #e2e8f0" }}>
                     <div style={{ fontSize: "12px", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: "8px" }}>
-                        {isRTL ? "بيانات العميل" : "Bill To"}
+                        Bill To
                     </div>
                     <div style={{ fontSize: "14px", fontWeight: "600", color: "#0f172a" }}>{customerInfo.name}</div>
                     {customerInfo.vat_number && (
@@ -103,19 +100,19 @@ export default function PrintableDocument({
                     <thead>
                         <tr style={{ background: "#f1f5f9" }}>
                             <th style={{ padding: "10px 12px", textAlign: "left", fontSize: "12px", fontWeight: "700", color: "#475569", borderBottom: "2px solid #cbd5e1" }}>
-                                {isRTL ? "م" : "#"}
+                                #
                             </th>
                             <th style={{ padding: "10px 12px", textAlign: "left", fontSize: "12px", fontWeight: "700", color: "#475569", borderBottom: "2px solid #cbd5e1" }}>
-                                {isRTL ? "الصنف / الخدمة" : "Item / Description"}
+                                Item / Description
                             </th>
                             <th style={{ padding: "10px 12px", textAlign: "right", fontSize: "12px", fontWeight: "700", color: "#475569", borderBottom: "2px solid #cbd5e1" }}>
-                                {isRTL ? "الكمية" : "Qty"}
+                                Qty
                             </th>
                             <th style={{ padding: "10px 12px", textAlign: "right", fontSize: "12px", fontWeight: "700", color: "#475569", borderBottom: "2px solid #cbd5e1" }}>
-                                {isRTL ? "سعر الوحدة" : "Unit Price"}
+                                Unit Price
                             </th>
                             <th style={{ padding: "10px 12px", textAlign: "right", fontSize: "12px", fontWeight: "700", color: "#475569", borderBottom: "2px solid #cbd5e1" }}>
-                                {isRTL ? "الإجمالي" : "Total"}
+                                Total
                             </th>
                         </tr>
                     </thead>
@@ -144,24 +141,24 @@ export default function PrintableDocument({
                     <div style={{ width: "260px" }}>
                         {totals.subtotal != null && (
                             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "5px 0", color: "#475569" }}>
-                                <span>{isRTL ? "المجموع الفرعي" : "Subtotal"}</span>
+                                <span>Subtotal</span>
                                 <span>{totals.currency || "LKR"} {Number(totals.subtotal).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                             </div>
                         )}
                         {totals.discount > 0 && (
                             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "5px 0", color: "#dc2626" }}>
-                                <span>{isRTL ? "الخصم" : "Discount"}</span>
+                                <span>Discount</span>
                                 <span>- {totals.currency || "LKR"} {Number(totals.discount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                             </div>
                         )}
                         {totals.vat_amount != null && (
                             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "5px 0", color: "#475569" }}>
-                                <span>{isRTL ? "ضريبة القيمة المضافة" : "VAT"} ({totals.vat_percent || 15}%)</span>
+                                <span>VAT ({totals.vat_percent || 15}%)</span>
                                 <span>{totals.currency || "LKR"} {Number(totals.vat_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                             </div>
                         )}
                         <div style={{ display: "flex", justifyContent: "space-between", fontSize: "16px", fontWeight: "700", borderTop: "2px solid #0f172a", paddingTop: "8px", marginTop: "6px", color: "#0f172a" }}>
-                            <span>{isRTL ? "الإجمالي" : "Total"}</span>
+                            <span>Total</span>
                             <span style={{ color: "#059669" }}>
                                 {totals.currency || "LKR"} {Number(totals.total || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                             </span>
@@ -178,10 +175,10 @@ export default function PrintableDocument({
 
             <div style={{ marginTop: "48px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "32px" }}>
                 <div style={{ borderTop: "1px solid #94a3b8", paddingTop: "6px", textAlign: "center", fontSize: "12px", color: "#64748b" }}>
-                    {isRTL ? "توقيع المصدر" : "Authorized Signature"}
+                    Authorized Signature
                 </div>
                 <div style={{ borderTop: "1px solid #94a3b8", paddingTop: "6px", textAlign: "center", fontSize: "12px", color: "#64748b" }}>
-                    {isRTL ? "توقيع المستلم" : "Received By"}
+                    Received By
                 </div>
             </div>
 

@@ -4,7 +4,6 @@ import { Users, Receipt, Calendar, ArrowUpRight, Zap } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useAuth } from "@/lib/AuthContext";
-import { useLanguage } from "@/components/utils/languageContext";
 import { normalizeSubscriptionPlan } from "@/lib/subscriptionPlans";
 
 function UsageBar({ label, used, limit, icon: Icon, colorClass }) {
@@ -42,7 +41,6 @@ function UsageBar({ label, used, limit, icon: Icon, colorClass }) {
 
 export default function PlanUsageWidget() {
   const { user } = useAuth();
-  const { isRTL } = useLanguage();
 
   const orgId = user?.organization_id || user?.tenant_id;
 
@@ -102,7 +100,7 @@ export default function PlanUsageWidget() {
 
   return (
     <Card className="border-slate-200 bg-white shadow-sm">
-      <CardContent className="p-5" dir={isRTL ? "rtl" : "ltr"}>
+      <CardContent className="p-5">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="rounded-lg bg-[#eef3f9] p-2">
@@ -110,7 +108,7 @@ export default function PlanUsageWidget() {
             </div>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                {isRTL ? "خطتك" : "Your Plan"}
+                Your Plan
               </p>
               <p className="text-sm font-bold text-slate-800">{plan.name}</p>
             </div>
@@ -120,28 +118,28 @@ export default function PlanUsageWidget() {
               trialDaysLeft <= 3 ? "bg-red-50 text-red-700" : trialDaysLeft <= 7 ? "bg-amber-50 text-amber-700" : "bg-blue-50 text-blue-700"
             }`}>
               <Calendar className="h-3 w-3" />
-              {isRTL ? `${trialDaysLeft} يوم تجريبي` : `${trialDaysLeft}d trial`}
+              {`${trialDaysLeft}d trial`}
             </div>
           )}
           <a
             href="mailto:support@horizon-sa.net?subject=Upgrade%20Plan"
             className="flex items-center gap-1 text-xs font-semibold text-[#24466f] hover:underline"
           >
-            {isRTL ? "ترقية" : "Upgrade"}
+            Upgrade
             <ArrowUpRight className="h-3 w-3" />
           </a>
         </div>
 
         <div className="space-y-3">
           <UsageBar
-            label={isRTL ? "المستخدمون" : "Users"}
+            label="Users"
             used={userCount}
             limit={typeof userLimit === "number" ? userLimit : (userLimit === "Unlimited" ? 999999 : Number(userLimit) || null)}
             icon={Users}
             colorClass="bg-[#24466f]"
           />
           <UsageBar
-            label={isRTL ? "الفواتير هذا الشهر" : "Invoices this month"}
+            label="Invoices this month"
             used={invoiceCount}
             limit={typeof invoiceLimit === "number" ? invoiceLimit : (invoiceLimit === "Custom" ? 999999 : Number(invoiceLimit) || null)}
             icon={Receipt}

@@ -280,7 +280,6 @@ export default function ServiceContractForm({ item, onClose }) {
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="ar">Arabic</SelectItem>
                   <SelectItem value="bilingual">Bilingual</SelectItem>
                 </SelectContent>
               </Select>

@@ -49,8 +49,7 @@ export async function createApprovalRequest(documentData) {
         requestedByRole,
         branch,
         department,
-        summary,
-        summaryAr
+        summary
     } = documentData;
 
     try {
@@ -98,7 +97,6 @@ export async function createApprovalRequest(documentData) {
             current_level_status: 'pending',
             approval_chain: approvalChain,
             document_summary: summary,
-            document_summary_ar: summaryAr,
             branch_code: branch,
             department: department,
             priority: amount > 100000 ? 'high' : 'normal'

@@ -12,7 +12,6 @@ import {
     User, Mail, Phone, Briefcase, Building2, Globe, Shield,
     Edit2, Check, X, Eye, EyeOff, KeyRound, Clock, CheckCircle2
 } from "lucide-react";
-import { useLanguage } from "@/components/utils/languageContext";
 import moment from "moment";
 
 const TIMEZONES = [
@@ -68,8 +67,6 @@ function ReadOnlyRow({ icon: Icon, label, value, extra }) {
 export default function Profile() {
     const { user, isAuthenticated } = useAuth();
     const { toast } = useToast();
-    const { isRTL } = useLanguage?.() ?? { isRTL: false };
-
     const [editing, setEditing] = useState(false);
     const [saving, setSaving] = useState(false);
     const [form, setForm] = useState({
@@ -246,7 +243,6 @@ export default function Profile() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="en">English</SelectItem>
-                                        <SelectItem value="ar">العربية</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -272,7 +268,7 @@ export default function Profile() {
                             <ReadOnlyRow icon={Briefcase} label="Job Title"  value={user.job_title} />
                             <ReadOnlyRow icon={Building2} label="Department" value={user.department} />
                             <ReadOnlyRow icon={Globe}    label="Language"
-                                value={user.language_preference === "ar" ? "العربية" : "English"} />
+                                value="English" />
                             <ReadOnlyRow icon={Clock}    label="Timezone"    value={user.timezone || "Asia/Riyadh"} />
                         </div>
                     )}

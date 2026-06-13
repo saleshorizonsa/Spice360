@@ -16,7 +16,6 @@ export default function DocumentPrintPreview({
 
     const companyInfo = currentOrg ? {
         organization_name: currentOrg.organization_name || currentOrg.company_legal_name || currentOrg.name,
-        organization_name_ar: currentOrg.organization_name_ar || "",
         vat_number: currentOrg.vat_number || currentOrg.vat_registration_number || "",
         cr_number: currentOrg.cr_number || currentOrg.commercial_registration_number || "",
         address: currentOrg.address || "",
@@ -75,7 +74,7 @@ export default function DocumentPrintPreview({
 
         const win = window.open("", "_blank", "width=900,height=700");
         win.document.write(`<!DOCTYPE html>
-<html lang="${language}" dir="${language === "ar" ? "rtl" : "ltr"}">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <title>${documentType} - ${printableData.documentNumber || ""}</title>

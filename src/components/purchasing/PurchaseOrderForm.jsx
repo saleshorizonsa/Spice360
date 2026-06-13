@@ -235,8 +235,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
                         requestedByRole: currentUser?.approval_role || 'buyer',
                         branch: currentOrg?.organization_code,
                         department: currentUser?.department || 'Purchasing',
-                        summary: `Purchase Order for ${purchaseOrder.vendor_name} - ${purchaseOrder.material_name} (${purchaseOrder.quantity} ${purchaseOrder.unit_of_measure})`,
-                        summaryAr: `أمر شراء من ${purchaseOrder.vendor_name_ar || purchaseOrder.vendor_name}`
+                        summary: `Purchase Order for ${purchaseOrder.vendor_name} - ${purchaseOrder.material_name} (${purchaseOrder.quantity} ${purchaseOrder.unit_of_measure})`
                     });
 
                     purchaseOrder = await matrixSales.entities.PurchaseOrder.update(purchaseOrder.id, {

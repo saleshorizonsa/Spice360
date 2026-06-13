@@ -4,12 +4,10 @@ import { AlertTriangle, X, ArrowUpRight, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useAuth } from "@/lib/AuthContext";
-import { useLanguage } from "@/components/utils/languageContext";
 import { createPageUrl } from "@/utils";
 
 export default function TrialBanner() {
   const { user } = useAuth();
-  const { isRTL } = useLanguage();
   const [dismissed, setDismissed] = useState(() =>
     sessionStorage.getItem("trial_banner_dismissed") === "1"
   );
@@ -56,7 +54,6 @@ export default function TrialBanner() {
           ? "bg-amber-500 text-white"
           : "bg-[#24466f] text-white"
       }`}
-      dir={isRTL ? "rtl" : "ltr"}
     >
       <div className="flex items-center gap-2 min-w-0">
         {urgent ? (
@@ -65,9 +62,7 @@ export default function TrialBanner() {
           <Clock className="h-4 w-4 shrink-0" />
         )}
         <span className="truncate">
-          {isRTL
-            ? `${daysLeft} ${daysLeft === 1 ? "يوم متبقٍ" : "أيام متبقية"} في تجربتك المجانية`
-            : `${daysLeft} ${daysLeft === 1 ? "day" : "days"} left in your free trial`}
+          {`${daysLeft} ${daysLeft === 1 ? "day" : "days"} left in your free trial`}
         </span>
       </div>
 
@@ -85,7 +80,7 @@ export default function TrialBanner() {
           }`}
         >
           <a href={`mailto:support@horizon-sa.net?subject=Upgrade%20Plan`}>
-            {isRTL ? "ترقية الخطة" : "Upgrade Now"}
+            Upgrade Now
             <ArrowUpRight className="h-3.5 w-3.5" />
           </a>
         </Button>

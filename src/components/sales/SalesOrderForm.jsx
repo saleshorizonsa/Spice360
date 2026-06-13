@@ -223,8 +223,7 @@ export default function SalesOrderForm({ order, onClose }) {
                         requestedByRole: currentUser?.approval_role || 'none',
                         branch: currentOrg?.organization_code,
                         department: currentUser?.department,
-                        summary: `Sales Order for ${data.customer_name} - ${firstLineProduct} (${firstLineQuantity} units)`,
-                        summaryAr: `طلب مبيعات ل ${data.customer_name}`
+                        summary: `Sales Order for ${data.customer_name} - ${firstLineProduct} (${firstLineQuantity} units)`
                     });
 
                     // Update order status to pending_approval

@@ -89,8 +89,7 @@ export default function LeaveRequestForm({ item, onClose }) {
                     requestedByRole: currentUser?.approval_role || 'employee',
                     branch: currentUser?.branch_code,
                     department: currentUser?.department || 'HR',
-                    summary: `Leave Request: ${leaveRequest.leave_type} - ${leaveRequest.total_days} days`,
-                    summaryAr: `طلب إجازة: ${leaveRequest.leave_type} - ${leaveRequest.total_days} أيام`
+                    summary: `Leave Request: ${leaveRequest.leave_type} - ${leaveRequest.total_days} days`
                 });
 
                 if (approvalRequest) {

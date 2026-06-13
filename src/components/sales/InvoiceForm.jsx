@@ -203,7 +203,6 @@ export default function InvoiceForm({ item, onClose }) {
         const org = currentOrg || {};
         const logoUrl = org.logo_url || '';
         const orgName = org.organization_name || org.trade_name || 'HORIZON';
-        const orgNameAr = org.organization_name_ar || org.trade_name_ar || '';
         const vatNo = org.vat_registration_number || '';
         const crNo = org.cr_number || '';
         const address = [org.address_line1, org.city, org.country].filter(Boolean).join(', ');
@@ -257,7 +256,7 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
 <div class="page">
 <div class="inv-header">
   <div class="brand">
-    ${logoUrl ? `<img src="${logoUrl}" alt="Logo" />` : `<div class="brand-name">${orgName}</div>${orgNameAr ? `<div class="brand-name-ar">${orgNameAr}</div>` : ''}`}
+    ${logoUrl ? `<img src="${logoUrl}" alt="Logo" />` : `<div class="brand-name">${orgName}</div>`}
     <div class="brand-meta">${vatNo ? `VAT: ${vatNo}<br>` : ''}${crNo ? `CR: ${crNo}<br>` : ''}${address}</div>
   </div>
   <div class="inv-title">

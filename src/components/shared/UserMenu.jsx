@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { User, LogOut, Building2, Activity } from "lucide-react";
 
-export default function UserMenu({ onLogout, isRTL }) {
+export default function UserMenu({ onLogout }) {
   const { user } = useAuth();
   const navigate = useNavigate();
 
@@ -29,7 +29,7 @@ export default function UserMenu({ onLogout, isRTL }) {
           {initials}
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-56" dir={isRTL ? "rtl" : "ltr"}>
+      <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="font-normal">
           <p className="text-sm font-semibold leading-tight truncate">{user?.full_name || "User"}</p>
           <p className="truncate text-xs text-slate-500">{user?.email}</p>
@@ -37,24 +37,24 @@ export default function UserMenu({ onLogout, isRTL }) {
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={() => navigate("/Profile")} className="cursor-pointer">
           <User className="mr-2 h-4 w-4" />
-          {isRTL ? "ملفي الشخصي" : "My Profile"}
+          My Profile
         </DropdownMenuItem>
         {(user?.role === "owner" || user?.role === "admin") && (
           <>
             <DropdownMenuItem onSelect={() => navigate("/OrganizationSettings")} className="cursor-pointer">
               <Building2 className="mr-2 h-4 w-4" />
-              {isRTL ? "إعدادات المنظمة" : "Organization Settings"}
+              Organization Settings
             </DropdownMenuItem>
             <DropdownMenuItem onSelect={() => navigate("/AuditTrail")} className="cursor-pointer">
               <Activity className="mr-2 h-4 w-4" />
-              {isRTL ? "سجل التدقيق" : "Audit Trail"}
+              Audit Trail
             </DropdownMenuItem>
           </>
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onSelect={onLogout} className="cursor-pointer text-red-600 focus:text-red-600">
           <LogOut className="mr-2 h-4 w-4" />
-          {isRTL ? "تسجيل الخروج" : "Logout"}
+          Logout
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
