@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
 import { Building2, Globe, CreditCard, Phone, Save, RefreshCw, Image } from "lucide-react";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
+import UnsavedChangesDialog from "@/components/shared/UnsavedChangesDialog";
 
 const COUNTRIES = ["Sri Lanka", "Saudi Arabia", "UAE", "Kuwait", "Bahrain", "Oman", "Qatar", "Egypt", "Jordan", "Lebanon", "Other"];
 const CURRENCIES = [
@@ -91,6 +93,7 @@ export default function OrganizationSettings() {
     const { toast } = useToast();
     const [form, setForm] = useState(EMPTY);
     const [dirty, setDirty] = useState(false);
+    const { isBlocked, confirm: leaveAnyway, cancel: stayOnPage } = useUnsavedChangesWarning(dirty);
 
     useEffect(() => {
         if (currentOrg) {
@@ -147,6 +150,7 @@ export default function OrganizationSettings() {
 
     return (
         <div className="mx-auto max-w-4xl space-y-6 p-4 md:p-8">
+            <UnsavedChangesDialog open={isBlocked} onStay={stayOnPage} onLeave={leaveAnyway} />
             <div className="flex items-start justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Organization Settings</h1>

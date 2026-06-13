@@ -4,7 +4,16 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
-import { BrowserRouter as Router, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import {
+  createBrowserRouter,
+  createRoutesFromElements,
+  Navigate,
+  Route,
+  RouterProvider,
+  Routes,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { SubscriptionProvider } from '@/lib/SubscriptionContext';
@@ -189,21 +198,30 @@ const AuthenticatedApp = () => {
 };
 
 
-function App() {
+const AppShell = () => (
+  <>
+    <NavigationTracker />
+    <SubscriptionProvider>
+      <AuthenticatedApp />
+    </SubscriptionProvider>
+  </>
+);
 
+const router = createBrowserRouter(
+  createRoutesFromElements(
+    <Route path="*" element={<AppShell />} />
+  )
+);
+
+function App() {
   return (
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
-        <Router>
-          <NavigationTracker />
-          <SubscriptionProvider>
-            <AuthenticatedApp />
-          </SubscriptionProvider>
-        </Router>
+        <RouterProvider router={router} />
         <Toaster />
       </QueryClientProvider>
     </AuthProvider>
-  )
+  );
 }
 
 export default App
