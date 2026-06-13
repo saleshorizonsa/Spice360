@@ -6,11 +6,10 @@ import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
 import {
   createBrowserRouter,
-  createRoutesFromElements,
   Navigate,
+  Outlet,
   Route,
   RouterProvider,
-  Routes,
   useLocation,
   useNavigate,
 } from 'react-router-dom';
@@ -35,15 +34,16 @@ import AcceptInviteScreen from '@/components/AcceptInviteScreen';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
-const MainPage = mainPageKey ? Pages[mainPageKey] : <></>;
+const MainPage = mainPageKey ? Pages[mainPageKey] : null;
 
-const LayoutWrapper = ({ children, currentPageName }) => Layout ?
-  <Layout currentPageName={currentPageName}>{children}</Layout>
+const LayoutWrapper = ({ children, currentPageName }) => Layout
+  ? <Layout currentPageName={currentPageName}>{children}</Layout>
   : <>{children}</>;
 
 const BLOCKED_SUBSCRIPTION_STATUSES = new Set(['expired', 'cancelled', 'past_due', 'suspended']);
 
-const AuthenticatedApp = () => {
+// Auth shell: all gate logic lives here; renders <Outlet> for child page routes when authenticated.
+const AuthShell = () => {
   const { user, isAuthenticated, isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, authProvider } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -51,8 +51,6 @@ const AuthenticatedApp = () => {
   const readiness = useTenantReadiness();
   const [authScreen, setAuthScreen] = useState('login');
   const [selectedPlan, setSelectedPlan] = useState(defaultSubscriptionPlanId);
-
-  // Use shared subscription context instead of a local query
   const { subscription } = useSubscription();
 
   const enterApp = useCallback(() => {
@@ -84,7 +82,6 @@ const AuthenticatedApp = () => {
     if (authScreen === 'forgot') {
       return <ForgotPasswordScreen onBack={() => setAuthScreen('login')} />;
     }
-
     return (
       <LoginScreen
         onLogin={navigateToLogin}
@@ -122,7 +119,6 @@ const AuthenticatedApp = () => {
     return <EmailVerificationPendingPage onBackToLogin={backToLogin} />;
   }
 
-  // Show loading spinner while checking app public settings or auth
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
@@ -131,18 +127,12 @@ const AuthenticatedApp = () => {
     );
   }
 
-  // Handle authentication errors
   if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      return renderAuthEntry();
-    }
+    if (authError.type === 'user_not_registered') return <UserNotRegisteredError />;
+    if (authError.type === 'auth_required') return renderAuthEntry();
   }
 
-  if (!isAuthenticated) {
-    return renderAuthEntry();
-  }
+  if (!isAuthenticated) return renderAuthEntry();
 
   if (authProvider === 'supabase' && !user?.is_platform_owner && !user?.email_verified) {
     if (!canAccessPathForEmailVerification(location.pathname, user)) {
@@ -155,63 +145,56 @@ const AuthenticatedApp = () => {
     return <TenantOnboardingWizard onComplete={enterApp} />;
   }
 
-  // Block access for non-owners with expired/cancelled/suspended subscriptions
   if (isAuthenticated && !user?.is_platform_owner && subscription) {
     const status = subscription.status;
     const trialEnded = status === 'trialing' && subscription.trial_end_date && new Date(subscription.trial_end_date) < new Date();
-    if (trialEnded) {
-      return <SubscriptionGatePage subscriptionStatus="expired" />;
-    }
-    if (BLOCKED_SUBSCRIPTION_STATUSES.has(status)) {
-      return <SubscriptionGatePage subscriptionStatus={status} />;
-    }
+    if (trialEnded) return <SubscriptionGatePage subscriptionStatus="expired" />;
+    if (BLOCKED_SUBSCRIPTION_STATUSES.has(status)) return <SubscriptionGatePage subscriptionStatus={status} />;
   }
 
-  if (location.pathname === '/' && !hasEnteredApp) {
-    return renderAuthEntry();
-  }
+  if (location.pathname === '/' && !hasEnteredApp) return renderAuthEntry();
 
-  // Render the main app
-  return (
-    <Routes>
-      <Route path="/" element={
-        <LayoutWrapper currentPageName={mainPageKey}>
-          <MainPage />
-        </LayoutWrapper>
-      } />
-      {Object.entries(Pages).map(([path, Page]) => (
-        <Route
-          key={path}
-          path={`/${path}`}
-          element={
-            <LayoutWrapper currentPageName={path}>
-              <ModuleGate pageName={path}>
-                <Page />
-              </ModuleGate>
-            </LayoutWrapper>
-          }
-        />
-      ))}
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
-  );
+  // Authenticated and ready — render the matched child page route
+  return <Outlet />;
 };
 
+// ── Route config: each page is a real data-router route so useBlocker works ──
+const pageRoutes = Object.entries(Pages).map(([path, Page]) => ({
+  path: `/${path}`,
+  element: (
+    <LayoutWrapper currentPageName={path}>
+      <ModuleGate pageName={path}>
+        <Page />
+      </ModuleGate>
+    </LayoutWrapper>
+  ),
+}));
 
-const AppShell = () => (
-  <>
-    <NavigationTracker />
-    <SubscriptionProvider>
-      <AuthenticatedApp />
-    </SubscriptionProvider>
-  </>
-);
-
-const router = createBrowserRouter(
-  createRoutesFromElements(
-    <Route path="*" element={<AppShell />} />
-  )
-);
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: (
+      <>
+        <NavigationTracker />
+        <SubscriptionProvider>
+          <AuthShell />
+        </SubscriptionProvider>
+      </>
+    ),
+    children: [
+      ...(MainPage ? [{
+        index: true,
+        element: (
+          <LayoutWrapper currentPageName={mainPageKey}>
+            <MainPage />
+          </LayoutWrapper>
+        ),
+      }] : []),
+      ...pageRoutes,
+      { path: '*', element: <PageNotFound /> },
+    ],
+  },
+]);
 
 function App() {
   return (

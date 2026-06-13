@@ -2,7 +2,15 @@ import { useCallback, useEffect } from 'react';
 import { useBlocker } from 'react-router-dom';
 
 export function useUnsavedChangesWarning(isDirty) {
-  const blocker = useBlocker(isDirty);
+  // Callback form is required — passing a raw boolean doesn't reliably
+  // trigger the blocker when navigating between routes in the same router.
+  const shouldBlock = useCallback(
+    ({ currentLocation, nextLocation }) =>
+      isDirty && currentLocation.pathname !== nextLocation.pathname,
+    [isDirty]
+  );
+
+  const blocker = useBlocker(shouldBlock);
 
   // Native browser dialog for tab close / refresh
   useEffect(() => {
@@ -12,9 +20,9 @@ export function useUnsavedChangesWarning(isDirty) {
     return () => window.removeEventListener('beforeunload', handle);
   }, [isDirty]);
 
-  // Reset the blocker if it gets stuck after isDirty clears
+  // Reset a stuck blocker when the form becomes clean (e.g. after save)
   useEffect(() => {
-    if (!isDirty && blocker.state === 'blocked') blocker.reset();
+    if (!isDirty && blocker.state === 'blocked') blocker.reset?.();
   }, [isDirty, blocker]);
 
   const confirm = useCallback(() => {
