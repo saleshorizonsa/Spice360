@@ -454,12 +454,10 @@ function ProjectCards() {
 function ComplianceCards() {
     const { data: zatca = [] } = useEntityList("ZATCASubmissionLog", ["dashboard-zatca"], "-submission_date");
     const { data: vat = [] } = useEntityList("VATReturn", ["dashboard-vat"], "-period_end");
-    const { data: zakat = [] } = useEntityList("ZakatComputation", ["dashboard-zakat"], "-period_end");
 
     return <ModuleCards cards={[
         { title: "ZATCA Submissions", value: toList(zatca).length, description: `${toList(zatca).filter(z => z.status === "failed").length} failed submissions`, icon: FileCheck, color: "blue", to: "ZATCA" },
         { title: "VAT Returns", value: toList(vat).length, description: "VAT return records", icon: Receipt, color: "emerald", to: "ComplianceReports" },
-        { title: "Zakat Computations", value: toList(zakat).length, description: "Zakat calculation records", icon: Calculator, color: "amber", to: "ZakatManagement" },
         { title: "Compliance Reports", value: "Reports", description: "Regulatory reporting center", icon: BarChart3, color: "purple", to: "ComplianceReports" }
     ]} />;
 }

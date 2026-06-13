@@ -92,7 +92,6 @@ import SalesReports from './pages/SalesReports';
 import SupplyChain from './pages/SupplyChain';
 import TreasuryManagement from './pages/TreasuryManagement';
 import ZATCA from './pages/ZATCA';
-import ZakatManagement from './pages/ZakatManagement';
 import Profile from './pages/Profile';
 import OrganizationSettings from './pages/OrganizationSettings';
 import AuditTrail from './pages/AuditTrail';
@@ -147,7 +146,6 @@ export const PAGES = {
     "SupplyChain": SupplyChain,
     "TreasuryManagement": TreasuryManagement,
     "ZATCA": ZATCA,
-    "ZakatManagement": ZakatManagement,
     "Profile": Profile,
     "OrganizationSettings": OrganizationSettings,
     "AuditTrail": AuditTrail,

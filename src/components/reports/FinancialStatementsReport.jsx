@@ -366,7 +366,7 @@ export default function FinancialStatementsReport({ initialTab = "profit_loss" }
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <div>
               <CardTitle>Financial Statements</CardTitle>
-              <p className="mt-1 text-sm text-slate-600">Ledger-based reports for management, audit, zakat, and close review.</p>
+              <p className="mt-1 text-sm text-slate-600">Ledger-based reports for management, audit, and close review.</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" onClick={() => exportStatement("pdf")} disabled={!canExport}>
