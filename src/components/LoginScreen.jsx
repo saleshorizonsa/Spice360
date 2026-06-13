@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/lib/AuthContext';
 import { defaultSubscriptionPlanId, getSubscriptionPlan, storeSignupPlan } from '@/lib/subscriptionPlans';
-import cinnamonBg from '@/assets/login-cinnamon.jpg';
+import cinnamonBg from '@/assets/Cinnamon.jpg';
 
 const PILLS = ['Cinnamon processing', 'Sri Lanka compliance', 'Secure access'];
 
