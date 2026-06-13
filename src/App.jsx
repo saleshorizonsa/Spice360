@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
@@ -158,6 +158,14 @@ const AuthShell = () => {
   return <Outlet />;
 };
 
+// Logout route element — calls logout() on mount, then auth state clears and
+// AuthShell naturally redirects to the login screen.
+const LogoutHandler = () => {
+  const { logout } = useAuth();
+  useEffect(() => { logout(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  return null;
+};
+
 // ── Route config: each page is a real data-router route so useBlocker works ──
 const pageRoutes = Object.entries(Pages).map(([path, Page]) => ({
   path: `/${path}`,
@@ -191,6 +199,7 @@ const router = createBrowserRouter([
         ),
       }] : []),
       ...pageRoutes,
+      { path: 'logout', element: <LogoutHandler /> },
       { path: '*', element: <PageNotFound /> },
     ],
   },

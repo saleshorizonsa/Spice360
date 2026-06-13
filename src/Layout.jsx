@@ -256,7 +256,7 @@ function LayoutContent({ children, currentPageName }) {
                     
                     <div className="flex items-center gap-2">
                         <NotificationBell />
-                        <UserMenu onLogout={logout} isRTL={false} />
+                        <UserMenu onLogout={() => navigate('/logout')} isRTL={false} />
 
                         <Sheet>
                             <SheetTrigger asChild>
@@ -294,7 +294,7 @@ function LayoutContent({ children, currentPageName }) {
                         <GlobalSearch />
                         <div className="hidden items-center gap-2 lg:flex">
                             <NotificationBell />
-                            <UserMenu onLogout={logout} isRTL={false} />
+                            <UserMenu onLogout={() => navigate('/logout')} isRTL={false} />
                         </div>
                     </div>
                     <TrialBanner />
