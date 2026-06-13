@@ -40,7 +40,7 @@ const AuthenticatedApp = () => {
   const navigate = useNavigate();
   const hasEnteredApp = sessionStorage.getItem('horizon_entered_app') === 'true';
   const readiness = useTenantReadiness();
-  const [authScreen, setAuthScreen] = useState('landing');
+  const [authScreen, setAuthScreen] = useState('login');
   const [selectedPlan, setSelectedPlan] = useState(defaultSubscriptionPlanId);
 
   // Use shared subscription context instead of a local query
@@ -83,7 +83,6 @@ const AuthenticatedApp = () => {
         onSignupPending={(email) => navigate(`/email-verification-pending?email=${encodeURIComponent(email)}`, { replace: true })}
         selectedPlan={selectedPlan}
         initialMode={authScreen === 'signup' ? 'signup' : 'signin'}
-        onBackToLanding={() => setAuthScreen('landing')}
         onForgotPassword={() => setAuthScreen('forgot')}
       />
     );

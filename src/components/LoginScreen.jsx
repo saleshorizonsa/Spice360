@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ArrowRight, CheckCircle2, LogIn, Mail, ShieldCheck, UserPlus } from 'lucide-react';
+import { ArrowRight, CheckCircle2, LogIn, Mail, ShieldCheck, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
 import { useAuth } from '@/lib/AuthContext';
-import BrandLogo from '@/components/BrandLogo';
 import { defaultSubscriptionPlanId, getSubscriptionPlan, storeSignupPlan } from '@/lib/subscriptionPlans';
+import cinnamonBg from '@/assets/login-cinnamon.jpg';
+
+const PILLS = ['Cinnamon processing', 'Sri Lanka compliance', 'Secure access'];
 
 export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = defaultSubscriptionPlanId, initialMode = 'signin', onBackToLanding, onForgotPassword }) {
   const { authProvider, authError, signInWithPassword, signUpWithPassword, resendVerificationEmail } = useAuth();
@@ -97,7 +99,7 @@ export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = def
       setPendingConfirmationEmail(email);
       toast({
         title: 'Confirmation email sent',
-        description: 'Use the latest email from HORIZON. Check spam or junk if it is not in your inbox.'
+        description: 'Use the latest email from Spice360. Check spam or junk if it is not in your inbox.'
       });
     } catch (error) {
       toast({
@@ -111,62 +113,82 @@ export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = def
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f7fb]">
+    <div className="min-h-screen bg-stone-100">
       <div className="mx-auto flex min-h-screen w-full max-w-7xl items-center px-6 py-10">
         <div className="grid w-full overflow-hidden rounded-[28px] border border-white/70 bg-white shadow-2xl shadow-slate-200/80 lg:grid-cols-[1.08fr_440px]">
-          <div className="relative flex min-h-[680px] flex-col justify-between bg-[#15243b] p-8 text-white lg:p-12">
-            <div className="absolute inset-0 opacity-95">
-              <div className="h-full w-full bg-[radial-gradient(circle_at_20%_20%,rgba(214,143,43,0.34),transparent_28%),radial-gradient(circle_at_85%_18%,rgba(72,111,168,0.4),transparent_26%),linear-gradient(135deg,#15243b_0%,#243d62_48%,#6d4522_100%)]" />
-            </div>
-            <div className="relative z-10">
-              <div className="inline-flex rounded-2xl bg-white px-5 py-4 shadow-xl shadow-slate-950/20">
-                <BrandLogo imageClassName="h-20" />
+
+          {/* ── LEFT PANEL — cinnamon imagery ── */}
+          <div className="relative flex min-h-[680px] flex-col justify-between overflow-hidden p-8 text-white lg:p-12">
+
+            {/* Background image */}
+            <img
+              src={cinnamonBg}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+
+            {/* Warm overlay — dark amber/cinnamon gradient */}
+            <div className="absolute inset-0 bg-gradient-to-b from-amber-950/82 via-orange-900/60 to-stone-950/88" />
+
+            {/* Top: Spice360 wordmark */}
+            <div className="relative z-10 flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-400 shadow-lg shadow-amber-950/40">
+                <span className="text-lg font-extrabold text-amber-950">S</span>
               </div>
+              <span className="text-xl font-bold tracking-wide">Spice360</span>
             </div>
 
+            {/* Middle: headline + tagline + pills */}
             <div className="relative z-10 max-w-2xl space-y-7">
               <div className="inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white/90 backdrop-blur">
-                Enterprise operations platform
+                Enterprise ERP · Sri Lanka
               </div>
-              <h1 className="text-5xl font-bold leading-tight tracking-normal md:text-6xl">
-                HORIZON
+              <h1 className="text-5xl font-bold leading-tight tracking-tight md:text-6xl">
+                From farm<br />to export.
               </h1>
               <p className="max-w-xl text-xl leading-9 text-white/82">
-                Powering sales, finance, inventory, production, HR, approvals, and reporting from one secure workspace.
+                End-to-end operations for Sri Lanka's cinnamon and spice industry — production, finance, compliance, and trade in one platform.
               </p>
               <div className="grid gap-3 text-sm text-white/85 sm:grid-cols-3">
-                {['Operational control', 'Financial clarity', 'Secure access'].map(item => (
-                  <div key={item} className="flex items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-3 py-3 backdrop-blur">
-                    <CheckCircle2 className="h-4 w-4 text-[#d68f2b]" />
+                {PILLS.map(item => (
+                  <div
+                    key={item}
+                    className="flex items-center gap-2 rounded-xl border border-white/15 bg-black/25 px-3 py-3 backdrop-blur"
+                  >
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-amber-400" />
                     <span>{item}</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="relative z-10 text-sm text-white/65">
-              Built for focused business execution.
+            {/* Bottom: footer tagline */}
+            <div className="relative z-10 text-sm text-white/50">
+              Spice360 — Built for Sri Lanka's spice industry.
             </div>
           </div>
 
+          {/* ── RIGHT PANEL — sign-in form (unchanged) ── */}
           <div className="flex flex-col justify-center bg-white p-7 lg:p-9">
             {onBackToLanding && (
               <button
                 type="button"
                 onClick={onBackToLanding}
-                className="mb-6 flex w-fit items-center gap-1.5 text-sm text-slate-500 transition-colors hover:text-[#24466f]"
+                className="mb-6 flex w-fit items-center gap-1.5 text-sm text-slate-500 transition-colors hover:text-amber-700"
               >
-                <ArrowLeft className="h-4 w-4" />
-                Back to Home
+                ← Back
               </button>
             )}
             <div className="mb-8">
-              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#eef3f9]">
-                <ShieldCheck className="h-6 w-6 text-[#24466f]" />
+              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-amber-50">
+                <ShieldCheck className="h-6 w-6 text-amber-600" />
               </div>
               <h2 className="text-2xl font-bold tracking-normal text-slate-950">User Login</h2>
               <p className="mt-2 text-sm leading-6 text-slate-600">
-                {mode === 'signup' ? `Create your account on the ${plan?.name || 'selected'} plan.` : 'Enter your User ID and password to access HORIZON.'}
+                {mode === 'signup'
+                  ? `Create your account on the ${plan?.name || 'selected'} plan.`
+                  : 'Enter your credentials to access Spice360.'}
               </p>
             </div>
 
@@ -212,13 +234,13 @@ export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = def
                         type="checkbox"
                         checked={termsAccepted}
                         onChange={(e) => setTermsAccepted(e.target.checked)}
-                        className="mt-0.5 h-4 w-4 cursor-pointer rounded border-slate-300 accent-[#24466f]"
+                        className="mt-0.5 h-4 w-4 cursor-pointer rounded border-slate-300 accent-amber-600"
                       />
                       <label htmlFor="tos" className="cursor-pointer text-xs leading-5 text-slate-600">
                         I agree to the{' '}
-                        <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-[#24466f] underline">Terms of Service</a>
+                        <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-amber-700 underline">Terms of Service</a>
                         {' '}and{' '}
-                        <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-[#24466f] underline">Privacy Policy</a>
+                        <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-amber-700 underline">Privacy Policy</a>
                       </label>
                     </div>
                   </>
@@ -250,14 +272,18 @@ export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = def
                     <button
                       type="button"
                       onClick={onForgotPassword}
-                      className="mt-1 text-xs text-[#24466f] hover:underline"
+                      className="mt-1 text-xs text-amber-700 hover:underline"
                     >
                       Forgot password?
                     </button>
                   )}
                 </div>
 
-                <Button type="submit" disabled={isSubmitting || (mode === 'signup' && !termsAccepted)} className="h-11 w-full bg-[#24466f] hover:bg-[#193658]">
+                <Button
+                  type="submit"
+                  disabled={isSubmitting || (mode === 'signup' && !termsAccepted)}
+                  className="h-11 w-full bg-amber-600 hover:bg-amber-700"
+                >
                   {mode === 'signup' ? <UserPlus className="mr-2 h-4 w-4" /> : <LogIn className="mr-2 h-4 w-4" />}
                   {isSubmitting ? 'Please wait...' : mode === 'signup' ? 'Create Account' : 'Sign In'}
                   {!isSubmitting && <ArrowRight className="ml-2 h-4 w-4" />}
@@ -271,11 +297,12 @@ export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = def
                 >
                   {mode === 'signup' ? 'Use an existing account' : 'Create a new account'}
                 </Button>
+
                 {mode === 'signin' && !pendingConfirmationEmail && (
                   <Button
                     type="button"
                     variant="ghost"
-                    className="w-full text-[#24466f]"
+                    className="w-full text-amber-700"
                     onClick={handleResendConfirmation}
                     disabled={isResending}
                   >
@@ -285,7 +312,7 @@ export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = def
                 )}
               </form>
             ) : (
-              <Button onClick={onLogin} className="h-11 w-full bg-[#24466f] hover:bg-[#193658]">
+              <Button onClick={onLogin} className="h-11 w-full bg-amber-600 hover:bg-amber-700">
                 <LogIn className="mr-2 h-4 w-4" />
                 Sign In
               </Button>
@@ -295,6 +322,7 @@ export default function LoginScreen({ onLogin, onAuthSuccess, selectedPlan = def
               Contact your administrator if your account has not been invited.
             </p>
           </div>
+
         </div>
       </div>
     </div>
