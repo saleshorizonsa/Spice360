@@ -79,26 +79,14 @@ export default function ShareholderForm({ item, onClose }) {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="shareholder_name">Shareholder Name *</Label>
-                            <Input
-                                id="shareholder_name"
-                                value={formData.shareholder_name || ''}
-                                onChange={(e) => setFormData({ ...formData, shareholder_name: e.target.value })}
-                                required
-                            />
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="shareholder_name_ar">Shareholder Name (Arabic)</Label>
-                            <Input
-                                id="shareholder_name_ar"
-                                value={formData.shareholder_name_ar || ''}
-                                onChange={(e) => setFormData({ ...formData, shareholder_name_ar: e.target.value })}
-                                dir="rtl"
-                            />
-                        </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="shareholder_name">Shareholder Name *</Label>
+                        <Input
+                            id="shareholder_name"
+                            value={formData.shareholder_name || ''}
+                            onChange={(e) => setFormData({ ...formData, shareholder_name: e.target.value })}
+                            required
+                        />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

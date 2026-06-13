@@ -17,7 +17,6 @@ export default function PlantForm({ item, onClose, open }) {
     const [formData, setFormData] = useState(item || {
         plant_code: '',
         plant_name: '',
-        plant_name_ar: '',
         plant_type: 'manufacturing',
         company_code: '',
         address: '',
@@ -103,22 +102,13 @@ export default function PlantForm({ item, onClose, open }) {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label>Plant Name *</Label>
-                            <Input
-                                value={formData.plant_name}
-                                onChange={(e) => setFormData({...formData, plant_name: e.target.value})}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <Label>Plant Name (Arabic)</Label>
-                            <Input
-                                value={formData.plant_name_ar}
-                                onChange={(e) => setFormData({...formData, plant_name_ar: e.target.value})}
-                            />
-                        </div>
+                    <div>
+                        <Label>Plant Name *</Label>
+                        <Input
+                            value={formData.plant_name}
+                            onChange={(e) => setFormData({...formData, plant_name: e.target.value})}
+                            required
+                        />
                     </div>
 
                     <div>

@@ -21,7 +21,6 @@ export default function RoleForm({ item, onClose }) {
     const [formData, setFormData] = useState({
         role_code: '',
         role_name: '',
-        role_name_ar: '',
         description: '',
         status: 'active',
         is_system_role: false,
@@ -36,7 +35,6 @@ export default function RoleForm({ item, onClose }) {
             setFormData({
                 role_code: item.role_code || '',
                 role_name: item.role_name || '',
-                role_name_ar: item.role_name_ar || '',
                 description: item.description || '',
                 status: item.status || 'active',
                 is_system_role: item.is_system_role || false,
@@ -157,14 +155,6 @@ export default function RoleForm({ item, onClose }) {
                             />
                         </div>
 
-                        <div>
-                            <Label>Role Name (Arabic)</Label>
-                            <Input
-                                value={formData.role_name_ar}
-                                onChange={(e) => setFormData({ ...formData, role_name_ar: e.target.value })}
-                                placeholder="اسم الدور بالعربية"
-                            />
-                        </div>
 
                         <div>
                             <Label>Description</Label>

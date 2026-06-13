@@ -16,7 +16,6 @@ export default function MaterialGroupForm({ item, onClose }) {
     const [formData, setFormData] = useState({
         group_code: '',
         group_name: '',
-        group_name_ar: '',
         description: '',
         status: 'active',
         notes: ''
@@ -88,23 +87,13 @@ export default function MaterialGroupForm({ item, onClose }) {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label>Group Name (English) *</Label>
-                            <Input
-                                value={formData.group_name}
-                                onChange={(e) => handleChange('group_name', e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <Label>Group Name (Arabic)</Label>
-                            <Input
-                                value={formData.group_name_ar}
-                                onChange={(e) => handleChange('group_name_ar', e.target.value)}
-                                dir="rtl"
-                            />
-                        </div>
+                    <div>
+                        <Label>Group Name *</Label>
+                        <Input
+                            value={formData.group_name}
+                            onChange={(e) => handleChange('group_name', e.target.value)}
+                            required
+                        />
                     </div>
 
                     <div>

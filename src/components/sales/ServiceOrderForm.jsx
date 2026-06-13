@@ -25,10 +25,8 @@ export default function ServiceOrderForm({ item, onClose }) {
         service_order_number: '',
         customer_code: '',
         customer_name: '',
-        customer_name_ar: '',
         service_type: 'installation',
         service_description: '',
-        service_description_ar: '',
         order_date: new Date().toISOString().split('T')[0],
         start_date: '',
         end_date: '',
@@ -39,8 +37,7 @@ export default function ServiceOrderForm({ item, onClose }) {
         billed_amount: 0,
         assigned_to: '',
         status: 'draft',
-        notes: '',
-        notes_ar: ''
+        notes: ''
     });
 
     useEffect(() => {
@@ -55,8 +52,7 @@ export default function ServiceOrderForm({ item, onClose }) {
             setFormData(prev => ({
                 ...prev,
                 customer_code: customerCode,
-                customer_name: customer.customer_name,
-                customer_name_ar: customer.customer_name_ar || ''
+                customer_name: customer.customer_name
             }));
         }
     };
@@ -204,34 +200,24 @@ export default function ServiceOrderForm({ item, onClose }) {
                     {/* Customer Information */}
                     <div className="space-y-4">
                         <h3 className="font-semibold text-lg border-b pb-2">Customer Information</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label>Customer *</Label>
-                                <Select 
-                                    value={formData.customer_code} 
-                                    onValueChange={handleCustomerSelect}
-                                    required
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select customer..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {customers.map(c => (
-                                            <SelectItem key={c.id} value={c.customer_code}>
-                                                {c.customer_name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div>
-                                <Label>Customer Name (Arabic)</Label>
-                                <Input
-                                    value={formData.customer_name_ar}
-                                    onChange={(e) => handleChange('customer_name_ar', e.target.value)}
-                                    dir="rtl"
-                                />
-                            </div>
+                        <div>
+                            <Label>Customer *</Label>
+                            <Select
+                                value={formData.customer_code}
+                                onValueChange={handleCustomerSelect}
+                                required
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select customer..." />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {customers.map(c => (
+                                        <SelectItem key={c.id} value={c.customer_code}>
+                                            {c.customer_name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </div>
 
@@ -245,15 +231,6 @@ export default function ServiceOrderForm({ item, onClose }) {
                                 onChange={(e) => handleChange('service_description', e.target.value)}
                                 required
                                 rows={3}
-                            />
-                        </div>
-                        <div>
-                            <Label>Service Description (Arabic)</Label>
-                            <Textarea
-                                value={formData.service_description_ar}
-                                onChange={(e) => handleChange('service_description_ar', e.target.value)}
-                                rows={3}
-                                dir="rtl"
                             />
                         </div>
 
@@ -424,15 +401,6 @@ export default function ServiceOrderForm({ item, onClose }) {
                                 value={formData.notes}
                                 onChange={(e) => handleChange('notes', e.target.value)}
                                 rows={3}
-                            />
-                        </div>
-                        <div>
-                            <Label>Notes (Arabic)</Label>
-                            <Textarea
-                                value={formData.notes_ar}
-                                onChange={(e) => handleChange('notes_ar', e.target.value)}
-                                rows={3}
-                                dir="rtl"
                             />
                         </div>
                     </div>

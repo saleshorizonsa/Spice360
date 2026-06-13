@@ -18,7 +18,6 @@ export default function MilestoneForm({ item, onClose }) {
         project_code: '',
         project_name: '',
         milestone_name: '',
-        milestone_name_ar: '',
         sequence_number: 1,
         description: '',
         deliverables: '',
@@ -144,26 +143,14 @@ export default function MilestoneForm({ item, onClose }) {
                         </Select>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label>Milestone Name (English) *</Label>
-                            <Input
-                                value={formData.milestone_name}
-                                onChange={(e) => handleChange('milestone_name', e.target.value)}
-                                required
-                                placeholder="Phase 1 Completion"
-                            />
-                        </div>
-                        <div>
-                            <Label>Milestone Name (Arabic)</Label>
-                            <Input
-                                value={formData.milestone_name_ar}
-                                onChange={(e) => handleChange('milestone_name_ar', e.target.value)}
-                                placeholder="إنجاز المرحلة الأولى"
-                                className="text-right"
-                                dir="rtl"
-                            />
-                        </div>
+                    <div>
+                        <Label>Milestone Name *</Label>
+                        <Input
+                            value={formData.milestone_name}
+                            onChange={(e) => handleChange('milestone_name', e.target.value)}
+                            required
+                            placeholder="Phase 1 Completion"
+                        />
                     </div>
 
                     <div>

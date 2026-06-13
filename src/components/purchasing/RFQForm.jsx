@@ -41,7 +41,6 @@ export default function RFQForm({ item, onClose }) {
         pr_reference: '',
         material_code: '',
         material_name: '',
-        material_name_ar: '',
         quantity: 0,
         unit_of_measure: 'kg',
         required_date: '',

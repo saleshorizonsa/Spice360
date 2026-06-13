@@ -47,7 +47,6 @@ export default function EmployeeForm({ item, onClose }) {
         whatsapp: '',
         phone: '',
         address: '',
-        address_ar: '',
         city: '',
         state: '',
         postal_code: '',
@@ -467,27 +466,15 @@ export default function EmployeeForm({ item, onClose }) {
                             </div>
 
                             <div className="border-b pb-4">
-                                <h3 className="font-semibold text-lg mb-4">Current Address in Saudi Arabia</h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <Label>Address (English)</Label>
-                                        <Textarea
-                                            value={formData.address}
-                                            onChange={(e) => setFormData({...formData, address: e.target.value})}
-                                            placeholder="Building, Street, District"
-                                            rows={2}
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label>Address (Arabic)</Label>
-                                        <Textarea
-                                            value={formData.address_ar}
-                                            onChange={(e) => setFormData({...formData, address_ar: e.target.value})}
-                                            placeholder="المبنى، الشارع، الحي"
-                                            rows={2}
-                                            dir="rtl"
-                                        />
-                                    </div>
+                                <h3 className="font-semibold text-lg mb-4">Current Address</h3>
+                                <div>
+                                    <Label>Address</Label>
+                                    <Textarea
+                                        value={formData.address}
+                                        onChange={(e) => setFormData({...formData, address: e.target.value})}
+                                        placeholder="Building, Street, District"
+                                        rows={2}
+                                    />
                                 </div>
                                 <div className="grid grid-cols-3 gap-4 mt-4">
                                     <div>

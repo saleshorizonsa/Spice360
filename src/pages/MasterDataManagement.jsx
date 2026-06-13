@@ -223,14 +223,14 @@ S001,Ali Ahmed,ali.ahmed@example.com,+966501112222,+966501112222,Eastern,5,10000
 S002,Fahad Mohammed,fahad.mohammed@example.com,+966503334444,+966503334444,Central,7,150000,active`;
             filename = "salesman_template.csv";
         } else if (type === "materialGroup") { // New template
-            csvContent = `group_code,group_name,group_name_ar,description,status
-PIPE,Pipes,أنابيب,Various types of pipes,active
-FIT,Fittings,تجهيزات,Various pipe fittings,active`;
+            csvContent = `group_code,group_name,description,status
+PIPE,Pipes,Various types of pipes,active
+FIT,Fittings,Various pipe fittings,active`;
             filename = "material_group_template.csv";
         } else if (type === "materialSubGroup") { // New template
-            csvContent = `subgroup_code,subgroup_name,subgroup_name_ar,group_code,description,status
-PIPE-PVC,PVC Pipes,أنابيب PVC,PIPE,Polyvinyl Chloride Pipes,active
-FIT-ELBOW,Elbow Fittings,تجهيزات الكوع,FIT,90 degree elbow fittings,active`;
+            csvContent = `subgroup_code,subgroup_name,group_code,description,status
+PIPE-PVC,PVC Pipes,PIPE,Polyvinyl Chloride Pipes,active
+FIT-ELBOW,Elbow Fittings,FIT,90 degree elbow fittings,active`;
             filename = "material_subgroup_template.csv";
         } else if (type === "unitConversion") { // New template
             csvContent = `material_code,from_unit,to_unit,conversion_factor,is_default,description,status
@@ -323,7 +323,6 @@ M002,piece,box,10,true,"10 pieces per box",active`;
     const groupColumns = [ // New columns
         { key: 'group_code', label: 'Group Code' },
         { key: 'group_name', label: 'Group Name' },
-        { key: 'group_name_ar', label: 'Name (Arabic)' },
         { key: 'description', label: 'Description' },
         { key: 'status', label: 'Status', render: (val) => (
             <span className={`px-2 py-1 rounded text-xs ${
@@ -337,8 +336,7 @@ M002,piece,box,10,true,"10 pieces per box",active`;
     const subGroupColumns = [ // New columns
         { key: 'subgroup_code', label: 'Sub-Group Code' },
         { key: 'subgroup_name', label: 'Sub-Group Name' },
-        { key: 'group_name', label: 'Parent Group' }, // Assuming this will be populated
-        { key: 'subgroup_name_ar', label: 'Name (Arabic)' },
+        { key: 'group_name', label: 'Parent Group' },
         { key: 'status', label: 'Status', render: (val) => (
             <span className={`px-2 py-1 rounded text-xs ${
                 val === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'

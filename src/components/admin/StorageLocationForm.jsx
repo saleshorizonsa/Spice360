@@ -17,7 +17,6 @@ export default function StorageLocationForm({ item, onClose, open }) {
     const [formData, setFormData] = useState(item || {
         storage_location_code: '',
         storage_location_name: '',
-        storage_location_name_ar: '',
         company_code: '',
         plant_code: '',
         location_type: 'warehouse',
@@ -144,22 +143,13 @@ export default function StorageLocationForm({ item, onClose, open }) {
                         </Select>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label>Storage Location Name *</Label>
-                            <Input
-                                value={formData.storage_location_name}
-                                onChange={(e) => setFormData({...formData, storage_location_name: e.target.value})}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <Label>Name (Arabic)</Label>
-                            <Input
-                                value={formData.storage_location_name_ar}
-                                onChange={(e) => setFormData({...formData, storage_location_name_ar: e.target.value})}
-                            />
-                        </div>
+                    <div>
+                        <Label>Storage Location Name *</Label>
+                        <Input
+                            value={formData.storage_location_name}
+                            onChange={(e) => setFormData({...formData, storage_location_name: e.target.value})}
+                            required
+                        />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">

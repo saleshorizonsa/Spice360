@@ -80,7 +80,6 @@ export default function QCPlanForm({ item, onClose }) {
         const newSpec = {
             test_number: testSpecs.length + 1,
             test_parameter: '',
-            test_parameter_ar: '',
             test_method: '',
             data_type: 'numeric',
             lower_limit: 0,

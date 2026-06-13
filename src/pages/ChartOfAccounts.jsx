@@ -13,7 +13,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/components/ui/use-toast";
-import { useLanguage } from "@/components/utils/languageContext";
 import { useOrganization } from "@/components/utils/OrganizationContext";
 
 const fmt = (value) => `LKR ${Number(value || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -94,11 +93,10 @@ export async function seedChartOfAccounts(orgId) {
   const toInsert = seededAccounts.filter(([code]) => !existingCodes.has(code));
 
   await Promise.all(
-    toInsert.map(([account_code, account_name, account_name_ar, account_type, account_subtype, parent_account, is_header, normal_balance]) =>
+    toInsert.map(([account_code, account_name, , account_type, account_subtype, parent_account, is_header, normal_balance]) =>
       matrixSales.entities.Account.create({
         account_code,
         account_name,
-        account_name_ar,
         account_type,
         account_subtype,
         parent_account,
@@ -151,7 +149,6 @@ function AccountForm({ account, accounts, orgId, onClose }) {
   const [form, setForm] = useState(account || {
     account_code: "",
     account_name: "",
-    account_name_ar: "",
     account_type: "asset",
     account_subtype: "",
     parent_account: "",
@@ -191,7 +188,6 @@ function AccountForm({ account, accounts, orgId, onClose }) {
           <div className="grid grid-cols-2 gap-4">
             <div><Label>Account Code *</Label><Input value={form.account_code} onChange={(e) => update("account_code", e.target.value)} required /></div>
             <div><Label>Account Name *</Label><Input value={form.account_name} onChange={(e) => update("account_name", e.target.value)} required /></div>
-            <div><Label>Arabic Name</Label><Input value={form.account_name_ar || ""} onChange={(e) => update("account_name_ar", e.target.value)} /></div>
             <div>
               <Label>Account Type *</Label>
               <Select value={form.account_type} onValueChange={(value) => update("account_type", value)}>
@@ -247,7 +243,6 @@ function AccountForm({ account, accounts, orgId, onClose }) {
 
 export default function ChartOfAccounts() {
   const { currentOrg } = useOrganization();
-  const { isRTL } = useLanguage();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -336,7 +331,7 @@ export default function ChartOfAccounts() {
   });
 
   return (
-    <div className="space-y-6 p-6" dir={isRTL ? "rtl" : "ltr"}>
+    <div className="space-y-6 p-6">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Chart of Accounts</h1>
@@ -380,7 +375,7 @@ export default function ChartOfAccounts() {
                   <TableRow key={`${account.id || account.account_code}`}>
                     <TableCell className={account.is_header ? "font-bold" : "font-mono"}>{account.account_code}</TableCell>
                     <TableCell className={account.is_header ? "font-bold" : ""} style={{ paddingInlineStart: `${account.depth * 16 + 16}px` }}>
-                      {isRTL && account.account_name_ar ? account.account_name_ar : account.account_name}
+                      {account.account_name}
                       {account.is_header && <Badge className="ml-2" variant="outline">Header</Badge>}
                     </TableCell>
                     <TableCell><Badge variant="secondary">{account.account_type}</Badge></TableCell>

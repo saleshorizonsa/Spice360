@@ -16,7 +16,6 @@ export default function SalesmanForm({ item, onClose }) {
     const [formData, setFormData] = useState({
         salesman_code: '',
         salesman_name: '',
-        salesman_name_ar: '',
         employee_number: '',
         email: '',
         phone: '',
@@ -90,23 +89,13 @@ export default function SalesmanForm({ item, onClose }) {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label>Salesman Name (English) *</Label>
-                                <Input
-                                    value={formData.salesman_name}
-                                    onChange={(e) => handleChange('salesman_name', e.target.value)}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <Label>Salesman Name (Arabic)</Label>
-                                <Input
-                                    value={formData.salesman_name_ar}
-                                    onChange={(e) => handleChange('salesman_name_ar', e.target.value)}
-                                    dir="rtl"
-                                />
-                            </div>
+                        <div>
+                            <Label>Salesman Name *</Label>
+                            <Input
+                                value={formData.salesman_name}
+                                onChange={(e) => handleChange('salesman_name', e.target.value)}
+                                required
+                            />
                         </div>
                     </div>
 

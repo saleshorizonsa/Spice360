@@ -27,13 +27,11 @@ export default function SalesReturnForm({ item, onClose }) {
         sales_order_number: '',
         customer_code: '',
         customer_name: '',
-        customer_name_ar: '',
         return_date: new Date().toISOString().split('T')[0],
         return_reason: 'defective',
         return_reason_details: '',
         product_code: '',
         product_name: '',
-        product_name_ar: '',
         quantity_returned: 0,
         unit_price: 0,
         subtotal: 0,
@@ -79,10 +77,8 @@ export default function SalesReturnForm({ item, onClose }) {
                 sales_order_number: selectedInvoice.sales_order_number || '',
                 customer_code: selectedInvoice.customer_code || '',
                 customer_name: selectedInvoice.customer_name,
-                customer_name_ar: selectedInvoice.customer_name_ar || '',
                 product_code: selectedInvoice.product_code,
                 product_name: selectedInvoice.product_name,
-                product_name_ar: selectedInvoice.product_name_ar || '',
                 quantity_returned: selectedInvoice.quantity,
                 unit_price: selectedInvoice.unit_price,
                 vat_percent: selectedInvoice.vat_percent || 15,
@@ -250,25 +246,14 @@ export default function SalesReturnForm({ item, onClose }) {
                     {/* Customer Information */}
                     <div className="space-y-4">
                         <h3 className="font-semibold text-lg border-b pb-2">Customer Information</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label>Customer Name *</Label>
-                                <Input
-                                    value={formData.customer_name}
-                                    onChange={(e) => handleChange('customer_name', e.target.value)}
-                                    required
-                                    disabled={!!formData.invoice_number}
-                                />
-                            </div>
-                            <div>
-                                <Label>Customer Name (Arabic)</Label>
-                                <Input
-                                    value={formData.customer_name_ar}
-                                    onChange={(e) => handleChange('customer_name_ar', e.target.value)}
-                                    dir="rtl"
-                                    disabled={!!formData.invoice_number}
-                                />
-                            </div>
+                        <div>
+                            <Label>Customer Name *</Label>
+                            <Input
+                                value={formData.customer_name}
+                                onChange={(e) => handleChange('customer_name', e.target.value)}
+                                required
+                                disabled={!!formData.invoice_number}
+                            />
                         </div>
                     </div>
 

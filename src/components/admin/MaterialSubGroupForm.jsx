@@ -16,7 +16,6 @@ export default function MaterialSubGroupForm({ item, onClose }) {
     const [formData, setFormData] = useState({
         subgroup_code: '',
         subgroup_name: '',
-        subgroup_name_ar: '',
         group_code: '',
         group_name: '',
         description: '',
@@ -104,23 +103,13 @@ export default function MaterialSubGroupForm({ item, onClose }) {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <Label>Sub-Group Name (English) *</Label>
-                            <Input
-                                value={formData.subgroup_name}
-                                onChange={(e) => handleChange('subgroup_name', e.target.value)}
-                                required
-                            />
-                        </div>
-                        <div>
-                            <Label>Sub-Group Name (Arabic)</Label>
-                            <Input
-                                value={formData.subgroup_name_ar}
-                                onChange={(e) => handleChange('subgroup_name_ar', e.target.value)}
-                                dir="rtl"
-                            />
-                        </div>
+                    <div>
+                        <Label>Sub-Group Name *</Label>
+                        <Input
+                            value={formData.subgroup_name}
+                            onChange={(e) => handleChange('subgroup_name', e.target.value)}
+                            required
+                        />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
