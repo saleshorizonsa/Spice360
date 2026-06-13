@@ -19,9 +19,7 @@ export default function OrganizationForm({ item, onClose }) {
     const [formData, setFormData] = useState({
         organization_code: '',
         organization_name: '',
-        organization_name_ar: '',
         trade_name: '',
-        trade_name_ar: '',
         cr_number: '',
         cr_issue_date: '',
         cr_expiry_date: '',
@@ -40,14 +38,10 @@ export default function OrganizationForm({ item, onClose }) {
         default_language: 'en',
         country: 'Sri Lanka',
         headquarters_address: '',
-        headquarters_address_ar: '',
         building_number: '',
         street_name: '',
-        street_name_ar: '',
         district: '',
-        district_ar: '',
         city: '',
-        city_ar: '',
         postal_code: '',
         po_box: '',
         additional_number: '',
@@ -56,7 +50,6 @@ export default function OrganizationForm({ item, onClose }) {
         email: '',
         website: '',
         ceo_name: '',
-        ceo_name_ar: '',
         cfo_name: '',
         authorized_signatory: '',
         authorized_signatory_title: '',
@@ -175,25 +168,14 @@ export default function OrganizationForm({ item, onClose }) {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label>Organization Name (English) *</Label>
-                                    <Input
-                                        value={formData.organization_name}
-                                        onChange={(e) => setFormData({...formData, organization_name: e.target.value})}
-                                        required
-                                        placeholder="ABC Manufacturing Company"
-                                    />
-                                </div>
-                                <div>
-                                    <Label>Organization Name (Arabic)</Label>
-                                    <Input
-                                        value={formData.organization_name_ar}
-                                        onChange={(e) => setFormData({...formData, organization_name_ar: e.target.value})}
-                                        placeholder="شركة ABC للتصنيع"
-                                        dir="rtl"
-                                    />
-                                </div>
+                            <div>
+                                <Label>Organization Name *</Label>
+                                <Input
+                                    value={formData.organization_name}
+                                    onChange={(e) => setFormData({...formData, organization_name: e.target.value})}
+                                    required
+                                    placeholder="ABC Manufacturing Company"
+                                />
                             </div>
 
                             <div className="grid grid-cols-3 gap-4">
@@ -347,25 +329,14 @@ export default function OrganizationForm({ item, onClose }) {
 
                         {/* Address */}
                         <TabsContent value="address" className="space-y-4 mt-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label>City *</Label>
-                                    <Input
-                                        value={formData.city}
-                                        onChange={(e) => setFormData({...formData, city: e.target.value})}
-                                        required
-                                        placeholder="Riyadh"
-                                    />
-                                </div>
-                                <div>
-                                    <Label>City (Arabic)</Label>
-                                    <Input
-                                        value={formData.city_ar}
-                                        onChange={(e) => setFormData({...formData, city_ar: e.target.value})}
-                                        placeholder="الرياض"
-                                        dir="rtl"
-                                    />
-                                </div>
+                            <div>
+                                <Label>City *</Label>
+                                <Input
+                                    value={formData.city}
+                                    onChange={(e) => setFormData({...formData, city: e.target.value})}
+                                    required
+                                    placeholder="Riyadh"
+                                />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">

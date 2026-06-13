@@ -28,9 +28,7 @@ export default function OrganizationSetupForm() {
     const [formData, setFormData] = useState({
         organization_code: 'ORG001',
         organization_name: '',
-        organization_name_ar: '',
         trade_name: '',
-        trade_name_ar: '',
         cr_number: '',
         cr_issue_date: '',
         cr_expiry_date: '',
@@ -49,14 +47,10 @@ export default function OrganizationSetupForm() {
         default_language: 'en',
         country: 'Sri Lanka',
         headquarters_address: '',
-        headquarters_address_ar: '',
         building_number: '',
         street_name: '',
-        street_name_ar: '',
         district: '',
-        district_ar: '',
         city: '',
-        city_ar: '',
         postal_code: '',
         po_box: '',
         additional_number: '',
@@ -65,7 +59,6 @@ export default function OrganizationSetupForm() {
         email: '',
         website: '',
         ceo_name: '',
-        ceo_name_ar: '',
         cfo_name: '',
         authorized_signatory: '',
         authorized_signatory_title: '',
@@ -182,41 +175,20 @@ export default function OrganizationSetupForm() {
                         <TabsContent value="basic" className="space-y-4 mt-4">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label>Organization Name (English) *</Label>
+                                    <Label>Organization Name *</Label>
                                     <Input
                                         value={formData.organization_name}
                                         onChange={(e) => setFormData({...formData, organization_name: e.target.value})}
                                         required
-                                        placeholder="MatrixERP Manufacturing Company"
+                                        placeholder="Kosala Trading Company"
                                     />
                                 </div>
                                 <div>
-                                    <Label>Organization Name (Arabic)</Label>
-                                    <Input
-                                        value={formData.organization_name_ar}
-                                        onChange={(e) => setFormData({...formData, organization_name_ar: e.target.value})}
-                                        placeholder="شركة MatrixERP للتصنيع"
-                                        dir="rtl"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label>Trade Name (English)</Label>
+                                    <Label>Trade Name</Label>
                                     <Input
                                         value={formData.trade_name}
                                         onChange={(e) => setFormData({...formData, trade_name: e.target.value})}
-                                        placeholder="MatrixERP"
-                                    />
-                                </div>
-                                <div>
-                                    <Label>Trade Name (Arabic)</Label>
-                                    <Input
-                                        value={formData.trade_name_ar}
-                                        onChange={(e) => setFormData({...formData, trade_name_ar: e.target.value})}
-                                        placeholder="ماتريكس إي آر بي"
-                                        dir="rtl"
+                                        placeholder="Kosala"
                                     />
                                 </div>
                             </div>
@@ -452,24 +424,13 @@ export default function OrganizationSetupForm() {
 
                         {/* Address */}
                         <TabsContent value="address" className="space-y-4 mt-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label>Headquarters Address (English)</Label>
-                                    <Textarea
-                                        value={formData.headquarters_address}
-                                        onChange={(e) => setFormData({...formData, headquarters_address: e.target.value})}
-                                        rows={2}
-                                    />
-                                </div>
-                                <div>
-                                    <Label>Headquarters Address (Arabic)</Label>
-                                    <Textarea
-                                        value={formData.headquarters_address_ar}
-                                        onChange={(e) => setFormData({...formData, headquarters_address_ar: e.target.value})}
-                                        rows={2}
-                                        dir="rtl"
-                                    />
-                                </div>
+                            <div>
+                                <Label>Headquarters Address</Label>
+                                <Textarea
+                                    value={formData.headquarters_address}
+                                    onChange={(e) => setFormData({...formData, headquarters_address: e.target.value})}
+                                    rows={2}
+                                />
                             </div>
 
                             <div className="grid grid-cols-3 gap-4">
@@ -499,62 +460,31 @@ export default function OrganizationSetupForm() {
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label>Street Name (English)</Label>
-                                    <Input
-                                        value={formData.street_name}
-                                        onChange={(e) => setFormData({...formData, street_name: e.target.value})}
-                                        placeholder="King Fahd Road"
-                                    />
-                                </div>
-                                <div>
-                                    <Label>Street Name (Arabic)</Label>
-                                    <Input
-                                        value={formData.street_name_ar}
-                                        onChange={(e) => setFormData({...formData, street_name_ar: e.target.value})}
-                                        placeholder="طريق الملك فهد"
-                                        dir="rtl"
-                                    />
-                                </div>
+                            <div>
+                                <Label>Street Name</Label>
+                                <Input
+                                    value={formData.street_name}
+                                    onChange={(e) => setFormData({...formData, street_name: e.target.value})}
+                                    placeholder="Galle Road"
+                                />
+                            </div>
+
+                            <div>
+                                <Label>District</Label>
+                                <Input
+                                    value={formData.district}
+                                    onChange={(e) => setFormData({...formData, district: e.target.value})}
+                                    placeholder="Colombo 03"
+                                />
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <Label>District (English)</Label>
-                                    <Input
-                                        value={formData.district}
-                                        onChange={(e) => setFormData({...formData, district: e.target.value})}
-                                        placeholder="Olaya"
-                                    />
-                                </div>
-                                <div>
-                                    <Label>District (Arabic)</Label>
-                                    <Input
-                                        value={formData.district_ar}
-                                        onChange={(e) => setFormData({...formData, district_ar: e.target.value})}
-                                        placeholder="العليا"
-                                        dir="rtl"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-3 gap-4">
-                                <div>
-                                    <Label>City (English)</Label>
+                                    <Label>City</Label>
                                     <Input
                                         value={formData.city}
                                         onChange={(e) => setFormData({...formData, city: e.target.value})}
-                                        placeholder="Riyadh"
-                                    />
-                                </div>
-                                <div>
-                                    <Label>City (Arabic)</Label>
-                                    <Input
-                                        value={formData.city_ar}
-                                        onChange={(e) => setFormData({...formData, city_ar: e.target.value})}
-                                        placeholder="الرياض"
-                                        dir="rtl"
+                                        placeholder="Colombo"
                                     />
                                 </div>
                                 <div>
@@ -689,7 +619,6 @@ export default function OrganizationSetupForm() {
                                     <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="en">English</SelectItem>
-                                        <SelectItem value="ar">Arabic (العربية)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>

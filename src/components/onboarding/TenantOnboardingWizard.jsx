@@ -69,7 +69,6 @@ const moduleDefaults = [
 const emptyCompanyForm = {
     company_legal_name: "",
     organization_name: "",
-    organization_name_ar: "",
     commercial_registration_number: "",
     vat_number: "",
     country: "Sri Lanka",
@@ -88,7 +87,6 @@ const emptyZatcaForm = {
     vat_registration_number: "",
     cr_number: "",
     organization_name: "",
-    organization_name_ar: "",
     building_number: "",
     street_name: "",
     district: "",
@@ -417,7 +415,6 @@ function CompanyStep({ user, organization, onSaved }) {
                                 <SelectTrigger><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="en">English</SelectItem>
-                                    <SelectItem value="ar">Arabic</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -519,10 +516,6 @@ function ZatcaStep({ organization, existingConfig, onSaved }) {
                         <div className="space-y-2">
                             <Label>Organization Name *</Label>
                             <Input value={formData.organization_name} onChange={(e) => update("organization_name", e.target.value)} />
-                        </div>
-                        <div className="space-y-2">
-                            <Label>Organization Name Arabic</Label>
-                            <Input dir="rtl" value={formData.organization_name_ar} onChange={(e) => update("organization_name_ar", e.target.value)} />
                         </div>
                         <div className="space-y-2">
                             <Label>Building Number *</Label>

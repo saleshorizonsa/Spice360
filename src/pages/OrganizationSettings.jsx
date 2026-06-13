@@ -24,7 +24,6 @@ const CURRENCIES = [
 ];
 const LANGUAGES = [
     { value: "en", label: "English" },
-    { value: "ar", label: "العربية" },
 ];
 const FISCAL_MONTHS = [
     { value: "1", label: "January" }, { value: "2", label: "February" },
@@ -37,7 +36,6 @@ const FISCAL_MONTHS = [
 
 const EMPTY = {
     organization_name: "",
-    organization_name_ar: "",
     company_legal_name: "",
     vat_number: "",
     tin_number: "",
@@ -173,11 +171,8 @@ export default function OrganizationSettings() {
             <form onSubmit={handleSave} className="space-y-5">
                 {/* Company Identity */}
                 <Section title="Company Identity" icon={Building2}>
-                    <Field label="Organization Name (English)" required>
+                    <Field label="Organization Name" required>
                         <Input value={form.organization_name} onChange={set("organization_name")} placeholder="ACME Trading Co." />
-                    </Field>
-                    <Field label="Organization Name (Arabic)">
-                        <Input value={form.organization_name_ar} onChange={set("organization_name_ar")} placeholder="شركة أكمي التجارية" dir="rtl" />
                     </Field>
                     <Field label="Legal Company Name" fullWidth>
                         <Input value={form.company_legal_name} onChange={set("company_legal_name")} placeholder="ACME Trading Company Ltd." />
@@ -207,7 +202,7 @@ export default function OrganizationSettings() {
                         </Select>
                     </Field>
                     <Field label="City">
-                        <Input value={form.city} onChange={set("city")} placeholder="Riyadh" />
+                        <Input value={form.city} onChange={set("city")} placeholder="Colombo" />
                     </Field>
                     <Field label="Address" fullWidth>
                         <Textarea value={form.address} onChange={set("address")} placeholder="Street name, district, postal code…" rows={2} />
@@ -219,7 +214,7 @@ export default function OrganizationSettings() {
                         <Input type="email" value={form.contact_email} onChange={set("contact_email")} placeholder="info@company.com" />
                     </Field>
                     <Field label="Contact Phone">
-                        <Input value={form.contact_phone} onChange={set("contact_phone")} placeholder="+966 11 234 5678" />
+                        <Input value={form.contact_phone} onChange={set("contact_phone")} placeholder="+94 11 234 5678" />
                     </Field>
                     <Field label="Website">
                         <Input value={form.website} onChange={set("website")} placeholder="https://www.company.com" />
@@ -275,16 +270,16 @@ export default function OrganizationSettings() {
                 {/* Banking */}
                 <Section title="Bank Details (for documents)" icon={CreditCard}>
                     <Field label="Bank Name">
-                        <Input value={form.bank_name} onChange={set("bank_name")} placeholder="Al Rajhi Bank" />
+                        <Input value={form.bank_name} onChange={set("bank_name")} placeholder="Bank of Ceylon" />
                     </Field>
                     <Field label="Account Number">
                         <Input value={form.bank_account_number} onChange={set("bank_account_number")} placeholder="1234567890" />
                     </Field>
-                    <Field label="IBAN">
-                        <Input value={form.bank_iban} onChange={set("bank_iban")} placeholder="SA0000000000000000000000" />
+                    <Field label="IBAN / Account Reference">
+                        <Input value={form.bank_iban} onChange={set("bank_iban")} placeholder="LK000000000000000000" />
                     </Field>
                     <Field label="SWIFT / BIC">
-                        <Input value={form.bank_swift} onChange={set("bank_swift")} placeholder="RJHISARI" />
+                        <Input value={form.bank_swift} onChange={set("bank_swift")} placeholder="BCEYLKLX" />
                     </Field>
                 </Section>
 
