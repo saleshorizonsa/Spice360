@@ -837,6 +837,19 @@ const createSupabaseEntity = (entityName) => {
       }
       const record = { ...(data || {}) };
 
+      // Organization bootstrap: the RLS WITH CHECK and the app-level listRows
+      // filter both require owner/creator identity fields inside the record
+      // JSONB. The create forms don't collect these — inject them from the
+      // authenticated user so any user can create their first org.
+      if (entityName === 'Organization') {
+        if (!record.owner_user_id)      record.owner_user_id      = currentUser.id;
+        if (!record.created_by_user_id) record.created_by_user_id = currentUser.id;
+        if (!record.owner_email)        record.owner_email        = currentUser.email;
+        if (!record.created_by_email)   record.created_by_email   = currentUser.email;
+        if (!record.admin_emails)       record.admin_emails       = [currentUser.email];
+        if (!record.onboarding_status)  record.onboarding_status  = 'ready_to_use';
+      }
+
       if (shouldAutoNumberRecord(entityName, record)) {
         try {
           const documentNumber = await getNextSupabaseDocumentNumber(entityName, record);
@@ -885,6 +898,16 @@ const createSupabaseEntity = (entityName) => {
         .single();
 
       if (error) throw error;
+      // Guard against the silent-failure case where the DB rejects the insert
+      // (RLS WITH CHECK violation) but PostgREST returns {data:null,error:null}
+      // instead of an error object, causing onSuccess to fire a false toast.
+      if (!row) {
+        throw new Error(
+          `${entityName} was not saved — the database returned no row after insert. ` +
+          `This is usually an RLS policy violation on the ${tableName} table. ` +
+          `Check Supabase → Authentication → Policies → ${tableName}.`
+        );
+      }
       if (entityName === 'Organization') notifyOrganizationsChanged();
       const normalized = normalizeRow(row);
       await logSupabaseAuditTrail({

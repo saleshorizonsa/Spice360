@@ -12,7 +12,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useAuth } from "@/lib/AuthContext";
 import BrandLogo from "@/components/BrandLogo";
-import { getStoredSignupPlan, getSubscriptionPlan, normalizeSubscriptionPlan } from "@/lib/subscriptionPlans";
+import { getStoredSignupPlan } from "@/lib/subscriptionPlans";
 import { onboardingStatuses } from "@/lib/emailVerificationGate";
 
 const steps = [
@@ -179,39 +179,22 @@ const seedTenantDefaults = async (organization, user) => {
     });
 };
 
-const createTenantSubscription = async (organization, planId) => {
-    let plan = getSubscriptionPlan(planId);
-    try {
-        const dbPlans = await matrixSales.entities.SubscriptionPlan.filter({ plan_id: planId });
-        if (dbPlans.length > 0) {
-            plan = normalizeSubscriptionPlan(dbPlans[0]);
-        }
-    } catch (error) {
-        console.warn("Using fallback plan during onboarding:", error);
-    }
-    const startDate = new Date();
-    const trialEndDate = new Date(startDate);
-    trialEndDate.setDate(trialEndDate.getDate() + (plan.trialDays || 14));
-    const renewalDate = new Date(trialEndDate);
-    renewalDate.setMonth(renewalDate.getMonth() + 1);
-
+const createTenantSubscription = async (organization) => {
     const payload = {
         subscription_id: `SUB-${organization.id}`,
         tenant_id: organization.id,
         organization_id: organization.id,
         tenant_name: getOrgName(organization),
-        plan: plan.id,
-        plan_name: plan.name,
-        status: "trialing",
-        start_date: startDate.toISOString().slice(0, 10),
-        trial_end_date: trialEndDate.toISOString().slice(0, 10),
-        renewal_date: renewalDate.toISOString().slice(0, 10),
-        billing_cycle: plan.billingCycle,
-        monthly_price: plan.monthlyPrice,
-        currency: plan.currency,
-        limits: plan.limits,
-        included_modules: plan.modules,
-        support_level: plan.supportLevel
+        plan: "enterprise",
+        plan_name: "Enterprise",
+        status: "active",
+        start_date: new Date().toISOString().slice(0, 10),
+        billing_cycle: "custom",
+        monthly_price: 0,
+        currency: "LKR",
+        limits: { users: 999999, invoices_per_month: 999999, tenants: 999999 },
+        included_modules: moduleDefaults,
+        support_level: "Full access"
     };
 
     const existing = (await matrixSales.entities.Subscription.filter({ subscription_id: payload.subscription_id })).filter(Boolean);
@@ -354,7 +337,7 @@ function CompanyStep({ user, organization, onSaved }) {
                 onboarding_status: onboardingStatuses.MODULES
             });
             localStorage.setItem("selected_organization_id", tenantReady.id);
-            await createTenantSubscription(tenantReady, getStoredSignupPlan());
+            await createTenantSubscription(tenantReady);
             window.dispatchEvent(new CustomEvent("matrixsales:organizations-changed"));
             toast({ title: "Company profile saved", description: "Continue to configure modules." });
             onSaved?.();

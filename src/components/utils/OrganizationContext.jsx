@@ -3,6 +3,14 @@ import { matrixSales } from '@/api/matrixSalesClient';
 
 const OrganizationContext = createContext();
 
+// Returns true when two org objects carry identical data so we can skip the
+// state update and avoid triggering downstream useEffect([currentOrg]) hooks.
+function orgsEqual(a, b) {
+    if (a === b) return true;
+    if (!a || !b) return false;
+    return JSON.stringify(a) === JSON.stringify(b);
+}
+
 export const useOrganization = () => {
     const context = useContext(OrganizationContext);
     if (!context) {
@@ -58,7 +66,10 @@ export const OrganizationProvider = ({ children }) => {
             }
 
             if (selectedOrg) {
-                setCurrentOrg(selectedOrg);
+                // Only update state when the org data actually changed; a same-data
+                // refetch must not create a new object reference and must not trigger
+                // useEffect([currentOrg]) in consumers (which would reset dirty state).
+                setCurrentOrg((prev) => orgsEqual(prev, selectedOrg) ? prev : selectedOrg);
                 localStorage.setItem('selected_organization_id', selectedOrg.id);
             } else {
                 setCurrentOrg(null);

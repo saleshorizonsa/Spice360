@@ -8,11 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Leaf } from "lucide-react";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 
 export default function CinnamonBatchForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const isEdit = Boolean(item?.id);
+
+    const [isDirty, setIsDirty] = useState(false);
+    useUnsavedChangesWarning(isDirty);
 
     const [formData, setFormData] = useState({
         batch_number:     item?.batch_number     || `CIN-BATCH-${Date.now()}`,
@@ -36,6 +40,7 @@ export default function CinnamonBatchForm({ item, onClose }) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["cinnamonBatches"] });
             toast({ title: "Success", description: isEdit ? "Batch updated" : "Batch created" });
+            setIsDirty(false);
             onClose();
         },
         onError: (error) => {
@@ -52,8 +57,10 @@ export default function CinnamonBatchForm({ item, onClose }) {
         });
     };
 
-    const handleChange = (field, value) =>
+    const handleChange = (field, value) => {
         setFormData((prev) => ({ ...prev, [field]: value }));
+        setIsDirty(true);
+    };
 
     return (
         <Dialog open={true} onOpenChange={onClose}>

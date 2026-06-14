@@ -97,7 +97,8 @@ export default function OrganizationSettings() {
     useEffect(() => {
         if (currentOrg) {
             setForm({ ...EMPTY, ...currentOrg });
-            setDirty(false);
+            // Do NOT call setDirty(false) here. Background refetches must not
+            // clear the user's unsaved edits. Dirty clears only on successful save.
         }
     }, [currentOrg]);
 

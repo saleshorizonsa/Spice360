@@ -25,11 +25,9 @@ import TenantOnboardingWizard, { useTenantReadiness } from '@/components/onboard
 import PublicLandingPage from '@/components/PublicLandingPage';
 import AuthConfirmPage from '@/components/AuthConfirmPage';
 import EmailVerificationPendingPage from '@/components/EmailVerificationPendingPage';
-import SubscriptionGatePage from '@/components/SubscriptionGatePage';
 import { defaultSubscriptionPlanId, storeSignupPlan } from '@/lib/subscriptionPlans';
 import { isAuthCallbackPath } from '@/lib/authRedirect';
 import { canAccessPathForEmailVerification } from '@/lib/emailVerificationGate';
-import { useSubscription } from '@/lib/SubscriptionContext';
 import AcceptInviteScreen from '@/components/AcceptInviteScreen';
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -40,7 +38,6 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout
   ? <Layout currentPageName={currentPageName}>{children}</Layout>
   : <>{children}</>;
 
-const BLOCKED_SUBSCRIPTION_STATUSES = new Set(['expired', 'cancelled', 'past_due', 'suspended']);
 
 // Auth shell: all gate logic lives here; renders <Outlet> for child page routes when authenticated.
 const AuthShell = () => {
@@ -51,7 +48,6 @@ const AuthShell = () => {
   const readiness = useTenantReadiness();
   const [authScreen, setAuthScreen] = useState('login');
   const [selectedPlan, setSelectedPlan] = useState(defaultSubscriptionPlanId);
-  const { subscription } = useSubscription();
 
   const enterApp = useCallback(() => {
     sessionStorage.setItem('horizon_entered_app', 'true');
@@ -143,13 +139,6 @@ const AuthShell = () => {
 
   if (authProvider === 'supabase' && !user?.is_platform_owner && !readiness.ready) {
     return <TenantOnboardingWizard onComplete={enterApp} />;
-  }
-
-  if (isAuthenticated && !user?.is_platform_owner && subscription) {
-    const status = subscription.status;
-    const trialEnded = status === 'trialing' && subscription.trial_end_date && new Date(subscription.trial_end_date) < new Date();
-    if (trialEnded) return <SubscriptionGatePage subscriptionStatus="expired" />;
-    if (BLOCKED_SUBSCRIPTION_STATUSES.has(status)) return <SubscriptionGatePage subscriptionStatus={status} />;
   }
 
   if (location.pathname === '/' && !hasEnteredApp) return renderAuthEntry();
