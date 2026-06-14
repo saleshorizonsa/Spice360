@@ -57,6 +57,7 @@ import { isPlatformOwnerEmail } from "@/lib/subscriptionPlans";
 import TrialBanner from "@/components/shared/TrialBanner";
 import UpgradeCTA from "@/components/shared/UpgradeCTA";
 import UserMenu from "@/components/shared/UserMenu";
+import { useGuardedNavigate } from "@/hooks/useGuardedNavigate";
 
 function LayoutContent({ children, currentPageName }) {
     const [showQuickAction, setShowQuickAction] = React.useState(false);
@@ -85,6 +86,7 @@ function LayoutContent({ children, currentPageName }) {
     const { user, logout } = useAuth();
     const { hasModule } = useSubscription();
     const navigate = useNavigate();
+    const guardedNavigate = useGuardedNavigate();
 
     const isPlatformOwner = user?.is_platform_owner || isPlatformOwnerEmail(user?.email);
 
@@ -256,7 +258,7 @@ function LayoutContent({ children, currentPageName }) {
                     
                     <div className="flex items-center gap-2">
                         <NotificationBell />
-                        <UserMenu onLogout={() => navigate('/logout')} isRTL={false} />
+                        <UserMenu onLogout={() => guardedNavigate('/logout')} isRTL={false} />
 
                         <Sheet>
                             <SheetTrigger asChild>
@@ -283,7 +285,7 @@ function LayoutContent({ children, currentPageName }) {
                 <div className="min-h-screen min-w-0 overflow-x-hidden bg-[#f5f7fb]">
                     <div className="sticky top-16 z-40 flex items-center justify-between gap-3 border-b border-slate-200 bg-white/90 px-3 py-3 shadow-sm backdrop-blur sm:px-6 lg:top-0">
                         <Button
-                            onClick={() => navigate(-1)}
+                            onClick={() => guardedNavigate(-1)}
                             variant="outline"
                             size="sm"
                             className="shrink-0 gap-2"
@@ -294,7 +296,7 @@ function LayoutContent({ children, currentPageName }) {
                         <GlobalSearch />
                         <div className="hidden items-center gap-2 lg:flex">
                             <NotificationBell />
-                            <UserMenu onLogout={() => navigate('/logout')} isRTL={false} />
+                            <UserMenu onLogout={() => guardedNavigate('/logout')} isRTL={false} />
                         </div>
                     </div>
                     <TrialBanner />

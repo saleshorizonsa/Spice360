@@ -8,11 +8,11 @@ import {
   createBrowserRouter,
   Navigate,
   Outlet,
-  Route,
   RouterProvider,
   useLocation,
   useNavigate,
 } from 'react-router-dom';
+import { NavigationGuardProvider } from '@/components/shared/NavigationGuardProvider';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import { SubscriptionProvider } from '@/lib/SubscriptionContext';
@@ -155,7 +155,11 @@ const AuthShell = () => {
   if (location.pathname === '/' && !hasEnteredApp) return renderAuthEntry();
 
   // Authenticated and ready — render the matched child page route
-  return <Outlet />;
+  return (
+    <NavigationGuardProvider>
+      <Outlet />
+    </NavigationGuardProvider>
+  );
 };
 
 // Logout route element — calls logout() on mount, then auth state clears and

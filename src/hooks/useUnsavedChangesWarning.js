@@ -1,16 +1,12 @@
-import { useCallback, useEffect } from 'react';
-import { useBlocker } from 'react-router-dom';
+import { useEffect } from 'react';
+import { navigationGuard } from '@/lib/navigationGuard';
 
 export function useUnsavedChangesWarning(isDirty) {
-  // Callback form is required — passing a raw boolean doesn't reliably
-  // trigger the blocker when navigating between routes in the same router.
-  const shouldBlock = useCallback(
-    ({ currentLocation, nextLocation }) =>
-      isDirty && currentLocation.pathname !== nextLocation.pathname,
-    [isDirty]
-  );
-
-  const blocker = useBlocker(shouldBlock);
+  // Keep the singleton's closure fresh on every render so isDirty is current
+  useEffect(() => {
+    navigationGuard.register(() => isDirty);
+    return () => navigationGuard.unregister();
+  });
 
   // Native browser dialog for tab close / refresh
   useEffect(() => {
@@ -19,19 +15,4 @@ export function useUnsavedChangesWarning(isDirty) {
     window.addEventListener('beforeunload', handle);
     return () => window.removeEventListener('beforeunload', handle);
   }, [isDirty]);
-
-  // Reset a stuck blocker when the form becomes clean (e.g. after save)
-  useEffect(() => {
-    if (!isDirty && blocker.state === 'blocked') blocker.reset?.();
-  }, [isDirty, blocker]);
-
-  const confirm = useCallback(() => {
-    if (blocker.state === 'blocked') blocker.proceed();
-  }, [blocker]);
-
-  const cancel = useCallback(() => {
-    if (blocker.state === 'blocked') blocker.reset();
-  }, [blocker]);
-
-  return { isBlocked: blocker.state === 'blocked', confirm, cancel };
 }
