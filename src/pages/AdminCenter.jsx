@@ -7,7 +7,7 @@ import { Plus } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { matrixSales } from "@/api/matrixSalesClient";
 import PlantForm from "../components/admin/PlantForm";
-import StorageLocationForm from "../components/admin/StorageLocationForm";
+import LocationForm from "../components/admin/LocationForm";
 import UnitConversionForm from "../components/admin/UnitConversionForm";
 import OrganizationSetupForm from "../components/admin/OrganizationSetupForm";
 import RoleManagement from "../components/admin/RoleManagement";
@@ -25,10 +25,10 @@ import { useToast } from "@/components/ui/use-toast";
 export default function AdminCenter() {
     const [activeTab, setActiveTab] = useState("setup");
     const [showPlantForm, setShowPlantForm] = useState(false);
-    const [showStorageLocationForm, setShowStorageLocationForm] = useState(false);
+    const [showLocationForm, setShowLocationForm] = useState(false);
     const [showUnitConversionForm, setShowUnitConversionForm] = useState(false);
     const [editingPlant, setEditingPlant] = useState(null);
-    const [editingStorageLocation, setEditingStorageLocation] = useState(null);
+    const [editingLocation, setEditingLocation] = useState(null);
     const [editingUnitConversion, setEditingUnitConversion] = useState(null);
     const [deleteConfirm, setDeleteConfirm] = useState({ open: false, type: null, item: null });
     
@@ -42,9 +42,9 @@ export default function AdminCenter() {
         initialData: []
     });
 
-    const { data: storageLocations = [] } = useQuery({
-        queryKey: ['storageLocations'],
-        queryFn: () => matrixSales.entities.StorageLocation.list(),
+    const { data: locations = [] } = useQuery({
+        queryKey: ['locations'],
+        queryFn: () => matrixSales.entities.Location.list(),
         initialData: []
     });
 
@@ -80,14 +80,14 @@ export default function AdminCenter() {
         }
     });
 
-    const deleteStorageLocationMutation = useMutation({
-        mutationFn: (id) => matrixSales.entities.StorageLocation.delete(id),
+    const deleteLocationMutation = useMutation({
+        mutationFn: (id) => matrixSales.entities.Location.delete(id),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['storageLocations'] });
-            toast({ title: "Success", description: "Storage location deleted successfully" });
+            queryClient.invalidateQueries({ queryKey: ['locations'] });
+            toast({ title: "Success", description: "Location deleted successfully" });
         },
         onError: () => {
-            toast({ title: "Error", description: "Failed to delete storage location", variant: "destructive" });
+            toast({ title: "Error", description: "Failed to delete location", variant: "destructive" });
         }
     });
 
@@ -104,23 +104,23 @@ export default function AdminCenter() {
         }
     });
 
-    const bulkDeleteStorageLocationsMutation = useMutation({
+    const bulkDeleteLocationsMutation = useMutation({
         mutationFn: async (ids) => {
-            await Promise.all(ids.map(id => matrixSales.entities.StorageLocation.delete(id)));
+            await Promise.all(ids.map(id => matrixSales.entities.Location.delete(id)));
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['storageLocations'] });
-            toast({ title: "Success", description: "Storage locations deleted successfully" });
+            queryClient.invalidateQueries({ queryKey: ['locations'] });
+            toast({ title: "Success", description: "Locations deleted successfully" });
         },
         onError: () => {
-            toast({ title: "Error", description: "Failed to delete storage locations", variant: "destructive" });
+            toast({ title: "Error", description: "Failed to delete locations", variant: "destructive" });
         }
     });
 
     const bulkStatusChangePlantsMutation = useMutation({
         mutationFn: async ({ ids, status }) => {
             const plantsToUpdate = plants.filter(p => ids.includes(p.id));
-            await Promise.all(plantsToUpdate.map(plant => 
+            await Promise.all(plantsToUpdate.map(plant =>
                 matrixSales.entities.Plant.update(plant.id, { ...plant, status })
             ));
         },
@@ -133,19 +133,19 @@ export default function AdminCenter() {
         }
     });
 
-    const bulkStatusChangeStorageLocationsMutation = useMutation({
+    const bulkStatusChangeLocationsMutation = useMutation({
         mutationFn: async ({ ids, status }) => {
-            const locationsToUpdate = storageLocations.filter(l => ids.includes(l.id));
-            await Promise.all(locationsToUpdate.map(location => 
-                matrixSales.entities.StorageLocation.update(location.id, { ...location, status })
+            const locsToUpdate = locations.filter(l => ids.includes(l.id));
+            await Promise.all(locsToUpdate.map(loc =>
+                matrixSales.entities.Location.update(loc.id, { ...loc, status })
             ));
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['storageLocations'] });
-            toast({ title: "Success", description: "Storage locations status updated successfully" });
+            queryClient.invalidateQueries({ queryKey: ['locations'] });
+            toast({ title: "Success", description: "Locations status updated successfully" });
         },
         onError: () => {
-            toast({ title: "Error", description: "Failed to update storage locations status", variant: "destructive" });
+            toast({ title: "Error", description: "Failed to update locations status", variant: "destructive" });
         }
     });
 
@@ -154,9 +154,9 @@ export default function AdminCenter() {
         setShowPlantForm(true);
     };
 
-    const handleEditStorageLocation = (location) => {
-        setEditingStorageLocation(location);
-        setShowStorageLocationForm(true);
+    const handleEditLocation = (location) => {
+        setEditingLocation(location);
+        setShowLocationForm(true);
     };
 
     const handleEditUnitConversion = (conversion) => {
@@ -169,9 +169,9 @@ export default function AdminCenter() {
         setEditingPlant(null);
     };
 
-    const handleCloseStorageLocationForm = () => {
-        setShowStorageLocationForm(false);
-        setEditingStorageLocation(null);
+    const handleCloseLocationForm = () => {
+        setShowLocationForm(false);
+        setEditingLocation(null);
     };
 
     const handleCloseUnitConversionForm = () => {
@@ -189,21 +189,21 @@ export default function AdminCenter() {
         });
     };
 
-    const handleDeleteStorageLocation = (location) => {
+    const handleDeleteLocation = (location) => {
         setDeleteConfirm({
             open: true,
-            type: 'storage_location',
+            type: 'location',
             item: location,
-            title: 'Delete Storage Location',
-            description: `Are you sure you want to delete storage location "${location.storage_location_name}"? This action cannot be undone.`
+            title: 'Delete Location',
+            description: `Are you sure you want to delete location "${location.location_name}"? This action cannot be undone.`
         });
     };
 
     const handleConfirmDelete = () => {
         if (deleteConfirm.type === 'plant') {
             deletePlantMutation.mutate(deleteConfirm.item.id);
-        } else if (deleteConfirm.type === 'storage_location') {
-            deleteStorageLocationMutation.mutate(deleteConfirm.item.id);
+        } else if (deleteConfirm.type === 'location') {
+            deleteLocationMutation.mutate(deleteConfirm.item.id);
         }
         setDeleteConfirm({ open: false, type: null, item: null });
     };
@@ -218,21 +218,21 @@ export default function AdminCenter() {
         });
     };
 
-    const handleBulkDeleteStorageLocations = (ids) => {
+    const handleBulkDeleteLocations = (ids) => {
         setDeleteConfirm({
             open: true,
-            type: 'bulk_storage_locations',
+            type: 'bulk_locations',
             item: { ids },
-            title: 'Delete Storage Locations',
-            description: `Are you sure you want to delete ${ids.length} storage location${ids.length > 1 ? 's' : ''}? This action cannot be undone.`
+            title: 'Delete Locations',
+            description: `Are you sure you want to delete ${ids.length} location${ids.length > 1 ? 's' : ''}? This action cannot be undone.`
         });
     };
 
     const handleBulkConfirmDelete = () => {
         if (deleteConfirm.type === 'bulk_plants') {
             bulkDeletePlantsMutation.mutate(deleteConfirm.item.ids);
-        } else if (deleteConfirm.type === 'bulk_storage_locations') {
-            bulkDeleteStorageLocationsMutation.mutate(deleteConfirm.item.ids);
+        } else if (deleteConfirm.type === 'bulk_locations') {
+            bulkDeleteLocationsMutation.mutate(deleteConfirm.item.ids);
         }
         setDeleteConfirm({ open: false, type: null, item: null });
     };
@@ -241,8 +241,8 @@ export default function AdminCenter() {
         bulkStatusChangePlantsMutation.mutate({ ids, status });
     };
 
-    const handleBulkStatusChangeStorageLocations = (ids, status) => {
-        bulkStatusChangeStorageLocationsMutation.mutate({ ids, status });
+    const handleBulkStatusChangeLocations = (ids, status) => {
+        bulkStatusChangeLocationsMutation.mutate({ ids, status });
     };
 
     if (loading) {
@@ -435,10 +435,10 @@ export default function AdminCenter() {
                         <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle className="flex items-center gap-2">
                                 <MapPin className="w-5 h-5 text-blue-600" />
-                                Storage Locations
+                                Locations
                             </CardTitle>
-                            <Button 
-                                onClick={() => setShowStorageLocationForm(true)}
+                            <Button
+                                onClick={() => setShowLocationForm(true)}
                                 size="sm"
                                 className="bg-emerald-600"
                             >
@@ -448,23 +448,19 @@ export default function AdminCenter() {
                         </CardHeader>
                         <CardContent>
                             <DataTable
-                                data={storageLocations}
+                                data={locations}
                                 columns={[
-                                    { header: 'Code', key: 'storage_location_code' },
-                                    { header: 'Name', key: 'storage_location_name' },
-                                    { 
-                                        header: 'Company', 
-                                        key: 'company_code',
-                                        render: (val) => getCompanyName(val)
-                                    },
-                                    { header: 'Plant', key: 'plant_code' },
+                                    { header: 'Code', key: 'location_code' },
+                                    { header: 'Name', key: 'location_name' },
                                     { header: 'Type', key: 'location_type' },
+                                    { header: 'City', key: 'city' },
+                                    { header: 'Manager', key: 'manager_name' },
                                     { header: 'Status', key: 'status', isBadge: true }
                                 ]}
-                                onEdit={handleEditStorageLocation}
-                                onDelete={handleDeleteStorageLocation}
-                                onBulkDelete={handleBulkDeleteStorageLocations}
-                                onBulkStatusChange={handleBulkStatusChangeStorageLocations}
+                                onEdit={handleEditLocation}
+                                onDelete={handleDeleteLocation}
+                                onBulkDelete={handleBulkDeleteLocations}
+                                onBulkStatusChange={handleBulkStatusChangeLocations}
                                 enableBulkActions={true}
                                 enableSorting={true}
                                 showSearch={false}
@@ -486,11 +482,10 @@ export default function AdminCenter() {
                 />
             )}
 
-            {showStorageLocationForm && (
-                <StorageLocationForm 
-                    item={editingStorageLocation} 
-                    onClose={handleCloseStorageLocationForm}
-                    open={showStorageLocationForm}
+            {showLocationForm && (
+                <LocationForm
+                    item={editingLocation}
+                    onClose={handleCloseLocationForm}
                 />
             )}
 
