@@ -22,7 +22,7 @@ export default function GRNForm({ item, onClose }) {
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
     const [isDirty, setIsDirty] = useState(false);
-    useUnsavedChangesWarning(isDirty);
+    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
     const [isPosting, setIsPosting] = useState(false);
 
@@ -313,7 +313,7 @@ export default function GRNForm({ item, onClose }) {
     }));
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
+        <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">

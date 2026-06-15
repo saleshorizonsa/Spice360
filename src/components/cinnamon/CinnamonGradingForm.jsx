@@ -43,7 +43,7 @@ export default function CinnamonGradingForm({ onClose }) {
     const [gradeRows, setGradeRows] = useState([{ grade_code: "", output_weight_kg: "" }]);
     const [gradingNumber] = useState(`CIN-GRD-${Date.now()}`);
     const [isDirty, setIsDirty] = useState(false);
-    useUnsavedChangesWarning(isDirty);
+    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
 
     const safeBatches      = Array.isArray(batches)      ? batches      : [];
     const safeGrades       = Array.isArray(grades)       ? grades       : [];
@@ -132,7 +132,7 @@ export default function CinnamonGradingForm({ onClose }) {
     });
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
+        <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">

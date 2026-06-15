@@ -24,7 +24,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
     const { toast } = useToast();
     const { currentOrganization: currentOrg } = useOrganization();
     const [isDirty, setIsDirty] = useState(false);
-    useUnsavedChangesWarning(isDirty);
+    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [activeTab, setActiveTab] = useState("details");
@@ -300,7 +300,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
     };
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
+        <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>

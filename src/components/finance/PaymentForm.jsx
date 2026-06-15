@@ -20,7 +20,7 @@ export default function PaymentForm({ item, onClose }) {
     const { currentOrg } = useOrganization();
     const gl = useGLAccounts();
     const [isDirty, setIsDirty] = useState(false);
-    useUnsavedChangesWarning(isDirty);
+    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
 
     const { data: banks = [] } = useQuery({
         queryKey: ['banks'],
@@ -108,7 +108,7 @@ export default function PaymentForm({ item, onClose }) {
     };
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
+        <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>

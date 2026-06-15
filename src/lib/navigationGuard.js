@@ -2,25 +2,29 @@
 // to a dialog shown by NavigationGuardProvider.
 
 let dirtyChecker = null;
-let dialogHandler = null;
+let _persistentDirty = false; // survives component unmount during click→navigate race
 
 export const navigationGuard = {
   /** Called by useUnsavedChangesWarning — always overwrites with latest isDirty closure */
   register(fn) { dirtyChecker = fn; },
   unregister() { dirtyChecker = null; },
-  isDirty() { return dirtyChecker?.() ?? false; },
-
-  /** Called by NavigationGuardProvider on mount */
-  setDialogHandler(fn) { dialogHandler = fn; },
-  clearDialogHandler() { dialogHandler = null; },
 
   /**
-   * If dirty, stores proceedFn and shows the dialog (returns true).
-   * Otherwise returns false so caller can proceed immediately.
+   * Returns true if EITHER the mounted form's ref OR the persistent flag is dirty.
+   * The persistent flag handles the race where the dialog unmounts (onInteractOutside)
+   * before React Router's useBlocker gets to check.
    */
+  isDirty() { return (dirtyChecker?.() ?? false) || _persistentDirty; },
+
+  markDirty()  { _persistentDirty = true;  },
+  markClean()  { _persistentDirty = false; },
+
+  /** Called by NavigationGuardProvider on mount */
+  setDialogHandler(fn) {},
+  clearDialogHandler() {},
+
   intercept(proceedFn) {
-    if (dirtyChecker?.()) {
-      dialogHandler?.(proceedFn);
+    if (dirtyChecker?.() || _persistentDirty) {
       return true;
     }
     return false;

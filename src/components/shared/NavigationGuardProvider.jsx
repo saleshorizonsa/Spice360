@@ -16,6 +16,7 @@ export function NavigationGuardProvider({ children }) {
   );
 
   const handleLeave = useCallback(() => {
+    navigationGuard.markClean(); // clear persistent flag before proceeding
     blocker.proceed?.();
   }, [blocker]);
 

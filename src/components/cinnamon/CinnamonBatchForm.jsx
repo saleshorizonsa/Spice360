@@ -20,7 +20,7 @@ export default function CinnamonBatchForm({ item, onClose }) {
     const isEdit = Boolean(item?.id);
 
     const [isDirty, setIsDirty] = useState(false);
-    useUnsavedChangesWarning(isDirty);
+    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
 
     const [formData, setFormData] = useState({
         batch_number:      item?.batch_number      || `CIN-BATCH-${Date.now()}`,
@@ -136,7 +136,7 @@ export default function CinnamonBatchForm({ item, onClose }) {
     };
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
+        <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">

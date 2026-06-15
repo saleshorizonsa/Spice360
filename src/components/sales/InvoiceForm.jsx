@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -9,8 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowRight, Printer, Paperclip } from "lucide-react"; 
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { ArrowRight, Printer, Paperclip, Plus, Trash2, Truck, CheckCircle2, AlertCircle, AlertTriangle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import DocumentList from "../shared/DocumentList";
 import { postJournalEntry } from "../utils/journalService";
@@ -18,6 +19,7 @@ import { useOrganization } from "../utils/OrganizationContext";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
 import { useSubscription } from "@/lib/SubscriptionContext";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
+import SearchableSelect from "../shared/SearchableSelect";
 
 export default function InvoiceForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -26,9 +28,10 @@ export default function InvoiceForm({ item, onClose }) {
     const { currentOrg } = useOrganization();
     const gl = useGLAccounts();
     const [isDirty, setIsDirty] = useState(false);
-    useUnsavedChangesWarning(isDirty);
+    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
     const [activeTab, setActiveTab] = useState("details");
-    
+
+    // ── Source data ───────────────────────────────────────────────────────────
     const { data: salesOrders = [] } = useQuery({
         queryKey: ['sales'],
         queryFn: () => matrixSales.entities.SalesOrder.list('-order_date'),
@@ -41,10 +44,20 @@ export default function InvoiceForm({ item, onClose }) {
         initialData: []
     });
 
+    // ── Multi-Delivery state ──────────────────────────────────────────────────
+    // Each entry: { delivery_number, delivery_date, delivered_quantity, product_code }
+    const [linkedDeliveries, setLinkedDeliveries] = useState([]);
+    const [deliveryToAdd, setDeliveryToAdd] = useState('');
+
+    const totalDeliveredQty = linkedDeliveries.reduce(
+        (sum, d) => sum + (parseFloat(d.delivered_quantity) || 0), 0
+    );
+
+    // ── Form state ────────────────────────────────────────────────────────────
     const [formData, setFormData] = useState({
         invoice_number: '',
         sales_order_number: '',
-        delivery_number: '',
+        delivery_number: '',          // kept for backward compat
         customer_name: '',
         customer_email: '',
         billing_address: '',
@@ -52,6 +65,7 @@ export default function InvoiceForm({ item, onClose }) {
         due_date: '',
         product_code: '',
         product_name: '',
+        so_quantity: 0,
         quantity: 0,
         unit_price: 0,
         subtotal: 0,
@@ -64,88 +78,156 @@ export default function InvoiceForm({ item, onClose }) {
         status: 'draft',
         amount_paid: 0,
         payment_date: '',
+        three_way_match_status: 'pending',
+        quantity_variance: 0,
         notes: ''
     });
 
+    // Load existing record
     useEffect(() => {
         if (item) {
-            // Ensure numbers are parsed if they come as strings
-            setFormData({
+            setFormData(f => ({
+                ...f,
                 ...item,
                 quantity: parseFloat(item.quantity) || 0,
                 unit_price: parseFloat(item.unit_price) || 0,
                 tax_percent: parseFloat(item.tax_percent) || 0,
                 amount_paid: parseFloat(item.amount_paid) || 0,
-            });
+            }));
+            // Parse stored delivery references
+            const refs = item.delivery_references;
+            if (Array.isArray(refs)) {
+                setLinkedDeliveries(refs);
+            } else if (typeof refs === 'string' && refs) {
+                try { setLinkedDeliveries(JSON.parse(refs)); } catch { setLinkedDeliveries([]); }
+            }
         }
     }, [item]);
 
     const TAX_TYPES = {
-        standard:  { label: "Standard Rate (18%)", rate: 18 },
-        export:    { label: "Export — Zero Rated (0%)", rate: 0 },
-        exempt:    { label: "Exempt (0%)", rate: 0 },
-        outside:   { label: "Outside Scope (0%)", rate: 0 },
+        standard: { label: "Standard Rate (18%)", rate: 18 },
+        export:   { label: "Export — Zero Rated (0%)", rate: 0 },
+        exempt:   { label: "Exempt (0%)", rate: 0 },
+        outside:  { label: "Outside Scope (0%)", rate: 0 },
     };
 
+    // ── Recalculate totals + 3-way match ──────────────────────────────────────
     useEffect(() => {
         const subtotal = (formData.quantity || 0) * (formData.unit_price || 0);
         const taxAmount = subtotal * ((formData.tax_percent || 0) / 100);
         const total = subtotal + taxAmount;
+
+        const qtyVariance = (formData.quantity || 0) - totalDeliveredQty;
+
+        let matchStatus = 'pending';
+        if (formData.sales_order_number && linkedDeliveries.length > 0) {
+            const varPct = Math.abs(qtyVariance / (totalDeliveredQty || 1));
+            if (varPct === 0)       matchStatus = 'matched';
+            else if (varPct <= 0.05) matchStatus = 'variance_within_tolerance';
+            else                     matchStatus = 'variance_exceeded';
+        }
+
         setFormData(prev => ({
             ...prev,
             subtotal,
             tax_amount: taxAmount,
-            total_amount: total
+            total_amount: total,
+            quantity_variance: qtyVariance,
+            three_way_match_status: matchStatus,
+            total_delivered_quantity: totalDeliveredQty,
         }));
-    }, [formData.quantity, formData.unit_price, formData.tax_percent]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData.quantity, formData.unit_price, formData.tax_percent, totalDeliveredQty]);
 
+    // ── Deliveries available to add ───────────────────────────────────────────
+    const availableDeliveryOptions = useMemo(() => {
+        if (!formData.sales_order_number) return [];
+        const alreadyLinked = new Set(linkedDeliveries.map(d => d.delivery_number));
+        return deliveries
+            .filter(d =>
+                d.sales_order_number === formData.sales_order_number &&
+                d.status === 'pgi_completed' &&
+                !alreadyLinked.has(d.delivery_number)
+            )
+            .map(d => ({
+                value: d.delivery_number,
+                label: `${d.delivery_number} | ${d.delivery_date || ''} | ${parseFloat(d.quantity) || 0} ${d.unit_of_measure || ''}`,
+            }));
+    }, [deliveries, formData.sales_order_number, linkedDeliveries]);
+
+    // ── Handlers ──────────────────────────────────────────────────────────────
     const handleTaxTypeChange = (taxType) => {
         const rate = TAX_TYPES[taxType]?.rate ?? 18;
         setFormData(prev => ({ ...prev, tax_type: taxType, tax_percent: rate }));
+        setIsDirty(true);
     };
 
     const handleSalesOrderSelect = (orderNumber) => {
         const selectedOrder = salesOrders.find(o => o.order_number === orderNumber);
-        if (selectedOrder) {
-            // Find matching delivery with PGI status
-            const matchingDelivery = deliveries.find(d => 
-                d.sales_order_number === orderNumber && d.status === 'pgi_completed'
-            );
-            
-            // Calculate due date based on payment terms
-            const invoiceDate = new Date(formData.invoice_date);
-            let daysToAdd = 30;
-            if (selectedOrder.payment_terms === 'net_45') daysToAdd = 45;
-            else if (selectedOrder.payment_terms === 'net_60') daysToAdd = 60;
-            
-            const dueDate = new Date(invoiceDate);
-            dueDate.setDate(dueDate.getDate() + daysToAdd);
+        if (!selectedOrder) return;
 
-            setFormData(prev => ({
-                ...prev,
-                sales_order_number: orderNumber,
-                delivery_number: matchingDelivery?.delivery_number || '',
-                customer_name: selectedOrder.customer_name,
-                customer_email: selectedOrder.customer_email || '',
-                billing_address: selectedOrder.delivery_address || '',
-                product_code: selectedOrder.product_code,
-                product_name: selectedOrder.product_name,
-                quantity: parseFloat(selectedOrder.quantity) || 0, // Ensure numeric
-                unit_price: parseFloat(selectedOrder.unit_price) || 0, // Ensure numeric
-                payment_terms: selectedOrder.payment_terms || 'net_30',
-                due_date: dueDate.toISOString().split('T')[0],
-                notes: `Invoice for Sales Order: ${orderNumber}${matchingDelivery ? ` | Delivery: ${matchingDelivery.delivery_number}` : ''}`
-            }));
-        }
+        setLinkedDeliveries([]);
+        setDeliveryToAdd('');
+
+        const invoiceDate = new Date(formData.invoice_date);
+        let daysToAdd = 30;
+        if (selectedOrder.payment_terms === 'net_45') daysToAdd = 45;
+        else if (selectedOrder.payment_terms === 'net_60') daysToAdd = 60;
+        const dueDate = new Date(invoiceDate);
+        dueDate.setDate(dueDate.getDate() + daysToAdd);
+
+        setIsDirty(true);
+        setFormData(prev => ({
+            ...prev,
+            sales_order_number: orderNumber,
+            delivery_number: '',
+            customer_name: selectedOrder.customer_name,
+            customer_email: selectedOrder.customer_email || '',
+            billing_address: selectedOrder.delivery_address || '',
+            product_code: selectedOrder.product_code || '',
+            product_name: selectedOrder.product_name || '',
+            so_quantity: parseFloat(selectedOrder.quantity) || 0,
+            quantity: parseFloat(selectedOrder.quantity) || 0,
+            unit_price: parseFloat(selectedOrder.unit_price) || 0,
+            payment_terms: selectedOrder.payment_terms || 'net_30',
+            due_date: dueDate.toISOString().split('T')[0],
+            notes: `Invoice for Sales Order: ${orderNumber}`,
+        }));
     };
 
-    const saveMutation = useMutation({
-        mutationFn: (data) => {
-            if (item) {
-                return matrixSales.entities.Invoice.update(item.id, data);
+    const handleAddDelivery = () => {
+        if (!deliveryToAdd) return;
+        const del = deliveries.find(d => d.delivery_number === deliveryToAdd);
+        if (!del) return;
+        const qty = parseFloat(del.quantity) || parseFloat(del.delivered_quantity) || 0;
+        setLinkedDeliveries(prev => [
+            ...prev,
+            {
+                delivery_number: del.delivery_number,
+                delivery_date: del.delivery_date || '',
+                delivered_quantity: qty,
+                product_code: del.product_code || '',
             }
-            return matrixSales.entities.Invoice.create(data);
-        },
+        ]);
+        setDeliveryToAdd('');
+        setIsDirty(true);
+    };
+
+    const handleRemoveDelivery = (deliveryNumber) => {
+        setLinkedDeliveries(prev => prev.filter(d => d.delivery_number !== deliveryNumber));
+        setIsDirty(true);
+    };
+
+    const handleChange = (field, value) => {
+        if (!isDirty) setIsDirty(true);
+        setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    // ── Save ──────────────────────────────────────────────────────────────────
+    const saveMutation = useMutation({
+        mutationFn: (data) => item
+            ? matrixSales.entities.Invoice.update(item.id, data)
+            : matrixSales.entities.Invoice.create(data),
         onSuccess: async (savedInvoice) => {
             if (savedInvoice?.status === 'submitted' && !savedInvoice.gl_posted) {
                 try {
@@ -168,41 +250,49 @@ export default function InvoiceForm({ item, onClose }) {
                 }
             }
             queryClient.invalidateQueries({ queryKey: ['invoices'] });
-            toast({
-                title: "Success",
-                description: `Invoice ${item ? 'updated' : 'created'} successfully.`,
-                variant: "default"
-            });
+            toast({ title: "Success", description: `Invoice ${item ? 'updated' : 'created'} successfully.` });
             onClose();
         },
         onError: (error) => {
-            toast({
-                title: "Error",
-                description: `Failed to ${item ? 'update' : 'create'} invoice: ${error.message || 'Unknown error'}`,
-                variant: "destructive"
-            });
+            toast({ title: "Error", description: `Failed to ${item ? 'update' : 'create'} invoice: ${error.message}`, variant: "destructive" });
         }
     });
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Block new invoice creation when monthly limit is reached
-        if (!item && atInvoiceLimit) {
-            return;
-        }
-        saveMutation.mutate(formData);
+        if (!item && atInvoiceLimit) return;
+        saveMutation.mutate({
+            ...formData,
+            delivery_references: linkedDeliveries,
+            // backward compat: first delivery number
+            delivery_number: linkedDeliveries.map(d => d.delivery_number).join(', ') || formData.delivery_number,
+        });
     };
 
-    const handleChange = (field, value) => {
-        if (!isDirty) setIsDirty(true);
-        setFormData(prev => ({ ...prev, [field]: value }));
-    };
-
-    // Filter sales orders that have a delivery with 'pgi_completed' status
+    // ── Filter options ────────────────────────────────────────────────────────
+    // Show all SOs that have at least one pgi_completed delivery
     const deliveredOrders = salesOrders.filter(o =>
         deliveries.some(d => d.sales_order_number === o.order_number && d.status === 'pgi_completed')
     );
 
+    const soOptions = deliveredOrders.map(o => ({
+        value: o.order_number,
+        label: `${o.order_number} | ${o.customer_name} | ${parseFloat(o.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} LKR`,
+    }));
+
+    const matchColors = {
+        pending:                   'bg-yellow-50 border-yellow-300 text-yellow-800',
+        matched:                   'bg-green-50  border-green-300  text-green-800',
+        variance_within_tolerance: 'bg-blue-50   border-blue-300   text-blue-800',
+        variance_exceeded:         'bg-red-50    border-red-300    text-red-800',
+    };
+    const matchIcon = {
+        matched:                   <CheckCircle2 className="w-5 h-5 text-green-600" />,
+        variance_within_tolerance: <AlertCircle  className="w-5 h-5 text-blue-600" />,
+        variance_exceeded:         <AlertTriangle className="w-5 h-5 text-red-600" />,
+    };
+
+    // ── Print ─────────────────────────────────────────────────────────────────
     const handlePrintInvoice = () => {
         const org = currentOrg || {};
         const logoUrl = org.logo_url || '';
@@ -225,11 +315,9 @@ body{font-family:'Inter',Arial,sans-serif;background:#fff;color:#1e293b;font-siz
 .inv-header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #24466f;padding-bottom:24px;margin-bottom:24px}
 .brand img{max-height:56px;max-width:160px;object-fit:contain}
 .brand-name{font-size:22px;font-weight:700;color:#24466f}
-.brand-name-ar{font-family:'Cairo',sans-serif;font-size:18px;color:#24466f}
 .brand-meta{font-size:11px;color:#64748b;line-height:1.8;margin-top:6px}
 .inv-title{text-align:right}
 .inv-title h1{font-size:28px;font-weight:700;color:#24466f}
-.inv-title h1 span{display:block;font-family:'Cairo',sans-serif;font-size:18px;color:#64748b}
 .inv-no{font-size:15px;font-weight:600;margin-top:8px}
 .inv-date{font-size:12px;color:#64748b;margin-top:4px}
 .parties{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}
@@ -313,16 +401,19 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
     };
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
+        <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        {item ? 'Edit Invoice' : 'New Invoice'}
+                        <Truck className="w-5 h-5 text-indigo-600" />
+                        {item ? 'Edit Invoice' : 'New Sales Invoice — 3-Way Match'}
                         {formData.sales_order_number && (
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 ml-2">
                                 <Badge variant="outline">SO: {formData.sales_order_number}</Badge>
-                                {formData.delivery_number && (
-                                    <Badge variant="outline">DEL: {formData.delivery_number}</Badge>
+                                {linkedDeliveries.length > 0 && (
+                                    <Badge variant="outline" className="text-indigo-700 border-indigo-300">
+                                        {linkedDeliveries.length} Delivery{linkedDeliveries.length > 1 ? 's' : ''}
+                                    </Badge>
                                 )}
                             </div>
                         )}
@@ -339,45 +430,137 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
                     </TabsList>
 
                     <TabsContent value="details">
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            {/* Sales Order Reference Section */}
-                            {!item && (
-                                <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4">
-                                    <Label className="text-indigo-900 font-semibold mb-2 block">
-                                        Select Sales Order *
-                                    </Label>
-                                    <Select 
-                                        value={formData.sales_order_number} 
-                                        onValueChange={handleSalesOrderSelect}
-                                        required
-                                    >
-                                        <SelectTrigger className="bg-white">
-                                            <SelectValue placeholder="Select a sales order with completed PGI..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {deliveredOrders.map(o => (
-                                                <SelectItem key={o.id} value={o.order_number}>
-                                                    {o.order_number} - {o.customer_name} - LKR {parseFloat(o.total_amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                                </SelectItem>
-                                            ))}
-                                            {deliveredOrders.length === 0 && (
-                                                <div className="p-2 text-sm text-gray-500">No sales orders with completed PGI found.</div>
-                                            )}
-                                        </SelectContent>
-                                    </Select>
-                                    {formData.sales_order_number && (
-                                        <p className="text-sm text-indigo-700 mt-2 flex items-center gap-2">
-                                            <ArrowRight className="w-4 h-4" />
-                                            Data auto-filled from sales order and delivery
+                        <form onSubmit={handleSubmit} className="space-y-6 pt-2">
+
+                            {/* ── Sales Order selection ──────────────────────────── */}
+                            <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-4 space-y-3">
+                                <SearchableSelect
+                                    label="Sales Order *"
+                                    value={formData.sales_order_number}
+                                    onValueChange={handleSalesOrderSelect}
+                                    options={soOptions}
+                                    placeholder="Select a sales order with completed PGI…"
+                                    searchPlaceholder="Search by SO#, customer, amount…"
+                                    required={!item}
+                                />
+                                {formData.sales_order_number && (
+                                    <p className="text-sm text-indigo-700 flex items-center gap-2">
+                                        <ArrowRight className="w-4 h-4" />
+                                        Customer and product details auto-filled from sales order
+                                    </p>
+                                )}
+                                {deliveredOrders.length === 0 && !item && (
+                                    <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-2">
+                                        No sales orders with PGI-completed deliveries found.
+                                    </p>
+                                )}
+                            </div>
+
+                            {/* ── Linked Deliveries ─────────────────────────────── */}
+                            {formData.sales_order_number && (
+                                <div className="space-y-3">
+                                    <h3 className="font-semibold text-base border-b pb-2 flex items-center gap-2">
+                                        Delivery Notes (PGI Completed)
+                                        {linkedDeliveries.length > 0 && (
+                                            <Badge variant="secondary">{linkedDeliveries.length} linked</Badge>
+                                        )}
+                                    </h3>
+
+                                    {linkedDeliveries.length > 0 && (
+                                        <div className="border rounded-lg overflow-hidden">
+                                            <table className="w-full text-sm">
+                                                <thead className="bg-gray-50 text-gray-600">
+                                                    <tr>
+                                                        <th className="px-3 py-2 text-left font-medium">Delivery #</th>
+                                                        <th className="px-3 py-2 text-left font-medium">Delivery Date</th>
+                                                        <th className="px-3 py-2 text-right font-medium">Delivered Qty</th>
+                                                        <th className="px-3 py-2 w-10"></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y">
+                                                    {linkedDeliveries.map(d => (
+                                                        <tr key={d.delivery_number} className="hover:bg-gray-50">
+                                                            <td className="px-3 py-2 font-mono text-sm font-medium text-indigo-700">{d.delivery_number}</td>
+                                                            <td className="px-3 py-2 text-gray-600">{d.delivery_date || '—'}</td>
+                                                            <td className="px-3 py-2 text-right font-semibold">{Number(d.delivered_quantity).toFixed(3)}</td>
+                                                            <td className="px-3 py-2">
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => handleRemoveDelivery(d.delivery_number)}
+                                                                    className="h-7 w-7 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </Button>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                    <tr className="bg-indigo-50 font-bold">
+                                                        <td className="px-3 py-2" colSpan={2}>Total Delivered Quantity</td>
+                                                        <td className="px-3 py-2 text-right text-indigo-700">{totalDeliveredQty.toFixed(3)}</td>
+                                                        <td></td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    )}
+
+                                    {/* Add Delivery row */}
+                                    {availableDeliveryOptions.length > 0 && (
+                                        <div className="flex gap-2 items-end">
+                                            <div className="flex-1">
+                                                <SearchableSelect
+                                                    label={linkedDeliveries.length === 0 ? "Select Delivery *" : "Add another Delivery"}
+                                                    value={deliveryToAdd}
+                                                    onValueChange={setDeliveryToAdd}
+                                                    options={availableDeliveryOptions}
+                                                    placeholder="Select delivery to add…"
+                                                    searchPlaceholder="Search by delivery#, date, qty…"
+                                                />
+                                            </div>
+                                            <Button
+                                                type="button"
+                                                variant="outline"
+                                                className="border-indigo-500 text-indigo-700 hover:bg-indigo-50 shrink-0"
+                                                onClick={handleAddDelivery}
+                                                disabled={!deliveryToAdd}
+                                            >
+                                                <Plus className="w-4 h-4 mr-1" /> Add
+                                            </Button>
+                                        </div>
+                                    )}
+
+                                    {availableDeliveryOptions.length === 0 && linkedDeliveries.length === 0 && (
+                                        <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded p-3">
+                                            No PGI-completed deliveries found for this order.
                                         </p>
+                                    )}
+
+                                    {/* 3-way match status */}
+                                    {linkedDeliveries.length > 0 && (
+                                        <Alert className={`border-2 ${matchColors[formData.three_way_match_status] || matchColors.pending}`}>
+                                            <div className="flex items-start gap-3">
+                                                {matchIcon[formData.three_way_match_status]}
+                                                <div className="flex-1">
+                                                    <p className="font-semibold">
+                                                        3-Way Match: {String(formData.three_way_match_status || 'pending').replace(/_/g, ' ').toUpperCase()}
+                                                    </p>
+                                                    <AlertDescription>
+                                                        SO: {formData.so_quantity} → Delivered: {totalDeliveredQty.toFixed(3)} → Invoice: {formData.quantity}
+                                                        {' | '}Qty Variance: {Number(formData.quantity_variance || 0).toFixed(3)}
+                                                    </AlertDescription>
+                                                </div>
+                                            </div>
+                                        </Alert>
                                     )}
                                 </div>
                             )}
 
-                            {/* Invoice Information */}
+                            {/* ── Invoice header ────────────────────────────────── */}
                             <div className="space-y-4">
                                 <h3 className="font-semibold text-lg border-b pb-2">Invoice Information</h3>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-3 gap-4">
                                     <div>
                                         <Label>Invoice Number *</Label>
                                         <Input
@@ -386,17 +569,6 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
                                             required
                                         />
                                     </div>
-                                    <div>
-                                        <Label>Delivery Number (PGI Completed)</Label>
-                                        <Input
-                                            value={formData.delivery_number}
-                                            onChange={(e) => handleChange('delivery_number', e.target.value)}
-                                            disabled={!!formData.sales_order_number} // Disable if SO is selected
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <Label>Invoice Date *</Label>
                                         <Input
@@ -418,7 +590,7 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
                                 </div>
                             </div>
 
-                            {/* Customer Information */}
+                            {/* ── Customer ──────────────────────────────────────── */}
                             <div className="space-y-4">
                                 <h3 className="font-semibold text-lg border-b pb-2">Bill To</h3>
                                 <div className="grid grid-cols-2 gap-4">
@@ -440,7 +612,6 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
                                         />
                                     </div>
                                 </div>
-
                                 <div>
                                     <Label>Billing Address</Label>
                                     <Textarea
@@ -452,7 +623,7 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
                                 </div>
                             </div>
 
-                            {/* Product & Pricing */}
+                            {/* ── Items ─────────────────────────────────────────── */}
                             <div className="space-y-4">
                                 <h3 className="font-semibold text-lg border-b pb-2">Items & Pricing</h3>
                                 <div className="grid grid-cols-2 gap-4">
@@ -478,14 +649,24 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
 
                                 <div className="grid grid-cols-3 gap-4">
                                     <div>
-                                        <Label>Quantity *</Label>
+                                        <Label>Invoiced Quantity *</Label>
                                         <Input
                                             type="number"
                                             value={formData.quantity}
                                             onChange={(e) => handleChange('quantity', parseFloat(e.target.value) || 0)}
                                             required
-                                            disabled={!!formData.sales_order_number}
                                         />
+                                        {totalDeliveredQty > 0 && formData.quantity !== totalDeliveredQty && (
+                                            <Button
+                                                type="button"
+                                                variant="ghost"
+                                                size="sm"
+                                                className="text-xs mt-1 h-6 text-gray-500"
+                                                onClick={() => handleChange('quantity', totalDeliveredQty)}
+                                            >
+                                                Use delivered total ({totalDeliveredQty.toFixed(3)})
+                                            </Button>
+                                        )}
                                     </div>
                                     <div>
                                         <Label>Unit Price (LKR) *</Label>
@@ -504,9 +685,7 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
                                             value={formData.tax_type || 'standard'}
                                             onValueChange={handleTaxTypeChange}
                                         >
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="standard">Standard 18%</SelectItem>
                                                 <SelectItem value="export">Export 0%</SelectItem>
@@ -518,37 +697,33 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
                                 </div>
 
                                 <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                                    <div className="flex justify-between">
+                                    <div className="flex justify-between text-sm">
                                         <span className="text-gray-600">Subtotal:</span>
-                                        <span className="font-semibold">LKR {formData.subtotal.toFixed(2)}</span>
+                                        <span className="font-semibold">LKR {Number(formData.subtotal || 0).toFixed(2)}</span>
                                     </div>
-                                    <div className="flex justify-between">
+                                    <div className="flex justify-between text-sm">
                                         <span className="text-gray-600">VAT ({formData.tax_percent}%):</span>
-                                        <span className="font-semibold">LKR {formData.tax_amount.toFixed(2)}</span>
+                                        <span className="font-semibold">LKR {Number(formData.tax_amount || 0).toFixed(2)}</span>
                                     </div>
                                     <div className="flex justify-between text-lg border-t pt-2">
                                         <span className="font-bold">Total Amount:</span>
-                                        <span className="font-bold text-emerald-600">
-                                            LKR {formData.total_amount.toFixed(2)}
-                                        </span>
+                                        <span className="font-bold text-emerald-600">LKR {Number(formData.total_amount || 0).toFixed(2)}</span>
                                     </div>
                                 </div>
                             </div>
 
-                            {/* Payment Information */}
+                            {/* ── Payment ───────────────────────────────────────── */}
                             <div className="space-y-4">
                                 <h3 className="font-semibold text-lg border-b pb-2">Payment Details</h3>
-                                <div className="grid grid-cols-2 gap-4">
+                                <div className="grid grid-cols-3 gap-4">
                                     <div>
                                         <Label>Payment Terms</Label>
-                                        <Select 
-                                            value={formData.payment_terms} 
-                                            onValueChange={(val) => handleChange('payment_terms', val)}
+                                        <Select
+                                            value={formData.payment_terms}
+                                            onValueChange={(v) => handleChange('payment_terms', v)}
                                             disabled={!!formData.sales_order_number}
                                         >
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="net_30">Net 30</SelectItem>
                                                 <SelectItem value="net_45">Net 45</SelectItem>
@@ -560,13 +735,8 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
                                     </div>
                                     <div>
                                         <Label>Status</Label>
-                                        <Select
-                                            value={formData.status}
-                                            onValueChange={(val) => handleChange('status', val)}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
+                                        <Select value={formData.status} onValueChange={(v) => handleChange('status', v)}>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="draft">Draft</SelectItem>
                                                 <SelectItem value="submitted">Submitted</SelectItem>
@@ -576,13 +746,8 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
                                     </div>
                                     <div>
                                         <Label>Payment Status</Label>
-                                        <Select 
-                                            value={formData.payment_status} 
-                                            onValueChange={(val) => handleChange('payment_status', val)}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue />
-                                            </SelectTrigger>
+                                        <Select value={formData.payment_status} onValueChange={(v) => handleChange('payment_status', v)}>
+                                            <SelectTrigger><SelectValue /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="unpaid">Unpaid</SelectItem>
                                                 <SelectItem value="partially_paid">Partially Paid</SelectItem>
@@ -596,7 +761,7 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
 
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
-                                        <Label>Amount Paid</Label>
+                                        <Label>Amount Paid (LKR)</Label>
                                         <Input
                                             type="number"
                                             step="0.01"
@@ -624,37 +789,33 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
                                 </div>
                             </div>
 
+                            {/* ── Footer ───────────────────────────────────────── */}
                             <div className="flex justify-between items-center gap-3 pt-4 border-t">
                                 <div>
                                     {item && (
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            onClick={handlePrintInvoice}
-                                            className="gap-2"
-                                        >
-                                            <Printer className="w-4 h-4" />
-                                            Print Invoice
+                                        <Button type="button" variant="outline" onClick={handlePrintInvoice} className="gap-2">
+                                            <Printer className="w-4 h-4" /> Print Invoice
                                         </Button>
                                     )}
                                 </div>
                                 <div className="flex flex-col items-end gap-2">
                                     {!item && atInvoiceLimit && (
                                         <p className="text-xs font-medium text-red-600">
-                                            Monthly invoice limit of {invoiceLimit.toLocaleString()} reached. Upgrade your plan to create more invoices.
+                                            Monthly invoice limit of {invoiceLimit.toLocaleString()} reached. Upgrade to create more.
                                         </p>
                                     )}
                                     <div className="flex gap-3">
-                                        <Button type="button" variant="outline" onClick={onClose} disabled={saveMutation.isLoading}>
+                                        <Button type="button" variant="outline" onClick={onClose} disabled={saveMutation.isPending}>
                                             Cancel
                                         </Button>
                                         <Button
                                             type="submit"
                                             className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50"
-                                            disabled={saveMutation.isLoading || (!item && atInvoiceLimit)}
-                                            title={!item && atInvoiceLimit ? `Monthly limit of ${invoiceLimit.toLocaleString()} invoices reached` : undefined}
+                                            disabled={saveMutation.isPending || (!item && atInvoiceLimit)}
                                         >
-                                            {saveMutation.isLoading ? (item ? 'Updating...' : 'Creating...') : (item ? 'Update' : 'Create')} Invoice
+                                            {saveMutation.isPending
+                                                ? (item ? 'Updating…' : 'Creating…')
+                                                : (item ? 'Update' : 'Create')} Invoice
                                         </Button>
                                     </div>
                                 </div>

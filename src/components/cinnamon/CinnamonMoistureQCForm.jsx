@@ -31,7 +31,7 @@ export default function CinnamonMoistureQCForm({ onClose }) {
     const [instrument, setInstrument] = useState("");
     const [notes, setNotes] = useState("");
     const [isDirty, setIsDirty] = useState(false);
-    useUnsavedChangesWarning(isDirty);
+    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
 
     const moisture         = parseFloat(moisturePct) || 0;
     const isAboveThreshold = moisture > MOISTURE_THRESHOLD;
@@ -83,7 +83,7 @@ export default function CinnamonMoistureQCForm({ onClose }) {
     });
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
+        <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-lg">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">

@@ -17,7 +17,7 @@ export default function ARForm({ item, onClose }) {
     const { toast } = useToast();
     const taxConfig = useTaxConfig();
     const [isDirty, setIsDirty] = useState(false);
-    useUnsavedChangesWarning(isDirty);
+    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
 
     const { data: customers = [] } = useQuery({
         queryKey: ['customers'],
@@ -103,7 +103,7 @@ export default function ARForm({ item, onClose }) {
     };
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
+        <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>

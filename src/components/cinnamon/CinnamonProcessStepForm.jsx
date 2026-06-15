@@ -26,7 +26,7 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
     const { toast } = useToast();
     const isEdit = Boolean(item?.id);
     const [isDirty, setIsDirty] = useState(false);
-    useUnsavedChangesWarning(isDirty);
+    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
 
     const { data: batches = [] } = useQuery({
         queryKey: ["cinnamonBatches"],
@@ -101,7 +101,7 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
     };
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
+        <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">

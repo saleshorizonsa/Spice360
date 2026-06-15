@@ -13,7 +13,8 @@ import {
 export default function UnsavedChangesDialog({ open, onStay, onLeave }) {
   return (
     <AlertDialog open={open}>
-      <AlertDialogContent>
+      {/* z-[200] ensures this appears above any open form dialog (z-50) */}
+      <AlertDialogContent className="z-[200]">
         <AlertDialogHeader>
           <AlertDialogTitle>Unsaved changes</AlertDialogTitle>
           <AlertDialogDescription>

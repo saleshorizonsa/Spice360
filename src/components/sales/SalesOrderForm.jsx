@@ -23,7 +23,7 @@ export default function SalesOrderForm({ order, onClose }) {
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
     const [isDirty, setIsDirty] = useState(false);
-    useUnsavedChangesWarning(isDirty);
+    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
 
     // Get current user
@@ -328,7 +328,7 @@ export default function SalesOrderForm({ order, onClose }) {
     }));
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
+        <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
