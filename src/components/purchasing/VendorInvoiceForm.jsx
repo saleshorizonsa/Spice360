@@ -272,6 +272,39 @@ export default function VendorInvoiceForm({ item, onClose }) {
                     toast({ title: "Saved but GL posting failed", description: err.message, variant: "destructive" });
                 }
             }
+
+            // Create AP record on first approval so vendor balance is tracked in Finance → AP
+            if (['approved', 'approved_for_payment'].includes(savedInvoice?.status)) {
+                try {
+                    const existingAP = await matrixSales.entities.AccountsPayable.filter({
+                        vendor_invoice_number: savedInvoice.vendor_invoice_number
+                    });
+                    if (existingAP.length === 0) {
+                        await matrixSales.entities.AccountsPayable.create({
+                            ap_number:             `AP-${savedInvoice.vendor_invoice_number}`,
+                            vendor_invoice_number: savedInvoice.vendor_invoice_number,
+                            vendor_code:           savedInvoice.vendor_code,
+                            vendor_name:           savedInvoice.vendor_name,
+                            invoice_date:          savedInvoice.invoice_date,
+                            due_date:              savedInvoice.due_date || '',
+                            invoice_amount:        savedInvoice.total_amount,
+                            paid_amount:           0,
+                            outstanding_amount:    savedInvoice.total_amount,
+                            vat_amount:            savedInvoice.vat_amount || 0,
+                            currency:              savedInvoice.currency || 'LKR',
+                            payment_terms:         savedInvoice.payment_terms || 'net_30',
+                            aging_days:            0,
+                            aging_bucket:          'current',
+                            payment_status:        'pending',
+                            notes:                 `From Vendor Invoice ${savedInvoice.vendor_invoice_number}`,
+                        });
+                    }
+                    queryClient.invalidateQueries({ queryKey: ['ap'] });
+                } catch (apErr) {
+                    toast({ title: "Saved but AP record failed", description: apErr.message, variant: "destructive" });
+                }
+            }
+
             queryClient.invalidateQueries({ queryKey: ['vendorInvoices'] });
             toast({ title: "Success", description: `Vendor invoice ${item ? 'updated' : 'created'} successfully` });
             onClose();

@@ -85,6 +85,48 @@ export default function PaymentForm({ item, onClose }) {
                     toast({ title: "Payment saved but GL posting failed", description: error.message, variant: "destructive" });
                 }
             }
+
+            // Reduce AP outstanding balance when outgoing vendor payment clears
+            if (savedPayment?.status === 'cleared' && savedPayment.payment_type === 'outgoing' && savedPayment.party_code) {
+                try {
+                    // Prefer exact match on vendor + invoice reference; fallback to FIFO across vendor's pending AP
+                    let apRecords = [];
+                    if (savedPayment.reference_number) {
+                        apRecords = await matrixSales.entities.AccountsPayable.filter({
+                            vendor_code:           savedPayment.party_code,
+                            vendor_invoice_number: savedPayment.reference_number,
+                        });
+                    }
+                    if (apRecords.length === 0) {
+                        const allPending = await matrixSales.entities.AccountsPayable.filter({
+                            vendor_code:    savedPayment.party_code,
+                            payment_status: 'pending',
+                        });
+                        apRecords = allPending.sort((a, b) => new Date(a.invoice_date) - new Date(b.invoice_date));
+                    }
+
+                    let remaining = parseFloat(savedPayment.amount) || 0;
+                    for (const ap of apRecords) {
+                        if (remaining <= 0.001) break;
+                        const outstanding = parseFloat(ap.outstanding_amount) || 0;
+                        if (outstanding <= 0.001) continue;
+                        const applied      = Math.min(remaining, outstanding);
+                        const newOutstanding = Math.max(0, outstanding - applied);
+                        const newPaid        = (parseFloat(ap.paid_amount) || 0) + applied;
+                        await matrixSales.entities.AccountsPayable.update(ap.id, {
+                            ...ap,
+                            paid_amount:       newPaid,
+                            outstanding_amount: newOutstanding,
+                            payment_status:    newOutstanding <= 0.01 ? 'paid' : 'partial',
+                        });
+                        remaining -= applied;
+                    }
+                    queryClient.invalidateQueries({ queryKey: ['ap'] });
+                } catch (_) {
+                    // Non-fatal — payment recorded; AP update is best-effort
+                }
+            }
+
             queryClient.invalidateQueries({ queryKey: ['payments'] });
             toast({
                 title: "Success",
