@@ -1082,7 +1082,30 @@ const supabaseMatrixSales = {
   auth: {
     me: getCurrentSupabaseUser,
     logout: () => supabase?.auth.signOut(),
-    redirectToLogin: () => {}
+    redirectToLogin: () => {},
+
+    // Invite user: sign them up in Supabase auth.
+    // Requires "Confirm email" to be OFF in Supabase Auth settings
+    // (Dashboard → Authentication → Providers → Email → Confirm email → toggle off)
+    // so the user is active immediately after sign-up.
+    acceptInvite: async ({ email, password, full_name }) => {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { full_name } },
+      });
+      if (error) throw error;
+      return { user: data.user };
+    },
+
+    // Sending the invite email requires a server-side service-role call.
+    // For now we surface a helpful message; the admin can copy the invite
+    // link shown in the UI and share it manually.
+    sendInvite: async () => {
+      throw new Error(
+        'Email delivery is not configured. Copy the invite link above and send it manually.'
+      );
+    },
   },
   entities: supabaseEntities,
   appLogs: {
