@@ -1090,8 +1090,17 @@ const supabaseMatrixSales = {
   },
   integrations: {
     Core: {
-      UploadFile: async () => {
-        throw new Error('File uploads are not configured for Supabase storage yet.');
+      UploadFile: async ({ file }) => {
+        const ext = file.name.split('.').pop().toLowerCase();
+        const path = `logos/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error } = await supabase.storage.from('logos').upload(path, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type
+        });
+        if (error) throw new Error(`Upload failed: ${error.message}`);
+        const { data } = supabase.storage.from('logos').getPublicUrl(path);
+        return { file_url: data.publicUrl };
       },
       InvokeLLM: async () => {
         throw new Error('AI integrations are not configured for this deployment.');
