@@ -880,7 +880,6 @@ const createSupabaseEntity = (entityName) => {
       }
 
       const payload = {
-        base44_id: record.base44_id || record.base44Id || null,
         tenant_id: organizationId,
         organization_id: organizationId,
         organization_key: record.organization_key || null,
@@ -949,7 +948,6 @@ const createSupabaseEntity = (entityName) => {
         });
 
         payload.push({
-          base44_id: record.base44_id || record.base44Id || null,
           tenant_id: organizationId,
           organization_id: organizationId,
           organization_key: record.organization_key || null,
