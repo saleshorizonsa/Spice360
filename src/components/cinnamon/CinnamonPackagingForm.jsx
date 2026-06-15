@@ -133,6 +133,24 @@ export default function CinnamonPackagingForm({ item, onClose }) {
                     status:           "posted",
                 });
 
+                // Register finished SKU as a sellable Material so it appears in sales module dropdowns
+                try {
+                    const existing = await matrixSales.entities.Material.filter({ material_code: finishedSku });
+                    if (existing.length === 0) {
+                        await matrixSales.entities.Material.create({
+                            material_code:               finishedSku,
+                            material_name:               `Cinnamon ${formData.grade_code} – ${formData.pack_size}`,
+                            material_type:               "finished_product",
+                            unit_of_measure:             "packs",
+                            unit_price:                  0,
+                            status:                      "active",
+                            inventory_tracking_enabled:  true,
+                        });
+                    }
+                } catch (_) {
+                    // Non-fatal — packaging still posted even if material registration fails
+                }
+
                 // Advance batch stage
                 if (selectedBatch) {
                     await matrixSales.entities.CinnamonBatch.update(selectedBatch.id, {
@@ -147,6 +165,7 @@ export default function CinnamonPackagingForm({ item, onClose }) {
             queryClient.invalidateQueries({ queryKey: ["cinnamonPackaging"] });
             queryClient.invalidateQueries({ queryKey: ["cinnamonBatches"] });
             queryClient.invalidateQueries({ queryKey: ["stockMovements"] });
+            queryClient.invalidateQueries({ queryKey: ["materials"] });
             toast({
                 title: "Success",
                 description: isEdit ? "Packaging updated" : "Packaging recorded and stock posted",
