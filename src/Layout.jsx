@@ -15,8 +15,6 @@ import {
     Settings,
     Users,
     FileCheck,
-    Briefcase,
-    
     Target,
     BarChart3,
     Clock,
@@ -113,8 +111,6 @@ function LayoutContent({ children, currentPageName }) {
         { name: "Treasury Management", path: "TreasuryManagement", icon: Landmark, section: "Finance" },
         { name: "Depreciation Reports", path: "DepreciationReports", icon: TrendingDown, section: "Finance" },
         { name: "Asset Lifecycle", path: "AssetLifecycle", icon: Recycle, section: "Finance" },
-        { name: t('projects'), path: "Projects", icon: Briefcase, section: "Projects" },
-
         { name: t('hrPayroll'), path: "HR", icon: Users, section: "HR" },
         { name: "Sri Lanka Tax", path: "SriLankaTax", icon: Calculator, section: "Compliance" },
         { name: "Compliance Reports", path: "ComplianceReports", icon: FileCheck, section: "Compliance" },
@@ -139,8 +135,6 @@ function LayoutContent({ children, currentPageName }) {
         "Inventory",
         "Supply Chain",
         "Finance",
-        "Projects",
-
         "HR",
         "Compliance",
         "Reports",
@@ -154,7 +148,6 @@ function LayoutContent({ children, currentPageName }) {
         Inventory: Package,
         "Supply Chain": TrendingUp,
         Finance: DollarSign,
-        Projects: Briefcase,
         HR: Users,
         Compliance: FileCheck,
         Reports: BarChart3,

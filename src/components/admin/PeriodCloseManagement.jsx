@@ -21,7 +21,6 @@ const moduleOptions = [
     { value: "inventory", label: "Inventory" },
     { value: "operations", label: "Operations" },
     { value: "hr", label: "HR" },
-    { value: "projects", label: "Projects" },
     { value: "compliance", label: "Compliance" }
 ];
 

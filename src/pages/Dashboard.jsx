@@ -8,7 +8,6 @@ import {
     AlertTriangle,
     BarChart3,
     Bot,
-    Briefcase,
     Building2,
     Calculator,
     CheckCircle2,
@@ -437,20 +436,6 @@ function HRCards() {
     ]} />;
 }
 
-function ProjectCards() {
-    const { data: projects = [] } = useEntityList("Project", ["dashboard-projects"], "-start_date");
-    const { data: tasks = [] } = useEntityList("ProjectTask", ["dashboard-project-tasks"], "-due_date");
-    const { data: milestones = [] } = useEntityList("ProjectMilestone", ["dashboard-project-milestones"], "-due_date");
-    const { data: expenses = [] } = useEntityList("ProjectExpense", ["dashboard-project-expenses"], "-expense_date");
-
-    return <ModuleCards cards={[
-        { title: "Projects", value: toList(projects).filter(p => p.status === "active" || p.status === "in_progress").length, description: "Active projects", icon: Briefcase, color: "blue", to: "Projects" },
-        { title: "Project Tasks", value: toList(tasks).filter(t => t.status !== "completed").length, description: "Open tasks", icon: CheckCircle2, color: "amber", to: "Projects" },
-        { title: "Milestones", value: toList(milestones).length, description: "Tracked milestones", icon: Target, color: "indigo", to: "Projects" },
-        { title: "Project Expenses", value: formatLkr(sumBy(toList(expenses), "amount")), description: "Recorded project expenses", icon: DollarSign, color: "emerald", to: "Projects" }
-    ]} />;
-}
-
 function ComplianceCards() {
     const { data: zatca = [] } = useEntityList("ZATCASubmissionLog", ["dashboard-zatca"], "-submission_date");
     const { data: vat = [] } = useEntityList("VATReturn", ["dashboard-vat"], "-period_end");
@@ -511,7 +496,6 @@ export default function Dashboard() {
         { value: "operations", label: "Operations", Component: OperationsCards },
         { value: "supply-chain", label: "Supply Chain", Component: SupplyChainCards },
         { value: "finance", label: "Finance", Component: FinanceCards },
-        { value: "projects", label: "Projects", Component: ProjectCards },
         { value: "hr", label: "HR", Component: HRCards },
         { value: "compliance", label: "Compliance", Component: ComplianceCards },
         { value: "reports", label: "Reports", Component: ReportsCards },

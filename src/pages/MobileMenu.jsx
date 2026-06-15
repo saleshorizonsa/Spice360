@@ -17,7 +17,6 @@ import {
     Wrench,
     Users,
     FileCheck,
-    Briefcase,
     Target,
     BarChart3,
     Clock,
@@ -98,7 +97,6 @@ export default function MobileMenu() {
         {
             title: "Operations",
             items: [
-                { name: t('projects'), path: "Projects", icon: Briefcase },
                 { name: t('maintenance'), path: "Maintenance", icon: Wrench },
             ]
         },

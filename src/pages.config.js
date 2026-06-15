@@ -82,7 +82,6 @@ import MobileMenu from './pages/MobileMenu';
 import Notifications from './pages/Notifications';
 import OwnerDashboard from './pages/OwnerDashboard';
 import Production from './pages/Production';
-import Projects from './pages/Projects';
 import Purchasing from './pages/Purchasing';
 import Quality from './pages/Quality';
 import QualityMaintenanceReports from './pages/QualityMaintenanceReports';
@@ -136,7 +135,6 @@ export const PAGES = {
     "Notifications": Notifications,
     "OwnerDashboard": OwnerDashboard,
     "Production": Production,
-    "Projects": Projects,
     "Purchasing": Purchasing,
     "Quality": Quality,
     "QualityMaintenanceReports": QualityMaintenanceReports,

@@ -59,7 +59,6 @@ const moduleDefaults = [
     "purchasing",
     "operations",
     "hr",
-    "projects",
     "compliance",
     "reports",
     "approvals",

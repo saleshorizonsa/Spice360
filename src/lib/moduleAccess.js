@@ -38,9 +38,6 @@ export const PAGE_MODULE_MAP = {
   HR: "HR",
   HRReports: "HR",
 
-  // Projects
-  Projects: "Projects",
-
   // Compliance
   SriLankaTax: null,
   ComplianceReports: null,
@@ -100,7 +97,6 @@ export const MODULE_INFO = {
   Finance:    { label: "Finance",             description: "AR, AP, journal entries, payments, fixed assets, and reports." },
   Purchasing: { label: "Purchasing & Supply Chain", description: "Requisitions, RFQs, purchase orders, GRN, and vendor invoices." },
   HR:         { label: "HR & Payroll",        description: "Employees, EPF/ETF/APIT payroll, leave, loans, and HR reports." },
-  Projects:   { label: "Projects",            description: "Project planning, expenses, milestones, and timesheets." },
   ZATCA:      { label: "ZATCA Compliance",    description: "Saudi Arabia e-invoicing compliance (Phase 1 & 2)." },
   Reports:    { label: "Advanced Reports",    description: "Sales, inventory, HR, and compliance analytics reports." },
   Production: { label: "Production",          description: "Manufacturing orders, BOM, routing, and production reporting." },
