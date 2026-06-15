@@ -1,15 +1,10 @@
-import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { navigationGuard } from '@/lib/navigationGuard';
 
 /**
- * Drop-in replacement for useNavigate() for programmatic navigation
- * (logout, back button, etc.) that respects the unsaved-changes guard.
+ * Drop-in replacement for useNavigate().
+ * Navigation guard is handled globally by NavigationGuardProvider (useBlocker),
+ * so no manual interception is needed here.
  */
 export function useGuardedNavigate() {
-  const navigate = useNavigate();
-  return useCallback((to, opts) => {
-    const intercepted = navigationGuard.intercept(() => navigate(to, opts));
-    if (!intercepted) navigate(to, opts);
-  }, [navigate]);
+  return useNavigate();
 }
