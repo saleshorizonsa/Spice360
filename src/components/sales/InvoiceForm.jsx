@@ -17,6 +17,7 @@ import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
 import { useSubscription } from "@/lib/SubscriptionContext";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 
 export default function InvoiceForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -24,6 +25,8 @@ export default function InvoiceForm({ item, onClose }) {
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
     const gl = useGLAccounts();
+    const [isDirty, setIsDirty] = useState(false);
+    useUnsavedChangesWarning(isDirty);
     const [activeTab, setActiveTab] = useState("details");
     
     const { data: salesOrders = [] } = useQuery({
@@ -191,6 +194,7 @@ export default function InvoiceForm({ item, onClose }) {
     };
 
     const handleChange = (field, value) => {
+        if (!isDirty) setIsDirty(true);
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 

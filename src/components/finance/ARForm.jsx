@@ -9,11 +9,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 
 export default function ARForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const taxConfig = useTaxConfig();
+    const [isDirty, setIsDirty] = useState(false);
+    useUnsavedChangesWarning(isDirty);
 
     const { data: customers = [] } = useQuery({
         queryKey: ['customers'],
@@ -94,6 +97,7 @@ export default function ARForm({ item, onClose }) {
     };
 
     const handleChange = (field, value) => {
+        if (!isDirty) setIsDirty(true);
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 

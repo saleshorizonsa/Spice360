@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertCircle, CheckCircle2, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
@@ -21,6 +22,8 @@ export default function VendorInvoiceForm({ item, onClose }) {
     const { currentOrg } = useOrganization();
     const taxConfig = useTaxConfig();
     const gl = useGLAccounts();
+    const [isDirty, setIsDirty] = useState(false);
+    useUnsavedChangesWarning(isDirty);
 
     const { data: pos = [] } = useQuery({
         queryKey: ['purchaseOrders'],
@@ -186,6 +189,7 @@ export default function VendorInvoiceForm({ item, onClose }) {
     };
 
     const handleChange = (field, value) => {
+        if (!isDirty) setIsDirty(true);
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 

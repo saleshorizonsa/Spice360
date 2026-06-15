@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { Package, AlertTriangle } from "lucide-react";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 
 const PACK_SIZES = [
     { label: "50g",  value: "50g",  kg: 0.05 },
@@ -30,6 +31,8 @@ export default function CinnamonPackagingForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const isEdit = Boolean(item?.id);
+    const [isDirty, setIsDirty] = useState(false);
+    useUnsavedChangesWarning(isDirty);
 
     const { data: batches = [] } = useQuery({
         queryKey: ["cinnamonBatches"],
@@ -61,8 +64,10 @@ export default function CinnamonPackagingForm({ item, onClose }) {
         location:         item?.location         || "",
     });
 
-    const handleChange = (field, value) =>
+    const handleChange = (field, value) => {
+        setIsDirty(true);
         setFormData((prev) => ({ ...prev, [field]: value }));
+    };
 
     const safeBatches        = Array.isArray(batches)        ? batches        : [];
     const safeGradingOutputs = Array.isArray(gradingOutputs) ? gradingOutputs : [];

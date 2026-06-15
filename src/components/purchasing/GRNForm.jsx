@@ -14,11 +14,14 @@ import SearchableSelect from "../shared/SearchableSelect";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
 import { processGoodsReceipt } from "../utils/inventoryIntegration";
 import { logAuditTrail } from "../utils/auditTrail";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 
 export default function GRNForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
+    const [isDirty, setIsDirty] = useState(false);
+    useUnsavedChangesWarning(isDirty);
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
     const [isPosting, setIsPosting] = useState(false);
 
@@ -237,6 +240,7 @@ export default function GRNForm({ item, onClose }) {
     };
 
     const handleChange = (field, value) => {
+        if (!isDirty) setIsDirty(true);
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 

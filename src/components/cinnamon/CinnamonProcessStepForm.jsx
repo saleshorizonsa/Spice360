@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { Activity } from "lucide-react";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 
 const STAGES = [
     { value: "pre_processing",  label: "Pre-Processing" },
@@ -24,6 +25,8 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const isEdit = Boolean(item?.id);
+    const [isDirty, setIsDirty] = useState(false);
+    useUnsavedChangesWarning(isDirty);
 
     const { data: batches = [] } = useQuery({
         queryKey: ["cinnamonBatches"],
@@ -92,8 +95,10 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
         });
     };
 
-    const handleChange = (field, value) =>
+    const handleChange = (field, value) => {
+        setIsDirty(true);
         setFormData((prev) => ({ ...prev, [field]: value }));
+    };
 
     return (
         <Dialog open={true} onOpenChange={onClose}>

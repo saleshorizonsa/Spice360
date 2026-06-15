@@ -11,12 +11,15 @@ import { useToast } from "@/components/ui/use-toast";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 
 export default function PaymentForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
     const gl = useGLAccounts();
+    const [isDirty, setIsDirty] = useState(false);
+    useUnsavedChangesWarning(isDirty);
 
     const { data: banks = [] } = useQuery({
         queryKey: ['banks'],
@@ -99,6 +102,7 @@ export default function PaymentForm({ item, onClose }) {
     };
 
     const handleChange = (field, value) => {
+        if (!isDirty) setIsDirty(true);
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 

@@ -16,11 +16,14 @@ import { createApprovalRequest, needsApproval } from "../utils/approvalWorkflow"
 import { logAuditTrail } from "../utils/auditTrail";
 import { useOrganization } from "../utils/OrganizationContext";
 import DocumentList from "../shared/DocumentList";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 
 export default function PurchaseOrderForm({ po, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { currentOrganization: currentOrg } = useOrganization();
+    const [isDirty, setIsDirty] = useState(false);
+    useUnsavedChangesWarning(isDirty);
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [activeTab, setActiveTab] = useState("details");
@@ -291,6 +294,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
     };
 
     const handleChange = (field, value) => {
+        if (!isDirty) setIsDirty(true);
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 

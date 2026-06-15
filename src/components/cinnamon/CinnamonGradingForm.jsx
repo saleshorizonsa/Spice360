@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { Scale, Plus, Trash2, AlertTriangle } from "lucide-react";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 
 // Analog of CoilSlittingForm: one batch → multiple graded output rows.
 export default function CinnamonGradingForm({ onClose }) {
@@ -41,12 +42,15 @@ export default function CinnamonGradingForm({ onClose }) {
     const [wasteWeight, setWasteWeight] = useState("");
     const [gradeRows, setGradeRows] = useState([{ grade_code: "", output_weight_kg: "" }]);
     const [gradingNumber] = useState(`CIN-GRD-${Date.now()}`);
+    const [isDirty, setIsDirty] = useState(false);
+    useUnsavedChangesWarning(isDirty);
 
     const safeBatches      = Array.isArray(batches)      ? batches      : [];
     const safeGrades       = Array.isArray(grades)       ? grades       : [];
     const safeProcessSteps = Array.isArray(processSteps) ? processSteps : [];
 
     const handleBatchSelect = (batchNumber) => {
+        setIsDirty(true);
         const batch = safeBatches.find((b) => b.batch_number === batchNumber);
         setSelectedBatch(batch || null);
 
@@ -72,10 +76,12 @@ export default function CinnamonGradingForm({ onClose }) {
     const remaining  = availableWeight - totalUsed;
     const isOverweight = totalUsed > availableWeight && availableWeight > 0;
 
-    const addGradeRow    = () => setGradeRows((prev) => [...prev, { grade_code: "", output_weight_kg: "" }]);
-    const removeGradeRow = (index) => setGradeRows((prev) => prev.filter((_, i) => i !== index));
-    const updateGradeRow = (index, field, value) =>
+    const addGradeRow    = () => { setIsDirty(true); setGradeRows((prev) => [...prev, { grade_code: "", output_weight_kg: "" }]); };
+    const removeGradeRow = (index) => { setIsDirty(true); setGradeRows((prev) => prev.filter((_, i) => i !== index)); };
+    const updateGradeRow = (index, field, value) => {
+        setIsDirty(true);
         setGradeRows((prev) => prev.map((row, i) => (i === index ? { ...row, [field]: value } : row)));
+    };
 
     const gradingMutation = useMutation({
         mutationFn: async () => {
@@ -248,7 +254,7 @@ export default function CinnamonGradingForm({ onClose }) {
                             step="0.001"
                             min="0"
                             value={wasteWeight}
-                            onChange={(e) => setWasteWeight(e.target.value)}
+                            onChange={(e) => { setIsDirty(true); setWasteWeight(e.target.value); }}
                             disabled={!selectedBatch}
                             className="max-w-xs"
                         />

@@ -16,11 +16,14 @@ import LineItemsTable from "../shared/LineItemsTable";
 import SearchableSelect from "../shared/SearchableSelect";
 import { createApprovalRequest, needsApproval } from "../utils/approvalWorkflow";
 import { logAuditTrail } from "../utils/auditTrail";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 
 export default function SalesOrderForm({ order, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
+    const [isDirty, setIsDirty] = useState(false);
+    useUnsavedChangesWarning(isDirty);
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
 
     // Get current user
@@ -308,6 +311,7 @@ export default function SalesOrderForm({ order, onClose }) {
     };
 
     const handleChange = (field, value) => {
+        if (!isDirty) setIsDirty(true);
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 

@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { Droplets, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 
 const MOISTURE_THRESHOLD = 12; // export threshold — packaging blocked above this
 const MOISTURE_HARD_MAX  = 14; // absolute maximum — record rejected entirely
@@ -29,6 +30,8 @@ export default function CinnamonMoistureQCForm({ onClose }) {
     const [moisturePct, setMoisturePct] = useState("");
     const [instrument, setInstrument] = useState("");
     const [notes, setNotes] = useState("");
+    const [isDirty, setIsDirty] = useState(false);
+    useUnsavedChangesWarning(isDirty);
 
     const moisture         = parseFloat(moisturePct) || 0;
     const isAboveThreshold = moisture > MOISTURE_THRESHOLD;
@@ -91,7 +94,7 @@ export default function CinnamonMoistureQCForm({ onClose }) {
                 <div className="space-y-4">
                     <div>
                         <Label>Batch *</Label>
-                        <Select onValueChange={setBatchNumber} required>
+                        <Select onValueChange={(v) => { setIsDirty(true); setBatchNumber(v); }} required>
                             <SelectTrigger>
                                 <SelectValue placeholder="Select batch" />
                             </SelectTrigger>
@@ -114,7 +117,7 @@ export default function CinnamonMoistureQCForm({ onClose }) {
                                 min="0"
                                 max="100"
                                 value={moisturePct}
-                                onChange={(e) => setMoisturePct(e.target.value)}
+                                onChange={(e) => { setIsDirty(true); setMoisturePct(e.target.value); }}
                                 required
                             />
                         </div>
@@ -122,7 +125,7 @@ export default function CinnamonMoistureQCForm({ onClose }) {
                             <Label>Measuring Instrument</Label>
                             <Input
                                 value={instrument}
-                                onChange={(e) => setInstrument(e.target.value)}
+                                onChange={(e) => { setIsDirty(true); setInstrument(e.target.value); }}
                                 placeholder="e.g., Moisture Meter A"
                             />
                         </div>
@@ -172,7 +175,7 @@ export default function CinnamonMoistureQCForm({ onClose }) {
                         <Label>Notes</Label>
                         <Textarea
                             value={notes}
-                            onChange={(e) => setNotes(e.target.value)}
+                            onChange={(e) => { setIsDirty(true); setNotes(e.target.value); }}
                             rows={2}
                         />
                     </div>
