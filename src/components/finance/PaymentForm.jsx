@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
+import ReverseButton from "../shared/ReverseButton";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 
@@ -288,13 +289,21 @@ export default function PaymentForm({ item, onClose }) {
                         />
                     </div>
 
-                    <div className="flex justify-end gap-3">
-                        <Button type="button" variant="outline" onClick={onClose}>
-                            Cancel
-                        </Button>
-                        <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
-                            {item ? 'Update' : 'Create'} Payment
-                        </Button>
+                    <div className="flex justify-between items-center">
+                        <ReverseButton
+                            item={item}
+                            entityName="Payment"
+                            queryKeys={['payments']}
+                            onSuccess={onClose}
+                        />
+                        <div className="flex gap-3">
+                            <Button type="button" variant="outline" onClick={onClose}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
+                                {item ? 'Update' : 'Create'} Payment
+                            </Button>
+                        </div>
                     </div>
                 </form>
             </DialogContent>

@@ -13,6 +13,7 @@ import { Package, RefreshCw } from "lucide-react";
 import SearchableSelect from "../shared/SearchableSelect";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
 import { processGoodsReceipt, reverseGoodsReceipt } from "../utils/inventoryIntegration";
+import ReverseButton from "../shared/ReverseButton";
 import { logAuditTrail } from "../utils/auditTrail";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 
@@ -24,7 +25,6 @@ export default function GRNForm({ item, onClose }) {
     useUnsavedChangesWarning(isDirty);
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
     const [isPosting, setIsPosting] = useState(false);
-    const [isReversing, setIsReversing] = useState(false);
 
     // Get current user
     const [currentUser, setCurrentUser] = useState(null);
@@ -261,33 +261,6 @@ export default function GRNForm({ item, onClose }) {
             });
         } finally {
             setIsPosting(false);
-        }
-    };
-
-    const handleReverseGRN = async () => {
-        if (!item?.id) return;
-        setIsReversing(true);
-        try {
-            await reverseGoodsReceipt(formData, currentUser);
-            await matrixSales.entities.GoodsReceiptNote.update(item.id, {
-                status: 'reversed',
-                stock_posted: false
-            });
-            queryClient.invalidateQueries();
-            toast({
-                title: "GRN Reversed",
-                description: "Stock has been reversed and the GRN is now cancelled.",
-            });
-            onClose();
-        } catch (error) {
-            console.error('Error reversing GRN:', error);
-            toast({
-                title: "Reversal Failed",
-                description: error?.message || "Failed to reverse GRN. Please try again.",
-                variant: "destructive"
-            });
-        } finally {
-            setIsReversing(false);
         }
     };
 
@@ -559,17 +532,14 @@ export default function GRNForm({ item, onClose }) {
                                     {isPosting ? 'Posting...' : 'Post to Stock'}
                                 </Button>
                             )}
-                            {item && item.stock_posted && item.status !== 'reversed' && (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={handleReverseGRN}
-                                    className="border-red-300 text-red-600 hover:bg-red-50"
-                                    disabled={isReversing}
-                                >
-                                    {isReversing ? 'Reversing...' : 'Reverse GRN'}
-                                </Button>
-                            )}
+                            <ReverseButton
+                                item={item}
+                                entityName="GoodsReceiptNote"
+                                queryKeys={['grns']}
+                                onSuccess={onClose}
+                                preAction={() => item?.stock_posted ? reverseGoodsReceipt(formData, currentUser) : Promise.resolve()}
+                                label="Reverse GRN"
+                            />
                         </div>
                         <div className="flex gap-3">
                             <Button type="button" variant="outline" onClick={onClose}>

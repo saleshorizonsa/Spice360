@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
+import ReverseButton from "../shared/ReverseButton";
 
 export default function ARForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -272,13 +273,21 @@ export default function ARForm({ item, onClose }) {
                         />
                     </div>
 
-                    <div className="flex justify-end gap-3">
-                        <Button type="button" variant="outline" onClick={onClose}>
-                            Cancel
-                        </Button>
-                        <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
-                            {item ? 'Update' : 'Create'} AR Entry
-                        </Button>
+                    <div className="flex justify-between items-center">
+                        <ReverseButton
+                            item={item}
+                            entityName="AccountsReceivable"
+                            queryKeys={['ar']}
+                            onSuccess={onClose}
+                        />
+                        <div className="flex gap-3">
+                            <Button type="button" variant="outline" onClick={onClose}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
+                                {item ? 'Update' : 'Create'} AR Entry
+                            </Button>
+                        </div>
                     </div>
                 </form>
             </DialogContent>

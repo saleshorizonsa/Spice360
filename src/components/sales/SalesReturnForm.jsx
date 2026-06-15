@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
+import ReverseButton from "../shared/ReverseButton";
 
 export default function SalesReturnForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -389,13 +390,21 @@ export default function SalesReturnForm({ item, onClose }) {
                         </div>
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-4 border-t">
-                        <Button type="button" variant="outline" onClick={onClose}>
-                            Cancel
-                        </Button>
-                        <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
-                            {item ? 'Update' : 'Create'} Sales Return
-                        </Button>
+                    <div className="flex justify-between items-center pt-4 border-t">
+                        <ReverseButton
+                            item={item}
+                            entityName="SalesReturn"
+                            queryKeys={['returns']}
+                            onSuccess={onClose}
+                        />
+                        <div className="flex gap-3">
+                            <Button type="button" variant="outline" onClick={onClose}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
+                                {item ? 'Update' : 'Create'} Sales Return
+                            </Button>
+                        </div>
                     </div>
                 </form>
             </DialogContent>

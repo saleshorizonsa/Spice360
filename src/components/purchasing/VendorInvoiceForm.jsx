@@ -13,6 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
+import ReverseButton from "../shared/ReverseButton";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
 
@@ -441,13 +442,21 @@ export default function VendorInvoiceForm({ item, onClose }) {
                         </>
                     )}
 
-                    <div className="flex justify-end gap-3">
-                        <Button type="button" variant="outline" onClick={onClose}>
-                            Cancel
-                        </Button>
-                        <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
-                            {item ? 'Update' : 'Create'} Invoice
-                        </Button>
+                    <div className="flex justify-between items-center">
+                        <ReverseButton
+                            item={item}
+                            entityName="VendorInvoice"
+                            queryKeys={['vendorInvoices']}
+                            onSuccess={onClose}
+                        />
+                        <div className="flex gap-3">
+                            <Button type="button" variant="outline" onClick={onClose}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
+                                {item ? 'Update' : 'Create'} Invoice
+                            </Button>
+                        </div>
                     </div>
                 </form>
             </DialogContent>

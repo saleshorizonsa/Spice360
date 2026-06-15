@@ -16,6 +16,7 @@ import { createApprovalRequest, needsApproval } from "../utils/approvalWorkflow"
 import { logAuditTrail } from "../utils/auditTrail";
 import { useOrganization } from "../utils/OrganizationContext";
 import DocumentList from "../shared/DocumentList";
+import ReverseButton from "../shared/ReverseButton";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 
 export default function PurchaseOrderForm({ po, onClose }) {
@@ -666,13 +667,21 @@ export default function PurchaseOrderForm({ po, onClose }) {
                                 />
                             </div>
 
-                            <div className="flex justify-end gap-3">
-                                <Button type="button" variant="outline" onClick={onClose}>
-                                    Cancel
-                                </Button>
-                                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700" disabled={isGeneratingNumber || saveMutation.isPending}>
-                                    {po ? 'Update' : 'Create'} PO
-                                </Button>
+                            <div className="flex justify-between items-center">
+                                <ReverseButton
+                                    item={po}
+                                    entityName="PurchaseOrder"
+                                    queryKeys={['purchaseOrders']}
+                                    onSuccess={onClose}
+                                />
+                                <div className="flex gap-3">
+                                    <Button type="button" variant="outline" onClick={onClose}>
+                                        Cancel
+                                    </Button>
+                                    <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700" disabled={isGeneratingNumber || saveMutation.isPending}>
+                                        {po ? 'Update' : 'Create'} PO
+                                    </Button>
+                                </div>
                             </div>
                         </form>
                     </TabsContent>
