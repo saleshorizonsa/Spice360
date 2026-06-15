@@ -257,21 +257,24 @@ export default function GRNForm({ item, onClose }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (!formData.receiving_location) {
-            toast({
-                title: "Receiving Location Required",
-                description: "Please select a receiving location before saving the GRN.",
-                variant: "destructive"
-            });
-            return;
-        }
-        if (!formData.quantity_received || formData.quantity_received <= 0) {
-            toast({
-                title: "Quantity Required",
-                description: "Please enter the received quantity before saving.",
-                variant: "destructive"
-            });
-            return;
+        // Only enforce required fields on create (auto-post requires them)
+        if (!item) {
+            if (!formData.receiving_location) {
+                toast({
+                    title: "Receiving Location Required",
+                    description: "Please select a receiving location before saving the GRN.",
+                    variant: "destructive"
+                });
+                return;
+            }
+            if (!formData.quantity_received || formData.quantity_received <= 0) {
+                toast({
+                    title: "Quantity Required",
+                    description: "Please enter the received quantity before saving.",
+                    variant: "destructive"
+                });
+                return;
+            }
         }
         saveMutation.mutate(formData);
     };
