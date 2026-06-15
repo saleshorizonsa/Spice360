@@ -175,12 +175,36 @@ export default function GRNForm({ item, onClose }) {
 
             return grn;
         },
-        onSuccess: () => {
+        onSuccess: async (savedGRN) => {
+            // Auto-post to stock when creating a new GRN with a receiving location
+            if (!item && formData.receiving_location && savedGRN?.id) {
+                try {
+                    const grnForPosting = {
+                        ...formData,
+                        grn_number: savedGRN.grn_number || formData.grn_number
+                    };
+                    await processGoodsReceipt(grnForPosting, currentUser);
+                    await matrixSales.entities.GoodsReceiptNote.update(savedGRN.id, {
+                        stock_posted: true,
+                        status: 'completed'
+                    });
+                } catch (postErr) {
+                    console.error('Auto post-to-stock failed:', postErr);
+                    toast({
+                        title: "GRN Created",
+                        description: "GRN saved but stock posting failed. Use 'Post to Stock' to retry.",
+                        variant: "destructive"
+                    });
+                    queryClient.invalidateQueries({ queryKey: ['grns'] });
+                    onClose();
+                    return;
+                }
+            }
             queryClient.invalidateQueries({ queryKey: ['grns'] });
             queryClient.invalidateQueries({ queryKey: ['auditTrails'] });
             toast({
                 title: "Success",
-                description: item ? "GRN updated" : "GRN created",
+                description: item ? "GRN updated" : "GRN created and stock posted",
             });
             onClose();
         }

@@ -204,33 +204,37 @@ async function updateStockLevel({
         if (existingStock && existingStock.length > 0) {
             // Update existing
             const stock = existingStock[0];
-            const newQty = operation === 'increase' 
-                ? (stock.quantity || 0) + quantity 
-                : Math.max(0, (stock.quantity || 0) - quantity);
-            const newAvailable = newQty - (stock.reserved_quantity || 0);
+            const qty = parseFloat(quantity) || 0;
+            const currentQty = parseFloat(stock.quantity) || 0;
+            const newQty = operation === 'increase'
+                ? currentQty + qty
+                : Math.max(0, currentQty - qty);
+            const newAvailable = newQty - (parseFloat(stock.reserved_quantity) || 0);
 
             await matrixSales.entities.StockLevel.update(stock.id, {
                 quantity: newQty,
                 available_quantity: newAvailable,
-                total_value: newQty * (stock.unit_cost || unitCost),
+                total_value: newQty * (parseFloat(stock.unit_cost) || parseFloat(unitCost) || 0),
                 last_movement_date: new Date().toISOString().split('T')[0],
-                aging_days: 0 // Reset aging on new movement
+                aging_days: 0
             });
         } else if (operation === 'increase') {
             // Create new stock level (only on receipt)
+            const qty = parseFloat(quantity) || 0;
+            const cost = parseFloat(unitCost) || 0;
             await matrixSales.entities.StockLevel.create({
                 material_code: materialCode,
                 material_name: materialName,
                 warehouse_code: warehouse,
-                warehouse_name: warehouse, // You might want to look this up
+                warehouse_name: warehouse,
                 bin_code: bin,
                 batch_number: batch,
-                quantity: quantity,
+                quantity: qty,
                 reserved_quantity: 0,
-                available_quantity: quantity,
+                available_quantity: qty,
                 unit_of_measure: unitOfMeasure,
-                unit_cost: unitCost,
-                total_value: quantity * unitCost,
+                unit_cost: cost,
+                total_value: qty * cost,
                 last_movement_date: new Date().toISOString().split('T')[0],
                 aging_days: 0,
                 status: 'available'
