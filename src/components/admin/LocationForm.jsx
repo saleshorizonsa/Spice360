@@ -56,9 +56,7 @@ export default function LocationForm({ item, onClose }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (window.confirm(`Are you sure you want to ${item ? 'update' : 'create'} this location?`)) {
-            saveMutation.mutate(formData);
-        }
+        saveMutation.mutate(formData);
     };
 
     const handleChange = (field, value) => {
