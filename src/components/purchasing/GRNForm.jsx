@@ -175,6 +175,14 @@ export default function GRNForm({ item, onClose }) {
 
             return grn;
         },
+        onError: (error) => {
+            console.error('GRN save error:', error);
+            toast({
+                title: "Save Failed",
+                description: error?.message || "Failed to save GRN. Please try again.",
+                variant: "destructive"
+            });
+        },
         onSuccess: async (savedGRN) => {
             // Auto-post to stock when creating a new GRN
             if (!item && savedGRN?.id && savedGRN?.receiving_location) {
