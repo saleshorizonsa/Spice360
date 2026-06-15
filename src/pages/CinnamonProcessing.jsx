@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Leaf, Plus } from "lucide-react";
+import { Leaf, Plus, Printer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DataTable from "../components/erp/DataTable";
@@ -11,6 +11,7 @@ import CinnamonProcessStepForm from "../components/cinnamon/CinnamonProcessStepF
 import CinnamonGradingForm from "../components/cinnamon/CinnamonGradingForm";
 import CinnamonMoistureQCForm from "../components/cinnamon/CinnamonMoistureQCForm";
 import CinnamonPackagingForm from "../components/cinnamon/CinnamonPackagingForm";
+import CinnamonLabelPrint from "../components/cinnamon/CinnamonLabelPrint";
 import CinnamonYieldReport from "../components/cinnamon/CinnamonYieldReport";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -18,6 +19,7 @@ export default function CinnamonProcessing() {
     const [activeTab, setActiveTab] = useState("batches");
     const [showDialog, setShowDialog] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+    const [printItems, setPrintItems] = useState(null);
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
@@ -149,6 +151,22 @@ export default function CinnamonProcessing() {
         { header: "Total (kg)",  key: "total_weight_kg", render: (v) => parseFloat(v || 0).toFixed(3) },
         { header: "Location",    key: "location" },
         { header: "Status",      key: "status",          isBadge: true },
+        {
+            header: "",
+            key: "label_print",
+            sortable: false,
+            render: (_v, row) => (
+                <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1 text-xs"
+                    onClick={(e) => { e.stopPropagation(); setPrintItems([row]); }}
+                >
+                    <Printer className="w-3 h-3" />
+                    Label
+                </Button>
+            ),
+        },
     ];
 
     const handleCreate = (type) => {
@@ -329,13 +347,25 @@ export default function CinnamonProcessing() {
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle>Packaging</CardTitle>
-                            <Button
-                                onClick={() => handleCreate("packaging")}
-                                className="bg-emerald-600 hover:bg-emerald-700"
-                            >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Record Packaging
-                            </Button>
+                            <div className="flex gap-2">
+                                {safePackaging.length > 0 && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setPrintItems(safePackaging)}
+                                        className="gap-2"
+                                    >
+                                        <Printer className="w-4 h-4" />
+                                        Print All Labels
+                                    </Button>
+                                )}
+                                <Button
+                                    onClick={() => handleCreate("packaging")}
+                                    className="bg-emerald-600 hover:bg-emerald-700"
+                                >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    Record Packaging
+                                </Button>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <DataTable
@@ -369,6 +399,9 @@ export default function CinnamonProcessing() {
             )}
             {showDialog && activeTab === "packaging" && (
                 <CinnamonPackagingForm item={editingItem} onClose={() => setShowDialog(false)} />
+            )}
+            {printItems && (
+                <CinnamonLabelPrint packages={printItems} onClose={() => setPrintItems(null)} />
             )}
         </div>
     );
