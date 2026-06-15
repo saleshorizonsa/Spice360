@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+﻿import React, { useMemo, useState } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
@@ -17,62 +17,62 @@ import { useOrganization } from "@/components/utils/OrganizationContext";
 
 const fmt = (value) => `LKR ${Number(value || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-// Standard Sri Lanka CoA — tuple order: [code, name, name_ar, type, subtype, parent, is_header, normal_balance]
+// Standard Sri Lanka CoA â€” tuple order: [code, name, name_ar, type, subtype, parent, is_header, normal_balance]
 const seededAccounts = [
-  // ── 1000 ASSETS ──────────────────────────────────────────────────────────────
+  // â”€â”€ 1000 ASSETS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   ["1000", "Assets",                              "", "asset",     "",                 "",     true,  "debit"],
   ["1010", "Cash & Bank",                         "", "asset",     "cash",             "1000", false, "debit"],
-  ["1015", "Bank — LKR Operating Account",        "", "asset",     "cash",             "1000", false, "debit"],
+  ["1015", "Bank â€” LKR Operating Account",        "", "asset",     "cash",             "1000", false, "debit"],
   ["1020", "Petty Cash",                          "", "asset",     "cash",             "1000", false, "debit"],
   ["1100", "Trade Receivables",                   "", "asset",     "receivables",      "1000", false, "debit"],
   ["1110", "Other Receivables",                   "", "asset",     "receivables",      "1000", false, "debit"],
   ["1120", "Advances to Suppliers",               "", "asset",     "receivables",      "1000", false, "debit"],
-  ["1200", "Inventory — Raw Materials",           "", "asset",     "inventory",        "1000", false, "debit"],
-  ["1201", "Inventory — Raw Cinnamon Bark",       "", "asset",     "inventory",        "1200", false, "debit"],
-  ["1210", "Inventory — WIP",                     "", "asset",     "inventory",        "1000", false, "debit"],
-  ["1211", "Inventory — WIP Cinnamon Processing", "", "asset",     "inventory",        "1210", false, "debit"],
-  ["1220", "Inventory — Finished Goods",          "", "asset",     "inventory",        "1000", false, "debit"],
-  ["1221", "Inventory — Finished Cinnamon Goods", "", "asset",     "inventory",        "1220", false, "debit"],
+  ["1200", "Inventory â€” Raw Materials",           "", "asset",     "inventory",        "1000", false, "debit"],
+  ["1201", "Inventory â€” Raw Cinnamon Bark",       "", "asset",     "inventory",        "1200", false, "debit"],
+  ["1210", "Inventory â€” WIP",                     "", "asset",     "inventory",        "1000", false, "debit"],
+  ["1211", "Inventory â€” WIP Cinnamon Processing", "", "asset",     "inventory",        "1210", false, "debit"],
+  ["1220", "Inventory â€” Finished Goods",          "", "asset",     "inventory",        "1000", false, "debit"],
+  ["1221", "Inventory â€” Finished Cinnamon Goods", "", "asset",     "inventory",        "1220", false, "debit"],
   ["1300", "Prepaid Expenses",                    "", "asset",     "prepaid",          "1000", false, "debit"],
-  ["1400", "Fixed Assets — Property, Plant & Equipment", "", "asset", "fixed_asset",  "1000", false, "debit"],
+  ["1400", "Fixed Assets â€” Property, Plant & Equipment", "", "asset", "fixed_asset",  "1000", false, "debit"],
   ["1410", "Accumulated Depreciation",            "", "asset",     "fixed_asset",      "1000", false, "credit"],
   ["1500", "Assets Under Construction",           "", "asset",     "auc",              "1000", false, "debit"],
-  // ── 2000 LIABILITIES ─────────────────────────────────────────────────────────
+  // â”€â”€ 2000 LIABILITIES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   ["2000", "Liabilities",                         "", "liability", "",                 "",     true,  "credit"],
   ["2030", "Employee Loan Recoveries Payable",    "", "liability", "payroll",          "2000", false, "credit"],
   ["2040", "Other Employee Deductions Payable",   "", "liability", "payroll",          "2000", false, "credit"],
   ["2100", "Trade Payables",                      "", "liability", "payables",         "2000", false, "credit"],
   ["2110", "Accrued Expenses",                    "", "liability", "accruals",         "2000", false, "credit"],
-  ["2200", "VAT Payable — Output",                "", "liability", "vat",              "2000", false, "credit"],
-  ["2210", "VAT Recoverable — Input",             "", "asset",     "vat",              "1000", false, "debit"],
+  ["2200", "VAT Payable â€” Output",                "", "liability", "vat",              "2000", false, "credit"],
+  ["2210", "VAT Recoverable â€” Input",             "", "asset",     "vat",              "1000", false, "debit"],
   ["2250", "SSCL Payable",                        "", "liability", "tax",              "2000", false, "credit"],
   ["2260", "Corporate Income Tax Payable",        "", "liability", "tax",              "2000", false, "credit"],
   ["2300", "Customer Advances",                   "", "liability", "advances",         "2000", false, "credit"],
-  ["2310", "APIT / WHT Payable — IRD",            "", "liability", "payroll",          "2000", false, "credit"],
-  ["2400", "EPF Payable — Total",                 "", "liability", "payroll",          "2000", false, "credit"],
+  ["2310", "APIT / WHT Payable â€” IRD",            "", "liability", "payroll",          "2000", false, "credit"],
+  ["2400", "EPF Payable â€” Total",                 "", "liability", "payroll",          "2000", false, "credit"],
   ["2410", "Salaries Payable",                    "", "liability", "payroll",          "2000", false, "credit"],
-  ["2420", "EPF Payable — Employee Portion",      "", "liability", "payroll",          "2000", false, "credit"],
+  ["2420", "EPF Payable â€” Employee Portion",      "", "liability", "payroll",          "2000", false, "credit"],
   ["2430", "ETF Payable",                         "", "liability", "payroll",          "2000", false, "credit"],
   ["2500", "Long-Term Loans",                     "", "liability", "loans",            "2000", false, "credit"],
-  // ── 3000 EQUITY ──────────────────────────────────────────────────────────────
+  // â”€â”€ 3000 EQUITY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   ["3000", "Equity",                              "", "equity",    "",                 "",     true,  "credit"],
   ["3001", "Share Capital",                       "", "equity",    "capital",          "3000", false, "credit"],
   ["3100", "Retained Earnings",                   "", "equity",    "retained_earnings","3000", false, "credit"],
   ["3200", "Current Year Profit / Loss",          "", "equity",    "current_year_profit","3000",false,"credit"],
-  // ── 4000 REVENUE ─────────────────────────────────────────────────────────────
+  // â”€â”€ 4000 REVENUE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   ["4000", "Revenue",                             "", "revenue",   "",                 "",     true,  "credit"],
-  ["4001", "Sales Revenue — General",             "", "revenue",   "sales",            "4000", false, "credit"],
+  ["4001", "Sales Revenue â€” General",             "", "revenue",   "sales",            "4000", false, "credit"],
   ["4002", "Cinnamon Export Sales",               "", "revenue",   "sales",            "4000", false, "credit"],
   ["4003", "Cinnamon Domestic Sales",             "", "revenue",   "sales",            "4000", false, "credit"],
   ["4010", "Service Revenue",                     "", "revenue",   "services",         "4000", false, "credit"],
   ["4020", "Other Income",                        "", "revenue",   "other_income",     "4000", false, "credit"],
-  // ── 5000 EXPENSES ────────────────────────────────────────────────────────────
+  // â”€â”€ 5000 EXPENSES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   ["5000", "Expenses",                                    "", "expense", "",                    "",     true,  "debit"],
-  ["5001", "Cost of Goods Sold — General",                "", "expense", "cost_of_goods_sold",  "5000", false, "debit"],
-  ["5002", "COGS — Cinnamon Processing",                  "", "expense", "cost_of_goods_sold",  "5000", false, "debit"],
+  ["5001", "Cost of Goods Sold â€” General",                "", "expense", "cost_of_goods_sold",  "5000", false, "debit"],
+  ["5002", "COGS â€” Cinnamon Processing",                  "", "expense", "cost_of_goods_sold",  "5000", false, "debit"],
   ["5100", "Salaries & Wages",                            "", "expense", "payroll",             "5000", false, "debit"],
-  ["5110", "Processing Labor — Cinnamon",                 "", "expense", "payroll",             "5000", false, "debit"],
-  ["5120", "Raw Material Purchases — Cinnamon Bark",      "", "expense", "operating_expense",   "5000", false, "debit"],
+  ["5110", "Processing Labor â€” Cinnamon",                 "", "expense", "payroll",             "5000", false, "debit"],
+  ["5120", "Raw Material Purchases â€” Cinnamon Bark",      "", "expense", "operating_expense",   "5000", false, "debit"],
   ["5210", "EPF Employer Contribution",                   "", "expense", "payroll",             "5000", false, "debit"],
   ["5220", "ETF Employer Contribution",                   "", "expense", "payroll",             "5000", false, "debit"],
   ["5300", "Rent Expense",                                "", "expense", "rent",                "5000", false, "debit"],
@@ -87,14 +87,14 @@ const seededAccounts = [
 
 // Idempotent: fetches existing codes for the org and skips any that already exist.
 export async function seedChartOfAccounts(orgId) {
-  const existing = await matrixSales.entities.Account.filter({ organization_id: orgId });
+  const existing = await matrixSales.entities.ChartOfAccounts.filter({ organization_id: orgId });
   const existingCodes = new Set((existing || []).map((a) => a.account_code));
 
   const toInsert = seededAccounts.filter(([code]) => !existingCodes.has(code));
 
   await Promise.all(
     toInsert.map(([account_code, account_name, , account_type, account_subtype, parent_account, is_header, normal_balance]) =>
-      matrixSales.entities.Account.create({
+      matrixSales.entities.ChartOfAccounts.create({
         account_code,
         account_name,
         account_type,
@@ -164,8 +164,8 @@ function AccountForm({ account, accounts, orgId, onClose }) {
 
   const saveMutation = useMutation({
     mutationFn: (payload) => account?.id
-      ? matrixSales.entities.Account.update(account.id, payload)
-      : matrixSales.entities.Account.create(payload),
+      ? matrixSales.entities.ChartOfAccounts.update(account.id, payload)
+      : matrixSales.entities.ChartOfAccounts.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounts", orgId] });
       toast({ title: "Success", description: "Account saved successfully." });
@@ -254,10 +254,10 @@ export default function ChartOfAccounts() {
     queryKey: ["accounts", orgId],
     enabled: !!orgId,
     queryFn: async () => {
-      const rows = await matrixSales.entities.Account.filter({ organization_id: orgId });
+      const rows = await matrixSales.entities.ChartOfAccounts.filter({ organization_id: orgId });
       if (!rows.length) {
         await seedChartOfAccounts(orgId);
-        return matrixSales.entities.Account.filter({ organization_id: orgId });
+        return matrixSales.entities.ChartOfAccounts.filter({ organization_id: orgId });
       }
       return rows;
     },
@@ -322,7 +322,7 @@ export default function ChartOfAccounts() {
     onSuccess: ({ inserted, skipped }) => {
       toast({
         title: "GL account mapping seeded",
-        description: inserted ? "Default GL mapping created." : "GL mapping already exists — skipped.",
+        description: inserted ? "Default GL mapping created." : "GL mapping already exists â€” skipped.",
       });
     },
     onError: (error) => {

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+﻿import React, { useMemo, useState } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
@@ -30,7 +30,7 @@ export default function AccountingStatementsReport({ initialTab = "trial_balance
   const { data: accounts = [] } = useQuery({
     queryKey: ["accounts", orgId],
     enabled: !!orgId,
-    queryFn: () => matrixSales.entities.Account.filter({ organization_id: orgId }),
+    queryFn: () => matrixSales.entities.ChartOfAccounts.filter({ organization_id: orgId }),
     initialData: []
   });
 
@@ -162,7 +162,7 @@ export default function AccountingStatementsReport({ initialTab = "trial_balance
 
           <TabsContent value="balance_sheet" className="space-y-4">
             <div className="max-w-xs"><Label>As of Date</Label><Input type="date" value={asOfDate} onChange={(e) => setAsOfDate(e.target.value)} /></div>
-            {Math.abs(bsDifference) > 0.01 && <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertDescription>Balance sheet is out of balance by {fmt(Math.abs(bsDifference))} — check for entries posted to wrong account type</AlertDescription></Alert>}
+            {Math.abs(bsDifference) > 0.01 && <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertDescription>Balance sheet is out of balance by {fmt(Math.abs(bsDifference))} â€” check for entries posted to wrong account type</AlertDescription></Alert>}
             {["asset", "liability", "equity"].map((type) => (
               <div key={type} className="overflow-hidden rounded-md border">
                 <div className="flex items-center justify-between bg-slate-50 px-4 py-2 font-semibold capitalize"><span>{type}</span><Badge>{fmt(bsRows.filter((row) => row.account.account_type === type).reduce((sum, row) => sum + row.balance, 0))}</Badge></div>

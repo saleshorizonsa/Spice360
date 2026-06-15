@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+﻿import React, { useMemo, useState } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -39,7 +39,7 @@ export default function AccountLedger() {
   const { data: accounts = [] } = useQuery({
     queryKey: ["accounts", orgId],
     enabled: !!orgId,
-    queryFn: () => matrixSales.entities.Account.filter({ organization_id: orgId }),
+    queryFn: () => matrixSales.entities.ChartOfAccounts.filter({ organization_id: orgId }),
     initialData: []
   });
 

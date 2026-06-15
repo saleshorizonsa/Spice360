@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+﻿import React, { useMemo, useState } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Plus, RotateCcw, Save, Send, Trash2 } from "lucide-react";
@@ -75,7 +75,7 @@ export default function JournalEntry() {
   const { data: accounts = [] } = useQuery({
     queryKey: ["accounts", orgId],
     enabled: !!orgId,
-    queryFn: () => matrixSales.entities.Account.filter({ organization_id: orgId }),
+    queryFn: () => matrixSales.entities.ChartOfAccounts.filter({ organization_id: orgId }),
     initialData: []
   });
 

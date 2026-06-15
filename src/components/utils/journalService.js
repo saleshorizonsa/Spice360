@@ -1,4 +1,4 @@
-import { matrixSales } from "@/api/matrixSalesClient";
+﻿import { matrixSales } from "@/api/matrixSalesClient";
 import { getNextDocumentNumber } from "./documentNumberGenerator";
 import { logAuditTrail } from "./auditTrail";
 
@@ -16,7 +16,7 @@ const assertBalanced = (lines) => {
 };
 
 const assertDirectPostingAllowed = async (lines, orgId) => {
-  const accounts = await matrixSales.entities.Account.filter({ organization_id: orgId });
+  const accounts = await matrixSales.entities.ChartOfAccounts.filter({ organization_id: orgId });
   const accountMap = new Map(accounts.map((account) => [account.account_code, account]));
 
   lines.forEach((line) => {
