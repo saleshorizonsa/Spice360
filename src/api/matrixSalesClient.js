@@ -345,6 +345,9 @@ const assertSupabaseRecordCanMutate = async ({
   if (entityName === 'PeriodClose') return;
 
   if ((action === 'update' || action === 'delete') && existingRecord && isRecordStatusLocked(existingRecord)) {
+    // Allow status transitions to reversed/cancelled even from locked records
+    const nextStatus = String(nextRecord?.status || '').toLowerCase();
+    if (nextStatus === 'reversed' || nextStatus === 'cancelled') return;
     throw new Error(`This ${tableNameForEntity(entityName).replace(/_/g, ' ')} has ${getLockedStatusLabel(existingRecord)} and cannot be changed. Reverse or reopen it through the approved process.`);
   }
 

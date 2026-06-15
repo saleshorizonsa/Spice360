@@ -66,6 +66,48 @@ export async function processGoodsReceipt(grn, user = null) {
 }
 
 /**
+ * Reverse a posted Goods Receipt (undo stock posting)
+ */
+export async function reverseGoodsReceipt(grn, user = null) {
+    try {
+        const movement = await matrixSales.entities.StockMovement.create({
+            movement_number: `GRR-${grn.grn_number}`,
+            movement_date: new Date().toISOString().split('T')[0],
+            movement_type: 'goods_receipt_reversal',
+            material_code: grn.material_code,
+            material_name: grn.material_name,
+            batch_number: grn.batch_number,
+            quantity: parseFloat(grn.quantity_received) || 0,
+            unit_of_measure: grn.unit_of_measure,
+            from_warehouse: grn.receiving_location,
+            reference_document: grn.grn_number,
+            reason: `Reversal of GRN ${grn.grn_number}`,
+            cost_per_unit: parseFloat(grn.unit_price) || 0,
+            total_value: (parseFloat(grn.quantity_received) || 0) * (parseFloat(grn.unit_price) || 0),
+            performed_by: user?.email || grn.received_by,
+            status: 'posted'
+        });
+
+        await updateStockLevel({
+            materialCode: grn.material_code,
+            materialName: grn.material_name,
+            warehouse: grn.receiving_location,
+            bin: grn.storage_bin,
+            batch: grn.batch_number,
+            quantity: parseFloat(grn.quantity_received) || 0,
+            unitOfMeasure: grn.unit_of_measure,
+            unitCost: parseFloat(grn.unit_price) || 0,
+            operation: 'decrease'
+        });
+
+        return movement;
+    } catch (error) {
+        console.error('Error reversing goods receipt:', error);
+        throw error;
+    }
+}
+
+/**
  * Process Goods Issue for Sales Order (PGI - Post Goods Issue)
  * Creates stock movement and updates stock levels
  */
