@@ -176,14 +176,11 @@ export default function GRNForm({ item, onClose }) {
             return grn;
         },
         onSuccess: async (savedGRN) => {
-            // Auto-post to stock when creating a new GRN with a receiving location
-            if (!item && formData.receiving_location && savedGRN?.id) {
+            // Auto-post to stock when creating a new GRN
+            if (!item && savedGRN?.id && savedGRN?.receiving_location) {
                 try {
-                    const grnForPosting = {
-                        ...formData,
-                        grn_number: savedGRN.grn_number || formData.grn_number
-                    };
-                    await processGoodsReceipt(grnForPosting, currentUser);
+                    // Use savedGRN (the stored record) to avoid stale closure issues
+                    await processGoodsReceipt(savedGRN, currentUser);
                     await matrixSales.entities.GoodsReceiptNote.update(savedGRN.id, {
                         stock_posted: true,
                         status: 'completed'
@@ -260,6 +257,22 @@ export default function GRNForm({ item, onClose }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        if (!formData.receiving_location) {
+            toast({
+                title: "Receiving Location Required",
+                description: "Please select a receiving location before saving the GRN.",
+                variant: "destructive"
+            });
+            return;
+        }
+        if (!formData.quantity_received || formData.quantity_received <= 0) {
+            toast({
+                title: "Quantity Required",
+                description: "Please enter the received quantity before saving.",
+                variant: "destructive"
+            });
+            return;
+        }
         saveMutation.mutate(formData);
     };
 
