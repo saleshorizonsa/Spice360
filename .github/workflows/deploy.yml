@@ -10,6 +10,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: Spice360
+    timeout-minutes: 10
 
     steps:
       - name: Checkout code
@@ -33,6 +34,16 @@ jobs:
           VITE_MATRIXSALES_ADMIN_EMAILS: ${{ secrets.VITE_MATRIXSALES_ADMIN_EMAILS }}
         run: npm run build
 
+      - name: Verify Supabase config in build output
+        run: |
+          echo "Checking that VITE_SUPABASE_URL was baked into the bundle..."
+          grep -rl "supabase.co" dist/ | grep -q . || {
+            echo "ERROR: supabase.co not found in dist/ — VITE_SUPABASE_URL was empty at build time."
+            echo "Check that environment: Spice360 secrets are populated in GitHub."
+            exit 1
+          }
+          echo "OK: supabase.co confirmed in build output."
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -52,10 +63,13 @@ jobs:
             set ftp:ssl-protect-data true;
             set ssl:verify-certificate false;
             set ftp:passive-mode true;
-            set net:timeout 30;
-            set net:connection-timeout 30;
-            set net:max-retries 3;
+            set net:timeout 15;
+            set net:connection-timeout 15;
+            set net:max-retries 2;
+            set net:reconnect-interval-base 5;
+            set net:persist-retries 2;
+            set mirror:parallel-transfer-count 5;
             open -u '$FTP_USER','$FTP_PASS' ftp://$FTP_HOST;
-            mirror -R --delete --verbose ./dist/ /home/u209691484/domains/spice360.horizon-sa.net/public_html/;
+            mirror --reverse --verbose --delete --parallel=5 ./dist/ /home/u209691484/domains/spice360.horizon-sa.net/public_html/;
             bye
           "
