@@ -1,13 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Check, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Label } from "@/components/ui/label";
 
-export default function SearchableSelect({ 
-    label, 
-    value, 
-    onValueChange, 
+export default function SearchableSelect({
+    label,
+    value,
+    onValueChange,
     options = [],
     placeholder = "Select an option...",
     searchPlaceholder = "Search...",
@@ -19,6 +19,34 @@ export default function SearchableSelect({
 }) {
     const [open, setOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [dropdownStyle, setDropdownStyle] = useState({});
+    const buttonRef = useRef(null);
+
+    // Recalculate dropdown position every time it opens, and keep it synced on scroll/resize
+    useEffect(() => {
+        if (!open) return;
+
+        const updatePosition = () => {
+            if (!buttonRef.current) return;
+            const rect = buttonRef.current.getBoundingClientRect();
+            const spaceBelow = window.innerHeight - rect.bottom;
+            const dropdownHeight = Math.min(300, spaceBelow - 8);
+            setDropdownStyle({
+                top:    rect.bottom + 4,
+                left:   rect.left,
+                width:  rect.width,
+                maxHeight: dropdownHeight > 80 ? dropdownHeight : 300,
+            });
+        };
+
+        updatePosition();
+        window.addEventListener('scroll', updatePosition, true);
+        window.addEventListener('resize', updatePosition);
+        return () => {
+            window.removeEventListener('scroll', updatePosition, true);
+            window.removeEventListener('resize', updatePosition);
+        };
+    }, [open]);
 
     const filteredOptions = options.filter(option => {
         if (!searchQuery) return true;
@@ -35,6 +63,7 @@ export default function SearchableSelect({
         <div className="relative">
             {label && <Label className="mb-2 block">{label}</Label>}
             <Button
+                ref={buttonRef}
                 type="button"
                 variant="outline"
                 role="combobox"
@@ -58,18 +87,24 @@ export default function SearchableSelect({
             </Button>
             {open && (
                 <>
-                    <div 
-                        className="fixed inset-0 z-40" 
-                        onClick={() => setOpen(false)}
+                    {/* Full-screen backdrop to close on outside click */}
+                    <div
+                        className="fixed inset-0"
+                        style={{ zIndex: 9998 }}
+                        onClick={() => { setOpen(false); setSearchQuery(""); }}
                     />
-                    <div className="absolute z-50 mt-1 w-full rounded-md border bg-white shadow-lg">
+                    {/* Dropdown — position: fixed escapes overflow:auto clipping */}
+                    <div
+                        style={{ ...dropdownStyle, position: 'fixed', zIndex: 9999 }}
+                        className="rounded-md border bg-white shadow-lg overflow-hidden"
+                    >
                         <Command>
                             <CommandInput
                                 placeholder={searchPlaceholder}
                                 value={searchQuery}
                                 onInput={(e) => setSearchQuery(e.target.value)}
                             />
-                            <CommandList>
+                            <CommandList style={{ maxHeight: dropdownStyle.maxHeight ? dropdownStyle.maxHeight - 48 : 240 }}>
                                 {filteredOptions.length === 0 ? (
                                     <CommandEmpty>
                                         <div className="space-y-2 py-2 text-center">
