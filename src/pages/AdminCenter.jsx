@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shield, Users, Building, Factory, MapPin, Ruler, Activity, Sparkles, Calendar, Printer } from "lucide-react";
+import { Shield, Users, Building, Factory, MapPin, Ruler, Activity, Sparkles, Calendar, Printer, Hash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -16,6 +16,7 @@ import AuditTrailViewer from "../components/admin/AuditTrailViewer";
 import SystemSetupTemplates from "../components/admin/SystemSetupTemplates";
 import PeriodCloseManagement from "../components/admin/PeriodCloseManagement";
 import PrintingPreferences from "../components/admin/PrintingPreferences";
+import DocumentNumberRangeForm from "../components/admin/DocumentNumberRangeForm";
 import ConfirmDialog from "../components/shared/ConfirmDialog";
 import { usePermissions } from "../components/utils/usePermissions";
 import { Lock } from "lucide-react";
@@ -31,6 +32,8 @@ export default function AdminCenter() {
     const [editingLocation, setEditingLocation] = useState(null);
     const [editingUnitConversion, setEditingUnitConversion] = useState(null);
     const [deleteConfirm, setDeleteConfirm] = useState({ open: false, type: null, item: null });
+    const [showNumberRangeForm, setShowNumberRangeForm] = useState(false);
+    const [editingNumberRange, setEditingNumberRange] = useState(null);
     
     const { hasPermission, isAdmin, loading } = usePermissions();
     const queryClient = useQueryClient();
@@ -58,6 +61,23 @@ export default function AdminCenter() {
         queryKey: ['organizations'],
         queryFn: () => matrixSales.entities.Organization.list(),
         initialData: []
+    });
+
+    const { data: numberRanges = [] } = useQuery({
+        queryKey: ['documentNumberRanges'],
+        queryFn: () => matrixSales.entities.DocumentNumberRange.list(),
+        initialData: []
+    });
+
+    const deleteNumberRangeMutation = useMutation({
+        mutationFn: (id) => matrixSales.entities.DocumentNumberRange.delete(id),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['documentNumberRanges'] });
+            toast({ title: "Deleted", description: "Number range deleted." });
+        },
+        onError: () => {
+            toast({ title: "Error", description: "Failed to delete.", variant: "destructive" });
+        }
     });
 
     const getOrganizationCode = (org) => org.organization_code || org.company_code || org.id;
@@ -285,7 +305,7 @@ export default function AdminCenter() {
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-10 w-full h-auto">
+                <TabsList className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-11 w-full h-auto">
                     <TabsTrigger value="setup">
                         <Sparkles className="w-4 h-4 mr-2" />
                         Setup
@@ -321,6 +341,10 @@ export default function AdminCenter() {
                     <TabsTrigger value="storage-location">
                         <MapPin className="w-4 h-4 mr-2" />
                         Storage Location
+                    </TabsTrigger>
+                    <TabsTrigger value="numbering">
+                        <Hash className="w-4 h-4 mr-2" />
+                        Numbering
                     </TabsTrigger>
                     <TabsTrigger value="audit">
                         <Activity className="w-4 h-4 mr-2" />
@@ -469,6 +493,153 @@ export default function AdminCenter() {
                     </Card>
                 </TabsContent>
 
+                <TabsContent value="numbering">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Hash className="w-5 h-5 text-indigo-600" />
+                                    Document Number Ranges
+                                </CardTitle>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Define prefix, format and sequence for each document type. Supports automatic and manual modes.
+                                </p>
+                            </div>
+                            <Button
+                                onClick={() => { setEditingNumberRange(null); setShowNumberRangeForm(true); }}
+                                size="sm"
+                                className="bg-indigo-600 hover:bg-indigo-700"
+                            >
+                                <Plus className="w-4 h-4 mr-1" />
+                                New Range
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            {numberRanges.length === 0 ? (
+                                <div className="text-center py-16 text-gray-400">
+                                    <Hash className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                                    <p className="font-medium">No number ranges configured</p>
+                                    <p className="text-sm mt-1">Create a range to control document numbering for each module.</p>
+                                    <Button size="sm" className="mt-4 bg-indigo-600 hover:bg-indigo-700"
+                                        onClick={() => { setEditingNumberRange(null); setShowNumberRangeForm(true); }}>
+                                        <Plus className="w-4 h-4 mr-1" /> New Range
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {/* Legend */}
+                                    <div className="flex gap-4 text-xs text-gray-500 pb-1 border-b">
+                                        <span className="flex items-center gap-1">
+                                            <span className="w-2 h-2 rounded-full bg-indigo-500" />Auto
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <span className="w-2 h-2 rounded-full bg-amber-500" />Manual
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <span className="w-2 h-2 rounded-full bg-emerald-500" />Active
+                                        </span>
+                                        <span className="flex items-center gap-1">
+                                            <span className="w-2 h-2 rounded-full bg-gray-400" />Inactive
+                                        </span>
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm">
+                                            <thead>
+                                                <tr className="border-b text-xs text-gray-500">
+                                                    <th className="text-left py-2 px-3 font-medium">Document Type</th>
+                                                    <th className="text-left py-2 px-3 font-medium">Mode</th>
+                                                    <th className="text-left py-2 px-3 font-medium">Prefix</th>
+                                                    <th className="text-left py-2 px-3 font-medium">Suffix</th>
+                                                    <th className="text-left py-2 px-3 font-medium">Next #</th>
+                                                    <th className="text-left py-2 px-3 font-medium">Digits</th>
+                                                    <th className="text-left py-2 px-3 font-medium">Year</th>
+                                                    <th className="text-left py-2 px-3 font-medium">Preview</th>
+                                                    <th className="text-left py-2 px-3 font-medium">Status</th>
+                                                    <th className="py-2 px-3" />
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {numberRanges.map(nr => {
+                                                    const num = String(nr.current_number || 1).padStart(parseInt(nr.number_length) || 5, "0");
+                                                    const year = nr.year_format === "YY"
+                                                        ? String(new Date().getFullYear()).slice(-2)
+                                                        : String(new Date().getFullYear());
+                                                    const sep = nr.separator || "";
+                                                    let middle = nr.include_year
+                                                        ? (nr.year_position === "after_prefix"
+                                                            ? `${year}${sep}${num}`
+                                                            : `${num}${sep}${year}`)
+                                                        : num;
+                                                    const preview = `${nr.prefix || ""}${middle}${nr.suffix || ""}`;
+
+                                                    return (
+                                                        <tr key={nr.id} className="border-b hover:bg-gray-50 group">
+                                                            <td className="py-2 px-3 font-medium text-gray-800">
+                                                                {nr.document_label || nr.document_type}
+                                                            </td>
+                                                            <td className="py-2 px-3">
+                                                                <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full ${
+                                                                    nr.mode === "automatic"
+                                                                        ? "bg-indigo-100 text-indigo-700"
+                                                                        : "bg-amber-100 text-amber-700"
+                                                                }`}>
+                                                                    {nr.mode === "automatic" ? "Auto" : "Manual"}
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-2 px-3 font-mono text-gray-700">{nr.prefix || "—"}</td>
+                                                            <td className="py-2 px-3 font-mono text-gray-500">{nr.suffix || "—"}</td>
+                                                            <td className="py-2 px-3 text-gray-700">{nr.current_number ?? 1}</td>
+                                                            <td className="py-2 px-3 text-gray-500">{nr.number_length ?? 5}</td>
+                                                            <td className="py-2 px-3 text-gray-500 text-xs">
+                                                                {nr.include_year ? `${nr.year_format || "YYYY"}` : "—"}
+                                                                {nr.reset_yearly && <span className="ml-1 text-blue-500">↺</span>}
+                                                            </td>
+                                                            <td className="py-2 px-3">
+                                                                <code className="bg-indigo-50 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded border border-indigo-200">
+                                                                    {preview}
+                                                                </code>
+                                                            </td>
+                                                            <td className="py-2 px-3">
+                                                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                                                                    nr.status === "active"
+                                                                        ? "bg-emerald-100 text-emerald-700"
+                                                                        : "bg-gray-100 text-gray-500"
+                                                                }`}>
+                                                                    {nr.status || "active"}
+                                                                </span>
+                                                            </td>
+                                                            <td className="py-2 px-3">
+                                                                <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                                    <Button size="sm" variant="ghost" className="h-7 px-2 text-xs"
+                                                                        onClick={() => { setEditingNumberRange(nr); setShowNumberRangeForm(true); }}>
+                                                                        Edit
+                                                                    </Button>
+                                                                    <Button size="sm" variant="ghost"
+                                                                        className="h-7 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                                        onClick={() => {
+                                                                            if (confirm(`Delete number range for "${nr.document_label || nr.document_type}"?`)) {
+                                                                                deleteNumberRangeMutation.mutate(nr.id);
+                                                                            }
+                                                                        }}>
+                                                                        Delete
+                                                                    </Button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <p className="text-xs text-gray-400">
+                                        ↺ = resets counter each year &nbsp;·&nbsp; Preview shows next number that will be generated.
+                                    </p>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
                 <TabsContent value="audit">
                     <AuditTrailViewer />
                 </TabsContent>
@@ -494,6 +665,13 @@ export default function AdminCenter() {
                     item={editingUnitConversion}
                     onClose={handleCloseUnitConversionForm}
                     open={showUnitConversionForm}
+                />
+            )}
+
+            {showNumberRangeForm && (
+                <DocumentNumberRangeForm
+                    item={editingNumberRange}
+                    onClose={() => { setShowNumberRangeForm(false); setEditingNumberRange(null); }}
                 />
             )}
 
