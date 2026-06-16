@@ -23,6 +23,12 @@ export default function JournalEntryForm({ item, onClose }) {
         initialData: []
     });
 
+    const { data: costCenters = [] } = useQuery({
+        queryKey: ['costCenters'],
+        queryFn: () => matrixSales.entities.CostCenter.filter({ status: 'active' }),
+        initialData: []
+    });
+
     const [formData, setFormData] = useState({
         je_number: '',
         je_date: new Date().toISOString().split('T')[0],
@@ -218,10 +224,22 @@ export default function JournalEntryForm({ item, onClose }) {
                                 </div>
                                 <div>
                                     <Label>Cost Center</Label>
-                                    <Input
-                                        value={formData.cost_center}
-                                        onChange={(e) => handleChange('cost_center', e.target.value)}
-                                    />
+                                    <Select
+                                        value={formData.cost_center || ''}
+                                        onValueChange={(val) => handleChange('cost_center', val === '__none__' ? '' : val)}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="None" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="__none__">None</SelectItem>
+                                            {costCenters.map((cc) => (
+                                                <SelectItem key={cc.id} value={cc.cost_center_code}>
+                                                    {cc.cost_center_code} — {cc.cost_center_name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
 

@@ -17,15 +17,20 @@ import IncomeStatementReport from "@/components/finance/IncomeStatementReport";
 import BalanceSheetReport from "@/components/finance/BalanceSheetReport";
 import CashFlowStatementReport from "@/components/finance/CashFlowStatementReport";
 import BudgetVarianceReport from "@/components/finance/BudgetVarianceReport";
+import GLAccountMappingForm from "@/components/finance/GLAccountMappingForm";
+import CostCenterForm from "@/components/finance/CostCenterForm";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLanguage } from "@/components/utils/languageContext";
+import { Settings, MapPin } from "lucide-react";
 
 export default function Finance() {
     const [activeTab, setActiveTab] = useState("gl");
     const [showDialog, setShowDialog] = useState(false);
     const [showClearingDialog, setShowClearingDialog] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+    const [showCostCenterDialog, setShowCostCenterDialog] = useState(false);
+    const [editingCostCenter, setEditingCostCenter] = useState(null);
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { t } = useLanguage();
@@ -63,6 +68,12 @@ export default function Finance() {
     const { data: banks = [] } = useQuery({
         queryKey: ['banks'],
         queryFn: () => matrixSales.entities.BankAccount.list(),
+        initialData: []
+    });
+
+    const { data: costCenters = [] } = useQuery({
+        queryKey: ['costCenters'],
+        queryFn: () => matrixSales.entities.CostCenter.list(),
         initialData: []
     });
 
@@ -325,7 +336,7 @@ export default function Finance() {
             </Alert>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="grid grid-cols-11 w-full">
+                <TabsList className="grid grid-cols-12 w-full">
                     <TabsTrigger value="gl">GL</TabsTrigger>
                     <TabsTrigger value="ar">AR</TabsTrigger>
                     <TabsTrigger value="ap">AP</TabsTrigger>
@@ -337,6 +348,9 @@ export default function Finance() {
                     <TabsTrigger value="cashflow">Cash Flow</TabsTrigger>
                     <TabsTrigger value="budget">Budget</TabsTrigger>
                     <TabsTrigger value="reports">Reports</TabsTrigger>
+                    <TabsTrigger value="settings" className="flex items-center gap-1">
+                        <Settings className="w-3 h-3" />Settings
+                    </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="gl">
@@ -615,6 +629,111 @@ export default function Finance() {
                         </Card>
                     </div>
                 </TabsContent>
+
+                <TabsContent value="settings" className="space-y-6">
+                    {/* GL Account Mapping */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Settings className="w-5 h-5 text-emerald-600" />
+                                GL Account Mapping
+                            </CardTitle>
+                            <p className="text-sm text-gray-500 mt-1">
+                                Configure which Chart of Accounts codes are used for automatic GL postings across all modules.
+                            </p>
+                        </CardHeader>
+                        <CardContent>
+                            <GLAccountMappingForm />
+                        </CardContent>
+                    </Card>
+
+                    {/* Cost Centers */}
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle className="flex items-center gap-2">
+                                    <MapPin className="w-5 h-5 text-emerald-600" />
+                                    Cost Centers
+                                </CardTitle>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Define cost centers for departmental expense tracking. Assign them on journal entries.
+                                </p>
+                            </div>
+                            <Button
+                                onClick={() => { setEditingCostCenter(null); setShowCostCenterDialog(true); }}
+                                className="bg-emerald-600 hover:bg-emerald-700"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                New Cost Center
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            {costCenters.length === 0 ? (
+                                <div className="text-center py-8 text-gray-400 text-sm">
+                                    No cost centers yet. Click "New Cost Center" to add one.
+                                </div>
+                            ) : (
+                                <div className="rounded-md border overflow-hidden">
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="text-left px-4 py-2 font-medium text-gray-600">Code</th>
+                                                <th className="text-left px-4 py-2 font-medium text-gray-600">Name</th>
+                                                <th className="text-left px-4 py-2 font-medium text-gray-600">Manager</th>
+                                                <th className="text-right px-4 py-2 font-medium text-gray-600">Budget (LKR)</th>
+                                                <th className="text-center px-4 py-2 font-medium text-gray-600">Status</th>
+                                                <th className="px-4 py-2"></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {costCenters.map((cc) => (
+                                                <tr key={cc.id} className="hover:bg-gray-50">
+                                                    <td className="px-4 py-2 font-mono font-medium">{cc.cost_center_code}</td>
+                                                    <td className="px-4 py-2">{cc.cost_center_name}</td>
+                                                    <td className="px-4 py-2 text-gray-600">{cc.manager || '—'}</td>
+                                                    <td className="px-4 py-2 text-right text-gray-600">
+                                                        {cc.budget_amount ? `LKR ${Number(cc.budget_amount).toLocaleString()}` : '—'}
+                                                    </td>
+                                                    <td className="px-4 py-2 text-center">
+                                                        <span className={`inline-flex px-2 py-0.5 rounded text-xs font-medium ${
+                                                            cc.status === 'active'
+                                                                ? 'bg-green-100 text-green-800'
+                                                                : 'bg-gray-100 text-gray-600'
+                                                        }`}>
+                                                            {cc.status}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-4 py-2 text-right">
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            onClick={() => { setEditingCostCenter(cc); setShowCostCenterDialog(true); }}
+                                                        >
+                                                            Edit
+                                                        </Button>
+                                                        <Button
+                                                            size="sm"
+                                                            variant="ghost"
+                                                            className="text-red-600 hover:text-red-700 ml-1"
+                                                            onClick={() => {
+                                                                if (confirm(`Delete cost center ${cc.cost_center_code}?`)) {
+                                                                    matrixSales.entities.CostCenter.delete(cc.id)
+                                                                        .then(() => queryClient.invalidateQueries({ queryKey: ['costCenters'] }));
+                                                                }
+                                                            }}
+                                                        >
+                                                            Delete
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
             </Tabs>
 
             {showDialog && activeTab === 'gl' && (
@@ -634,9 +753,16 @@ export default function Finance() {
             )}
             
             {showClearingDialog && (
-                <InvoiceClearingDialog 
-                    open={showClearingDialog} 
-                    onClose={() => setShowClearingDialog(false)} 
+                <InvoiceClearingDialog
+                    open={showClearingDialog}
+                    onClose={() => setShowClearingDialog(false)}
+                />
+            )}
+
+            {showCostCenterDialog && (
+                <CostCenterForm
+                    item={editingCostCenter}
+                    onClose={() => { setShowCostCenterDialog(false); setEditingCostCenter(null); }}
                 />
             )}
         </div>
