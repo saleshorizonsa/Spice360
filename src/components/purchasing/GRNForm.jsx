@@ -16,11 +16,14 @@ import { processGoodsReceipt, reverseGoodsReceipt } from "../utils/inventoryInte
 import ReverseButton from "../shared/ReverseButton";
 import { logAuditTrail } from "../utils/auditTrail";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
+import { postJournalEntry } from "../utils/journalService";
+import { useGLAccounts } from "@/hooks/useGLAccounts";
 
 export default function GRNForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
+    const gl = useGLAccounts();
     const [isDirty, setIsDirty] = useState(false);
     const guardedOpenChange = useUnsavedChangesWarning(isDirty);
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
@@ -204,6 +207,29 @@ export default function GRNForm({ item, onClose }) {
                     queryClient.invalidateQueries({ queryKey: ['grns'] });
                     onClose();
                     return;
+                }
+
+                // Post inventory GL: Dr. Inventory, Cr. GRNI (Goods Received Not Invoiced)
+                // Non-fatal — GRN and stock posting succeed regardless
+                try {
+                    const grnValue = (parseFloat(savedGRN.quantity_received || savedGRN.quantity) || 0)
+                        * (parseFloat(savedGRN.unit_cost || savedGRN.unit_price) || 0);
+                    if (grnValue > 0) {
+                        await postJournalEntry({
+                            lines: [
+                                { account_code: gl.inventory, account_name: 'Inventory',                    debit: grnValue, credit: 0 },
+                                { account_code: gl.grni,      account_name: 'Goods Received Not Invoiced',  debit: 0, credit: grnValue },
+                            ],
+                            referenceType: 'grn',
+                            referenceId:   savedGRN.grn_number,
+                            description:   `Goods receipt ${savedGRN.grn_number}`,
+                            entryDate:     savedGRN.grn_date || new Date().toISOString().split('T')[0],
+                            entryType:     'goods_receipt',
+                            orgId:         currentOrg?.id
+                        });
+                    }
+                } catch (_) {
+                    // Silently ignored — inventory accounts may not be set up yet
                 }
             }
             queryClient.invalidateQueries({ queryKey: ['grns'] });

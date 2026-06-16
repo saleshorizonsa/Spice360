@@ -11,11 +11,16 @@ import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import ReverseButton from "../shared/ReverseButton";
+import { postJournalEntry } from "../utils/journalService";
+import { useOrganization } from "../utils/OrganizationContext";
+import { useGLAccounts } from "@/hooks/useGLAccounts";
 
 export default function SalesReturnForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
-    
+    const { currentOrg } = useOrganization();
+    const gl = useGLAccounts();
+
     const { data: invoices = [] } = useQuery({
         queryKey: ['invoices'],
         queryFn: () => matrixSales.entities.Invoice.list('-invoice_date'),
@@ -95,7 +100,52 @@ export default function SalesReturnForm({ item, onClose }) {
             }
             return matrixSales.entities.SalesReturn.create(data);
         },
-        onSuccess: () => {
+        onSuccess: async (savedReturn) => {
+            // Post GL credit note entry when return is approved
+            if (savedReturn?.status === 'approved' && !savedReturn.gl_posted) {
+                try {
+                    await postJournalEntry({
+                        lines: [
+                            { account_code: gl.sales_revenue,  account_name: 'Sales Revenue',    debit: savedReturn.subtotal,         credit: 0 },
+                            { account_code: gl.vat_output,     account_name: 'VAT Payable',      debit: savedReturn.vat_amount || 0,  credit: 0 },
+                            { account_code: gl.ar_receivables, account_name: 'Trade Receivables', debit: 0, credit: savedReturn.total_return_amount }
+                        ].filter(line => Number(line.debit || line.credit || 0) > 0),
+                        referenceType: 'sales_return',
+                        referenceId:   savedReturn.return_number,
+                        description:   `Sales return / credit note ${savedReturn.return_number}`,
+                        entryDate:     savedReturn.return_date,
+                        entryType:     'credit_note',
+                        orgId:         currentOrg?.id
+                    });
+                    await matrixSales.entities.SalesReturn.update(savedReturn.id, { ...savedReturn, gl_posted: true });
+                } catch (glErr) {
+                    toast({ title: "Saved but GL posting failed", description: glErr.message, variant: "destructive" });
+                }
+            }
+
+            // Reduce AR outstanding when return is approved
+            if (savedReturn?.status === 'approved' && savedReturn.invoice_number) {
+                try {
+                    const arRecords = await matrixSales.entities.AccountsReceivable.filter({
+                        invoice_number: savedReturn.invoice_number
+                    });
+                    for (const ar of arRecords) {
+                        const reduction    = parseFloat(savedReturn.total_return_amount) || 0;
+                        const outstanding  = Math.max(0, (parseFloat(ar.outstanding_amount) || 0) - reduction);
+                        const paid         = (parseFloat(ar.paid_amount) || 0) + reduction;
+                        await matrixSales.entities.AccountsReceivable.update(ar.id, {
+                            ...ar,
+                            paid_amount:        paid,
+                            outstanding_amount: outstanding,
+                            status:             outstanding <= 0.01 ? 'closed' : ar.status,
+                        });
+                    }
+                    queryClient.invalidateQueries({ queryKey: ['ar'] });
+                } catch (_) {
+                    // Non-fatal
+                }
+            }
+
             queryClient.invalidateQueries({ queryKey: ['returns'] });
             toast({
                 title: "Success",

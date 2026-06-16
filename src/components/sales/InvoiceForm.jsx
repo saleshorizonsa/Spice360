@@ -249,6 +249,39 @@ export default function InvoiceForm({ item, onClose }) {
                     toast({ title: "Invoice saved but GL posting failed", description: error.message, variant: "destructive" });
                 }
             }
+
+            // Create AR record on first submission so customer balance is tracked in Finance → AR
+            if (savedInvoice?.status === 'submitted') {
+                try {
+                    const existingAR = await matrixSales.entities.AccountsReceivable.filter({
+                        invoice_number: savedInvoice.invoice_number
+                    });
+                    if (existingAR.length === 0) {
+                        await matrixSales.entities.AccountsReceivable.create({
+                            ar_number:          `AR-${savedInvoice.invoice_number}`,
+                            invoice_number:     savedInvoice.invoice_number,
+                            customer_code:      savedInvoice.customer_code || '',
+                            customer_name:      savedInvoice.customer_name,
+                            invoice_date:       savedInvoice.invoice_date,
+                            due_date:           savedInvoice.due_date || '',
+                            invoice_amount:     savedInvoice.total_amount,
+                            paid_amount:        0,
+                            outstanding_amount: savedInvoice.total_amount,
+                            vat_amount:         savedInvoice.tax_amount || savedInvoice.vat_amount || 0,
+                            currency:           savedInvoice.currency || 'LKR',
+                            payment_terms:      savedInvoice.payment_terms || 'net_30',
+                            aging_days:         0,
+                            aging_bucket:       'current',
+                            status:             'open',
+                            notes:              `From Sales Invoice ${savedInvoice.invoice_number}`,
+                        });
+                    }
+                    queryClient.invalidateQueries({ queryKey: ['ar'] });
+                } catch (arErr) {
+                    toast({ title: "Saved but AR record failed", description: arErr.message, variant: "destructive" });
+                }
+            }
+
             queryClient.invalidateQueries({ queryKey: ['invoices'] });
             toast({ title: "Success", description: `Invoice ${item ? 'updated' : 'created'} successfully.` });
             onClose();

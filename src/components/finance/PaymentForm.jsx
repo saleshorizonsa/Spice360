@@ -127,6 +127,67 @@ export default function PaymentForm({ item, onClose }) {
                 }
             }
 
+            // Reduce AR outstanding balance when incoming customer payment clears
+            if (savedPayment?.status === 'cleared' && savedPayment.payment_type === 'incoming' && savedPayment.party_code) {
+                try {
+                    let arRecords = [];
+                    if (savedPayment.reference_number) {
+                        arRecords = await matrixSales.entities.AccountsReceivable.filter({
+                            customer_code:  savedPayment.party_code,
+                            invoice_number: savedPayment.reference_number,
+                        });
+                    }
+                    if (arRecords.length === 0) {
+                        const allOpen = await matrixSales.entities.AccountsReceivable.filter({
+                            customer_code: savedPayment.party_code,
+                            status:        'open',
+                        });
+                        arRecords = allOpen.sort((a, b) => new Date(a.invoice_date) - new Date(b.invoice_date));
+                    }
+                    let remaining = parseFloat(savedPayment.amount) || 0;
+                    for (const ar of arRecords) {
+                        if (remaining <= 0.001) break;
+                        const outstanding    = parseFloat(ar.outstanding_amount) || 0;
+                        if (outstanding <= 0.001) continue;
+                        const applied        = Math.min(remaining, outstanding);
+                        const newOutstanding = Math.max(0, outstanding - applied);
+                        const newPaid        = (parseFloat(ar.paid_amount) || 0) + applied;
+                        await matrixSales.entities.AccountsReceivable.update(ar.id, {
+                            ...ar,
+                            paid_amount:        newPaid,
+                            outstanding_amount: newOutstanding,
+                            status:             newOutstanding <= 0.01 ? 'closed' : ar.status,
+                        });
+                        remaining -= applied;
+                    }
+                    queryClient.invalidateQueries({ queryKey: ['ar'] });
+                } catch (_) {
+                    // Non-fatal
+                }
+            }
+
+            // Update bank account balance when payment clears
+            if (savedPayment?.status === 'cleared' && savedPayment.bank_account) {
+                try {
+                    const bankList = await matrixSales.entities.BankAccount.filter({
+                        account_number: savedPayment.bank_account
+                    });
+                    if (bankList.length > 0) {
+                        const bank       = bankList[0];
+                        const current    = parseFloat(bank.current_balance) || 0;
+                        const amt        = parseFloat(savedPayment.amount)  || 0;
+                        const isIncoming = savedPayment.payment_type === 'incoming';
+                        await matrixSales.entities.BankAccount.update(bank.id, {
+                            ...bank,
+                            current_balance: isIncoming ? current + amt : current - amt
+                        });
+                        queryClient.invalidateQueries({ queryKey: ['banks'] });
+                    }
+                } catch (_) {
+                    // Non-fatal
+                }
+            }
+
             queryClient.invalidateQueries({ queryKey: ['payments'] });
             toast({
                 title: "Success",
