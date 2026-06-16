@@ -19,6 +19,7 @@ import CashFlowStatementReport from "@/components/finance/CashFlowStatementRepor
 import BudgetVarianceReport from "@/components/finance/BudgetVarianceReport";
 import GLAccountMappingForm from "@/components/finance/GLAccountMappingForm";
 import CostCenterForm from "@/components/finance/CostCenterForm";
+import CustomerStatementDialog from "@/components/finance/CustomerStatementDialog";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLanguage } from "@/components/utils/languageContext";
@@ -31,6 +32,7 @@ export default function Finance() {
     const [editingItem, setEditingItem] = useState(null);
     const [showCostCenterDialog, setShowCostCenterDialog] = useState(false);
     const [editingCostCenter, setEditingCostCenter] = useState(null);
+    const [showCustomerStatement, setShowCustomerStatement] = useState(false);
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { t } = useLanguage();
@@ -383,7 +385,15 @@ export default function Finance() {
                         <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle>Accounts Receivable</CardTitle>
                             <div className="flex gap-2">
-                                <Button 
+                                <Button
+                                    onClick={() => setShowCustomerStatement(true)}
+                                    variant="outline"
+                                    className="gap-2"
+                                >
+                                    <Receipt className="w-4 h-4" />
+                                    Customer Statement
+                                </Button>
+                                <Button
                                     onClick={() => setShowClearingDialog(true)}
                                     variant="outline"
                                     className="gap-2"
@@ -764,6 +774,10 @@ export default function Finance() {
                     item={editingCostCenter}
                     onClose={() => { setShowCostCenterDialog(false); setEditingCostCenter(null); }}
                 />
+            )}
+
+            {showCustomerStatement && (
+                <CustomerStatementDialog onClose={() => setShowCustomerStatement(false)} />
             )}
         </div>
     );

@@ -485,6 +485,296 @@ function AdministrationCards() {
     ]} />;
 }
 
+// ─── Business KPI Tab ────────────────────────────────────────────────────────
+
+function BusinessCards() {
+    const today = new Date();
+    const monthStart = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-01`;
+    const yearStart  = `${today.getFullYear()}-01-01`;
+
+    const { data: invoices  = [] } = useEntityList("Invoice",             ["biz-invoices"],  "-invoice_date");
+    const { data: arList    = [] } = useEntityList("AccountsReceivable",  ["biz-ar"],        "-invoice_date");
+    const { data: apList    = [] } = useEntityList("AccountsPayable",     ["biz-ap"],        "-invoice_date");
+    const { data: banks     = [] } = useEntityList("BankAccount",         ["biz-banks"]);
+    const { data: materials = [] } = useEntityList("Material",            ["biz-materials"]);
+    const { data: approvals = [] } = useEntityList("ApprovalRequest",     ["biz-approvals"], "-created_date");
+    const { data: payments  = [] } = useEntityList("Payment",             ["biz-payments"],  "-payment_date");
+
+    // Revenue calculations
+    const mtdInvoices = toList(invoices).filter(i =>
+        i.invoice_date >= monthStart && (i.status === "submitted" || i.payment_status !== "draft")
+    );
+    const ytdInvoices = toList(invoices).filter(i =>
+        i.invoice_date >= yearStart && (i.status === "submitted" || i.payment_status !== "draft")
+    );
+    const revenueMTD  = sumBy(mtdInvoices, "total_amount");
+    const revenueYTD  = sumBy(ytdInvoices, "total_amount");
+
+    // AR / AP positions
+    const openAR     = toList(arList).filter(ar => ar.status !== "closed" && (parseFloat(ar.outstanding_amount) || 0) > 0.01);
+    const overdueAR  = openAR.filter(ar => ar.due_date && ar.due_date < today.toISOString().slice(0, 10));
+    const totalAR    = sumBy(openAR, "outstanding_amount");
+    const totalODue  = sumBy(overdueAR, "outstanding_amount");
+
+    const openAP     = toList(apList).filter(ap => ap.payment_status !== "paid" && (parseFloat(ap.outstanding_amount) || 0) > 0.01);
+    const totalAP    = sumBy(openAP, "outstanding_amount");
+
+    // Cash position
+    const cashPos    = sumBy(toList(banks), "current_balance");
+    const netWorkCap = cashPos + totalAR - totalAP;
+
+    // Pending approvals
+    const pendingAppr = toList(approvals).filter(a => a.status === "pending").length;
+
+    // Cleared payments this month
+    const mtdPayments = toList(payments).filter(p =>
+        p.payment_date >= monthStart && p.status === "cleared" && p.payment_type === "incoming"
+    );
+    const collectedMTD = sumBy(mtdPayments, "amount");
+
+    // Low stock materials
+    const lowStock = toList(materials).filter(m => {
+        const stock  = parseFloat(m.current_stock) || 0;
+        const reorder = parseFloat(m.reorder_point) || 0;
+        return reorder > 0 && stock <= reorder && m.status === "active";
+    });
+
+    // Top 5 customers by outstanding AR
+    const customerAR = {};
+    openAR.forEach(ar => {
+        const k = ar.customer_name || "Unknown";
+        customerAR[k] = (customerAR[k] || 0) + (parseFloat(ar.outstanding_amount) || 0);
+    });
+    const topCustomers = Object.entries(customerAR)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 5);
+
+    return (
+        <div className="space-y-6">
+            {/* KPI Cards Row */}
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+                {[
+                    { label: "Revenue MTD", value: formatLkrM(revenueMTD),  sub: `YTD: ${formatLkrM(revenueYTD)}`,   color: "emerald", icon: TrendingUp },
+                    { label: "Cash Position", value: formatLkrM(cashPos),   sub: `${toList(banks).length} accounts`,   color: "blue",    icon: Landmark },
+                    { label: "AR Outstanding", value: formatLkrM(totalAR),  sub: `${openAR.length} open invoices`,     color: "indigo",  icon: Receipt },
+                    { label: "Overdue AR",    value: formatLkrM(totalODue), sub: `${overdueAR.length} past due`,       color: overdueAR.length > 0 ? "red" : "emerald", icon: AlertTriangle },
+                    { label: "AP Outstanding", value: formatLkrM(totalAP),  sub: `${openAP.length} vendor invoices`,   color: "amber",   icon: TrendingDown },
+                    { label: "Net Working Cap", value: formatLkrM(netWorkCap), sub: "Cash + AR – AP",                color: netWorkCap >= 0 ? "emerald" : "red", icon: BarChart3 },
+                ].map(({ label, value, sub, color, icon: Icon }) => (
+                    <StatCard key={label} title={label} value={value} icon={Icon} trend={sub} color={color} />
+                ))}
+            </div>
+
+            {/* Alerts row */}
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                {pendingAppr > 0 && (
+                    <Alert className="border-amber-200 bg-amber-50">
+                        <Clock className="h-4 w-4 text-amber-600" />
+                        <AlertDescription className="text-amber-900 text-sm">
+                            <strong>{pendingAppr} approval requests</strong> awaiting action
+                            <Link to={createPageUrl("Approvals")} className="ml-2 underline font-semibold">Review</Link>
+                        </AlertDescription>
+                    </Alert>
+                )}
+                {overdueAR.length > 0 && (
+                    <Alert className="border-red-200 bg-red-50">
+                        <AlertTriangle className="h-4 w-4 text-red-600" />
+                        <AlertDescription className="text-red-900 text-sm">
+                            <strong>{overdueAR.length} invoices</strong> overdue — {formatLkr(totalODue)}
+                            <Link to={createPageUrl("Finance")} className="ml-2 underline font-semibold">View AR</Link>
+                        </AlertDescription>
+                    </Alert>
+                )}
+                {lowStock.length > 0 && (
+                    <Alert className="border-orange-200 bg-orange-50">
+                        <Warehouse className="h-4 w-4 text-orange-600" />
+                        <AlertDescription className="text-orange-900 text-sm">
+                            <strong>{lowStock.length} materials</strong> at or below reorder point
+                            <Link to={createPageUrl("MasterDataManagement")} className="ml-2 underline font-semibold">View</Link>
+                        </AlertDescription>
+                    </Alert>
+                )}
+            </div>
+
+            {/* Detail panels */}
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+
+                {/* Low Stock Panel */}
+                <Card>
+                    <CardContent className="p-0">
+                        <div className="flex items-center justify-between px-4 pt-4 pb-2">
+                            <h3 className="font-semibold text-sm flex items-center gap-2">
+                                <Warehouse className="w-4 h-4 text-orange-500" />
+                                Low Stock Alerts ({lowStock.length})
+                            </h3>
+                            <Link to={createPageUrl("MasterDataManagement")} className="text-xs text-indigo-600 hover:underline">Manage Materials →</Link>
+                        </div>
+                        {lowStock.length === 0 ? (
+                            <p className="text-xs text-gray-400 px-4 pb-4">All materials above reorder point.</p>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-xs">
+                                    <thead className="bg-gray-50">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left font-medium text-gray-600">Material</th>
+                                            <th className="px-4 py-2 text-right font-medium text-gray-600">On Hand</th>
+                                            <th className="px-4 py-2 text-right font-medium text-gray-600">Reorder At</th>
+                                            <th className="px-4 py-2 text-left font-medium text-gray-600">Lead Time</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y">
+                                        {lowStock.slice(0, 8).map(m => {
+                                            const stock   = parseFloat(m.current_stock) || 0;
+                                            const reorder = parseFloat(m.reorder_point) || 0;
+                                            const pct     = reorder > 0 ? Math.round((stock / reorder) * 100) : 0;
+                                            return (
+                                                <tr key={m.id} className="hover:bg-gray-50">
+                                                    <td className="px-4 py-2">
+                                                        <p className="font-medium">{m.material_name}</p>
+                                                        <p className="text-gray-400 text-xs">{m.material_code}</p>
+                                                    </td>
+                                                    <td className={`px-4 py-2 text-right font-semibold ${stock === 0 ? "text-red-600" : "text-orange-600"}`}>
+                                                        {stock.toLocaleString()} {m.unit_of_measure}
+                                                    </td>
+                                                    <td className="px-4 py-2 text-right text-gray-500">
+                                                        {reorder.toLocaleString()}
+                                                    </td>
+                                                    <td className="px-4 py-2">
+                                                        {m.lead_time_days > 0 ? (
+                                                            <span className="text-gray-500">{m.lead_time_days}d</span>
+                                                        ) : "—"}
+                                                        <div className="w-16 bg-gray-200 rounded-full h-1 mt-1">
+                                                            <div
+                                                                className={`h-1 rounded-full ${pct === 0 ? "bg-red-500" : pct < 50 ? "bg-orange-400" : "bg-yellow-400"}`}
+                                                                style={{ width: `${Math.min(pct, 100)}%` }}
+                                                            />
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                                {lowStock.length > 8 && (
+                                    <p className="text-xs text-gray-400 px-4 py-2">+{lowStock.length - 8} more items</p>
+                                )}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Top Customers by Outstanding AR */}
+                <Card>
+                    <CardContent className="p-0">
+                        <div className="flex items-center justify-between px-4 pt-4 pb-2">
+                            <h3 className="font-semibold text-sm flex items-center gap-2">
+                                <Users className="w-4 h-4 text-indigo-500" />
+                                Top Customers — Outstanding AR
+                            </h3>
+                            <Link to={createPageUrl("Finance")} className="text-xs text-indigo-600 hover:underline">View AR →</Link>
+                        </div>
+                        {topCustomers.length === 0 ? (
+                            <p className="text-xs text-gray-400 px-4 pb-4">No outstanding AR.</p>
+                        ) : (
+                            <div className="px-4 pb-4 space-y-2">
+                                {topCustomers.map(([name, amount]) => {
+                                    const pct = totalAR > 0 ? (amount / totalAR) * 100 : 0;
+                                    return (
+                                        <div key={name}>
+                                            <div className="flex justify-between text-xs mb-0.5">
+                                                <span className="font-medium truncate max-w-[180px]">{name}</span>
+                                                <span className="font-semibold text-indigo-700">{formatLkr(amount)}</span>
+                                            </div>
+                                            <div className="w-full bg-gray-100 rounded-full h-1.5">
+                                                <div className="h-1.5 rounded-full bg-indigo-400" style={{ width: `${pct}%` }} />
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
+                {/* Collections MTD */}
+                <Card>
+                    <CardContent className="p-0">
+                        <div className="flex items-center justify-between px-4 pt-4 pb-2">
+                            <h3 className="font-semibold text-sm flex items-center gap-2">
+                                <TrendingUp className="w-4 h-4 text-emerald-500" />
+                                Collections vs Billing — Month to Date
+                            </h3>
+                        </div>
+                        <div className="px-4 pb-4 space-y-3">
+                            {[
+                                { label: "Invoiced (MTD)",   value: revenueMTD,    color: "bg-indigo-400" },
+                                { label: "Collected (MTD)",  value: collectedMTD,  color: "bg-emerald-400" },
+                                { label: "Still Outstanding", value: totalAR,       color: "bg-amber-400" },
+                            ].map(({ label, value, color }) => {
+                                const maxVal = Math.max(revenueMTD, collectedMTD, totalAR, 1);
+                                return (
+                                    <div key={label}>
+                                        <div className="flex justify-between text-xs mb-1">
+                                            <span className="text-gray-600">{label}</span>
+                                            <span className="font-semibold">{formatLkr(value)}</span>
+                                        </div>
+                                        <div className="w-full bg-gray-100 rounded-full h-2">
+                                            <div className={`h-2 rounded-full ${color}`} style={{ width: `${(value / maxVal) * 100}%` }} />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Recent Invoices */}
+                <Card>
+                    <CardContent className="p-0">
+                        <div className="flex items-center justify-between px-4 pt-4 pb-2">
+                            <h3 className="font-semibold text-sm flex items-center gap-2">
+                                <Receipt className="w-4 h-4 text-blue-500" />
+                                Recent Invoices
+                            </h3>
+                            <Link to={createPageUrl("Sales")} className="text-xs text-indigo-600 hover:underline">View All →</Link>
+                        </div>
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-xs">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th className="px-4 py-2 text-left font-medium text-gray-600">Invoice #</th>
+                                        <th className="px-4 py-2 text-left font-medium text-gray-600">Customer</th>
+                                        <th className="px-4 py-2 text-right font-medium text-gray-600">Amount</th>
+                                        <th className="px-4 py-2 text-left font-medium text-gray-600">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y">
+                                    {toList(invoices).slice(0, 6).map(inv => (
+                                        <tr key={inv.id} className="hover:bg-gray-50">
+                                            <td className="px-4 py-2 font-mono text-indigo-700">{inv.invoice_number || "—"}</td>
+                                            <td className="px-4 py-2 truncate max-w-[120px]">{inv.customer_name}</td>
+                                            <td className="px-4 py-2 text-right font-medium">{formatLkr(inv.total_amount)}</td>
+                                            <td className="px-4 py-2">
+                                                <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${
+                                                    inv.payment_status === "paid" ? "bg-green-100 text-green-800" :
+                                                    inv.payment_status === "partially_paid" ? "bg-yellow-100 text-yellow-800" :
+                                                    "bg-red-100 text-red-800"
+                                                }`}>
+                                                    {inv.payment_status || inv.status || "—"}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+    );
+}
+
 export default function Dashboard() {
     const { t } = useLanguage();
     const [activeTab, setActiveTab] = useState("overview");
@@ -500,7 +790,8 @@ export default function Dashboard() {
         { value: "compliance", label: "Compliance", Component: ComplianceCards },
         { value: "reports", label: "Reports", Component: ReportsCards },
         { value: "workflow", label: "Workflow", Component: WorkflowCards },
-        { value: "administration", label: "Administration", Component: AdministrationCards }
+        { value: "administration", label: "Administration", Component: AdministrationCards },
+        { value: "business", label: "Business KPI", Component: BusinessCards }
     ]), []);
 
     const activeModule = dashboardTabs.find(tab => tab.value === activeTab) || dashboardTabs[0];
