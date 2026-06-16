@@ -80,6 +80,10 @@ export default function GRNForm({ item, onClose }) {
         receiving_location: '',
         storage_bin: '',
         batch_number: '',
+        lot_manufactured_date: '',
+        expiry_date: '',
+        phyto_cert_no: '',
+        origin_country: 'Sri Lanka',
         quality_status: 'pending',
         received_by: currentUser?.full_name || '',
         delivery_note: '',
@@ -488,6 +492,47 @@ export default function GRNForm({ item, onClose }) {
                                     value={formData.batch_number}
                                     onChange={(e) => handleChange('batch_number', e.target.value)}
                                 />
+                            </div>
+                        </div>
+
+                        {/* Lot Details */}
+                        <div className="bg-teal-50 border border-teal-200 rounded-lg p-4 space-y-3">
+                            <h4 className="text-sm font-semibold text-teal-800">Lot / Traceability Details</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label>Manufactured Date</Label>
+                                    <Input
+                                        type="date"
+                                        value={formData.lot_manufactured_date}
+                                        onChange={(e) => handleChange('lot_manufactured_date', e.target.value)}
+                                    />
+                                </div>
+                                <div>
+                                    <Label>Expiry Date</Label>
+                                    <Input
+                                        type="date"
+                                        value={formData.expiry_date}
+                                        onChange={(e) => handleChange('expiry_date', e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label>Phytosanitary Cert #</Label>
+                                    <Input
+                                        value={formData.phyto_cert_no}
+                                        onChange={(e) => handleChange('phyto_cert_no', e.target.value)}
+                                        placeholder="e.g. PC-2025-00123"
+                                    />
+                                </div>
+                                <div>
+                                    <Label>Country of Origin</Label>
+                                    <Input
+                                        value={formData.origin_country}
+                                        onChange={(e) => handleChange('origin_country', e.target.value)}
+                                        placeholder="Sri Lanka"
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>

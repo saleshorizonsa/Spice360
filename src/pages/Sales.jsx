@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, FileText, ShoppingCart, Package, Receipt, RefreshCw, AlertTriangle, Clock, CheckCircle, CreditCard } from "lucide-react";
+import { Plus, FileText, ShoppingCart, Package, Receipt, RefreshCw, AlertTriangle, Clock, CheckCircle, CreditCard, Tag, Trash2, Pencil } from "lucide-react";
 import DataTable from "@/components/erp/DataTable";
 import QuotationForm from "@/components/sales/QuotationForm";
 import SalesOrderForm from "@/components/sales/SalesOrderForm";
@@ -14,6 +14,7 @@ import SalesReturnForm from "@/components/sales/SalesReturnForm";
 import ServiceOrderForm from "@/components/sales/ServiceOrderForm";
 import CreditLimitManager from "@/components/sales/CreditLimitManager";
 import ServiceContractsPanel from "@/components/sales/ServiceContractsPanel";
+import ContractPriceForm from "@/components/sales/ContractPriceForm";
 import DocumentPrintPreview from "@/components/shared/DocumentPrintPreview";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -26,6 +27,8 @@ export default function Sales() {
     const [editingItem, setEditingItem] = useState(null);
     const [showPrintPreview, setShowPrintPreview] = useState(false);
     const [selectedDocument, setSelectedDocument] = useState(null);
+    const [showContractPriceDialog, setShowContractPriceDialog] = useState(false);
+    const [editingContractPrice, setEditingContractPrice] = useState(null);
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { t } = useLanguage();
@@ -64,6 +67,12 @@ export default function Sales() {
     const { data: serviceOrders = [] } = useQuery({
         queryKey: ['serviceOrders'],
         queryFn: () => matrixSales.entities.ServiceOrder.list('-order_date'),
+        initialData: []
+    });
+
+    const { data: contractPrices = [] } = useQuery({
+        queryKey: ['contractPrices'],
+        queryFn: () => matrixSales.entities.ContractPrice.list(),
         initialData: []
     });
 
@@ -457,7 +466,7 @@ export default function Sales() {
             )}
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="grid grid-cols-7 w-full">
+                <TabsList className="grid grid-cols-8 w-full">
                     <TabsTrigger value="quotations">{t('quotations')}</TabsTrigger>
                     <TabsTrigger value="orders">{t('orders')}</TabsTrigger>
                     <TabsTrigger value="deliveries">{t('deliveries')}</TabsTrigger>
@@ -467,6 +476,9 @@ export default function Sales() {
                     <TabsTrigger value="credit" className="gap-1">
                         <CreditCard className="w-3.5 h-3.5" /> Credit Limits
                         {creditHoldOrders > 0 && <span className="ml-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">{creditHoldOrders}</span>}
+                    </TabsTrigger>
+                    <TabsTrigger value="prices" className="gap-1">
+                        <Tag className="w-3.5 h-3.5" /> Contract Prices
                     </TabsTrigger>
                 </TabsList>
 
@@ -640,6 +652,104 @@ export default function Sales() {
                     </Card>
                 </TabsContent>
 
+                <TabsContent value="prices">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle className="flex items-center gap-2">
+                                <Tag className="w-5 h-5 text-indigo-600" />
+                                Customer Contract Prices
+                            </CardTitle>
+                            <Button
+                                onClick={() => { setEditingContractPrice(null); setShowContractPriceDialog(true); }}
+                                className="bg-indigo-600 hover:bg-indigo-700"
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                New Contract Price
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            {contractPrices.length === 0 ? (
+                                <div className="text-center py-12 text-gray-400">
+                                    <Tag className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                                    <p className="font-medium">No contract prices yet</p>
+                                    <p className="text-sm mt-1">Add customer-specific pricing agreements here. They will auto-apply when creating Sales Orders.</p>
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-4 py-3 text-left font-medium text-gray-600">Customer</th>
+                                                <th className="px-4 py-3 text-left font-medium text-gray-600">Material</th>
+                                                <th className="px-4 py-3 text-right font-medium text-gray-600">Price / Unit</th>
+                                                <th className="px-4 py-3 text-left font-medium text-gray-600">Currency</th>
+                                                <th className="px-4 py-3 text-left font-medium text-gray-600">Incoterm</th>
+                                                <th className="px-4 py-3 text-left font-medium text-gray-600">Valid From</th>
+                                                <th className="px-4 py-3 text-left font-medium text-gray-600">Valid To</th>
+                                                <th className="px-4 py-3 text-left font-medium text-gray-600">Status</th>
+                                                <th className="px-4 py-3 text-left font-medium text-gray-600">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y">
+                                            {contractPrices.map(cp => {
+                                                const today = new Date().toISOString().split('T')[0];
+                                                const isExpired = cp.valid_to && cp.valid_to < today;
+                                                const isActive = cp.status === 'active' && !isExpired;
+                                                return (
+                                                    <tr key={cp.id} className={`hover:bg-gray-50 ${isExpired ? 'opacity-60' : ''}`}>
+                                                        <td className="px-4 py-3">
+                                                            <p className="font-medium">{cp.customer_name}</p>
+                                                            <p className="text-xs text-gray-400">{cp.customer_code}</p>
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <p className="font-medium">{cp.material_name}</p>
+                                                            <p className="text-xs text-gray-400">{cp.material_code}</p>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right font-semibold text-indigo-700">
+                                                            {(parseFloat(cp.price_per_unit) || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                                        </td>
+                                                        <td className="px-4 py-3">{cp.currency}</td>
+                                                        <td className="px-4 py-3">{cp.incoterm || "—"}</td>
+                                                        <td className="px-4 py-3">{cp.valid_from}</td>
+                                                        <td className="px-4 py-3">{cp.valid_to || "No expiry"}</td>
+                                                        <td className="px-4 py-3">
+                                                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${isExpired ? 'bg-orange-100 text-orange-800' : isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}>
+                                                                {isExpired ? 'Expired' : cp.status}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <div className="flex gap-2">
+                                                                <button
+                                                                    onClick={() => { setEditingContractPrice(cp); setShowContractPriceDialog(true); }}
+                                                                    className="text-indigo-600 hover:text-indigo-800"
+                                                                    title="Edit"
+                                                                >
+                                                                    <Pencil className="w-4 h-4" />
+                                                                </button>
+                                                                <button
+                                                                    onClick={() => {
+                                                                        if (confirm(`Delete contract price for ${cp.customer_name} — ${cp.material_name}?`)) {
+                                                                            matrixSales.entities.ContractPrice.delete(cp.id).then(() => queryClient.invalidateQueries({ queryKey: ['contractPrices'] }));
+                                                                        }
+                                                                    }}
+                                                                    className="text-red-500 hover:text-red-700"
+                                                                    title="Delete"
+                                                                >
+                                                                    <Trash2 className="w-4 h-4" />
+                                                                </button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
                 <TabsContent value="services">
                     <ServiceContractsPanel invoices={invoices} />
 
@@ -687,6 +797,12 @@ export default function Sales() {
             )}
             {showDialog && activeTab === 'services' && (
                 <ServiceOrderForm item={editingItem} onClose={handleCloseDialog} />
+            )}
+            {showContractPriceDialog && (
+                <ContractPriceForm
+                    item={editingContractPrice}
+                    onClose={() => { setShowContractPriceDialog(false); setEditingContractPrice(null); }}
+                />
             )}
 
             {showPrintPreview && selectedDocument && (

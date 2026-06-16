@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowRight, RefreshCw } from "lucide-react";
+import { ArrowRight, RefreshCw, Tag, CheckCircle2 } from "lucide-react";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
 import { useToast } from "@/components/ui/use-toast";
 import { useOrganization } from "../utils/OrganizationContext";
@@ -56,6 +56,12 @@ export default function SalesOrderForm({ order, onClose }) {
     const { data: customers = [] } = useQuery({
         queryKey: ['customers', currentOrg?.id],
         queryFn: () => matrixSales.entities.Customer.list(),
+        initialData: []
+    });
+
+    const { data: allContractPrices = [] } = useQuery({
+        queryKey: ['contractPrices'],
+        queryFn: () => matrixSales.entities.ContractPrice.list(),
         initialData: []
     });
 
@@ -168,6 +174,44 @@ export default function SalesOrderForm({ order, onClose }) {
                 payment_terms: customer.payment_terms || 'net_30'
             }));
         }
+    };
+
+    const activeContractPrices = (() => {
+        if (!formData.customer_code) return [];
+        const today = new Date().toISOString().split('T')[0];
+        return allContractPrices.filter(cp =>
+            cp.customer_code === formData.customer_code &&
+            cp.status === 'active' &&
+            cp.valid_from <= today &&
+            (!cp.valid_to || cp.valid_to >= today)
+        );
+    })();
+
+    const applyContractPrices = () => {
+        if (!activeContractPrices.length) return;
+        const priceMap = {};
+        activeContractPrices.forEach(cp => { priceMap[cp.material_code] = cp; });
+
+        const updated = lineItems.map(line => {
+            const cp = priceMap[line.product_code];
+            if (!cp) return line;
+            const qty = parseFloat(line.quantity) || 0;
+            const price = parseFloat(cp.price_per_unit) || 0;
+            const discountPct = parseFloat(line.discount_percent) || 0;
+            const subtotal = qty * price;
+            const discountAmt = subtotal * (discountPct / 100);
+            return {
+                ...line,
+                unit_price: price,
+                discount_amount: discountAmt,
+                line_total: subtotal - discountAmt,
+                _contract_price: true
+            };
+        });
+
+        setLineItems(updated);
+        if (!isDirty) setIsDirty(true);
+        toast({ title: "Contract Prices Applied", description: `${activeContractPrices.length} price(s) applied to matching lines.` });
     };
 
     const saveMutation = useMutation({
@@ -468,6 +512,27 @@ export default function SalesOrderForm({ order, onClose }) {
                             </div>
                         </div>
                     </div>
+
+                    {/* Contract Price Banner */}
+                    {formData.customer_code && activeContractPrices.length > 0 && (
+                        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-3 flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-indigo-800 text-sm">
+                                <Tag className="w-4 h-4" />
+                                <strong>{activeContractPrices.length} contract price{activeContractPrices.length !== 1 ? 's' : ''}</strong> active for this customer
+                                <span className="text-indigo-600 text-xs">
+                                    ({activeContractPrices.map(cp => cp.material_name || cp.material_code).join(', ')})
+                                </span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={applyContractPrices}
+                                className="flex items-center gap-1.5 text-xs font-semibold text-white bg-indigo-600 hover:bg-indigo-700 px-3 py-1.5 rounded-md transition-colors"
+                            >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                Apply Contract Prices
+                            </button>
+                        </div>
+                    )}
 
                     {/* Line Items */}
                     <div className="space-y-4">

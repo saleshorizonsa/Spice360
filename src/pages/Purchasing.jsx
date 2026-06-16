@@ -4,13 +4,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, FileText, ShoppingCart, Receipt, TrendingUp } from "lucide-react";
+import { Plus, FileText, ShoppingCart, Receipt, TrendingUp, FlaskConical } from "lucide-react";
 import DataTable from "@/components/erp/DataTable";
 import PurchaseRequisitionForm from "@/components/purchasing/PurchaseRequisitionForm";
 import RFQForm from "@/components/purchasing/RFQForm";
 import PurchaseOrderForm from "@/components/purchasing/PurchaseOrderForm";
 import GRNForm from "@/components/purchasing/GRNForm";
 import VendorInvoiceForm from "@/components/purchasing/VendorInvoiceForm";
+import LotTraceabilityDialog from "@/components/purchasing/LotTraceabilityDialog";
 import { useToast } from "@/components/ui/use-toast";
 import { Clock, CheckCircle } from "lucide-react";
 import { createNotification } from "@/components/utils/notificationService";
@@ -20,6 +21,7 @@ export default function Purchasing() {
     const [activeTab, setActiveTab] = useState("requisitions");
     const [showDialog, setShowDialog] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
+    const [showLotTraceability, setShowLotTraceability] = useState(false);
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const [currentUser, setCurrentUser] = useState(null);
@@ -630,13 +632,22 @@ export default function Purchasing() {
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle>{t('goodsReceiptNote')}</CardTitle>
-                            <Button
-                                onClick={() => handleCreate('grns')}
-                                className="bg-emerald-600 hover:bg-emerald-700"
-                            >
-                                <Plus className="w-4 h-4 mr-2" />
-                                {t('new')} GRN
-                            </Button>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setShowLotTraceability(true)}
+                                >
+                                    <FlaskConical className="w-4 h-4 mr-2 text-teal-600" />
+                                    Lot Traceability
+                                </Button>
+                                <Button
+                                    onClick={() => handleCreate('grns')}
+                                    className="bg-emerald-600 hover:bg-emerald-700"
+                                >
+                                    <Plus className="w-4 h-4 mr-2" />
+                                    {t('new')} GRN
+                                </Button>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <DataTable
@@ -692,6 +703,9 @@ export default function Purchasing() {
             )}
             {showDialog && activeTab === 'invoices' && (
                 <VendorInvoiceForm item={editingItem} onClose={handleCloseDialog} />
+            )}
+            {showLotTraceability && (
+                <LotTraceabilityDialog onClose={() => setShowLotTraceability(false)} />
             )}
         </div>
     );
