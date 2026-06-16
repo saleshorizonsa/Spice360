@@ -38,6 +38,12 @@ export default function InvoiceForm({ item, onClose }) {
         initialData: []
     });
 
+    const { data: customers = [] } = useQuery({
+        queryKey: ['customers'],
+        queryFn: () => matrixSales.entities.Customer.list(),
+        initialData: []
+    });
+
     const { data: deliveries = [] } = useQuery({
         queryKey: ['deliveries'],
         queryFn: () => matrixSales.entities.Delivery.list('-delivery_date'),
@@ -80,6 +86,9 @@ export default function InvoiceForm({ item, onClose }) {
         payment_date: '',
         three_way_match_status: 'pending',
         quantity_variance: 0,
+        is_export_customer: false,
+        tolerance_percent: 5,
+        customer_code: '',
         notes: ''
     });
 
@@ -118,13 +127,14 @@ export default function InvoiceForm({ item, onClose }) {
         const total = subtotal + taxAmount;
 
         const qtyVariance = (formData.quantity || 0) - totalDeliveredQty;
+        const toleranceFraction = (parseFloat(formData.tolerance_percent) || 0) / 100;
 
         let matchStatus = 'pending';
         if (formData.sales_order_number && linkedDeliveries.length > 0) {
             const varPct = Math.abs(qtyVariance / (totalDeliveredQty || 1));
-            if (varPct === 0)       matchStatus = 'matched';
-            else if (varPct <= 0.05) matchStatus = 'variance_within_tolerance';
-            else                     matchStatus = 'variance_exceeded';
+            if (varPct === 0)                      matchStatus = 'matched';
+            else if (varPct <= toleranceFraction)  matchStatus = 'variance_within_tolerance';
+            else                                   matchStatus = 'variance_exceeded';
         }
 
         setFormData(prev => ({
@@ -137,7 +147,7 @@ export default function InvoiceForm({ item, onClose }) {
             total_delivered_quantity: totalDeliveredQty,
         }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [formData.quantity, formData.unit_price, formData.tax_percent, totalDeliveredQty]);
+    }, [formData.quantity, formData.unit_price, formData.tax_percent, formData.tolerance_percent, totalDeliveredQty]);
 
     // ── Deliveries available to add ───────────────────────────────────────────
     const availableDeliveryOptions = useMemo(() => {
@@ -176,11 +186,20 @@ export default function InvoiceForm({ item, onClose }) {
         const dueDate = new Date(invoiceDate);
         dueDate.setDate(dueDate.getDate() + daysToAdd);
 
+        // Detect export customer from the Customer master
+        const customerCode = selectedOrder.customer_code || '';
+        const customerRecord = customers.find(
+            c => c.customer_code === customerCode || c.customer_name === selectedOrder.customer_name
+        );
+        const isExport = !!customerRecord?.is_export_customer;
+        const exportTolPct = isExport ? (parseFloat(customerRecord?.export_tolerance_percent) || 5) : 5;
+
         setIsDirty(true);
         setFormData(prev => ({
             ...prev,
             sales_order_number: orderNumber,
             delivery_number: '',
+            customer_code: customerCode,
             customer_name: selectedOrder.customer_name,
             customer_email: selectedOrder.customer_email || '',
             billing_address: selectedOrder.delivery_address || '',
@@ -191,6 +210,8 @@ export default function InvoiceForm({ item, onClose }) {
             unit_price: parseFloat(selectedOrder.unit_price) || 0,
             payment_terms: selectedOrder.payment_terms || 'net_30',
             due_date: dueDate.toISOString().split('T')[0],
+            is_export_customer: isExport,
+            tolerance_percent: exportTolPct,
             notes: `Invoice for Sales Order: ${orderNumber}`,
         }));
     };
@@ -658,7 +679,14 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
 
                             {/* ── Items ─────────────────────────────────────────── */}
                             <div className="space-y-4">
-                                <h3 className="font-semibold text-lg border-b pb-2">Items & Pricing</h3>
+                                <h3 className="font-semibold text-lg border-b pb-2 flex items-center gap-3">
+                                    Items &amp; Pricing
+                                    {formData.is_export_customer && (
+                                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-300">
+                                            ✈ Export Customer — Tolerance Active
+                                        </span>
+                                    )}
+                                </h3>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <Label>Product Code *</Label>
@@ -728,6 +756,55 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
                                         </Select>
                                     </div>
                                 </div>
+
+                                {/* Export Customer Tolerance band */}
+                                {formData.is_export_customer && (
+                                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex-1">
+                                                <Label className="text-sm font-medium text-blue-800">
+                                                    Export Tolerance %
+                                                </Label>
+                                                <Input
+                                                    type="number"
+                                                    min="0"
+                                                    max="100"
+                                                    step="0.1"
+                                                    value={formData.tolerance_percent}
+                                                    onChange={(e) => handleChange('tolerance_percent', parseFloat(e.target.value) || 0)}
+                                                    className="mt-1 w-32 bg-white"
+                                                />
+                                            </div>
+                                            {formData.quantity > 0 && formData.tolerance_percent > 0 && (
+                                                <div className="flex-1">
+                                                    <p className="text-xs font-semibold text-blue-700 mb-1">Accepted Invoice Qty Range</p>
+                                                    <div className="flex items-center gap-2 text-sm font-medium text-blue-800">
+                                                        <span className="bg-white border border-blue-300 rounded px-2 py-1">
+                                                            {(formData.quantity * (1 - formData.tolerance_percent / 100)).toFixed(3)}
+                                                        </span>
+                                                        <span className="text-blue-400">—</span>
+                                                        <span className="bg-white border border-blue-300 rounded px-2 py-1">
+                                                            {(formData.quantity * (1 + formData.tolerance_percent / 100)).toFixed(3)}
+                                                        </span>
+                                                        <span className="text-xs text-blue-600">(SO: {formData.so_quantity} ±{formData.tolerance_percent}%)</span>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {formData.quantity > 0 && formData.tolerance_percent > 0 && (() => {
+                                            const minQty = formData.quantity * (1 - formData.tolerance_percent / 100);
+                                            const maxQty = formData.quantity * (1 + formData.tolerance_percent / 100);
+                                            const deliveredQty = totalDeliveredQty || formData.quantity;
+                                            const withinBand = deliveredQty >= minQty && deliveredQty <= maxQty;
+                                            return (
+                                                <div className={`flex items-center gap-2 text-xs font-medium px-3 py-2 rounded ${withinBand ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                                    {withinBand ? '✓ Delivered quantity is within tolerance' : '✗ Delivered quantity is outside tolerance band'}
+                                                    {totalDeliveredQty > 0 && ` — Delivered: ${totalDeliveredQty.toFixed(3)}`}
+                                                </div>
+                                            );
+                                        })()}
+                                    </div>
+                                )}
 
                                 <div className="bg-gray-50 p-4 rounded-lg space-y-2">
                                     <div className="flex justify-between text-sm">

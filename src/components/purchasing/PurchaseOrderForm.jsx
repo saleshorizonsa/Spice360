@@ -88,6 +88,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
         unit_of_measure: 'kg',
         unit_price: 0,
         subtotal: 0,
+        tolerance_percent: 0,
         freight_cost: 0,
         duty_cost: 0,
         other_costs: 0,
@@ -489,6 +490,40 @@ export default function PurchaseOrderForm({ po, onClose }) {
                                             disabled
                                         />
                                     </div>
+                                </div>
+
+                                {/* Tolerance */}
+                                <div className="grid grid-cols-3 gap-4 items-end">
+                                    <div>
+                                        <Label>Delivery Tolerance %</Label>
+                                        <Input
+                                            type="number"
+                                            min="0"
+                                            max="100"
+                                            step="0.1"
+                                            value={formData.tolerance_percent}
+                                            onChange={(e) => handleChange('tolerance_percent', parseFloat(e.target.value) || 0)}
+                                            placeholder="0 = exact match required"
+                                        />
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            Allowed over/under delivery (e.g. 5 = ±5% of PO qty)
+                                        </p>
+                                    </div>
+                                    {formData.tolerance_percent > 0 && formData.quantity > 0 && (
+                                        <div className="col-span-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                                            <p className="text-xs font-semibold text-amber-800 mb-1">Accepted Delivery Range</p>
+                                            <div className="flex items-center gap-3 text-sm">
+                                                <span className="text-amber-700">
+                                                    Min: <strong>{(formData.quantity * (1 - formData.tolerance_percent / 100)).toFixed(3)} {formData.unit_of_measure}</strong>
+                                                </span>
+                                                <span className="text-gray-400">—</span>
+                                                <span className="text-amber-700">
+                                                    Max: <strong>{(formData.quantity * (1 + formData.tolerance_percent / 100)).toFixed(3)} {formData.unit_of_measure}</strong>
+                                                </span>
+                                                <span className="text-gray-400 text-xs">(PO: {formData.quantity} ±{formData.tolerance_percent}%)</span>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 

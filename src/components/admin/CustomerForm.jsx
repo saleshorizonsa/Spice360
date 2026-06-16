@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function CustomerForm({ customer, onClose }) {
@@ -33,6 +34,8 @@ export default function CustomerForm({ customer, onClose }) {
         credit_limit: 0,
         payment_terms: 'net_30',
         outstanding_balance: 0,
+        is_export_customer: false,
+        export_tolerance_percent: 5,
         status: 'active',
         notes: ''
     });
@@ -299,6 +302,41 @@ export default function CustomerForm({ customer, onClose }) {
                                 </Select>
                             </div>
                         </div>
+                    </div>
+
+                    {/* Export Settings */}
+                    <div className="space-y-4">
+                        <h3 className="font-semibold text-lg border-b pb-2">Export Settings</h3>
+                        <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div>
+                                <Label className="text-sm font-medium">Export Customer</Label>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                    Marks this customer as an export buyer. Activates tolerance field on sales invoices.
+                                </p>
+                            </div>
+                            <Switch
+                                checked={!!formData.is_export_customer}
+                                onCheckedChange={(checked) => handleChange('is_export_customer', checked)}
+                            />
+                        </div>
+                        {formData.is_export_customer && (
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <Label>Export Tolerance %</Label>
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        max="100"
+                                        step="0.1"
+                                        value={formData.export_tolerance_percent}
+                                        onChange={(e) => handleChange('export_tolerance_percent', parseFloat(e.target.value) || 0)}
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        Allowed quantity variance on export invoices (e.g. 5 = ±5%)
+                                    </p>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Notes */}
