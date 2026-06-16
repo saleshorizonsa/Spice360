@@ -13,11 +13,14 @@ import { useToast } from "@/components/ui/use-toast";
 import { useOrganization } from "../utils/OrganizationContext";
 import { processGoodsIssue } from "../utils/inventoryIntegration";
 import { logAuditTrail } from "../utils/auditTrail";
+import { postJournalEntry } from "../utils/journalService";
+import { useGLAccounts } from "../../hooks/useGLAccounts";
 
 export default function DeliveryForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { currentOrganization: currentOrg } = useOrganization();
+    const gl = useGLAccounts();
 
     // Get current user
     const [currentUser, setCurrentUser] = useState(null);
@@ -184,12 +187,47 @@ export default function DeliveryForm({ item, onClose }) {
                 });
             }
 
+            // COGS recognition: DR COGS / CR Inventory
+            if (currentOrg?.id) {
+                const stockLevels = await matrixSales.entities.StockLevel.filter({
+                    material_code: deliveryData.product_code
+                });
+                const unitCost = parseFloat(stockLevels?.[0]?.unit_cost || 0);
+                const cogsAmount = unitCost * (deliveryData.quantity_delivered || 0);
+
+                if (cogsAmount > 0) {
+                    await postJournalEntry({
+                        lines: [
+                            {
+                                account_code: gl.cogs_general,
+                                account_name: "Cost of Goods Sold",
+                                debit: cogsAmount, credit: 0,
+                                description: `${deliveryData.product_name} × ${deliveryData.quantity_delivered}`
+                            },
+                            {
+                                account_code: gl.inventory,
+                                account_name: "Inventory",
+                                debit: 0, credit: cogsAmount,
+                                description: `Goods issue: ${deliveryData.delivery_number}`
+                            }
+                        ],
+                        referenceType: 'delivery',
+                        referenceId: deliveryData.delivery_number,
+                        description: `Goods issue: ${deliveryData.delivery_number} – ${deliveryData.customer_name}`,
+                        entryDate: deliveryData.delivery_date,
+                        entryType: 'goods_issue',
+                        createdBy: currentUser?.email || '',
+                        orgId: currentOrg.id
+                    });
+                }
+            }
+
             // Log audit trail
             await logAuditTrail({
                 entityType: 'delivery',
                 entityId: deliveryData.id,
                 documentNumber: deliveryData.delivery_number,
-                actionType: 'complete_pgi', // More specific action type
+                actionType: 'complete_pgi',
                 afterData: { pgi_done: true, status: 'delivered', pgi_by: currentUser?.email },
                 user: currentUser,
                 severity: 'info',
@@ -200,11 +238,12 @@ export default function DeliveryForm({ item, onClose }) {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['deliveries'] });
-            queryClient.invalidateQueries({ queryKey: ['products'] }); // products query key for stock levels
-            queryClient.invalidateQueries({ queryKey: ['stockLevels'] }); // specific query key if used
-            queryClient.invalidateQueries({ queryKey: ['movements'] }); // specific query key if used
-            queryClient.invalidateQueries({ queryKey: ['sales'] }); // invalidate sales orders to reflect status/quantity change
+            queryClient.invalidateQueries({ queryKey: ['products'] });
+            queryClient.invalidateQueries({ queryKey: ['stockLevels'] });
+            queryClient.invalidateQueries({ queryKey: ['movements'] });
+            queryClient.invalidateQueries({ queryKey: ['sales'] });
             queryClient.invalidateQueries({ queryKey: ['auditTrails'] });
+            queryClient.invalidateQueries({ queryKey: ['journalEntries'] });
             toast({
                 title: "Success",
                 description: "PGI posted successfully. Stock updated.",

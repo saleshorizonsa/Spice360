@@ -8,8 +8,8 @@ const FALLBACK = {
   cogs_general:       "5001",
   vat_input:          "2210",
   trade_payables:     "2100",
-  inventory:          "1200",  // Raw materials / finished goods inventory
-  grni:               "2110",  // Goods Received Not Invoiced (clearing account)
+  inventory:          "1200",
+  grni:               "2110",
   salaries_expense:   "5100",
   epf_employer_exp:   "5210",
   etf_employer_exp:   "5220",
@@ -22,6 +22,9 @@ const FALLBACK = {
   accum_depreciation: "1410",
   wht_expense:        "5900",
   wht_net_payable:    "2100",
+  fixed_asset_cost:   "1400",
+  gain_on_disposal:   "7001",
+  loss_on_disposal:   "6001",
 };
 
 export function useGLAccounts() {

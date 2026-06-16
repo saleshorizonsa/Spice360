@@ -14,11 +14,14 @@ import { Trash2, AlertTriangle } from "lucide-react";
 import { useOrganization } from "../utils/OrganizationContext";
 import { logAuditTrail } from "../utils/auditTrail";
 import { createApprovalRequest } from "../utils/approvalWorkflow";
+import { postJournalEntry } from "../utils/journalService";
+import { useGLAccounts } from "../../hooks/useGLAccounts";
 
 export default function AssetDisposalForm({ asset, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
+    const gl = useGLAccounts();
     const [currentUser, setCurrentUser] = useState(null);
     
     useEffect(() => {
@@ -144,6 +147,60 @@ export default function AssetDisposalForm({ asset, onClose }) {
                 relatedDocumentId: asset.id
             });
 
+            // Post GL journal entry for asset disposal
+            if (currentOrg?.id) {
+                const cost = parseFloat(data.original_acquisition_cost) || 0;
+                const accumDep = parseFloat(data.accumulated_depreciation) || 0;
+                const proceeds = parseFloat(data.disposal_value) || 0;
+                const gainLoss = proceeds - (cost - accumDep);
+
+                const lines = [
+                    ...(accumDep > 0 ? [{
+                        account_code: gl.accum_depreciation,
+                        account_name: "Accumulated Depreciation",
+                        debit: accumDep, credit: 0,
+                        description: `Disposal: ${data.asset_name}`
+                    }] : []),
+                    ...(proceeds > 0 ? [{
+                        account_code: gl.cash_bank,
+                        account_name: "Cash / Bank",
+                        debit: proceeds, credit: 0,
+                        description: `Disposal proceeds: ${data.asset_name}`
+                    }] : []),
+                    ...(gainLoss < 0 ? [{
+                        account_code: gl.loss_on_disposal,
+                        account_name: "Loss on Asset Disposal",
+                        debit: Math.abs(gainLoss), credit: 0,
+                        description: `Loss on disposal: ${data.asset_name}`
+                    }] : []),
+                    {
+                        account_code: gl.fixed_asset_cost,
+                        account_name: "Fixed Assets at Cost",
+                        debit: 0, credit: cost,
+                        description: `Disposal: ${data.asset_name}`
+                    },
+                    ...(gainLoss > 0 ? [{
+                        account_code: gl.gain_on_disposal,
+                        account_name: "Gain on Asset Disposal",
+                        debit: 0, credit: gainLoss,
+                        description: `Gain on disposal: ${data.asset_name}`
+                    }] : []),
+                ];
+
+                if (lines.length >= 2) {
+                    await postJournalEntry({
+                        lines,
+                        referenceType: 'asset_disposal',
+                        referenceId: data.disposal_id,
+                        description: `Asset disposal: ${data.asset_name} (${data.disposal_type})`,
+                        entryDate: data.disposal_date,
+                        entryType: 'disposal',
+                        createdBy: currentUser?.email || '',
+                        orgId: currentOrg.id
+                    });
+                }
+            }
+
             // Create approval request if disposal value is significant
             if (data.disposal_value > 10000 || data.net_book_value > 50000) {
                 await createApprovalRequest({
@@ -164,6 +221,7 @@ export default function AssetDisposalForm({ asset, onClose }) {
             queryClient.invalidateQueries({ queryKey: ['disposals'] });
             queryClient.invalidateQueries({ queryKey: ['auditTrails'] });
             queryClient.invalidateQueries({ queryKey: ['approvalRequests'] });
+            queryClient.invalidateQueries({ queryKey: ['journalEntries'] });
             toast({
                 title: "Success",
                 description: "Asset disposal request submitted for approval",
