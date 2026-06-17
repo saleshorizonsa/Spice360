@@ -542,12 +542,13 @@ export default function Purchasing() {
             {/* KPI Cards */}
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="grid grid-cols-5 w-full">
+                <TabsList className="grid grid-cols-6 w-full">
                     <TabsTrigger value="requisitions">{t('requisitions')}</TabsTrigger>
                     <TabsTrigger value="rfqs">{t('rfqs')}</TabsTrigger>
                     <TabsTrigger value="pos">{t('pos')}</TabsTrigger>
                     <TabsTrigger value="grns">{t('grns')}</TabsTrigger>
                     <TabsTrigger value="invoices">{t('vendorInvoices')}</TabsTrigger>
+                    <TabsTrigger value="prices">Price Register</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="requisitions">
@@ -683,6 +684,106 @@ export default function Purchasing() {
                                 onDelete={(item) => handleDelete(item, 'VendorInvoice')}
                                 onPrint={(item) => handlePrint(item, 'Vendor Invoice')}
                             />
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
+                <TabsContent value="prices">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <TrendingUp className="w-5 h-5 text-emerald-600" />
+                                Supplier Price Register
+                            </CardTitle>
+                            <p className="text-sm text-slate-500 mt-1">
+                                Last agreed PO price vs last GRN received price per material/vendor. Variance flags price drift.
+                            </p>
+                        </CardHeader>
+                        <CardContent>
+                            {(() => {
+                                // Build register: keyed by "vendor|material"
+                                const register = {};
+                                for (const po of pos) {
+                                    if (!po.vendor_name || !po.material_name) continue;
+                                    const key = `${po.vendor_name}||${po.material_name}`;
+                                    const existing = register[key];
+                                    if (!existing || (po.po_date || "") > (existing.lastPoDate || "")) {
+                                        register[key] = {
+                                            ...(existing || {}),
+                                            vendor:       po.vendor_name,
+                                            material:     po.material_name,
+                                            lastPoDate:   po.po_date,
+                                            agreedPrice:  parseFloat(po.unit_price) || 0,
+                                        };
+                                    }
+                                }
+                                for (const grn of grns) {
+                                    if (!grn.vendor_name || !grn.material_name) continue;
+                                    const key = `${grn.vendor_name}||${grn.material_name}`;
+                                    const existing = register[key] || { vendor: grn.vendor_name, material: grn.material_name };
+                                    if (!existing.lastGrnDate || (grn.grn_date || "") > (existing.lastGrnDate || "")) {
+                                        register[key] = {
+                                            ...existing,
+                                            lastGrnDate:    grn.grn_date,
+                                            receivedPrice:  parseFloat(grn.unit_price) || 0,
+                                        };
+                                    }
+                                }
+
+                                const rows = Object.values(register).sort((a, b) =>
+                                    (a.vendor + a.material).localeCompare(b.vendor + b.material)
+                                );
+
+                                if (rows.length === 0) return (
+                                    <p className="text-sm text-slate-400 text-center py-8">No PO or GRN data available yet.</p>
+                                );
+
+                                return (
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-slate-50 border-b">
+                                            <tr>
+                                                <th className="p-3 text-left">Vendor</th>
+                                                <th className="p-3 text-left">Material</th>
+                                                <th className="p-3 text-right">Agreed (PO)</th>
+                                                <th className="p-3 text-center">PO Date</th>
+                                                <th className="p-3 text-right">Received (GRN)</th>
+                                                <th className="p-3 text-center">GRN Date</th>
+                                                <th className="p-3 text-right">Variance</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {rows.map((r, i) => {
+                                                const agreed   = r.agreedPrice  || 0;
+                                                const received = r.receivedPrice || 0;
+                                                const variance = agreed > 0 && received > 0 ? ((received - agreed) / agreed * 100) : null;
+                                                return (
+                                                    <tr key={i} className="border-b last:border-0 hover:bg-slate-50">
+                                                        <td className="p-3 font-medium">{r.vendor}</td>
+                                                        <td className="p-3">{r.material}</td>
+                                                        <td className="p-3 text-right">
+                                                            {agreed > 0 ? `LKR ${agreed.toFixed(2)}` : <span className="text-slate-400">—</span>}
+                                                        </td>
+                                                        <td className="p-3 text-center text-slate-500 text-xs">{r.lastPoDate || "—"}</td>
+                                                        <td className="p-3 text-right">
+                                                            {received > 0 ? `LKR ${received.toFixed(2)}` : <span className="text-slate-400">—</span>}
+                                                        </td>
+                                                        <td className="p-3 text-center text-slate-500 text-xs">{r.lastGrnDate || "—"}</td>
+                                                        <td className="p-3 text-right">
+                                                            {variance === null ? (
+                                                                <span className="text-slate-400">—</span>
+                                                            ) : (
+                                                                <span className={`font-semibold ${Math.abs(variance) < 1 ? "text-green-600" : variance > 0 ? "text-red-600" : "text-emerald-600"}`}>
+                                                                    {variance > 0 ? "+" : ""}{variance.toFixed(1)}%
+                                                                </span>
+                                                            )}
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })}
+                                        </tbody>
+                                    </table>
+                                );
+                            })()}
                         </CardContent>
                     </Card>
                 </TabsContent>

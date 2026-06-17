@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,10 +57,26 @@ export default function Inventory() {
         initialData: []
     });
 
+    const { data: materials = [] } = useQuery({
+        queryKey: ['materials'],
+        queryFn: () => matrixSales.entities.Material.list(),
+        initialData: [],
+    });
+
+    // material_code → reorder_point (fallback 10 when not configured)
+    const reorderMap = useMemo(() => {
+        const m = new Map();
+        materials.forEach((mat) => m.set(mat.material_code, parseFloat(mat.reorder_point) || 10));
+        return m;
+    }, [materials]);
+
     // KPIs
     const totalStockValue = stockLevels.reduce((sum, s) => sum + (s.total_value || 0), 0);
     const totalStockQty = stockLevels.reduce((sum, s) => sum + (s.quantity || 0), 0);
-    const lowStockCount = stockLevels.filter(s => (s.available_quantity || 0) <= 10).length;
+    const lowStockCount = useMemo(
+        () => stockLevels.filter((s) => (s.available_quantity || 0) <= (reorderMap.get(s.material_code) ?? 10)).length,
+        [stockLevels, reorderMap]
+    );
     const slowMovingCount = stockLevels.filter(s => (s.aging_days || 0) > 90).length;
     const pendingCounts = cycleCounts.filter(c => c.status === 'in_progress' || c.status === 'planned').length;
     const inTransitSTOs = stos.filter(s => s.status === 'in_transit').length;
@@ -132,10 +148,11 @@ export default function Inventory() {
         { header: "Bin", key: "bin_code" },
         { header: "Batch", key: "batch_number" },
         { header: t('quantity'), key: "quantity" },
-        { header: "Available", key: "available_quantity", render: (val) => {
-            const isLow = val <= 10;
+        { header: "Available", key: "available_quantity", render: (val, row) => {
+            const reorderPoint = reorderMap.get(row.material_code) ?? 10;
+            const isLow = (val || 0) <= reorderPoint;
             return (
-                <span className={isLow ? 'text-red-600 font-bold' : ''}>
+                <span className={isLow ? 'text-red-600 font-bold' : ''} title={isLow ? `Below reorder point (${reorderPoint})` : ''}>
                     {val || 0}
                 </span>
             );

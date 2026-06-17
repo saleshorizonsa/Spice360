@@ -2,7 +2,7 @@ import React, { useState, useMemo } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Leaf, Plus, Printer, DollarSign } from "lucide-react";
+import { Leaf, Plus, Printer, DollarSign, GitBranch } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DataTable from "../components/erp/DataTable";
@@ -14,6 +14,7 @@ import CinnamonPackagingForm from "../components/cinnamon/CinnamonPackagingForm"
 import CinnamonLabelPrint from "../components/cinnamon/CinnamonLabelPrint";
 import CinnamonYieldReport from "../components/cinnamon/CinnamonYieldReport";
 import CinnamonAccrualClearingDialog from "../components/cinnamon/CinnamonAccrualClearingDialog";
+import CinnamonBatchTraceDialog from "../components/cinnamon/CinnamonBatchTraceDialog";
 import { stepAccrual } from "../components/cinnamon/cinnamonUtils";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -23,6 +24,7 @@ export default function CinnamonProcessing() {
     const [editingItem,  setEditingItem]  = useState(null);
     const [printItems,   setPrintItems]   = useState(null);
     const [clearingBatch, setClearingBatch] = useState(null);
+    const [tracingBatch,  setTracingBatch]  = useState(null);
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
@@ -155,6 +157,20 @@ export default function CinnamonProcessing() {
                     </Button>
                 );
             },
+        },
+        {
+            header: "Trace",
+            key: "_trace",
+            sortable: false,
+            render: (_v, row) => (
+                <Button
+                    size="sm" variant="outline"
+                    className="gap-1 text-xs text-emerald-700 border-emerald-200 hover:bg-emerald-50"
+                    onClick={(e) => { e.stopPropagation(); setTracingBatch(row); }}
+                >
+                    <GitBranch className="w-3 h-3" />Trace
+                </Button>
+            ),
         },
     ];
 
@@ -472,6 +488,12 @@ export default function CinnamonProcessing() {
                 <CinnamonAccrualClearingDialog
                     batch={clearingBatch}
                     onClose={() => setClearingBatch(null)}
+                />
+            )}
+            {tracingBatch && (
+                <CinnamonBatchTraceDialog
+                    batch={tracingBatch}
+                    onClose={() => setTracingBatch(null)}
                 />
             )}
         </div>

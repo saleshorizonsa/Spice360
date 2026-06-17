@@ -18,12 +18,14 @@ import BalanceSheetReport from "@/components/finance/BalanceSheetReport";
 import CashFlowStatementReport from "@/components/finance/CashFlowStatementReport";
 import BudgetVarianceReport from "@/components/finance/BudgetVarianceReport";
 import GLAccountMappingForm from "@/components/finance/GLAccountMappingForm";
+import FXRateManager from "@/components/finance/FXRateManager";
 import CostCenterForm from "@/components/finance/CostCenterForm";
 import CustomerStatementDialog from "@/components/finance/CustomerStatementDialog";
+import BankReconciliationDialog from "@/components/finance/BankReconciliationDialog";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLanguage } from "@/components/utils/languageContext";
-import { Settings, MapPin } from "lucide-react";
+import { Settings, MapPin, Scale, Globe } from "lucide-react";
 
 export default function Finance() {
     const [activeTab, setActiveTab] = useState("gl");
@@ -33,6 +35,7 @@ export default function Finance() {
     const [showCostCenterDialog, setShowCostCenterDialog] = useState(false);
     const [editingCostCenter, setEditingCostCenter] = useState(null);
     const [showCustomerStatement, setShowCustomerStatement] = useState(false);
+    const [reconcilingBank, setReconcilingBank] = useState(null);
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { t } = useLanguage();
@@ -91,6 +94,19 @@ export default function Finance() {
     const dpo = apTransactions.length > 0
         ? Math.round((totalAP / (totalAR + totalAP)) * 365 / 12)
         : 0;
+
+    const markArPaidMutation = useMutation({
+        mutationFn: (ar) => matrixSales.entities.AccountsReceivable.update(ar.id, {
+            status:             "paid",
+            paid_amount:        ar.invoice_amount,
+            outstanding_amount: 0,
+        }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["ar"] });
+            toast({ title: "Marked as collected" });
+        },
+        onError: (e) => toast({ title: "Error", description: e.message, variant: "destructive" }),
+    });
 
     const deleteMutation = useMutation({
         mutationFn: ({ entity, id }) => matrixSales.entities[entity].delete(id),
@@ -455,11 +471,42 @@ export default function Finance() {
                                 <CardTitle>Bank Accounts</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <DataTable
-                                    data={banks}
-                                    columns={bankColumns}
-                                    getBadgeColor={getBadgeColor}
-                                />
+                                {banks.length === 0 ? (
+                                    <p className="text-sm text-slate-400 text-center py-6">No bank accounts configured.</p>
+                                ) : (
+                                    <table className="w-full text-sm border rounded-lg overflow-hidden">
+                                        <thead className="bg-slate-50 border-b">
+                                            <tr>
+                                                <th className="p-3 text-left font-semibold">Account #</th>
+                                                <th className="p-3 text-left font-semibold">Account Name</th>
+                                                <th className="p-3 text-left font-semibold">Bank</th>
+                                                <th className="p-3 text-left font-semibold">Currency</th>
+                                                <th className="p-3 text-right font-semibold">Balance</th>
+                                                <th className="p-3 text-center font-semibold">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {banks.map((b) => (
+                                                <tr key={b.id} className="border-b last:border-0 hover:bg-slate-50">
+                                                    <td className="p-3 font-mono text-xs">{b.account_number}</td>
+                                                    <td className="p-3">{b.account_name}</td>
+                                                    <td className="p-3">{b.bank_name}</td>
+                                                    <td className="p-3">{b.currency || "LKR"}</td>
+                                                    <td className="p-3 text-right font-semibold">LKR {(b.current_balance || 0).toLocaleString()}</td>
+                                                    <td className="p-3 text-center">
+                                                        <Button
+                                                            size="sm" variant="outline"
+                                                            className="gap-1 text-blue-600 border-blue-200 hover:bg-blue-50"
+                                                            onClick={() => setReconcilingBank(b)}
+                                                        >
+                                                            <Scale className="w-3.5 h-3.5" />Reconcile
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                )}
                             </CardContent>
                         </Card>
 
@@ -534,109 +581,182 @@ export default function Finance() {
                 </TabsContent>
 
                 <TabsContent value="reports">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-6">
+                        {/* ── Action KPIs ───────────────────────────────────── */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {[
+                                { label: "Total AR Outstanding", value: `LKR ${totalAR.toLocaleString()}`, color: "text-blue-700", bg: "bg-blue-50 border-blue-200" },
+                                { label: "Overdue AR Items",     value: overdueAR,                         color: overdueAR > 0 ? "text-red-700" : "text-green-700", bg: overdueAR > 0 ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200" },
+                                { label: "Total AP Outstanding", value: `LKR ${totalAP.toLocaleString()}`, color: "text-orange-700", bg: "bg-orange-50 border-orange-200" },
+                                { label: "Net Cash Position",    value: `LKR ${banks.reduce((s, b) => s + (b.current_balance || 0), 0).toLocaleString()}`, color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200" },
+                            ].map(({ label, value, color, bg }) => (
+                                <div key={label} className={`border rounded-lg p-4 ${bg}`}>
+                                    <p className="text-xs text-slate-600">{label}</p>
+                                    <p className={`text-xl font-bold mt-1 ${color}`}>{value}</p>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* ── Overdue AR action list ────────────────────────── */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>AR Aging Summary</CardTitle>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Users className="w-4 h-4 text-blue-600" />
+                                    Overdue Receivables — Action Required
+                                </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-3">
-                                    {['current', '1-30', '31-60', '61-90', '90+'].map(bucket => {
-                                        const amount = arTransactions
-                                            .filter(ar => ar.aging_bucket === bucket)
-                                            .reduce((sum, ar) => sum + (ar.outstanding_amount || 0), 0);
-                                        return (
-                                            <div key={bucket} className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                                                <span className="font-medium capitalize">{bucket} days</span>
-                                                <span className="text-lg font-bold">LKR {amount.toLocaleString()}</span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                                {arTransactions.filter(ar => ar.aging_bucket !== "current" && ar.status !== "paid").length === 0 ? (
+                                    <div className="flex items-center gap-2 text-green-600 text-sm py-4 justify-center">
+                                        <CheckCircle className="w-4 h-4" /> All receivables are current — nothing overdue.
+                                    </div>
+                                ) : (
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-slate-50 border-b">
+                                            <tr>
+                                                <th className="p-2 text-left">AR #</th>
+                                                <th className="p-2 text-left">Customer</th>
+                                                <th className="p-2 text-left">Due Date</th>
+                                                <th className="p-2 text-left">Aging</th>
+                                                <th className="p-2 text-right">Outstanding</th>
+                                                <th className="p-2 text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {arTransactions
+                                                .filter(ar => ar.aging_bucket !== "current" && ar.status !== "paid")
+                                                .sort((a, b) => (a.due_date || "") < (b.due_date || "") ? -1 : 1)
+                                                .map((ar) => (
+                                                    <tr key={ar.id} className="border-b last:border-0 hover:bg-slate-50">
+                                                        <td className="p-2 font-mono text-xs">{ar.ar_number}</td>
+                                                        <td className="p-2 font-medium">{ar.customer_name}</td>
+                                                        <td className="p-2 text-red-600">{ar.due_date}</td>
+                                                        <td className="p-2">
+                                                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getBadgeColor(ar.aging_bucket)}`}>
+                                                                {ar.aging_bucket}
+                                                            </span>
+                                                        </td>
+                                                        <td className="p-2 text-right font-semibold text-red-700">
+                                                            LKR {(ar.outstanding_amount || 0).toLocaleString()}
+                                                        </td>
+                                                        <td className="p-2 text-center">
+                                                            <Button
+                                                                size="sm"
+                                                                className="bg-emerald-600 hover:bg-emerald-700 text-xs gap-1"
+                                                                disabled={markArPaidMutation.isPending}
+                                                                onClick={() => markArPaidMutation.mutate(ar)}
+                                                            >
+                                                                <CheckCircle className="w-3 h-3" />Collected
+                                                            </Button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                        </tbody>
+                                    </table>
+                                )}
                             </CardContent>
                         </Card>
 
+                        {/* ── Overdue AP action list ────────────────────────── */}
                         <Card>
                             <CardHeader>
-                                <CardTitle>AP Aging Summary</CardTitle>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Building2 className="w-4 h-4 text-orange-600" />
+                                    Overdue Payables — Action Required
+                                </CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <div className="space-y-3">
-                                    {['current', '1-30', '31-60', '61-90', '90+'].map(bucket => {
-                                        const amount = apTransactions
-                                            .filter(ap => ap.aging_bucket === bucket)
-                                            .reduce((sum, ap) => sum + (ap.outstanding_amount || 0), 0);
-                                        return (
-                                            <div key={bucket} className="flex justify-between items-center p-3 bg-gray-50 rounded">
-                                                <span className="font-medium capitalize">{bucket} days</span>
-                                                <span className="text-lg font-bold">LKR {amount.toLocaleString()}</span>
-                                            </div>
-                                        );
-                                    })}
-                                </div>
+                                {apTransactions.filter(ap => ap.aging_bucket !== "current" && ap.payment_status !== "paid").length === 0 ? (
+                                    <div className="flex items-center gap-2 text-green-600 text-sm py-4 justify-center">
+                                        <CheckCircle className="w-4 h-4" /> All payables are current — nothing overdue.
+                                    </div>
+                                ) : (
+                                    <table className="w-full text-sm">
+                                        <thead className="bg-slate-50 border-b">
+                                            <tr>
+                                                <th className="p-2 text-left">AP #</th>
+                                                <th className="p-2 text-left">Vendor</th>
+                                                <th className="p-2 text-left">Due Date</th>
+                                                <th className="p-2 text-left">Aging</th>
+                                                <th className="p-2 text-right">Outstanding</th>
+                                                <th className="p-2 text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {apTransactions
+                                                .filter(ap => ap.aging_bucket !== "current" && ap.payment_status !== "paid")
+                                                .sort((a, b) => (a.due_date || "") < (b.due_date || "") ? -1 : 1)
+                                                .map((ap) => (
+                                                    <tr key={ap.id} className="border-b last:border-0 hover:bg-slate-50">
+                                                        <td className="p-2 font-mono text-xs">{ap.ap_number}</td>
+                                                        <td className="p-2 font-medium">{ap.vendor_name}</td>
+                                                        <td className="p-2 text-red-600">{ap.due_date}</td>
+                                                        <td className="p-2">
+                                                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${getBadgeColor(ap.aging_bucket)}`}>
+                                                                {ap.aging_bucket}
+                                                            </span>
+                                                        </td>
+                                                        <td className="p-2 text-right font-semibold text-orange-700">
+                                                            LKR {(ap.outstanding_amount || 0).toLocaleString()}
+                                                        </td>
+                                                        <td className="p-2 text-center">
+                                                            <Button
+                                                                size="sm" variant="outline"
+                                                                className="text-xs gap-1 text-orange-700 border-orange-200 hover:bg-orange-50"
+                                                                onClick={() => { setActiveTab("cash"); handleCreate("cash"); }}
+                                                            >
+                                                                <CreditCard className="w-3 h-3" />Pay
+                                                            </Button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                        </tbody>
+                                    </table>
+                                )}
                             </CardContent>
                         </Card>
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Asset Depreciation Summary</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-3">
-                                    {['machinery', 'equipment', 'vehicles', 'building', 'other'].map(assetClass => {
-                                        const classAssets = assets.filter(a => a.asset_class === assetClass);
-                                        const totalCost = classAssets.reduce((sum, a) => sum + (a.acquisition_cost || 0), 0);
-                                        const totalDep = classAssets.reduce((sum, a) => sum + (a.accumulated_depreciation || 0), 0);
-                                        return totalCost > 0 ? (
-                                            <div key={assetClass} className="p-3 bg-gray-50 rounded">
-                                                <div className="flex justify-between items-center mb-1">
-                                                    <span className="font-medium capitalize">{assetClass}</span>
-                                                    <span className="text-sm text-gray-600">{classAssets.length} assets</span>
+                        {/* ── Aging summaries ───────────────────────────────── */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <Card>
+                                <CardHeader><CardTitle>AR Aging Buckets</CardTitle></CardHeader>
+                                <CardContent>
+                                    <div className="space-y-2">
+                                        {['current', '1-30', '31-60', '61-90', '90+'].map(bucket => {
+                                            const amount = arTransactions
+                                                .filter(ar => ar.aging_bucket === bucket)
+                                                .reduce((sum, ar) => sum + (ar.outstanding_amount || 0), 0);
+                                            const isOverdue = bucket !== "current";
+                                            return (
+                                                <div key={bucket} className={`flex justify-between items-center p-2 rounded ${isOverdue && amount > 0 ? "bg-red-50" : "bg-slate-50"}`}>
+                                                    <span className={`text-sm font-medium ${isOverdue && amount > 0 ? "text-red-700" : ""}`}>{bucket} days</span>
+                                                    <span className={`font-bold text-sm ${isOverdue && amount > 0 ? "text-red-700" : ""}`}>LKR {amount.toLocaleString()}</span>
                                                 </div>
-                                                <div className="flex justify-between text-sm">
-                                                    <span>Cost: LKR {totalCost.toLocaleString()}</span>
-                                                    <span>Depreciation: LKR {totalDep.toLocaleString()}</span>
+                                            );
+                                        })}
+                                    </div>
+                                </CardContent>
+                            </Card>
+                            <Card>
+                                <CardHeader><CardTitle>AP Aging Buckets</CardTitle></CardHeader>
+                                <CardContent>
+                                    <div className="space-y-2">
+                                        {['current', '1-30', '31-60', '61-90', '90+'].map(bucket => {
+                                            const amount = apTransactions
+                                                .filter(ap => ap.aging_bucket === bucket)
+                                                .reduce((sum, ap) => sum + (ap.outstanding_amount || 0), 0);
+                                            const isOverdue = bucket !== "current";
+                                            return (
+                                                <div key={bucket} className={`flex justify-between items-center p-2 rounded ${isOverdue && amount > 0 ? "bg-orange-50" : "bg-slate-50"}`}>
+                                                    <span className={`text-sm font-medium ${isOverdue && amount > 0 ? "text-orange-700" : ""}`}>{bucket} days</span>
+                                                    <span className={`font-bold text-sm ${isOverdue && amount > 0 ? "text-orange-700" : ""}`}>LKR {amount.toLocaleString()}</span>
                                                 </div>
-                                            </div>
-                                        ) : null;
-                                    })}
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Cash Flow Summary</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="space-y-3">
-                                    <div className="p-3 bg-green-50 rounded">
-                                        <div className="text-sm text-gray-600">Cash Inflows</div>
-                                        <div className="text-2xl font-bold text-green-700">
-                                            LKR {payments
-                                                .filter(p => p.payment_type === 'incoming' && p.status === 'cleared')
-                                                .reduce((sum, p) => sum + (p.amount || 0), 0)
-                                                .toLocaleString()}
-                                        </div>
+                                            );
+                                        })}
                                     </div>
-                                    <div className="p-3 bg-red-50 rounded">
-                                        <div className="text-sm text-gray-600">Cash Outflows</div>
-                                        <div className="text-2xl font-bold text-red-700">
-                                            LKR {payments
-                                                .filter(p => p.payment_type === 'outgoing' && p.status === 'cleared')
-                                                .reduce((sum, p) => sum + (p.amount || 0), 0)
-                                                .toLocaleString()}
-                                        </div>
-                                    </div>
-                                    <div className="p-3 bg-blue-50 rounded">
-                                        <div className="text-sm text-gray-600">Net Cash Position</div>
-                                        <div className="text-2xl font-bold text-blue-700">
-                                            LKR {banks.reduce((sum, b) => sum + (b.current_balance || 0), 0).toLocaleString()}
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                </CardContent>
+                            </Card>
+                        </div>
                     </div>
                 </TabsContent>
 
@@ -743,6 +863,22 @@ export default function Finance() {
                             )}
                         </CardContent>
                     </Card>
+                    {/* FX Rate Management */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Globe className="w-5 h-5 text-emerald-600" />
+                                Foreign Exchange Rates
+                            </CardTitle>
+                            <p className="text-sm text-gray-500 mt-1">
+                                Maintain buy/sell rates for foreign currencies. The mid-rate is used automatically when
+                                converting foreign-currency invoices or payments to LKR.
+                            </p>
+                        </CardHeader>
+                        <CardContent>
+                            <FXRateManager />
+                        </CardContent>
+                    </Card>
                 </TabsContent>
             </Tabs>
 
@@ -778,6 +914,13 @@ export default function Finance() {
 
             {showCustomerStatement && (
                 <CustomerStatementDialog onClose={() => setShowCustomerStatement(false)} />
+            )}
+
+            {reconcilingBank && (
+                <BankReconciliationDialog
+                    bank={reconcilingBank}
+                    onClose={() => setReconcilingBank(null)}
+                />
             )}
         </div>
     );
