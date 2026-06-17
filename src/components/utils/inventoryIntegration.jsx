@@ -325,6 +325,197 @@ export async function checkStockAvailability(materialCode, requiredQuantity, war
 }
 
 /**
+ * Process Stock Transfer Order — issue from source warehouse.
+ * Call when STO transitions to 'in_transit'.
+ */
+export async function processSTOIssue(sto, user = null) {
+    try {
+        const movement = await matrixSales.entities.StockMovement.create({
+            movement_number: `STO-OUT-${sto.sto_number}`,
+            movement_date: sto.shipment_date || new Date().toISOString().split('T')[0],
+            movement_type: 'transfer',
+            material_code: sto.material_code,
+            material_name: sto.material_name,
+            batch_number: sto.batch_number || null,
+            quantity: parseFloat(sto.quantity_shipped) || parseFloat(sto.quantity_requested) || 0,
+            unit_of_measure: sto.unit_of_measure,
+            from_warehouse: sto.from_warehouse_code,
+            to_warehouse: sto.to_warehouse_code,
+            reference_document: sto.sto_number,
+            reason: `Stock transfer out — STO ${sto.sto_number}`,
+            performed_by: user?.email || null,
+            status: 'posted',
+        });
+
+        await updateStockLevel({
+            materialCode: sto.material_code,
+            materialName: sto.material_name,
+            warehouse: sto.from_warehouse_code,
+            quantity: parseFloat(sto.quantity_shipped) || parseFloat(sto.quantity_requested) || 0,
+            unitOfMeasure: sto.unit_of_measure,
+            operation: 'decrease',
+        });
+
+        await logAuditTrail({
+            entityType: 'stock_movement', entityId: movement.id,
+            documentNumber: movement.movement_number, actionType: 'create',
+            afterData: movement, user, severity: 'info',
+            relatedDocumentType: 'stock_transfer', relatedDocumentId: sto.sto_number,
+        });
+
+        return movement;
+    } catch (error) {
+        console.error('Error processing STO issue:', error);
+        throw error;
+    }
+}
+
+/**
+ * Process Stock Transfer Order — receive at destination warehouse.
+ * Call when STO transitions to 'received'.
+ */
+export async function processSTOReceipt(sto, user = null) {
+    try {
+        const movement = await matrixSales.entities.StockMovement.create({
+            movement_number: `STO-IN-${sto.sto_number}`,
+            movement_date: sto.receipt_date || new Date().toISOString().split('T')[0],
+            movement_type: 'transfer',
+            material_code: sto.material_code,
+            material_name: sto.material_name,
+            batch_number: sto.batch_number || null,
+            quantity: parseFloat(sto.quantity_received) || parseFloat(sto.quantity_requested) || 0,
+            unit_of_measure: sto.unit_of_measure,
+            from_warehouse: sto.from_warehouse_code,
+            to_warehouse: sto.to_warehouse_code,
+            reference_document: sto.sto_number,
+            reason: `Stock transfer in — STO ${sto.sto_number}`,
+            performed_by: user?.email || null,
+            status: 'posted',
+        });
+
+        await updateStockLevel({
+            materialCode: sto.material_code,
+            materialName: sto.material_name,
+            warehouse: sto.to_warehouse_code,
+            quantity: parseFloat(sto.quantity_received) || parseFloat(sto.quantity_requested) || 0,
+            unitOfMeasure: sto.unit_of_measure,
+            operation: 'increase',
+        });
+
+        await logAuditTrail({
+            entityType: 'stock_movement', entityId: movement.id,
+            documentNumber: movement.movement_number, actionType: 'create',
+            afterData: movement, user, severity: 'info',
+            relatedDocumentType: 'stock_transfer', relatedDocumentId: sto.sto_number,
+        });
+
+        return movement;
+    } catch (error) {
+        console.error('Error processing STO receipt:', error);
+        throw error;
+    }
+}
+
+/**
+ * Post a cycle-count inventory adjustment.
+ * Call when a CycleCount transitions to 'adjusted' with a non-zero variance.
+ */
+export async function postCycleCountAdjustment(cycleCount, user = null) {
+    const variance = parseFloat(cycleCount.variance_quantity) || 0;
+    if (variance === 0) return null;
+
+    try {
+        const movement = await matrixSales.entities.StockMovement.create({
+            movement_number: `ADJ-${cycleCount.count_number}`,
+            movement_date: cycleCount.count_date || new Date().toISOString().split('T')[0],
+            movement_type: 'adjustment',
+            material_code: cycleCount.material_code,
+            material_name: cycleCount.material_name,
+            batch_number: cycleCount.batch_number || null,
+            quantity: Math.abs(variance),
+            unit_of_measure: cycleCount.unit_of_measure || null,
+            from_warehouse: variance < 0 ? cycleCount.warehouse_code : null,
+            to_warehouse:   variance > 0 ? cycleCount.warehouse_code : null,
+            reference_document: cycleCount.count_number,
+            reason: `Cycle count adjustment: system ${cycleCount.system_quantity} → counted ${cycleCount.counted_quantity}`,
+            cost_per_unit: parseFloat(cycleCount.unit_cost) || 0,
+            total_value: Math.abs(variance) * (parseFloat(cycleCount.unit_cost) || 0),
+            performed_by: user?.email || cycleCount.counted_by || null,
+            status: 'posted',
+        });
+
+        // Adjust StockLevel to match counted quantity
+        await updateStockLevel({
+            materialCode: cycleCount.material_code,
+            materialName: cycleCount.material_name,
+            warehouse: cycleCount.warehouse_code,
+            bin: cycleCount.bin_code || null,
+            batch: cycleCount.batch_number || null,
+            quantity: Math.abs(variance),
+            unitCost: parseFloat(cycleCount.unit_cost) || 0,
+            operation: variance > 0 ? 'increase' : 'decrease',
+        });
+
+        await logAuditTrail({
+            entityType: 'stock_movement', entityId: movement.id,
+            documentNumber: movement.movement_number, actionType: 'create',
+            afterData: movement, user, severity: Math.abs(cycleCount.variance_percent) > 10 ? 'warning' : 'info',
+            relatedDocumentType: 'cycle_count', relatedDocumentId: cycleCount.count_number,
+        });
+
+        return movement;
+    } catch (error) {
+        console.error('Error posting cycle count adjustment:', error);
+        throw error;
+    }
+}
+
+/**
+ * Post finished-goods receipt from a completed production order.
+ * Call when ProductionOrder transitions to 'completed'.
+ */
+export async function processProductionReceipt(order, user = null) {
+    const qty = parseFloat(order.quantity_produced) || 0;
+    if (qty <= 0) return null;
+
+    try {
+        const movement = await matrixSales.entities.StockMovement.create({
+            movement_number: `PROD-${order.order_number}`,
+            movement_date: order.end_date || new Date().toISOString().split('T')[0],
+            movement_type: 'production',
+            material_code: order.product_code,
+            material_name: order.product_name,
+            quantity: qty,
+            to_warehouse: order.output_warehouse || 'FG-WH',
+            reference_document: order.order_number,
+            reason: `Finished goods receipt from production order ${order.order_number}`,
+            performed_by: user?.email || order.operator_name || null,
+            status: 'posted',
+        });
+
+        await updateStockLevel({
+            materialCode: order.product_code,
+            materialName: order.product_name,
+            warehouse: order.output_warehouse || 'FG-WH',
+            quantity: qty,
+            operation: 'increase',
+        });
+
+        await logAuditTrail({
+            entityType: 'stock_movement', entityId: movement.id,
+            documentNumber: movement.movement_number, actionType: 'create',
+            afterData: movement, user, severity: 'info',
+            relatedDocumentType: 'production_order', relatedDocumentId: order.order_number,
+        });
+
+        return movement;
+    } catch (error) {
+        console.error('Error processing production receipt:', error);
+        throw error;
+    }
+}
+
+/**
  * Get stock aging analysis
  */
 export async function getStockAgingAnalysis() {

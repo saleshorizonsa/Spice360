@@ -16,6 +16,9 @@ import {
 import { useToast } from "@/components/ui/use-toast";
 import DataTable from "@/components/erp/DataTable";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
+import { useGLAccounts } from "@/hooks/useGLAccounts";
+import { useOrganization } from "@/components/utils/OrganizationContext";
+import { postJournalEntry } from "@/components/utils/journalService";
 
 // Category color map for touch tiles
 const CATEGORY_COLORS = {
@@ -57,6 +60,8 @@ export default function POS() {
     const { toast } = useToast();
     const taxConfig = useTaxConfig();
     const vatRate = taxConfig.vat_standard_rate / 100;
+    const gl = useGLAccounts();
+    const { currentOrg } = useOrganization();
 
     const { data: products = [] } = useQuery({
         queryKey: ['posProducts'],
@@ -187,7 +192,53 @@ export default function POS() {
     };
 
     const createTransactionMutation = useMutation({
-        mutationFn: (data) => matrixSales.entities.POSTransaction.create(data),
+        mutationFn: async (data) => {
+            const tx = await matrixSales.entities.POSTransaction.create(data);
+
+            // ── GL posting (non-fatal) ────────────────────────────────
+            try {
+                const lines = [];
+                // Debit Cash/Bank for total received
+                lines.push({ accountCode: gl.cash_bank, accountName: "Cash / Bank", debitAmount: data.total_amount, creditAmount: 0, description: `POS ${data.transaction_number}` });
+                // Credit Sales Revenue (net of VAT)
+                lines.push({ accountCode: gl.sales_revenue, accountName: "Sales Revenue", debitAmount: 0, creditAmount: data.subtotal - (data.discount_amount || 0), description: `POS ${data.transaction_number}` });
+                // Credit VAT Output
+                if ((data.vat_amount || 0) > 0) {
+                    lines.push({ accountCode: gl.vat_output, accountName: "VAT Output", debitAmount: 0, creditAmount: data.vat_amount, description: `POS VAT ${data.transaction_number}` });
+                }
+                await postJournalEntry({
+                    description: `POS Sale — ${data.transaction_number}`,
+                    entryDate: data.transaction_date?.slice(0, 10) || new Date().toISOString().slice(0, 10),
+                    referenceType: "pos_transaction",
+                    referenceId: tx.id,
+                    entryType: "sales",
+                    lines,
+                    orgId: currentOrg?.id,
+                });
+            } catch (_) { /* non-fatal */ }
+
+            // ── Inventory reduction (non-fatal) ───────────────────────
+            try {
+                for (const cartLine of data.items || []) {
+                    const levels = await matrixSales.entities.StockLevel.filter({ material_code: cartLine.product_code });
+                    const available = (levels || []).filter(l => (l.available_quantity || 0) > 0);
+                    let remaining = parseFloat(cartLine.quantity) || 0;
+                    for (const lvl of available) {
+                        if (remaining <= 0) break;
+                        const deduct = Math.min(remaining, parseFloat(lvl.available_quantity) || 0);
+                        const newQty = Math.max(0, (parseFloat(lvl.quantity) || 0) - deduct);
+                        await matrixSales.entities.StockLevel.update(lvl.id, {
+                            quantity: newQty,
+                            available_quantity: Math.max(0, newQty - (parseFloat(lvl.reserved_quantity) || 0)),
+                            last_movement_date: new Date().toISOString().slice(0, 10),
+                        });
+                        remaining -= deduct;
+                    }
+                }
+            } catch (_) { /* non-fatal */ }
+
+            return tx;
+        },
         onSuccess: (tx) => {
             setLastTransaction(tx);
             setShowReceipt(true);
@@ -197,6 +248,7 @@ export default function POS() {
             setCashReceived("");
             setDiscountPercent(0);
             queryClient.invalidateQueries({ queryKey: ['posTransactions'] });
+            queryClient.invalidateQueries({ queryKey: ['stockLevels'] });
             toast({ title: "Sale Completed!", description: `Transaction ${tx.transaction_number} recorded.` });
         }
     });

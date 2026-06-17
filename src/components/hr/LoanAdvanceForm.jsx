@@ -8,10 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { postJournalEntry } from "../utils/journalService";
+import { useOrganization } from "../utils/OrganizationContext";
+import { useGLAccounts } from "@/hooks/useGLAccounts";
 
 export default function LoanAdvanceForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const { currentOrg } = useOrganization();
+    const gl = useGLAccounts();
 
     const { data: employees = [] } = useQuery({
         queryKey: ['employees'],
@@ -61,11 +66,38 @@ export default function LoanAdvanceForm({ item, onClose }) {
     };
 
     const saveMutation = useMutation({
-        mutationFn: (data) => {
+        mutationFn: async (data) => {
+            let loan;
             if (item) {
-                return matrixSales.entities.LoanAdvance.update(item.id, data);
+                loan = await matrixSales.entities.LoanAdvance.update(item.id, data);
+            } else {
+                loan = await matrixSales.entities.LoanAdvance.create(data);
             }
-            return matrixSales.entities.LoanAdvance.create(data);
+
+            // Post GL when loan is approved for disbursement (non-fatal)
+            const isApproval = !item && data.status === 'approved'
+                || (item?.status !== 'approved' && data.status === 'approved');
+            const loanAmount = parseFloat(data.loan_amount) || 0;
+            if (isApproval && loanAmount > 0 && !data.gl_posted) {
+                try {
+                    // Employee Loans Receivable (1150) DR / Cash CR on disbursement
+                    await postJournalEntry({
+                        description: `Employee loan disbursement — ${data.employee_name} (${data.loan_number || loan.id})`,
+                        entryDate:   new Date().toISOString().slice(0, 10),
+                        referenceType: 'loan_advance',
+                        referenceId:   loan.id,
+                        entryType:     'loan',
+                        lines: [
+                            { accountCode: '1150',          accountName: 'Employee Loans Receivable', debitAmount: loanAmount, creditAmount: 0,           description: data.employee_name },
+                            { accountCode: gl.cash_bank,    accountName: 'Cash / Bank',               debitAmount: 0,          creditAmount: loanAmount,   description: data.employee_name },
+                        ],
+                        orgId: currentOrg?.id,
+                    });
+                    await matrixSales.entities.LoanAdvance.update(loan.id, { gl_posted: true });
+                } catch (_) { /* non-fatal */ }
+            }
+
+            return loan;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['loans'] });

@@ -89,7 +89,6 @@ export default function PaymentForm({ item, onClose }) {
             // Reduce AP outstanding balance when outgoing vendor payment clears
             if (savedPayment?.status === 'cleared' && savedPayment.payment_type === 'outgoing' && savedPayment.party_code) {
                 try {
-                    // Prefer exact match on vendor + invoice reference; fallback to FIFO across vendor's pending AP
                     let apRecords = [];
                     if (savedPayment.reference_number) {
                         apRecords = await matrixSales.entities.AccountsPayable.filter({
@@ -106,22 +105,40 @@ export default function PaymentForm({ item, onClose }) {
                     }
 
                     let remaining = parseFloat(savedPayment.amount) || 0;
+                    const nowPaidAPs = [];
                     for (const ap of apRecords) {
                         if (remaining <= 0.001) break;
-                        const outstanding = parseFloat(ap.outstanding_amount) || 0;
+                        const outstanding    = parseFloat(ap.outstanding_amount) || 0;
                         if (outstanding <= 0.001) continue;
-                        const applied      = Math.min(remaining, outstanding);
+                        const applied        = Math.min(remaining, outstanding);
                         const newOutstanding = Math.max(0, outstanding - applied);
                         const newPaid        = (parseFloat(ap.paid_amount) || 0) + applied;
                         await matrixSales.entities.AccountsPayable.update(ap.id, {
                             ...ap,
-                            paid_amount:       newPaid,
+                            paid_amount:        newPaid,
                             outstanding_amount: newOutstanding,
-                            payment_status:    newOutstanding <= 0.01 ? 'paid' : 'partial',
+                            payment_status:     newOutstanding <= 0.01 ? 'paid' : 'partial',
                         });
+                        if (newOutstanding <= 0.01) nowPaidAPs.push(ap);
                         remaining -= applied;
                     }
                     queryClient.invalidateQueries({ queryKey: ['ap'] });
+
+                    // G6: close linked PO when AP is fully paid
+                    for (const ap of nowPaidAPs) {
+                        try {
+                            if (ap.vendor_invoice_number) {
+                                const vis = await matrixSales.entities.VendorInvoice.filter({ invoice_number: ap.vendor_invoice_number });
+                                if (vis?.[0]?.po_number) {
+                                    const pos = await matrixSales.entities.PurchaseOrder.filter({ po_number: vis[0].po_number });
+                                    if (pos?.[0] && !['closed', 'cancelled'].includes(pos[0].status)) {
+                                        await matrixSales.entities.PurchaseOrder.update(pos[0].id, { ...pos[0], status: 'closed' });
+                                        queryClient.invalidateQueries({ queryKey: ['purchaseOrders'] });
+                                    }
+                                }
+                            }
+                        } catch (_) { /* non-fatal */ }
+                    }
                 } catch (_) {
                     // Non-fatal — payment recorded; AP update is best-effort
                 }
@@ -145,6 +162,7 @@ export default function PaymentForm({ item, onClose }) {
                         arRecords = allOpen.sort((a, b) => new Date(a.invoice_date) - new Date(b.invoice_date));
                     }
                     let remaining = parseFloat(savedPayment.amount) || 0;
+                    const nowClosedARs = [];
                     for (const ar of arRecords) {
                         if (remaining <= 0.001) break;
                         const outstanding    = parseFloat(ar.outstanding_amount) || 0;
@@ -158,9 +176,26 @@ export default function PaymentForm({ item, onClose }) {
                             outstanding_amount: newOutstanding,
                             status:             newOutstanding <= 0.01 ? 'closed' : ar.status,
                         });
+                        if (newOutstanding <= 0.01) nowClosedARs.push(ar);
                         remaining -= applied;
                     }
                     queryClient.invalidateQueries({ queryKey: ['ar'] });
+
+                    // G5: mark linked SalesOrder as completed when AR is fully paid
+                    for (const ar of nowClosedARs) {
+                        try {
+                            if (ar.invoice_number) {
+                                const invs = await matrixSales.entities.Invoice.filter({ invoice_number: ar.invoice_number });
+                                if (invs?.[0]?.sales_order_number) {
+                                    const sos = await matrixSales.entities.SalesOrder.filter({ order_number: invs[0].sales_order_number });
+                                    if (sos?.[0] && !['completed', 'cancelled'].includes(sos[0].status)) {
+                                        await matrixSales.entities.SalesOrder.update(sos[0].id, { ...sos[0], status: 'completed' });
+                                        queryClient.invalidateQueries({ queryKey: ['salesOrders'] });
+                                    }
+                                }
+                            }
+                        } catch (_) { /* non-fatal */ }
+                    }
                 } catch (_) {
                     // Non-fatal
                 }

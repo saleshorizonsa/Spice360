@@ -13,6 +13,7 @@ import { ArrowRightLeft, RefreshCw } from "lucide-react";
 import SearchableSelect from "../shared/SearchableSelect";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
 import { logAuditTrail } from "../utils/auditTrail";
+import { processSTOIssue, processSTOReceipt } from "../utils/inventoryIntegration";
 
 export default function STOForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -112,11 +113,11 @@ export default function STOForm({ item, onClose }) {
         mutationFn: async (data) => {
             let sto;
             const beforeData = item ? { ...item } : null;
+            const prevStatus = item?.status;
 
             if (item) {
                 sto = await matrixSales.entities.StockTransferOrder.update(item.id, data);
-                
-                // Log audit trail
+
                 await logAuditTrail({
                     entityType: 'stock_transfer',
                     entityId: item.id,
@@ -127,10 +128,18 @@ export default function STOForm({ item, onClose }) {
                     user: currentUser,
                     severity: 'info'
                 });
+
+                // Issue stock from source when transitioning to in_transit
+                if (prevStatus !== 'in_transit' && data.status === 'in_transit') {
+                    try { await processSTOIssue(data, currentUser); } catch (_) { /* non-fatal */ }
+                }
+                // Receive stock at destination when transitioning to received
+                if (prevStatus !== 'received' && data.status === 'received') {
+                    try { await processSTOReceipt(data, currentUser); } catch (_) { /* non-fatal */ }
+                }
             } else {
                 sto = await matrixSales.entities.StockTransferOrder.create(data);
-                
-                // Log audit trail
+
                 await logAuditTrail({
                     entityType: 'stock_transfer',
                     entityId: sto.id,
@@ -147,6 +156,8 @@ export default function STOForm({ item, onClose }) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['stos'] });
             queryClient.invalidateQueries({ queryKey: ['auditTrails'] });
+            queryClient.invalidateQueries({ queryKey: ['stockLevels'] });
+            queryClient.invalidateQueries({ queryKey: ['movements'] });
             toast({
                 title: "Success",
                 description: item ? "STO updated" : "STO created",

@@ -7,10 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
+import { postJournalEntry } from "../utils/journalService";
+import { useOrganization } from "../utils/OrganizationContext";
+import { useGLAccounts } from "@/hooks/useGLAccounts";
 
 export default function EOSForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const { currentOrg } = useOrganization();
+    const gl = useGLAccounts();
 
     const { data: employees = [] } = useQuery({
         queryKey: ['employees'],
@@ -74,11 +79,37 @@ export default function EOSForm({ item, onClose }) {
     };
 
     const saveMutation = useMutation({
-        mutationFn: (data) => {
+        mutationFn: async (data) => {
+            let eos;
             if (item) {
-                return matrixSales.entities.EndOfService.update(item.id, data);
+                eos = await matrixSales.entities.EndOfService.update(item.id, data);
+            } else {
+                eos = await matrixSales.entities.EndOfService.create(data);
             }
-            return matrixSales.entities.EndOfService.create(data);
+
+            // Post GL when EOS is approved/finalised (non-fatal)
+            const isApproval = !item && data.status === 'approved'
+                || (item?.status !== 'approved' && data.status === 'approved');
+            const eosAmount = parseFloat(data.final_settlement_amount) || 0;
+            if (isApproval && eosAmount > 0 && !data.gl_posted) {
+                try {
+                    await postJournalEntry({
+                        description: `EOS — ${data.employee_name} (${data.eos_number || eos.id})`,
+                        entryDate:   data.last_working_date || new Date().toISOString().slice(0, 10),
+                        referenceType: 'end_of_service',
+                        referenceId:   eos.id,
+                        entryType:     'eos',
+                        lines: [
+                            { accountCode: gl.salaries_expense,  accountName: 'EOS Expense',   debitAmount: eosAmount, creditAmount: 0,          description: data.employee_name },
+                            { accountCode: gl.salaries_payable,  accountName: 'EOS Payable',   debitAmount: 0,         creditAmount: eosAmount,   description: data.employee_name },
+                        ],
+                        orgId: currentOrg?.id,
+                    });
+                    await matrixSales.entities.EndOfService.update(eos.id, { gl_posted: true });
+                } catch (_) { /* non-fatal */ }
+            }
+
+            return eos;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['eos'] });

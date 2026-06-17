@@ -14,6 +14,7 @@ import SearchableSelect from "../shared/SearchableSelect";
 import { Badge } from "@/components/ui/badge";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
 import { logAuditTrail } from "../utils/auditTrail";
+import { postCycleCountAdjustment } from "../utils/inventoryIntegration";
 
 export default function CycleCountForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -146,11 +147,11 @@ export default function CycleCountForm({ item, onClose }) {
         mutationFn: async (data) => {
             let cycleCount;
             const beforeData = item ? { ...item } : null;
+            const prevStatus = item?.status;
 
             if (item) {
                 cycleCount = await matrixSales.entities.CycleCount.update(item.id, data);
-                
-                // Log audit trail
+
                 await logAuditTrail({
                     entityType: 'cycle_count',
                     entityId: item.id,
@@ -161,10 +162,17 @@ export default function CycleCountForm({ item, onClose }) {
                     user: currentUser,
                     severity: Math.abs(data.variance_percent) > 10 ? 'warning' : 'info'
                 });
+
+                // Post inventory adjustment when transitioning to 'adjusted' for the first time
+                if (prevStatus !== 'adjusted' && data.status === 'adjusted' && !data.adjustment_posted) {
+                    try {
+                        await postCycleCountAdjustment(data, currentUser);
+                        await matrixSales.entities.CycleCount.update(item.id, { adjustment_posted: true });
+                    } catch (_) { /* non-fatal — adjustment can be retried */ }
+                }
             } else {
                 cycleCount = await matrixSales.entities.CycleCount.create(data);
-                
-                // Log audit trail
+
                 await logAuditTrail({
                     entityType: 'cycle_count',
                     entityId: cycleCount.id,
@@ -181,6 +189,8 @@ export default function CycleCountForm({ item, onClose }) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['cycleCounts'] });
             queryClient.invalidateQueries({ queryKey: ['auditTrails'] });
+            queryClient.invalidateQueries({ queryKey: ['stockLevels'] });
+            queryClient.invalidateQueries({ queryKey: ['movements'] });
             toast({
                 title: "Success",
                 description: item ? "Cycle count updated" : "Cycle count created",

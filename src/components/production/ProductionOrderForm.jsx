@@ -11,10 +11,16 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
 import { RefreshCw } from "lucide-react";
+import { processProductionReceipt } from "../utils/inventoryIntegration";
+import { postJournalEntry } from "../utils/journalService";
+import { useOrganization } from "../utils/OrganizationContext";
+import { useGLAccounts } from "@/hooks/useGLAccounts";
 
 export default function ProductionOrderForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const { currentOrg } = useOrganization();
+    const gl = useGLAccounts();
 
     const { data: products = [] } = useQuery({
         queryKey: ['materials'],
@@ -82,14 +88,52 @@ export default function ProductionOrderForm({ item, onClose }) {
     };
 
     const saveMutation = useMutation({
-        mutationFn: (data) => {
+        mutationFn: async (data) => {
+            const prevStatus = item?.status;
+            let order;
+
             if (item) {
-                return matrixSales.entities.ProductionOrder.update(item.id, data);
+                order = await matrixSales.entities.ProductionOrder.update(item.id, data);
+            } else {
+                order = await matrixSales.entities.ProductionOrder.create(data);
             }
-            return matrixSales.entities.ProductionOrder.create(data);
+
+            // On completion: post finished-goods inventory and GL (non-fatal)
+            const isCompletion = prevStatus !== 'completed' && data.status === 'completed';
+            if (isCompletion && (parseFloat(data.quantity_produced) || 0) > 0) {
+                try {
+                    await processProductionReceipt(data);
+                } catch (_) { /* non-fatal */ }
+
+                try {
+                    // Look up material cost for GL valuation
+                    const mats = await matrixSales.entities.Material.filter({ material_code: data.product_code });
+                    const unitCost = parseFloat(mats?.[0]?.unit_cost) || 0;
+                    const fgValue = (parseFloat(data.quantity_produced) || 0) * unitCost;
+
+                    if (fgValue > 0) {
+                        await postJournalEntry({
+                            description: `Production completion — ${data.order_number}`,
+                            entryDate: data.end_date || new Date().toISOString().slice(0, 10),
+                            referenceType: "production_order",
+                            referenceId: order.id,
+                            entryType: "production",
+                            lines: [
+                                { accountCode: gl.inventory,          accountName: "Finished Goods Inventory", debitAmount: fgValue, creditAmount: 0, description: data.product_name },
+                                { accountCode: gl.accrued_mfg_costs,  accountName: "Accrued Manufacturing Costs", debitAmount: 0, creditAmount: fgValue, description: data.order_number },
+                            ],
+                            orgId: currentOrg?.id,
+                        });
+                    }
+                } catch (_) { /* non-fatal */ }
+            }
+
+            return order;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['productions'] });
+            queryClient.invalidateQueries({ queryKey: ['stockLevels'] });
+            queryClient.invalidateQueries({ queryKey: ['movements'] });
             toast({
                 title: "Success",
                 description: `Production order ${item ? 'updated' : 'created'} successfully`,

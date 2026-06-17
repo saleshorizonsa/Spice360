@@ -267,12 +267,17 @@ export default function GRNForm({ item, onClose }) {
                 status: 'completed'
             });
 
-            // Update PO quantity received
+            // Update PO quantity received; auto-close when fully received
             const pos = await matrixSales.entities.PurchaseOrder.filter({ po_number: formData.po_number });
             if (pos && pos.length > 0) {
                 const po = pos[0];
+                const newQtyReceived = (parseFloat(po.quantity_received) || 0) + (parseFloat(formData.quantity_received) || 0);
+                const isFullyReceived = newQtyReceived >= (parseFloat(po.quantity) || 0) - 0.001;
                 await matrixSales.entities.PurchaseOrder.update(po.id, {
-                    quantity_received: (po.quantity_received || 0) + formData.quantity_received
+                    quantity_received: newQtyReceived,
+                    ...(isFullyReceived && !['closed', 'cancelled'].includes(po.status)
+                        ? { status: 'fully_received' }
+                        : {}),
                 });
             }
 
