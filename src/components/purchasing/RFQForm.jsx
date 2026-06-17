@@ -10,11 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
+import { useOrganization } from "../utils/OrganizationContext";
 import { RefreshCw } from "lucide-react";
 
 export default function RFQForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const { currentOrg } = useOrganization();
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
 
     const { data: materials = [] } = useQuery({
@@ -104,14 +106,45 @@ export default function RFQForm({ item, onClose }) {
     };
 
     const saveMutation = useMutation({
-        mutationFn: (data) => {
+        mutationFn: async (data) => {
+            const prevStatus = item?.status;
+            let rfq;
             if (item) {
-                return matrixSales.entities.RFQ.update(item.id, data);
+                rfq = await matrixSales.entities.RFQ.update(item.id, data);
+            } else {
+                rfq = await matrixSales.entities.RFQ.create(data);
             }
-            return matrixSales.entities.RFQ.create(data);
+
+            // Auto-create Purchase Order draft when RFQ is awarded (non-fatal)
+            const isAwarded = prevStatus !== 'awarded' && data.status === 'awarded';
+            if (isAwarded) {
+                try {
+                    const poNumber = await getNextDocumentNumber('purchase_order');
+                    await matrixSales.entities.PurchaseOrder.create({
+                        po_number:       poNumber,
+                        po_date:         new Date().toISOString().slice(0, 10),
+                        organization_id: currentOrg?.id,
+                        rfq_reference:   data.rfq_number,
+                        pr_reference:    data.pr_reference || '',
+                        material_code:   data.material_code,
+                        material_name:   data.material_name,
+                        quantity:        data.quantity,
+                        unit_of_measure: data.unit_of_measure || '',
+                        required_date:   data.required_date || '',
+                        unit_price:      0,
+                        total_amount:    0,
+                        status:          'draft',
+                        notes:           `Auto-created from RFQ ${data.rfq_number}`,
+                    });
+                    toast({ title: "Purchase Order Created", description: `${poNumber} created as draft — add vendor to complete` });
+                } catch (_) { /* non-fatal */ }
+            }
+
+            return rfq;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['rfqs'] });
+            queryClient.invalidateQueries({ queryKey: ['purchaseOrders'] });
             toast({
                 title: "Success",
                 description: `RFQ ${item ? 'updated' : 'created'} successfully`,

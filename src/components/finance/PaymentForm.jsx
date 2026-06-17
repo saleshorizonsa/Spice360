@@ -186,11 +186,22 @@ export default function PaymentForm({ item, onClose }) {
                         try {
                             if (ar.invoice_number) {
                                 const invs = await matrixSales.entities.Invoice.filter({ invoice_number: ar.invoice_number });
-                                if (invs?.[0]?.sales_order_number) {
-                                    const sos = await matrixSales.entities.SalesOrder.filter({ order_number: invs[0].sales_order_number });
-                                    if (sos?.[0] && !['completed', 'cancelled'].includes(sos[0].status)) {
-                                        await matrixSales.entities.SalesOrder.update(sos[0].id, { ...sos[0], status: 'completed' });
-                                        queryClient.invalidateQueries({ queryKey: ['salesOrders'] });
+                                if (invs?.[0]) {
+                                    // Mark invoice as paid
+                                    if (invs[0].payment_status !== 'paid') {
+                                        await matrixSales.entities.Invoice.update(invs[0].id, {
+                                            ...invs[0],
+                                            payment_status: 'paid',
+                                        });
+                                        queryClient.invalidateQueries({ queryKey: ['invoices'] });
+                                    }
+                                    // Complete linked SO
+                                    if (invs[0].sales_order_number) {
+                                        const sos = await matrixSales.entities.SalesOrder.filter({ order_number: invs[0].sales_order_number });
+                                        if (sos?.[0] && !['completed', 'cancelled'].includes(sos[0].status)) {
+                                            await matrixSales.entities.SalesOrder.update(sos[0].id, { ...sos[0], status: 'completed' });
+                                            queryClient.invalidateQueries({ queryKey: ['salesOrders'] });
+                                        }
                                     }
                                 }
                             }
