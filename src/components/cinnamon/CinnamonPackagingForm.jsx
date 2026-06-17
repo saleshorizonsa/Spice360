@@ -191,14 +191,22 @@ export default function CinnamonPackagingForm({ item, onClose }) {
                     });
                 }
 
-                // Create / update StockLevel with computed unit cost so COGS is correct on delivery
-                const usableKg      = parseFloat(selectedBatch?.usable_weight_kg) || 0;
-                const batchCpk      = usableKg > 0 ? grandTotalCost / usableKg : 0;
-                const unitCostPack  = batchCpk * (selectedPackSize?.kg || 0);
+                // Create / update StockLevel with computed unit cost so COGS is correct on delivery.
+                // usable_weight_kg may be null on legacy batches — fall back to total_output_kg
+                // (which is kept current by the process-step labour roll-up).
+                const usableKg     = parseFloat(selectedBatch?.usable_weight_kg)
+                    || parseFloat(selectedBatch?.total_output_kg)
+                    || 0;
+                const batchCpk     = usableKg > 0 ? grandTotalCost / usableKg : 0;
+                const unitCostPack = batchCpk * (selectedPackSize?.kg || 0);
                 if (unitCostPack > 0) {
                     try {
+                        const warehouseCode  = formData.location || "CINNAMON-WH";
+                        // Filter by both material_code AND warehouse_code so multi-warehouse
+                        // setups don't update a sibling warehouse's StockLevel record.
                         const existingLevels = await matrixSales.entities.StockLevel.filter({
-                            material_code: finishedSku,
+                            material_code:  finishedSku,
+                            warehouse_code: warehouseCode,
                         });
                         if (existingLevels.length > 0) {
                             const sl      = existingLevels[0];
@@ -219,8 +227,8 @@ export default function CinnamonPackagingForm({ item, onClose }) {
                             await matrixSales.entities.StockLevel.create({
                                 material_code:      finishedSku,
                                 material_name:      `Cinnamon ${formData.grade_code} – ${formData.pack_size}`,
-                                warehouse_code:     formData.location || "CINNAMON-WH",
-                                warehouse_name:     formData.location || "Cinnamon Warehouse",
+                                warehouse_code:     warehouseCode,
+                                warehouse_name:     warehouseCode,
                                 quantity:           qtyPacks,
                                 reserved_quantity:  0,
                                 available_quantity: qtyPacks,

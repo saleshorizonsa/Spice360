@@ -126,7 +126,12 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
                 : matrixSales.entities.CinnamonProcessStep.create(data));
 
             if (!isEdit) {
-                const batch = safeBatches.find((b) => b.batch_number === data.batch_number);
+                // Use cache hit first; fall back to a fresh fetch if batch was just created this session
+                let batch = safeBatches.find((b) => b.batch_number === data.batch_number);
+                if (!batch) {
+                    const fresh = await matrixSales.entities.CinnamonBatch.filter({ batch_number: data.batch_number });
+                    batch = fresh[0] ?? null;
+                }
                 if (batch) {
                     await matrixSales.entities.CinnamonBatch.update(batch.id, { current_stage: data.stage });
                 }
@@ -176,27 +181,29 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
                 });
             }
 
-            // GL: capitalise processing costs into inventory (DR Inventory / CR Accrued Mfg Costs)
-            // Cutting step uses step_total_cost (all 5 fields + labour); others use contract labour only.
-            const stepGLCost = data.stage === "cutting"
-                ? (parseFloat(data.step_total_cost) || 0)
-                : (parseFloat(data.labour_cost_total) || 0);
-            if (stepGLCost > 0 && currentOrg?.id) {
-                try {
-                    await postJournalEntry({
-                        lines: [
-                            { account_code: gl.inventory,         account_name: "Inventory / WIP",            debit: stepGLCost, credit: 0 },
-                            { account_code: gl.accrued_mfg_costs, account_name: "Accrued Manufacturing Costs", debit: 0,          credit: stepGLCost },
-                        ],
-                        referenceType: "cinnamon_process_step",
-                        referenceId:   step.id,
-                        description:   `Cinnamon processing – ${data.stage} – batch ${data.batch_number}`,
-                        entryDate:     (data.completed_at || data.started_at || "").slice(0, 10) || new Date().toISOString().slice(0, 10),
-                        entryType:     "production",
-                        orgId:         currentOrg.id,
-                    });
-                } catch (_) {
-                    // Non-fatal: accounts may not yet be configured
+            // GL: capitalise processing costs into inventory — only on initial create.
+            // Editing a step must NOT re-post; doing so would inflate 2120 on every save.
+            if (!isEdit) {
+                const stepGLCost = data.stage === "cutting"
+                    ? (parseFloat(data.step_total_cost) || 0)
+                    : (parseFloat(data.labour_cost_total) || 0);
+                if (stepGLCost > 0 && currentOrg?.id) {
+                    try {
+                        await postJournalEntry({
+                            lines: [
+                                { account_code: gl.inventory,         account_name: "Inventory / WIP",            debit: stepGLCost, credit: 0 },
+                                { account_code: gl.accrued_mfg_costs, account_name: "Accrued Manufacturing Costs", debit: 0,          credit: stepGLCost },
+                            ],
+                            referenceType: "cinnamon_process_step",
+                            referenceId:   step.id,
+                            description:   `Cinnamon processing – ${data.stage} – batch ${data.batch_number}`,
+                            entryDate:     (data.completed_at || data.started_at || "").slice(0, 10) || new Date().toISOString().slice(0, 10),
+                            entryType:     "production",
+                            orgId:         currentOrg.id,
+                        });
+                    } catch (_) {
+                        // Non-fatal: accounts may not yet be configured
+                    }
                 }
             }
 

@@ -73,7 +73,7 @@ export default function CinnamonBatchForm({ item, onClose }) {
 
     // ── Landed cost computation ───────────────────────────────────────────────
     const inputKg       = parseFloat(formData.input_weight_kg) || 0;
-    const shrinkagePct  = parseFloat(formData.shrinkage_pct) ?? 3;
+    const shrinkagePct  = parseFloat(formData.shrinkage_pct) || 3;
     const purchasePrice = parseFloat(formData.purchase_price_per_kg) || 0;
     const freight       = parseFloat(formData.freight_amount) || 0;
 

@@ -8,22 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
-import { DollarSign, Building2, CheckCircle2 } from "lucide-react";
+import { DollarSign, Building2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { postJournalEntry } from "../utils/journalService";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
 import { useOrganization } from "../utils/OrganizationContext";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
-
-// ── Accrued amount per step (mirrors CinnamonProcessStepForm's GL logic) ───────
-// Cutting: step_total_cost (5 cost fields + contract labour)
-// Pre-processing / rubbing_peeling: labour_cost_total (contract labour only)
-// Grading / moisture_qc / packaging: no accrual
-const stepAccrual = (s) =>
-    s.stage === "cutting"
-        ? parseFloat(s.step_total_cost)  || 0
-        : ["pre_processing", "rubbing_peeling"].includes(s.stage)
-            ? parseFloat(s.labour_cost_total) || 0
-            : 0;
+import { stepAccrual } from "./cinnamonUtils";
 
 export default function CinnamonAccrualClearingDialog({ batch, onClose }) {
     const queryClient  = useQueryClient();
@@ -49,6 +39,16 @@ export default function CinnamonAccrualClearingDialog({ batch, onClose }) {
         select: (d) => Array.isArray(d) ? d : [],
     });
 
+    // GL journal entries that were actually posted for this batch's process steps.
+    // total_debit = the debit to Inventory, which equals the credit to 2120 (balanced JE).
+    const { data: stepJEs = [] } = useQuery({
+        queryKey: ["cinnamonStepJEs", batch.batch_number],
+        queryFn:  () => matrixSales.entities.JournalEntry.filter({ reference_type: "cinnamon_process_step" }),
+        enabled:  rawSteps.length > 0,
+        initialData: [],
+        select: (d) => Array.isArray(d) ? d : [],
+    });
+
     const { data: vendors = [] } = useQuery({
         queryKey: ["vendors"],
         queryFn:  () => matrixSales.entities.Vendor.list(),
@@ -57,10 +57,22 @@ export default function CinnamonAccrualClearingDialog({ batch, onClose }) {
     });
 
     // ── Accrual arithmetic ────────────────────────────────────────────────────
-    const totalAccrued = useMemo(
+    // totalAccrued: what actually hit 2120, derived from GL entries.
+    // Using GL rather than step records prevents over-clearing when a GL post silently failed.
+    const totalAccrued = useMemo(() => {
+        const stepIdSet = new Set(rawSteps.map((s) => String(s.id)));
+        return stepJEs
+            .filter((je) => stepIdSet.has(String(je.reference_id)))
+            .reduce((sum, je) => sum + (parseFloat(je.total_debit) || 0), 0);
+    }, [stepJEs, rawSteps]);
+
+    // totalExpected: what step records say should have been accrued (informational only).
+    const totalExpected = useMemo(
         () => rawSteps.reduce((sum, s) => sum + stepAccrual(s), 0),
         [rawSteps]
     );
+
+    const glMismatch = totalExpected > 0.005 && Math.abs(totalAccrued - totalExpected) > 0.5;
 
     const totalCleared = useMemo(
         () => clearingJEs.reduce((sum, je) => sum + (parseFloat(je.total_debit) || 0), 0),
@@ -111,24 +123,10 @@ export default function CinnamonAccrualClearingDialog({ batch, onClose }) {
                 });
             } else {
                 // ── AP path: DR 2120 / CR 2100 (clears accrual, creates payable) ──
-                // Payment of the payable is done separately via Finance → AP → PaymentForm.
-                // That flow posts DR 2100 / CR Cash – no second expense is booked.
+                // AP record is created BEFORE the JE so that a JE failure leaves
+                // a visible AP (recoverable) rather than a committed JE with no AP.
                 const apNumber = await getNextDocumentNumber("AP");
 
-                await postJournalEntry({
-                    lines: [
-                        { account_code: gl.accrued_mfg_costs, account_name: "Accrued Manufacturing Costs", debit: clearAmount, credit: 0 },
-                        { account_code: gl.trade_payables,     account_name: "Trade Payables",              debit: 0,          credit: clearAmount },
-                    ],
-                    referenceType: "cinnamon_accrual_clearing",
-                    referenceId:   batch.batch_number,
-                    description:   description,
-                    entryDate:     date,
-                    entryType:     "invoice",
-                    orgId:         currentOrg.id,
-                });
-
-                // Create AP record so Finance → AP aging and PaymentForm can pick it up
                 await matrixSales.entities.AccountsPayable.create({
                     ap_number:             apNumber,
                     vendor_invoice_number: vendorInvoiceNumber || apNumber,
@@ -147,10 +145,27 @@ export default function CinnamonAccrualClearingDialog({ batch, onClose }) {
                     notes:                 description,
                     organization_id:       currentOrg.id,
                 });
+
+                await postJournalEntry({
+                    lines: [
+                        { account_code: gl.accrued_mfg_costs, account_name: "Accrued Manufacturing Costs", debit: clearAmount, credit: 0 },
+                        { account_code: gl.trade_payables,     account_name: "Trade Payables",              debit: 0,          credit: clearAmount },
+                    ],
+                    referenceType: "cinnamon_accrual_clearing",
+                    referenceId:   batch.batch_number,
+                    description:   description,
+                    entryDate:     date,
+                    entryType:     "invoice",
+                    orgId:         currentOrg.id,
+                });
             }
         },
         onSuccess: () => {
+            // Invalidate both the per-batch key (this dialog) and the unfiltered key
+            // (CinnamonProcessing page KPI card and batch badge column).
             queryClient.invalidateQueries({ queryKey: ["cinnamonAccrualClearings", batch.batch_number] });
+            queryClient.invalidateQueries({ queryKey: ["cinnamonAccrualClearings"] });
+            queryClient.invalidateQueries({ queryKey: ["cinnamonStepJEs", batch.batch_number] });
             queryClient.invalidateQueries({ queryKey: ["journalEntries"] });
             queryClient.invalidateQueries({ queryKey: ["journals"] });
             queryClient.invalidateQueries({ queryKey: ["ap"] });
@@ -180,8 +195,13 @@ export default function CinnamonAccrualClearingDialog({ batch, onClose }) {
                     {/* ── Balance summary ─────────────────────────────────────── */}
                     <div className="grid grid-cols-3 gap-3">
                         <div className="bg-orange-50 border border-orange-200 rounded-lg p-3 text-center">
-                            <p className="text-xs text-orange-600 font-medium">Accrued to 2120</p>
+                            <p className="text-xs text-orange-600 font-medium">Accrued to 2120 (GL)</p>
                             <p className="text-lg font-bold text-orange-800">LKR {totalAccrued.toFixed(2)}</p>
+                            {glMismatch && (
+                                <p className="text-xs text-amber-600 mt-0.5">
+                                    Expected {totalExpected.toFixed(2)}
+                                </p>
+                            )}
                         </div>
                         <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
                             <p className="text-xs text-green-600 font-medium">Cleared (Dr 2120)</p>
@@ -195,10 +215,23 @@ export default function CinnamonAccrualClearingDialog({ batch, onClose }) {
                         </div>
                     </div>
 
+                    {/* ── GL / step mismatch warning ──────────────────────────── */}
+                    {glMismatch && (
+                        <Alert className="border-amber-200 bg-amber-50">
+                            <AlertTriangle className="w-4 h-4 text-amber-600" />
+                            <AlertDescription className="text-amber-700 text-sm">
+                                GL shows LKR {totalAccrued.toFixed(2)} posted to account 2120, but step records
+                                total LKR {totalExpected.toFixed(2)}. One or more processing cost GL entries may
+                                have failed silently. Check Finance → Journal Entries for reference type
+                                "cinnamon_process_step".
+                            </AlertDescription>
+                        </Alert>
+                    )}
+
                     {/* ── Step breakdown ──────────────────────────────────────── */}
                     {rawSteps.filter((s) => stepAccrual(s) > 0).length > 0 && (
                         <div className="bg-slate-50 rounded-lg border p-3">
-                            <p className="text-xs font-semibold text-slate-600 mb-2">Accrual Breakdown by Processing Step</p>
+                            <p className="text-xs font-semibold text-slate-600 mb-2">Accrual Breakdown by Processing Step (from step records)</p>
                             <div className="space-y-1">
                                 {rawSteps
                                     .filter((s) => stepAccrual(s) > 0)

@@ -14,15 +14,8 @@ import CinnamonPackagingForm from "../components/cinnamon/CinnamonPackagingForm"
 import CinnamonLabelPrint from "../components/cinnamon/CinnamonLabelPrint";
 import CinnamonYieldReport from "../components/cinnamon/CinnamonYieldReport";
 import CinnamonAccrualClearingDialog from "../components/cinnamon/CinnamonAccrualClearingDialog";
+import { stepAccrual } from "../components/cinnamon/cinnamonUtils";
 import { useToast } from "@/components/ui/use-toast";
-
-// Accrual per step — matches CinnamonProcessStepForm's GL posting logic
-const stepAccrual = (s) =>
-    s.stage === "cutting"
-        ? parseFloat(s.step_total_cost) || 0
-        : ["pre_processing", "rubbing_peeling"].includes(s.stage)
-            ? parseFloat(s.labour_cost_total) || 0
-            : 0;
 
 export default function CinnamonProcessing() {
     const [activeTab,    setActiveTab]    = useState("batches");
