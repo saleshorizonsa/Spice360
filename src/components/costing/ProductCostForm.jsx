@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import SearchableSelect from "../shared/SearchableSelect";
 import { useOrganization } from "../utils/OrganizationContext";
-import { Calculator } from "lucide-react";
+import { Calculator, Download } from "lucide-react";
 
 export default function ProductCostForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -28,6 +28,14 @@ export default function ProductCostForm({ item, onClose }) {
         queryFn: () => matrixSales.entities.BOM.list(),
         initialData: []
     });
+
+    const { data: cinnamonBatches = [] } = useQuery({
+        queryKey: ['cinnamonBatches'],
+        queryFn: () => matrixSales.entities.CinnamonBatch.list(),
+        initialData: []
+    });
+
+    const [loadingBatchLabour, setLoadingBatchLabour] = useState(false);
 
     const [formData, setFormData] = useState({
         product_cost_id: '',
@@ -143,6 +151,32 @@ export default function ProductCostForm({ item, onClose }) {
         }
     };
 
+    const handleLoadBatchLabour = async (batchNumber) => {
+        if (!batchNumber) return;
+        setLoadingBatchLabour(true);
+        try {
+            const steps = await matrixSales.entities.CinnamonProcessStep.filter({ batch_number: batchNumber });
+            const totalLabour = steps.reduce((sum, s) => sum + (parseFloat(s.labour_cost_total) || 0), 0);
+            const totalOutput = steps.reduce((sum, s) => sum + (parseFloat(s.output_weight_kg) || 0), 0);
+
+            if (totalOutput === 0) {
+                toast({ title: "No Output", description: "Process steps have no recorded output weight.", variant: "destructive" });
+                return;
+            }
+
+            const labourPerKg = totalLabour / totalOutput;
+            setFormData(prev => ({ ...prev, direct_labor_cost: parseFloat(labourPerKg.toFixed(4)) }));
+            toast({
+                title: "Labour Loaded",
+                description: `LKR ${totalLabour.toFixed(2)} total ÷ ${totalOutput.toFixed(3)} kg = LKR ${labourPerKg.toFixed(4)}/kg`
+            });
+        } catch (error) {
+            toast({ title: "Error", description: error.message, variant: "destructive" });
+        } finally {
+            setLoadingBatchLabour(false);
+        }
+    };
+
     const saveMutation = useMutation({
         mutationFn: (data) => {
             if (item) {
@@ -252,6 +286,28 @@ export default function ProductCostForm({ item, onClose }) {
                                 searchPlaceholder="Search BOMs..."
                             />
                         </div>
+                    </div>
+
+                    {/* Cinnamon Batch Labour Import */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <p className="text-xs font-semibold text-blue-800 mb-2">Load Contract Labour from Cinnamon Batch</p>
+                        <div className="flex gap-2 items-center">
+                            <Select onValueChange={handleLoadBatchLabour}>
+                                <SelectTrigger className="bg-white text-sm flex-1">
+                                    <SelectValue placeholder="Select batch to import labour cost/kg…" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {cinnamonBatches.map(b => (
+                                        <SelectItem key={b.id} value={b.batch_number}>
+                                            {b.batch_number} — {b.supplier}
+                                            {b.total_labour_cost ? ` (LKR ${parseFloat(b.total_labour_cost).toFixed(2)})` : ""}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            {loadingBatchLabour && <span className="text-xs text-blue-600 animate-pulse">Loading…</span>}
+                        </div>
+                        <p className="text-xs text-blue-600 mt-1">Calculates total labour ÷ total output kg and fills Direct Labour Cost below</p>
                     </div>
 
                     {/* Cost Components */}

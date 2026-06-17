@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
-import { Activity } from "lucide-react";
+import { Activity, Plus, Trash2, Users } from "lucide-react";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 
 const STAGES = [
@@ -20,6 +20,14 @@ const STAGES = [
     { value: "cutting",         label: "Cutting" },
     { value: "packaging",       label: "Packaging & Storage" },
 ];
+
+const EMPTY_WORKER = { worker_name: "", hours_worked: "", rate_per_hour: "", amount: 0 };
+
+function parseLabourEntries(raw) {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    try { return JSON.parse(raw); } catch { return []; }
+}
 
 export default function CinnamonProcessStepForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -48,13 +56,42 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
         notes:            item?.notes            || "",
     });
 
+    const [labourEntries, setLabourEntries] = useState(() => parseLabourEntries(item?.labour_entries));
+
     const inputKg  = parseFloat(formData.input_weight_kg)  || 0;
     const outputKg = parseFloat(formData.output_weight_kg) || 0;
     const wasteKg  = parseFloat(formData.waste_weight_kg)  || 0;
     const yieldPct = inputKg > 0 ? ((outputKg / inputKg) * 100).toFixed(1) : null;
     const isOverweight = outputKg + wasteKg > inputKg && inputKg > 0;
 
+    const totalLabourCost = useMemo(
+        () => labourEntries.reduce((sum, w) => sum + (parseFloat(w.amount) || 0), 0),
+        [labourEntries]
+    );
+
     const safeBatches = Array.isArray(batches) ? batches : [];
+
+    const addWorker = () => {
+        setIsDirty(true);
+        setLabourEntries(prev => [...prev, { ...EMPTY_WORKER }]);
+    };
+
+    const removeWorker = (idx) => {
+        setIsDirty(true);
+        setLabourEntries(prev => prev.filter((_, i) => i !== idx));
+    };
+
+    const updateWorker = (idx, field, value) => {
+        setIsDirty(true);
+        setLabourEntries(prev => prev.map((w, i) => {
+            if (i !== idx) return w;
+            const updated = { ...w, [field]: value };
+            const hours = parseFloat(field === "hours_worked" ? value : updated.hours_worked) || 0;
+            const rate  = parseFloat(field === "rate_per_hour" ? value : updated.rate_per_hour) || 0;
+            updated.amount = hours * rate;
+            return updated;
+        }));
+    };
 
     const saveMutation = useMutation({
         mutationFn: async (data) => {
@@ -70,6 +107,32 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
                     });
                 }
             }
+
+            // Roll up total labour cost to the batch
+            const allSteps = await matrixSales.entities.CinnamonProcessStep.filter({
+                batch_number: data.batch_number
+            });
+            const batchLabourTotal = allSteps.reduce((sum, s) => {
+                const cost = s.id === step.id
+                    ? data.labour_cost_total
+                    : (parseFloat(s.labour_cost_total) || 0);
+                return sum + cost;
+            }, 0);
+            const batchOutputTotal = allSteps.reduce((sum, s) => {
+                const kg = s.id === step.id
+                    ? (parseFloat(data.output_weight_kg) || 0)
+                    : (parseFloat(s.output_weight_kg) || 0);
+                return sum + kg;
+            }, 0);
+
+            const batch = safeBatches.find((b) => b.batch_number === data.batch_number);
+            if (batch) {
+                await matrixSales.entities.CinnamonBatch.update(batch.id, {
+                    total_labour_cost: batchLabourTotal,
+                    total_output_kg: batchOutputTotal,
+                });
+            }
+
             return step;
         },
         onSuccess: () => {
@@ -88,10 +151,12 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
         if (isOverweight) return;
         saveMutation.mutate({
             ...formData,
-            input_weight_kg:  parseFloat(formData.input_weight_kg)  || 0,
-            output_weight_kg: parseFloat(formData.output_weight_kg) || 0,
-            waste_weight_kg:  parseFloat(formData.waste_weight_kg)  || 0,
-            yield_pct:        yieldPct !== null ? parseFloat(yieldPct) : 0,
+            input_weight_kg:   parseFloat(formData.input_weight_kg)  || 0,
+            output_weight_kg:  parseFloat(formData.output_weight_kg) || 0,
+            waste_weight_kg:   parseFloat(formData.waste_weight_kg)  || 0,
+            yield_pct:         yieldPct !== null ? parseFloat(yieldPct) : 0,
+            labour_entries:    labourEntries,
+            labour_cost_total: totalLabourCost,
         });
     };
 
@@ -237,6 +302,77 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
                                 onChange={(e) => handleChange("completed_at", e.target.value)}
                             />
                         </div>
+                    </div>
+
+                    {/* Contract Labour Section */}
+                    <div className="border rounded-lg p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <h3 className="font-semibold text-sm flex items-center gap-2 text-blue-800">
+                                <Users className="w-4 h-4" />
+                                Contract Labour
+                            </h3>
+                            <Button type="button" size="sm" variant="outline" onClick={addWorker}>
+                                <Plus className="w-3 h-3 mr-1" /> Add Worker
+                            </Button>
+                        </div>
+
+                        {labourEntries.length === 0 ? (
+                            <p className="text-xs text-gray-400 text-center py-2">
+                                No workers added — click "Add Worker"
+                            </p>
+                        ) : (
+                            <>
+                                <div className="grid grid-cols-[1fr_80px_100px_88px_32px] gap-2 text-xs font-medium text-gray-500 px-1">
+                                    <span>Worker Name</span>
+                                    <span>Hours</span>
+                                    <span>Rate/hr (LKR)</span>
+                                    <span className="text-right">Amount</span>
+                                    <span />
+                                </div>
+                                {labourEntries.map((w, idx) => (
+                                    <div key={idx} className="grid grid-cols-[1fr_80px_100px_88px_32px] gap-2 items-center">
+                                        <Input
+                                            value={w.worker_name}
+                                            onChange={(e) => updateWorker(idx, "worker_name", e.target.value)}
+                                            placeholder="Name"
+                                            className="h-8 text-sm"
+                                        />
+                                        <Input
+                                            type="number" min="0" step="0.5"
+                                            value={w.hours_worked}
+                                            onChange={(e) => updateWorker(idx, "hours_worked", e.target.value)}
+                                            placeholder="0"
+                                            className="h-8 text-sm"
+                                        />
+                                        <Input
+                                            type="number" min="0" step="0.01"
+                                            value={w.rate_per_hour}
+                                            onChange={(e) => updateWorker(idx, "rate_per_hour", e.target.value)}
+                                            placeholder="0.00"
+                                            className="h-8 text-sm"
+                                        />
+                                        <div className="text-sm font-semibold text-emerald-700 text-right pr-1">
+                                            {(parseFloat(w.amount) || 0).toFixed(2)}
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-8 w-8 text-red-400 hover:text-red-600"
+                                            onClick={() => removeWorker(idx)}
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                        </Button>
+                                    </div>
+                                ))}
+                                <div className="flex justify-end pt-2 border-t">
+                                    <span className="text-sm font-semibold">
+                                        Total Labour Cost:{" "}
+                                        <span className="text-emerald-700">LKR {totalLabourCost.toFixed(2)}</span>
+                                    </span>
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     <div>
