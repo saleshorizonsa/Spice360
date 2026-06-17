@@ -104,14 +104,41 @@ export default function OpportunityForm({ item, onClose }) {
     };
 
     const saveMutation = useMutation({
-        mutationFn: (data) => {
+        mutationFn: async (data) => {
+            const prevStage = item?.stage;
+            let opp;
             if (item) {
-                return matrixSales.entities.Opportunity.update(item.id, data);
+                opp = await matrixSales.entities.Opportunity.update(item.id, data);
+            } else {
+                opp = await matrixSales.entities.Opportunity.create(data);
             }
-            return matrixSales.entities.Opportunity.create(data);
+
+            // Auto-create Sales Order draft when Opportunity closes as Won (non-fatal)
+            const isWon = prevStage !== 'closed_won' && data.stage === 'closed_won';
+            if (isWon) {
+                try {
+                    const soNumber = await getNextDocumentNumber('sales_order');
+                    await matrixSales.entities.SalesOrder.create({
+                        order_number:     soNumber,
+                        order_date:       new Date().toISOString().slice(0, 10),
+                        customer_name:    data.company_name,
+                        customer_contact: data.contact_person || '',
+                        customer_email:   data.email || '',
+                        customer_phone:   data.phone || '',
+                        delivery_date:    data.expected_close_date || '',
+                        total_amount:     data.estimated_value || 0,
+                        payment_terms:    'net_30',
+                        status:           'pending',
+                        notes:            `Auto-created from Opportunity ${data.opportunity_number}`,
+                    });
+                } catch (_) { /* non-fatal */ }
+            }
+
+            return opp;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['opportunities'] });
+            queryClient.invalidateQueries({ queryKey: ['salesOrders'] });
             toast({
                 title: "Success",
                 description: `Opportunity ${item ? 'updated' : 'created'} successfully`

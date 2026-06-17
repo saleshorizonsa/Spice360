@@ -85,14 +85,46 @@ export default function PurchaseRequisitionForm({ item, onClose }) {
     };
 
     const saveMutation = useMutation({
-        mutationFn: (data) => {
+        mutationFn: async (data) => {
+            const prevStatus = item?.status;
+            let pr;
             if (item) {
-                return matrixSales.entities.PurchaseRequisition.update(item.id, data);
+                pr = await matrixSales.entities.PurchaseRequisition.update(item.id, data);
+            } else {
+                pr = await matrixSales.entities.PurchaseRequisition.create(data);
             }
-            return matrixSales.entities.PurchaseRequisition.create(data);
+
+            // Auto-create RFQ draft when PR transitions to approved (non-fatal)
+            const isApproval = prevStatus !== 'approved' && data.status === 'approved';
+            if (isApproval) {
+                try {
+                    const rfqNumber = await getNextDocumentNumber('rfq');
+                    const closingDate = data.required_date ||
+                        new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+                    await matrixSales.entities.RFQ.create({
+                        rfq_number:        rfqNumber,
+                        rfq_date:          new Date().toISOString().slice(0, 10),
+                        pr_reference:      data.pr_number,
+                        material_code:     data.material_code,
+                        material_name:     data.material_name,
+                        quantity:          data.quantity_required,
+                        unit_of_measure:   data.unit_of_measure,
+                        required_date:     data.required_date,
+                        closing_date:      closingDate,
+                        suppliers_invited: [],
+                        specifications:    data.purpose || '',
+                        status:            'draft',
+                        notes:             `Auto-created from PR ${data.pr_number}`,
+                    });
+                    await matrixSales.entities.PurchaseRequisition.update(pr.id, { status: 'converted_to_rfq' });
+                } catch (_) { /* non-fatal */ }
+            }
+
+            return pr;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['requisitions'] });
+            queryClient.invalidateQueries({ queryKey: ['rfqs'] });
             toast({
                 title: "Success",
                 description: `Purchase requisition ${item ? 'updated' : 'created'} successfully`,

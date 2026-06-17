@@ -16,6 +16,7 @@ import LineItemsTable from "../shared/LineItemsTable";
 import SearchableSelect from "../shared/SearchableSelect";
 import { createApprovalRequest, needsApproval } from "../utils/approvalWorkflow";
 import { logAuditTrail } from "../utils/auditTrail";
+import { reserveStock } from "../utils/inventoryIntegration";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 
 export default function SalesOrderForm({ order, onClose }) {
@@ -308,14 +309,23 @@ export default function SalesOrderForm({ order, onClose }) {
             }));
             await matrixSales.entities.SalesOrderLine.bulkCreate(linesWithOrgId);
 
+            // Reserve stock on confirmation (non-fatal)
+            const isConfirmation = (order?.status || 'pending') !== 'confirmed' && data.status === 'confirmed';
+            if (isConfirmation && lineItems.length > 0) {
+                try {
+                    await reserveStock(salesOrder, lineItems, currentUser);
+                } catch (_) { /* non-fatal */ }
+            }
+
             return salesOrder;
         },
         onSuccess: (savedOrder) => {
             queryClient.invalidateQueries({ queryKey: ['salesOrders'] });
-            queryClient.invalidateQueries({ queryKey: ['sales'] }); // Added as per outline instruction
+            queryClient.invalidateQueries({ queryKey: ['sales'] });
             queryClient.invalidateQueries({ queryKey: ['sales-order-lines'] });
             queryClient.invalidateQueries({ queryKey: ['approvalRequests'] });
             queryClient.invalidateQueries({ queryKey: ['auditTrails'] });
+            queryClient.invalidateQueries({ queryKey: ['stockLevels'] });
             
             let descriptionMessage = order ? "Sales order updated successfully" : "Sales order created successfully";
             if (!order && savedOrder.status === 'pending_approval') {
