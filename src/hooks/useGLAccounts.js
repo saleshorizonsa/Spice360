@@ -22,9 +22,10 @@ const FALLBACK = {
   accum_depreciation: "1410",
   wht_expense:        "5900",
   wht_net_payable:    "2100",
-  fixed_asset_cost:   "1400",
-  gain_on_disposal:   "7001",
-  loss_on_disposal:   "6001",
+  fixed_asset_cost:      "1400",
+  gain_on_disposal:      "7001",
+  loss_on_disposal:      "6001",
+  accrued_mfg_costs:     "2120",  // Accrued Manufacturing / Processing Costs
 };
 
 export function useGLAccounts() {

@@ -11,6 +11,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { Activity, Plus, Trash2, Users } from "lucide-react";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
+import { postJournalEntry } from "../utils/journalService";
+import { useGLAccounts } from "@/hooks/useGLAccounts";
+import { useOrganization } from "../utils/OrganizationContext";
 
 // Steps 3, 4, 6 from the 7-step costing model (grading=5 and packaging=7 have their own forms)
 const STAGES = [
@@ -30,6 +33,8 @@ function parseLabourEntries(raw) {
 export default function CinnamonProcessStepForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const { currentOrg } = useOrganization();
+    const gl = useGLAccounts();
     const isEdit = Boolean(item?.id);
     const [isDirty, setIsDirty] = useState(false);
     const guardedOpenChange = useUnsavedChangesWarning(isDirty);
@@ -170,12 +175,38 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
                     total_output_kg:   batchOutputTotal,
                 });
             }
+
+            // GL: capitalise processing costs into inventory (DR Inventory / CR Accrued Mfg Costs)
+            // Cutting step uses step_total_cost (all 5 fields + labour); others use contract labour only.
+            const stepGLCost = data.stage === "cutting"
+                ? (parseFloat(data.step_total_cost) || 0)
+                : (parseFloat(data.labour_cost_total) || 0);
+            if (stepGLCost > 0 && currentOrg?.id) {
+                try {
+                    await postJournalEntry({
+                        lines: [
+                            { account_code: gl.inventory,         account_name: "Inventory / WIP",            debit: stepGLCost, credit: 0 },
+                            { account_code: gl.accrued_mfg_costs, account_name: "Accrued Manufacturing Costs", debit: 0,          credit: stepGLCost },
+                        ],
+                        referenceType: "cinnamon_process_step",
+                        referenceId:   step.id,
+                        description:   `Cinnamon processing – ${data.stage} – batch ${data.batch_number}`,
+                        entryDate:     (data.completed_at || data.started_at || "").slice(0, 10) || new Date().toISOString().slice(0, 10),
+                        entryType:     "production",
+                        orgId:         currentOrg.id,
+                    });
+                } catch (_) {
+                    // Non-fatal: accounts may not yet be configured
+                }
+            }
+
             return step;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["cinnamonProcessSteps"] });
             queryClient.invalidateQueries({ queryKey: ["cinnamonBatches"] });
             queryClient.invalidateQueries({ queryKey: ["cinnamonGradingOutputs"] });
+            queryClient.invalidateQueries({ queryKey: ["journalEntries"] });
             toast({ title: "Success", description: "Process step saved" });
             onClose();
         },

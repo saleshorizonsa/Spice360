@@ -190,6 +190,52 @@ export default function CinnamonPackagingForm({ item, onClose }) {
                         current_stage: "packaging",
                     });
                 }
+
+                // Create / update StockLevel with computed unit cost so COGS is correct on delivery
+                const usableKg      = parseFloat(selectedBatch?.usable_weight_kg) || 0;
+                const batchCpk      = usableKg > 0 ? grandTotalCost / usableKg : 0;
+                const unitCostPack  = batchCpk * (selectedPackSize?.kg || 0);
+                if (unitCostPack > 0) {
+                    try {
+                        const existingLevels = await matrixSales.entities.StockLevel.filter({
+                            material_code: finishedSku,
+                        });
+                        if (existingLevels.length > 0) {
+                            const sl      = existingLevels[0];
+                            const prevQty = parseFloat(sl.quantity)   || 0;
+                            const prevCst = parseFloat(sl.unit_cost)  || 0;
+                            const newQty  = prevQty + qtyPacks;
+                            const avgCost = newQty > 0
+                                ? (prevQty * prevCst + qtyPacks * unitCostPack) / newQty
+                                : unitCostPack;
+                            await matrixSales.entities.StockLevel.update(sl.id, {
+                                quantity:           newQty,
+                                available_quantity: Math.max(0, newQty - (parseFloat(sl.reserved_quantity) || 0)),
+                                unit_cost:          avgCost,
+                                total_value:        newQty * avgCost,
+                                last_movement_date: new Date().toISOString().split("T")[0],
+                            });
+                        } else {
+                            await matrixSales.entities.StockLevel.create({
+                                material_code:      finishedSku,
+                                material_name:      `Cinnamon ${formData.grade_code} – ${formData.pack_size}`,
+                                warehouse_code:     formData.location || "CINNAMON-WH",
+                                warehouse_name:     formData.location || "Cinnamon Warehouse",
+                                quantity:           qtyPacks,
+                                reserved_quantity:  0,
+                                available_quantity: qtyPacks,
+                                unit_of_measure:    "packs",
+                                unit_cost:          unitCostPack,
+                                total_value:        qtyPacks * unitCostPack,
+                                last_movement_date: new Date().toISOString().split("T")[0],
+                                aging_days:         0,
+                                status:             "available",
+                            });
+                        }
+                    } catch (_) {
+                        // Non-fatal — stock level will be corrected on next packaging run
+                    }
+                }
             }
 
             return packRecord;
@@ -199,6 +245,7 @@ export default function CinnamonPackagingForm({ item, onClose }) {
             queryClient.invalidateQueries({ queryKey: ["cinnamonBatches"] });
             queryClient.invalidateQueries({ queryKey: ["stockMovements"] });
             queryClient.invalidateQueries({ queryKey: ["materials"] });
+            queryClient.invalidateQueries({ queryKey: ["stockLevels"] });
             toast({
                 title: "Success",
                 description: isEdit ? "Packaging updated" : "Packaging recorded and stock posted",
