@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { useOrganization } from "../utils/OrganizationContext";
 import { processGoodsIssue } from "../utils/inventoryIntegration";
+import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
 import { logAuditTrail } from "../utils/auditTrail";
 import { postJournalEntry } from "../utils/journalService";
 import { useGLAccounts } from "../../hooks/useGLAccounts";
@@ -162,7 +163,7 @@ export default function DeliveryForm({ item, onClose }) {
                 pgi_done: true,
                 pgi_date: new Date().toISOString().split('T')[0],
                 pgi_by: currentUser?.email,
-                status: 'delivered'
+                status: 'pgi_completed'
             });
 
             // Find and update sales order quantity delivered and status
@@ -228,11 +229,52 @@ export default function DeliveryForm({ item, onClose }) {
                 entityId: deliveryData.id,
                 documentNumber: deliveryData.delivery_number,
                 actionType: 'complete_pgi',
-                afterData: { pgi_done: true, status: 'delivered', pgi_by: currentUser?.email },
+                afterData: { pgi_done: true, status: 'pgi_completed', pgi_by: currentUser?.email },
                 user: currentUser,
                 severity: 'info',
                 organizationId: currentOrg?.id // Pass organization ID if available
             });
+
+            // Auto-create Invoice draft after PGI (non-fatal)
+            try {
+                const invoiceNumber = await getNextDocumentNumber('invoice');
+                const today = new Date().toISOString().slice(0, 10);
+                const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+                const linkedSO = salesOrdersResult?.[0];
+                const unitPrice = (deliveryData.quantity_delivered || 0) > 0
+                    ? (parseFloat(linkedSO?.total_amount) || 0) / deliveryData.quantity_delivered
+                    : 0;
+                const subtotal = unitPrice * (deliveryData.quantity_delivered || 0);
+                await matrixSales.entities.Invoice.create({
+                    invoice_number:       invoiceNumber,
+                    invoice_date:         today,
+                    due_date:             dueDate,
+                    sales_order_number:   deliveryData.sales_order_number,
+                    delivery_number:      deliveryData.delivery_number,
+                    delivery_references:  [{
+                        delivery_number:    deliveryData.delivery_number,
+                        delivery_date:      deliveryData.delivery_date,
+                        delivered_quantity: deliveryData.quantity_delivered,
+                        product_code:       deliveryData.product_code,
+                    }],
+                    customer_name:    deliveryData.customer_name,
+                    customer_code:    linkedSO?.customer_code || '',
+                    product_code:     deliveryData.product_code,
+                    product_name:     deliveryData.product_name,
+                    quantity:         deliveryData.quantity_delivered,
+                    unit_price:       unitPrice,
+                    subtotal:         subtotal,
+                    tax_type:         'vat',
+                    tax_percent:      0,
+                    tax_amount:       0,
+                    total_amount:     subtotal,
+                    payment_terms:    linkedSO?.payment_terms || 'net_30',
+                    payment_status:   'unpaid',
+                    status:           'draft',
+                    notes:            `Auto-created from Delivery ${deliveryData.delivery_number}`,
+                });
+                toast({ title: "Invoice Draft Created", description: `${invoiceNumber} created in Sales` });
+            } catch (_) { /* non-fatal */ }
 
             return updatedDelivery;
         },
@@ -244,6 +286,7 @@ export default function DeliveryForm({ item, onClose }) {
             queryClient.invalidateQueries({ queryKey: ['sales'] });
             queryClient.invalidateQueries({ queryKey: ['auditTrails'] });
             queryClient.invalidateQueries({ queryKey: ['journalEntries'] });
+            queryClient.invalidateQueries({ queryKey: ['invoices'] });
             toast({
                 title: "Success",
                 description: "PGI posted successfully. Stock updated.",

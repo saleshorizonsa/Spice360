@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
 import { RefreshCw } from "lucide-react";
-import { processProductionReceipt } from "../utils/inventoryIntegration";
+import { processProductionReceipt, updateStockLevel } from "../utils/inventoryIntegration";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
@@ -131,6 +131,42 @@ export default function ProductionOrderForm({ item, onClose }) {
                         });
                     }
                 } catch (_) { /* non-fatal */ }
+
+                // Consume BOM components on completion (non-fatal)
+                try {
+                    const bomList = await matrixSales.entities.BOM.filter({ product_code: data.product_code, status: 'active' });
+                    if (bomList.length > 0) {
+                        const bom = bomList[0];
+                        const bomItems = await matrixSales.entities.BOMItem.filter({ bom_number: bom.bom_number });
+                        const baseQty = parseFloat(bom.base_quantity) || 1;
+                        const produced = parseFloat(data.quantity_produced) || 0;
+                        const multiplier = produced / baseQty;
+                        for (const component of bomItems) {
+                            const rawQty = parseFloat(component.quantity) || 0;
+                            const scrapFactor = 1 + (parseFloat(component.scrap_factor_percent) || 0) / 100;
+                            const consumeQty = rawQty * scrapFactor * multiplier;
+                            if (consumeQty <= 0) continue;
+                            await matrixSales.entities.StockMovement.create({
+                                movement_number:    `COMP-${data.order_number}-${component.material_code}`,
+                                movement_date:      data.end_date || new Date().toISOString().slice(0, 10),
+                                movement_type:      'goods_issue',
+                                material_code:      component.material_code,
+                                quantity:           consumeQty,
+                                from_warehouse:     data.input_warehouse || 'RM-WH',
+                                reference_document: data.order_number,
+                                reason:             `Component consumption — ${data.order_number}`,
+                                performed_by:       currentUser?.email || data.operator_name || null,
+                                status:             'posted',
+                            });
+                            await updateStockLevel({
+                                materialCode: component.material_code,
+                                warehouse:    data.input_warehouse || 'RM-WH',
+                                quantity:     consumeQty,
+                                operation:    'decrease',
+                            });
+                        }
+                    }
+                } catch (_) { /* non-fatal — BOM component consumption */ }
             }
 
             return order;

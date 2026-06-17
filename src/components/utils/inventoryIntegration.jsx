@@ -221,7 +221,7 @@ export async function reserveStock(salesOrder, lineItems, user = null) {
 /**
  * Update stock level (core function)
  */
-async function updateStockLevel({ 
+export async function updateStockLevel({ 
     materialCode, 
     materialName, 
     warehouse, 

@@ -104,6 +104,7 @@ export default function QuotationForm({ item, onClose }) {
 
     const saveMutation = useMutation({
         mutationFn: async (data) => {
+            const prevStatus = item?.status;
             let quotation;
             if (item) {
                 quotation = await matrixSales.entities.Quotation.update(item.id, data);
@@ -125,10 +126,43 @@ export default function QuotationForm({ item, onClose }) {
             }));
             await matrixSales.entities.QuotationLine.bulkCreate(linesWithOrgId);
 
+            // Auto-create Sales Order when quotation is accepted (non-fatal)
+            const isAccepted = prevStatus !== 'accepted' && data.status === 'accepted';
+            if (isAccepted && lineItems.length > 0) {
+                try {
+                    const soNumber = await getNextDocumentNumber('sales_order');
+                    const so = await matrixSales.entities.SalesOrder.create({
+                        order_number:        soNumber,
+                        organization_id:     data.organization_id,
+                        quotation_reference: data.quotation_number,
+                        customer_code:       data.customer_code || '',
+                        customer_name:       data.customer_name,
+                        customer_contact:    data.customer_contact || '',
+                        customer_email:      data.customer_email || '',
+                        customer_phone:      data.customer_phone || '',
+                        order_date:          new Date().toISOString().slice(0, 10),
+                        delivery_date:       data.valid_until || '',
+                        payment_terms:       data.payment_terms || 'net_30',
+                        total_amount:        data.total_amount || 0,
+                        status:              'pending',
+                        notes:               `Auto-created from Quotation ${data.quotation_number}`,
+                    });
+                    const soLines = lineItems.map(line => ({
+                        ...line,
+                        organization_id: currentOrg?.id,
+                        order_number:    soNumber,
+                        sales_order_id:  so.id,
+                    }));
+                    await matrixSales.entities.SalesOrderLine.bulkCreate(soLines);
+                    toast({ title: "Sales Order Created", description: `${soNumber} created as draft in Sales` });
+                } catch (_) { /* non-fatal */ }
+            }
+
             return quotation;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['quotations'] });
+            queryClient.invalidateQueries({ queryKey: ['salesOrders'] });
             toast({
                 title: "Success",
                 description: `Quotation ${item ? 'updated' : 'created'} successfully`,
