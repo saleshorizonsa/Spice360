@@ -14,6 +14,7 @@ import StockLevelAlerts from "@/components/inventory/StockLevelAlerts";
 import MultiLocationStockView from "@/components/inventory/MultiLocationStockView";
 import InventoryValuationReport from "@/components/inventory/InventoryValuationReport";
 import RealTimeStockSync from "@/components/inventory/RealTimeStockSync";
+import DocumentPrintPreview from "@/components/shared/DocumentPrintPreview";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLanguage } from "@/components/utils/languageContext";
@@ -23,6 +24,8 @@ export default function Inventory() {
     const [showDialog, setShowDialog] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [viewMode, setViewMode] = useState('table');
+    const [showPrintPreview, setShowPrintPreview] = useState(false);
+    const [selectedDocument, setSelectedDocument] = useState(null);
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { t } = useLanguage();
@@ -370,135 +373,13 @@ export default function Inventory() {
     };
 
     const handlePrint = (item, type) => {
-        const printWindow = window.open('', '_blank');
-        let content = '';
-        
-        if (type === 'Stock Movement') {
-            content = `
-                <html>
-                    <head>
-                        <title>Stock Movement ${item.movement_number}</title>
-                        <style>
-                            body { font-family: Arial, sans-serif; padding: 40px; }
-                            h1 { color: #059669; }
-                            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                            th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-                            th { background-color: #f3f4f6; }
-                        </style>
-                    </head>
-                    <body>
-                        <h1>Stock Movement</h1>
-                        <p><strong>Movement #:</strong> ${item.movement_number}</p>
-                        <p><strong>Date:</strong> ${item.movement_date}</p>
-                        <p><strong>Type:</strong> ${item.movement_type}</p>
-                        <table>
-                            <tr>
-                                <th>Material</th>
-                                <th>Quantity</th>
-                                <th>From</th>
-                                <th>To</th>
-                                <th>Value</th>
-                            </tr>
-                            <tr>
-                                <td>${item.material_name}</td>
-                                <td>${item.quantity} ${item.unit_of_measure || ''}</td>
-                                <td>${item.from_warehouse || 'N/A'}</td>
-                                <td>${item.to_warehouse || 'N/A'}</td>
-                                <td>LKR ${(item.total_value || 0).toLocaleString()}</td>
-                            </tr>
-                        </table>
-                        <p style="margin-top: 20px;"><strong>Reference:</strong> ${item.reference_document || 'N/A'}</p>
-                        <p><strong>Reason:</strong> ${item.reason || 'N/A'}</p>
-                    </body>
-                </html>
-            `;
-        } else if (type === 'Cycle Count') {
-            content = `
-                <html>
-                    <head>
-                        <title>Cycle Count ${item.count_number}</title>
-                        <style>
-                            body { font-family: Arial, sans-serif; padding: 40px; }
-                            h1 { color: #059669; }
-                            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                            th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-                            th { background-color: #f3f4f6; }
-                            .variance { color: #dc2626; font-weight: bold; }
-                        </style>
-                    </head>
-                    <body>
-                        <h1>Cycle Count</h1>
-                        <p><strong>Count #:</strong> ${item.count_number}</p>
-                        <p><strong>Date:</strong> ${item.count_date}</p>
-                        <p><strong>Warehouse:</strong> ${item.warehouse_name}</p>
-                        <p><strong>Counted By:</strong> ${item.counted_by}</p>
-                        <p><strong>Verified By:</strong> ${item.verified_by || 'N/A'}</p>
-                        <table>
-                            <tr>
-                                <th>Material</th>
-                                <th>System Qty</th>
-                                <th>Counted Qty</th>
-                                <th>Variance</th>
-                                <th>Variance %</th>
-                            </tr>
-                            <tr>
-                                <td>${item.material_name}</td>
-                                <td>${item.system_quantity}</td>
-                                <td>${item.counted_quantity}</td>
-                                <td class="${item.variance_quantity !== 0 ? 'variance' : ''}">${item.variance_quantity}</td>
-                                <td class="${item.variance_quantity !== 0 ? 'variance' : ''}">${item.variance_percent?.toFixed(2) || 0}%</td>
-                            </tr>
-                        </table>
-                        <p style="margin-top: 20px;"><strong>Notes:</strong> ${item.notes || 'N/A'}</p>
-                    </body>
-                </html>
-            `;
-        } else if (type === 'STO') {
-            content = `
-                <html>
-                    <head>
-                        <title>Stock Transfer Order ${item.sto_number}</title>
-                        <style>
-                            body { font-family: Arial, sans-serif; padding: 40px; }
-                            h1 { color: #059669; }
-                            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                            th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-                            th { background-color: #f3f4f6; }
-                        </style>
-                    </head>
-                    <body>
-                        <h1>Stock Transfer Order</h1>
-                        <p><strong>STO #:</strong> ${item.sto_number}</p>
-                        <p><strong>Date:</strong> ${item.sto_date}</p>
-                        <p><strong>Priority:</strong> ${item.priority || 'Normal'}</p>
-                        <p><strong>From:</strong> ${item.from_warehouse_name}</p>
-                        <p><strong>To:</strong> ${item.to_warehouse_name}</p>
-                        <table>
-                            <tr>
-                                <th>Material</th>
-                                <th>Requested</th>
-                                <th>Shipped</th>
-                                <th>Received</th>
-                                <th>Required Date</th>
-                            </tr>
-                            <tr>
-                                <td>${item.material_name}</td>
-                                <td>${item.quantity_requested}</td>
-                                <td>${item.quantity_shipped || 0}</td>
-                                <td>${item.quantity_received || 0}</td>
-                                <td>${item.required_date}</td>
-                            </tr>
-                        </table>
-                        <p style="margin-top: 20px;"><strong>Tracking #:</strong> ${item.tracking_number || 'N/A'}</p>
-                        <p><strong>Status:</strong> ${item.status}</p>
-                    </body>
-                </html>
-            `;
-        }
-        
-        printWindow.document.write(content);
-        printWindow.document.close();
-        printWindow.print();
+        const typeLabels = {
+            'Stock Movement': 'Stock Movement',
+            'Cycle Count': 'Cycle Count',
+            'STO': 'Stock Transfer Order',
+        };
+        setSelectedDocument({ ...item, type: typeLabels[type] || type });
+        setShowPrintPreview(true);
     };
 
     return (
@@ -723,6 +604,13 @@ export default function Inventory() {
             )}
             {showDialog && activeTab === 'stos' && (
                 <STOForm item={editingItem} onClose={handleCloseDialog} />
+            )}
+            {showPrintPreview && selectedDocument && (
+                <DocumentPrintPreview
+                    document={selectedDocument}
+                    documentType={selectedDocument.type}
+                    onClose={() => { setShowPrintPreview(false); setSelectedDocument(null); }}
+                />
             )}
         </div>
     );

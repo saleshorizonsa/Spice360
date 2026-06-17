@@ -12,6 +12,7 @@ import PurchaseOrderForm from "@/components/purchasing/PurchaseOrderForm";
 import GRNForm from "@/components/purchasing/GRNForm";
 import VendorInvoiceForm from "@/components/purchasing/VendorInvoiceForm";
 import LotTraceabilityDialog from "@/components/purchasing/LotTraceabilityDialog";
+import DocumentPrintPreview from "@/components/shared/DocumentPrintPreview";
 import { useToast } from "@/components/ui/use-toast";
 import { Clock, CheckCircle } from "lucide-react";
 import { createNotification } from "@/components/utils/notificationService";
@@ -22,6 +23,8 @@ export default function Purchasing() {
     const [showDialog, setShowDialog] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [showLotTraceability, setShowLotTraceability] = useState(false);
+    const [showPrintPreview, setShowPrintPreview] = useState(false);
+    const [selectedDocument, setSelectedDocument] = useState(null);
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const [currentUser, setCurrentUser] = useState(null);
@@ -259,240 +262,15 @@ export default function Purchasing() {
     };
 
     const handlePrint = (item, type) => {
-        const printWindow = window.open('', '_blank');
-        let content = '';
-
-        if (type === 'PR') {
-            content = `
-                <html>
-                    <head>
-                        <title>Purchase Requisition ${item.pr_number}</title>
-                        <style>
-                            body { font-family: Arial, sans-serif; padding: 40px; }
-                            h1 { color: #059669; }
-                            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                            th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-                            th { background-color: #f3f4f6; }
-                        </style>
-                    </head>
-                    <body>
-                        <h1>Purchase Requisition</h1>
-                        <p><strong>PR Number:</strong> ${item.pr_number}</p>
-                        <p><strong>Date:</strong> ${item.pr_date}</p>
-                        <p><strong>Requested By:</strong> ${item.requested_by}</p>
-                        <p><strong>Department:</strong> ${item.department || 'N/A'}</p>
-                        <table>
-                            <tr>
-                                <th>Material</th>
-                                <th>Quantity</th>
-                                <th>UOM</th>
-                                <th>Required Date</th>
-                                <th>Priority</th>
-                            </tr>
-                            <tr>
-                                <td>${item.material_name}</td>
-                                <td>${item.quantity_required}</td>
-                                <td>${item.unit_of_measure}</td>
-                                <td>${item.required_date}</td>
-                                <td>${item.priority}</td>
-                            </tr>
-                        </table>
-                        <p style="margin-top: 20px;"><strong>Purpose:</strong> ${item.purpose || 'N/A'}</p>
-                        <p><strong>Status:</strong> ${item.status}</p>
-                    </body>
-                </html>
-            `;
-        } else if (type === 'RFQ') {
-            content = `
-                <html>
-                    <head>
-                        <title>Request for Quotation ${item.rfq_number}</title>
-                        <style>
-                            body { font-family: Arial, sans-serif; padding: 40px; }
-                            h1 { color: #059669; }
-                            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                            th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-                            th { background-color: #f3f4f6; }
-                        </style>
-                    </head>
-                    <body>
-                        <h1>Request for Quotation</h1>
-                        <p><strong>RFQ Number:</strong> ${item.rfq_number}</p>
-                        <p><strong>Date:</strong> ${item.rfq_date}</p>
-                        <p><strong>Closing Date:</strong> ${item.closing_date}</p>
-                        <table>
-                            <tr>
-                                <th>Material</th>
-                                <th>Quantity</th>
-                                <th>UOM</th>
-                                <th>Required Date</th>
-                            </tr>
-                            <tr>
-                                <td>${item.material_name}</td>
-                                <td>${item.quantity}</td>
-                                <td>${item.unit_of_measure}</td>
-                                <td>${item.required_date}</td>
-                            </tr>
-                        </table>
-                        <p style="margin-top: 20px;"><strong>Specifications:</strong> ${item.specifications || 'N/A'}</p>
-                    </body>
-                </html>
-            `;
-        } else if (type === 'PO') {
-            content = `
-                <html>
-                    <head>
-                        <title>Purchase Order ${item.po_number}</title>
-                        <style>
-                            body { font-family: Arial, sans-serif; padding: 40px; }
-                            h1 { color: #059669; }
-                            .header { display: flex; justify-content: space-between; margin-bottom: 30px; }
-                            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-                            th { background-color: #f3f4f6; font-weight: bold; }
-                            .totals { text-align: right; margin-top: 20px; }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="header">
-                            <div>
-                                <h1>PURCHASE ORDER</h1>
-                                <p><strong>PO #:</strong> ${item.po_number}</p>
-                                <p><strong>Date:</strong> ${item.po_date}</p>
-                                <p><strong>Type:</strong> ${item.po_type}</p>
-                            </div>
-                            <div>
-                                <p><strong>Vendor:</strong></p>
-                                <p>${item.vendor_name}</p>
-                                <p>${item.vendor_contact || ''}</p>
-                                <p>${item.vendor_email || ''}</p>
-                            </div>
-                        </div>
-                        <table>
-                            <tr>
-                                <th>Material</th>
-                                <th>Quantity</th>
-                                <th>UOM</th>
-                                <th>Unit Price</th>
-                                <th>Amount</th>
-                            </tr>
-                            <tr>
-                                <td>${item.material_name}</td>
-                                <td>${item.quantity}</td>
-                                <td>${item.unit_of_measure}</td>
-                                <td>LKR ${item.unit_price?.toFixed(2) || '0.00'}</td>
-                                <td>LKR ${item.subtotal?.toFixed(2) || '0.00'}</td>
-                            </tr>
-                        </table>
-                        <div class="totals">
-                            <p>Subtotal: LKR ${item.subtotal?.toFixed(2) || '0.00'}</p>
-                            <p>VAT (${item.vat_percent || 0}%): LKR ${item.vat_amount?.toFixed(2) || '0.00'}</p>
-                            <p><strong>Total Amount: LKR ${item.total_amount?.toFixed(2) || '0.00'}</strong></p>
-                        </div>
-                        <p style="margin-top: 30px;"><strong>Delivery Date:</strong> ${item.delivery_date}</p>
-                        <p><strong>Payment Terms:</strong> ${item.payment_terms}</p>
-                    </body>
-                </html>
-            `;
-        } else if (type === 'GRN') {
-            content = `
-                <html>
-                    <head>
-                        <title>Goods Receipt Note ${item.grn_number}</title>
-                        <style>
-                            body { font-family: Arial, sans-serif; padding: 40px; }
-                            h1 { color: #059669; }
-                            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-                            th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-                            th { background-color: #f3f4f6; }
-                        </style>
-                    </head>
-                    <body>
-                        <h1>Goods Receipt Note</h1>
-                        <p><strong>GRN #:</strong> ${item.grn_number}</p>
-                        <p><strong>Date:</strong> ${item.grn_date}</p>
-                        <p><strong>PO #:</strong> ${item.po_number}</p>
-                        <p><strong>Vendor:</strong> ${item.vendor_name}</p>
-                        <table>
-                            <tr>
-                                <th>Material</th>
-                                <th>PO Qty</th>
-                                <th>Received</th>
-                                <th>Accepted</th>
-                                <th>Rejected</th>
-                                <th>Inspection</th>
-                            </tr>
-                            <tr>
-                                <td>${item.material_name}</td>
-                                <td>${item.po_quantity}</td>
-                                <td>${item.received_quantity}</td>
-                                <td>${item.accepted_quantity}</td>
-                                <td>${item.rejected_quantity}</td>
-                                <td>${item.inspection_result}</td>
-                            </tr>
-                        </table>
-                        <p style="margin-top: 20px;"><strong>Received By:</strong> ${item.received_by}</p>
-                        <p><strong>Location:</strong> ${item.location_code || 'N/A'}</p>
-                    </body>
-                </html>
-            `;
-        } else if (type === 'Vendor Invoice') {
-            const threeWayMatchClass = item.three_way_match_status === 'matched' ? 'matched' :
-                                        item.three_way_match_status === 'pending' ? 'pending' :
-                                        item.three_way_match_status === 'variance_exceeded' ? 'variance' : '';
-            content = `
-                <html>
-                    <head>
-                        <title>Vendor Invoice ${item.vendor_invoice_number}</title>
-                        <style>
-                            body { font-family: Arial, sans-serif; padding: 40px; }
-                            h1 { color: #059669; }
-                            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-                            th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-                            th { background-color: #f3f4f6; }
-                            .match-status { padding: 10px; margin: 20px 0; border-radius: 5px; }
-                            .matched { background-color: #d1fae5; color: #065f46; }
-                            .pending { background-color: #fef3c7; color: #92400e; }
-                            .variance { background-color: #fee2e2; color: #991b1b; }
-                        </style>
-                    </head>
-                    <body>
-                        <h1>Vendor Invoice</h1>
-                        <p><strong>Invoice #:</strong> ${item.vendor_invoice_number}</p>
-                        <p><strong>Date:</strong> ${item.invoice_date}</p>
-                        <p><strong>PO #:</strong> ${item.po_number}</p>
-                        <p><strong>GRN #:</strong> ${item.grn_number}</p>
-                        <p><strong>Vendor:</strong> ${item.vendor_name}</p>
-                        <div class="match-status ${threeWayMatchClass}">
-                            <strong>3-Way Match Status:</strong> ${item.three_way_match_status?.toUpperCase() || 'N/A'}
-                        </div>
-                        <table>
-                            <tr>
-                                <th>Material</th>
-                                <th>Invoiced Qty</th>
-                                <th>Unit Price</th>
-                                <th>Amount</th>
-                            </tr>
-                            <tr>
-                                <td>${item.material_name}</td>
-                                <td>${item.invoiced_quantity}</td>
-                                <td>LKR ${item.unit_price?.toFixed(2) || '0.00'}</td>
-                                <td>LKR ${item.subtotal?.toFixed(2) || '0.00'}</td>
-                            </tr>
-                        </table>
-                        <div style="text-align: right; margin-top: 20px;">
-                            <p>Subtotal: LKR ${item.subtotal?.toFixed(2) || '0.00'}</p>
-                            <p>VAT: LKR ${item.vat_amount?.toFixed(2) || '0.00'}</p>
-                            <p><strong>Total: LKR ${item.total_amount?.toFixed(2) || '0.00'}</strong></p>
-                        </div>
-                    </body>
-                </html>
-            `;
-        }
-
-        printWindow.document.write(content);
-        printWindow.document.close();
-        printWindow.print();
+        const typeLabels = {
+            PR: 'Purchase Requisition',
+            RFQ: 'Request for Quotation',
+            PO: 'Purchase Order',
+            GRN: 'Goods Receipt Note',
+            'Vendor Invoice': 'Vendor Invoice',
+        };
+        setSelectedDocument({ ...item, type: typeLabels[type] || type });
+        setShowPrintPreview(true);
     };
 
     // Check for overdue POs and send notifications
@@ -807,6 +585,13 @@ export default function Purchasing() {
             )}
             {showLotTraceability && (
                 <LotTraceabilityDialog onClose={() => setShowLotTraceability(false)} />
+            )}
+            {showPrintPreview && selectedDocument && (
+                <DocumentPrintPreview
+                    document={selectedDocument}
+                    documentType={selectedDocument.type}
+                    onClose={() => { setShowPrintPreview(false); setSelectedDocument(null); }}
+                />
             )}
         </div>
     );

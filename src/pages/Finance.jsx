@@ -22,6 +22,7 @@ import FXRateManager from "@/components/finance/FXRateManager";
 import CostCenterForm from "@/components/finance/CostCenterForm";
 import CustomerStatementDialog from "@/components/finance/CustomerStatementDialog";
 import BankReconciliationDialog from "@/components/finance/BankReconciliationDialog";
+import DocumentPrintPreview from "@/components/shared/DocumentPrintPreview";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLanguage } from "@/components/utils/languageContext";
@@ -36,6 +37,8 @@ export default function Finance() {
     const [editingCostCenter, setEditingCostCenter] = useState(null);
     const [showCustomerStatement, setShowCustomerStatement] = useState(false);
     const [reconcilingBank, setReconcilingBank] = useState(null);
+    const [showPrintPreview, setShowPrintPreview] = useState(false);
+    const [selectedDocument, setSelectedDocument] = useState(null);
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { t } = useLanguage();
@@ -373,23 +376,15 @@ export default function Finance() {
     };
 
     const handlePrint = (item, type) => {
-        const printWindow = window.open('', '_blank');
-        let content = '';
-        
-        if (type === 'Journal Entry') {
-            content = `<html><head><title>Journal Entry</title><style>body{font-family:Arial,sans-serif;padding:40px}h1{color:#059669}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ddd;padding:10px;text-align:left}th{background-color:#f3f4f6}.debit{color:#059669}.credit{color:#dc2626}</style></head><body><h1>Journal Entry</h1><p><strong>JE #:</strong> ${item.journal_number}</p><p><strong>Posting Date:</strong> ${item.posting_date}</p><p><strong>Description:</strong> ${item.description || 'N/A'}</p><table><tr><th>Account Code</th><th>Account Name</th><th>Debit</th><th>Credit</th></tr><tr><td>${item.account_code || ''}</td><td>${item.account_name || 'N/A'}</td><td class="debit">LKR ${(item.debit_amount || 0).toFixed(2)}</td><td class="credit">LKR ${(item.credit_amount || 0).toFixed(2)}</td></tr></table><p style="margin-top:20px"><strong>Reference:</strong> ${item.reference || 'N/A'}</p></body></html>`;
-        } else if (type === 'AR' || type === 'AP') {
-            const isAR = type === 'AR';
-            content = `<html><head><title>${isAR ? 'AR' : 'AP'}</title><style>body{font-family:Arial,sans-serif;padding:40px}h1{color:#059669}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ddd;padding:10px;text-align:left}th{background-color:#f3f4f6}.overdue{color:#dc2626;font-weight:bold}</style></head><body><h1>${isAR ? 'Accounts Receivable' : 'Accounts Payable'}</h1><p><strong>Number:</strong> ${item[isAR ? 'ar_number' : 'ap_number']}</p><p><strong>Invoice #:</strong> ${item[isAR ? 'invoice_number' : 'vendor_invoice_number']}</p><p><strong>${isAR ? 'Customer' : 'Vendor'}:</strong> ${item[isAR ? 'customer_name' : 'vendor_name']}</p><p><strong>Invoice Date:</strong> ${item.invoice_date}</p><p><strong>Due Date:</strong> ${item.due_date}</p><table><tr><th>Invoice Amount</th><th>Paid Amount</th><th>Outstanding</th><th>Aging</th></tr><tr><td>LKR ${(item.invoice_amount || 0).toFixed(2)}</td><td>LKR ${(item.paid_amount || 0).toFixed(2)}</td><td class="${item.aging_bucket && item.aging_bucket !== 'current' ? 'overdue' : ''}">LKR ${(item.outstanding_amount || 0).toFixed(2)}</td><td class="${item.aging_bucket && item.aging_bucket !== 'current' ? 'overdue' : ''}">${item.aging_bucket || 'N/A'}</td></tr></table><p style="margin-top:20px"><strong>Payment Terms:</strong> ${item.payment_terms || 'N/A'}</p></body></html>`;
-        } else if (type === 'Payment') {
-            content = `<html><head><title>Payment</title><style>body{font-family:Arial,sans-serif;padding:40px}h1{color:#059669}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ddd;padding:10px;text-align:left}th{background-color:#f3f4f6}</style></head><body><h1>Payment Receipt</h1><p><strong>Payment #:</strong> ${item.payment_number}</p><p><strong>Date:</strong> ${item.payment_date}</p><p><strong>Type:</strong> ${item.payment_type}</p><p><strong>${item.payment_type === 'incoming' ? 'From' : 'To'}:</strong> ${item.party_name}</p><table><tr><th>Amount</th><th>Method</th><th>Reference</th><th>Status</th></tr><tr><td>LKR ${(item.amount || 0).toFixed(2)}</td><td>${item.payment_method || 'N/A'}</td><td>${item.reference_number || 'N/A'}</td><td>${item.status || 'N/A'}</td></tr></table><p style="margin-top:20px"><strong>Bank Account:</strong> ${item.bank_account || 'N/A'}</p></body></html>`;
-        } else if (type === 'Fixed Asset') {
-            content = `<html><head><title>Fixed Asset</title><style>body{font-family:Arial,sans-serif;padding:40px}h1{color:#059669}table{width:100%;border-collapse:collapse;margin-top:20px}th,td{border:1px solid #ddd;padding:10px;text-align:left}th{background-color:#f3f4f6}</style></head><body><h1>Fixed Asset Card</h1><p><strong>Asset #:</strong> ${item.asset_number}</p><p><strong>Name:</strong> ${item.asset_name}</p><p><strong>Class:</strong> ${item.asset_class}</p><table><tr><th>Acquisition Cost</th><th>Accumulated Depreciation</th><th>Net Book Value</th></tr><tr><td>LKR ${(item.acquisition_cost || 0).toFixed(2)}</td><td>LKR ${(item.accumulated_depreciation || 0).toFixed(2)}</td><td>LKR ${(item.net_book_value || 0).toFixed(2)}</td></tr></table><p style="margin-top:20px"><strong>Acquisition Date:</strong> ${item.acquisition_date}</p><p><strong>Useful Life:</strong> ${item.useful_life_years || 'N/A'} years</p><p><strong>Location:</strong> ${item.location_code || 'N/A'}</p></body></html>`;
-        }
-        
-        printWindow.document.write(content);
-        printWindow.document.close();
-        printWindow.print();
+        const typeLabels = {
+            'Journal Entry': 'Journal Entry',
+            'AR': 'Accounts Receivable',
+            'AP': 'Accounts Payable',
+            'Payment': 'Payment Receipt',
+            'Fixed Asset': 'Fixed Asset Card',
+        };
+        setSelectedDocument({ ...item, type: typeLabels[type] || type });
+        setShowPrintPreview(true);
     };
 
     return (
@@ -976,6 +971,13 @@ export default function Finance() {
                 <BankReconciliationDialog
                     bank={reconcilingBank}
                     onClose={() => setReconcilingBank(null)}
+                />
+            )}
+            {showPrintPreview && selectedDocument && (
+                <DocumentPrintPreview
+                    document={selectedDocument}
+                    documentType={selectedDocument.type}
+                    onClose={() => { setShowPrintPreview(false); setSelectedDocument(null); }}
                 />
             )}
         </div>

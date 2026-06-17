@@ -27,11 +27,29 @@ export default function DocumentPrintPreview({
     } : {};
 
     const getPrintableData = () => {
-        const items = document.items || (document.product_name ? [{
-            name: document.product_name,
-            quantity: document.quantity || 1,
-            unit_price: document.unit_price || 0
-        }] : []);
+        const items = document.items ||
+            (document.product_name ? [{
+                name: document.product_name,
+                quantity: document.quantity || 1,
+                unit_price: document.unit_price || 0
+            }] :
+            document.material_name ? [{
+                name: `${document.material_name}${document.material_code ? ` (${document.material_code})` : ''}`,
+                quantity: document.quantity || document.quantity_required || document.quantity_requested ||
+                          document.received_quantity || document.invoiced_quantity || 1,
+                unit_price: document.unit_price || 0
+            }] :
+            document.asset_name ? [{
+                name: document.asset_name,
+                quantity: 1,
+                unit_price: document.acquisition_cost || 0
+            }] :
+            document.account_name ? [{
+                name: `${document.account_code ? document.account_code + ' — ' : ''}${document.account_name}`,
+                quantity: 1,
+                unit_price: document.debit_amount || document.credit_amount || 0
+            }] :
+            []);
 
         const totals = document.total_amount != null ? {
             subtotal: document.subtotal ?? document.total_amount,
@@ -41,12 +59,25 @@ export default function DocumentPrintPreview({
             total: document.total_amount,
             currency: document.currency || "LKR",
             qr_code: document.zatca_qr_code
+        } : document.invoice_amount != null ? {
+            subtotal: document.invoice_amount,
+            total: document.outstanding_amount ?? document.invoice_amount,
+            currency: "LKR"
+        } : document.amount != null ? {
+            total: document.amount,
+            currency: "LKR"
+        } : document.acquisition_cost != null ? {
+            subtotal: document.acquisition_cost,
+            total: document.net_book_value ?? document.acquisition_cost,
+            currency: "LKR"
         } : null;
 
-        const customerInfo = document.customer_name ? {
-            name: document.customer_name,
-            vat_number: document.customer_vat_number,
-            address: document.billing_address || document.customer_address || document.delivery_address
+        const partyName = document.customer_name || document.vendor_name || document.party_name;
+        const customerInfo = partyName ? {
+            name: partyName,
+            vat_number: document.customer_vat_number || document.vendor_vat_number,
+            address: document.billing_address || document.customer_address ||
+                     document.delivery_address || document.vendor_address
         } : null;
 
         return {
@@ -54,15 +85,26 @@ export default function DocumentPrintPreview({
             documentNumber:
                 document.invoice_number || document.quotation_number ||
                 document.order_number || document.delivery_number ||
-                document.return_number || document.service_order_number || document.id,
+                document.return_number || document.service_order_number ||
+                document.pr_number || document.rfq_number || document.po_number ||
+                document.grn_number || document.vendor_invoice_number ||
+                document.movement_number || document.count_number || document.sto_number ||
+                document.journal_number || document.ar_number || document.ap_number ||
+                document.payment_number || document.asset_number ||
+                document.id,
             documentDate:
                 document.invoice_date || document.quotation_date ||
                 document.order_date || document.delivery_date ||
-                document.return_date || document.date,
+                document.return_date ||
+                document.pr_date || document.rfq_date || document.po_date ||
+                document.grn_date || document.movement_date || document.count_date ||
+                document.sto_date || document.posting_date || document.payment_date ||
+                document.acquisition_date || document.date,
             customerInfo,
             items,
             totals,
-            footer: document.notes || "Thank you for your business!"
+            footer: document.notes || document.purpose || document.description ||
+                    document.specifications || "Thank you for your business!"
         };
     };
 
