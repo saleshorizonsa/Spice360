@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Leaf, Plus, Printer } from "lucide-react";
+import { Leaf, Plus, Printer, DollarSign } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import DataTable from "../components/erp/DataTable";
@@ -13,13 +13,23 @@ import CinnamonMoistureQCForm from "../components/cinnamon/CinnamonMoistureQCFor
 import CinnamonPackagingForm from "../components/cinnamon/CinnamonPackagingForm";
 import CinnamonLabelPrint from "../components/cinnamon/CinnamonLabelPrint";
 import CinnamonYieldReport from "../components/cinnamon/CinnamonYieldReport";
+import CinnamonAccrualClearingDialog from "../components/cinnamon/CinnamonAccrualClearingDialog";
 import { useToast } from "@/components/ui/use-toast";
 
+// Accrual per step — matches CinnamonProcessStepForm's GL posting logic
+const stepAccrual = (s) =>
+    s.stage === "cutting"
+        ? parseFloat(s.step_total_cost) || 0
+        : ["pre_processing", "rubbing_peeling"].includes(s.stage)
+            ? parseFloat(s.labour_cost_total) || 0
+            : 0;
+
 export default function CinnamonProcessing() {
-    const [activeTab, setActiveTab] = useState("batches");
-    const [showDialog, setShowDialog] = useState(false);
-    const [editingItem, setEditingItem] = useState(null);
-    const [printItems, setPrintItems] = useState(null);
+    const [activeTab,    setActiveTab]    = useState("batches");
+    const [showDialog,   setShowDialog]   = useState(false);
+    const [editingItem,  setEditingItem]  = useState(null);
+    const [printItems,   setPrintItems]   = useState(null);
+    const [clearingBatch, setClearingBatch] = useState(null);
     const queryClient = useQueryClient();
     const { toast } = useToast();
 
@@ -51,10 +61,38 @@ export default function CinnamonProcessing() {
         select: (d) => Array.isArray(d) ? d : [],
     });
 
+    // All accrual-clearing JEs — used to compute outstanding 2120 per batch
+    const { data: allClearingJEs = [] } = useQuery({
+        queryKey: ["cinnamonAccrualClearings"],
+        queryFn:  () => matrixSales.entities.JournalEntry.filter({ reference_type: "cinnamon_accrual_clearing" }),
+        initialData: [],
+        select: (d) => Array.isArray(d) ? d : [],
+    });
+
     const safeBatches        = Array.isArray(batches)        ? batches        : [];
     const safeGradingOutputs = Array.isArray(gradingOutputs) ? gradingOutputs : [];
     const safeProcessSteps   = Array.isArray(processSteps)   ? processSteps   : [];
     const safePackaging      = Array.isArray(packaging)      ? packaging      : [];
+
+    // Per-batch outstanding accrual map  { batch_number -> outstanding LKR }
+    const outstandingByBatch = useMemo(() => {
+        const accrued = {};
+        for (const s of safeProcessSteps) {
+            const cost = stepAccrual(s);
+            if (cost > 0) accrued[s.batch_number] = (accrued[s.batch_number] || 0) + cost;
+        }
+        const cleared = {};
+        for (const je of allClearingJEs) {
+            cleared[je.reference_id] = (cleared[je.reference_id] || 0) + (parseFloat(je.total_debit) || 0);
+        }
+        const result = {};
+        for (const bn of Object.keys(accrued)) {
+            result[bn] = Math.max(0, (accrued[bn] || 0) - (cleared[bn] || 0));
+        }
+        return result;
+    }, [safeProcessSteps, allClearingJEs]);
+
+    const totalOutstanding2120 = Object.values(outstandingByBatch).reduce((s, v) => s + v, 0);
 
     // KPIs
     const activeBatches   = safeBatches.filter((b) => b.status === "active").length;
@@ -106,6 +144,25 @@ export default function CinnamonProcessing() {
         { header: "Harvest Date",    key: "harvest_date" },
         { header: "Stage",           key: "current_stage",        isBadge: true },
         { header: "Status",          key: "status",               isBadge: true },
+        {
+            header: "Accruals (2120)",
+            key: "_accruals",
+            sortable: false,
+            render: (_v, row) => {
+                const owed = outstandingByBatch[row.batch_number] || 0;
+                return (
+                    <Button
+                        size="sm"
+                        variant={owed > 0.005 ? "default" : "outline"}
+                        className={`gap-1 text-xs ${owed > 0.005 ? "bg-amber-500 hover:bg-amber-600 text-white" : ""}`}
+                        onClick={(e) => { e.stopPropagation(); setClearingBatch(row); }}
+                    >
+                        <DollarSign className="w-3 h-3" />
+                        {owed > 0.005 ? `LKR ${owed.toFixed(0)}` : "Cleared"}
+                    </Button>
+                );
+            },
+        },
     ];
 
     const stepColumns = [
@@ -215,7 +272,7 @@ export default function CinnamonProcessing() {
             )}
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-5 gap-4">
                 <Card>
                     <CardContent className="pt-4">
                         <p className="text-sm text-gray-500">Active Batches</p>
@@ -238,6 +295,19 @@ export default function CinnamonProcessing() {
                     <CardContent className="pt-4">
                         <p className="text-sm text-gray-500">Overall Yield</p>
                         <p className="text-2xl font-bold text-blue-600">{overallYield}%</p>
+                    </CardContent>
+                </Card>
+                <Card
+                    className={totalOutstanding2120 > 0.005 ? "border-amber-300 cursor-pointer hover:bg-amber-50" : ""}
+                    onClick={() => {
+                        if (totalOutstanding2120 > 0.005) setActiveTab("batches");
+                    }}
+                >
+                    <CardContent className="pt-4">
+                        <p className="text-sm text-gray-500">Outstanding Accruals (2120)</p>
+                        <p className={`text-2xl font-bold ${totalOutstanding2120 > 0.005 ? "text-amber-600" : "text-gray-400"}`}>
+                            {totalOutstanding2120 > 0.005 ? `LKR ${totalOutstanding2120.toFixed(0)}` : "Nil"}
+                        </p>
                     </CardContent>
                 </Card>
             </div>
@@ -404,6 +474,12 @@ export default function CinnamonProcessing() {
             )}
             {printItems && (
                 <CinnamonLabelPrint packages={printItems} onClose={() => setPrintItems(null)} />
+            )}
+            {clearingBatch && (
+                <CinnamonAccrualClearingDialog
+                    batch={clearingBatch}
+                    onClose={() => setClearingBatch(null)}
+                />
             )}
         </div>
     );
