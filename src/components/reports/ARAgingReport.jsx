@@ -163,7 +163,7 @@ export default function ARAgingReport() {
         // Group by customer
         const customerGroups = {};
         arRecords.forEach(ar => {
-            if (ar.status === 'open' || ar.status === 'partially_paid') {
+            if (ar.status === 'open' || ar.status === 'overdue' || ar.status === 'partially_paid') {
                 // Apply customer range filter
                 if (effectiveFromCustomer !== "ALL" && effectiveToCustomer !== "ALL") {
                     if (ar.customer_code < effectiveFromCustomer || ar.customer_code > effectiveToCustomer) {
