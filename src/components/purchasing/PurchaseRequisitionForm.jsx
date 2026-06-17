@@ -117,6 +117,7 @@ export default function PurchaseRequisitionForm({ item, onClose }) {
                         notes:             `Auto-created from PR ${data.pr_number}`,
                     });
                     await matrixSales.entities.PurchaseRequisition.update(pr.id, { status: 'converted_to_rfq' });
+                    toast({ title: "RFQ Auto-Created", description: `${rfqNumber} created as draft in Purchasing` });
                 } catch (_) { /* non-fatal */ }
             }
 

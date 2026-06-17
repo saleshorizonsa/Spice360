@@ -131,6 +131,7 @@ export default function OpportunityForm({ item, onClose }) {
                         status:           'pending',
                         notes:            `Auto-created from Opportunity ${data.opportunity_number}`,
                     });
+                    toast({ title: "Sales Order Created", description: `${soNumber} created as draft in Sales` });
                 } catch (_) { /* non-fatal */ }
             }
 

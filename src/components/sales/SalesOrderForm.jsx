@@ -314,6 +314,8 @@ export default function SalesOrderForm({ order, onClose }) {
             if (isConfirmation && lineItems.length > 0) {
                 try {
                     await reserveStock(salesOrder, lineItems, currentUser);
+                    const totalQty = lineItems.reduce((s, l) => s + (parseFloat(l.quantity) || 0), 0);
+                    toast({ title: "Stock Reserved", description: `${totalQty} units reserved across ${lineItems.length} line(s)` });
                 } catch (_) { /* non-fatal */ }
             }
 
