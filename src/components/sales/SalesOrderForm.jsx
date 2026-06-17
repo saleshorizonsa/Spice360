@@ -17,6 +17,7 @@ import SearchableSelect from "../shared/SearchableSelect";
 import { createApprovalRequest, needsApproval } from "../utils/approvalWorkflow";
 import { logAuditTrail } from "../utils/auditTrail";
 import { reserveStock } from "../utils/inventoryIntegration";
+import { createNotification } from "../utils/notificationService";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 
 export default function SalesOrderForm({ order, onClose }) {
@@ -316,6 +317,9 @@ export default function SalesOrderForm({ order, onClose }) {
                     await reserveStock(salesOrder, lineItems, currentUser);
                     const totalQty = lineItems.reduce((s, l) => s + (parseFloat(l.quantity) || 0), 0);
                     toast({ title: "Stock Reserved", description: `${totalQty} units reserved across ${lineItems.length} line(s)` });
+                    if (currentUser?.email) {
+                        createNotification({ userEmail: currentUser.email, notificationType: 'stock_reserved', priority: 'low', title: 'Stock Reserved', message: `${totalQty} units reserved across ${lineItems.length} line(s) for SO ${salesOrder.order_number}`, relatedEntity: 'SalesOrder', relatedDocumentNumber: salesOrder.order_number, actionUrl: '/Inventory' }).catch(() => {});
+                    }
                 } catch (_) { /* non-fatal */ }
             }
 

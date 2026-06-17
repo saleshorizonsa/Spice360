@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
+import { createNotification } from "../utils/notificationService";
 import { useOrganization } from "../utils/OrganizationContext";
 import { RefreshCw } from "lucide-react";
 
@@ -18,6 +19,10 @@ export default function RFQForm({ item, onClose }) {
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
+    const [currentUser, setCurrentUser] = useState(null);
+    useEffect(() => {
+        matrixSales.auth.me().then(u => setCurrentUser(u)).catch(() => {});
+    }, []);
 
     const { data: materials = [] } = useQuery({
         queryKey: ['materials'],
@@ -137,6 +142,9 @@ export default function RFQForm({ item, onClose }) {
                         notes:           `Auto-created from RFQ ${data.rfq_number}`,
                     });
                     toast({ title: "Purchase Order Created", description: `${poNumber} created as draft — add vendor to complete` });
+                    if (currentUser?.email) {
+                        createNotification({ userEmail: currentUser.email, notificationType: 'purchase_order_auto_created', priority: 'high', title: 'Purchase Order Auto-Created', message: `${poNumber} was created from awarded RFQ ${data.rfq_number} — add vendor to complete`, relatedEntity: 'PurchaseOrder', relatedDocumentNumber: poNumber, actionUrl: '/Purchasing' }).catch(() => {});
+                    }
                 } catch (_) { /* non-fatal */ }
             }
 

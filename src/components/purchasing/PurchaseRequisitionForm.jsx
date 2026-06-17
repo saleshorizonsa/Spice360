@@ -10,12 +10,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
+import { createNotification } from "../utils/notificationService";
 import { RefreshCw } from "lucide-react";
 
 export default function PurchaseRequisitionForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
+    const [currentUser, setCurrentUser] = useState(null);
+    useEffect(() => {
+        matrixSales.auth.me().then(u => setCurrentUser(u)).catch(() => {});
+    }, []);
 
     const { data: materials = [] } = useQuery({
         queryKey: ['materials'],
@@ -118,6 +123,9 @@ export default function PurchaseRequisitionForm({ item, onClose }) {
                     });
                     await matrixSales.entities.PurchaseRequisition.update(pr.id, { status: 'converted_to_rfq' });
                     toast({ title: "RFQ Auto-Created", description: `${rfqNumber} created as draft in Purchasing` });
+                    if (currentUser?.email) {
+                        createNotification({ userEmail: currentUser.email, notificationType: 'rfq_auto_created', priority: 'medium', title: 'RFQ Auto-Created', message: `${rfqNumber} was automatically created from PR ${data.pr_number}`, relatedEntity: 'RFQ', relatedDocumentNumber: rfqNumber, actionUrl: '/Purchasing' }).catch(() => {});
+                    }
                 } catch (_) { /* non-fatal */ }
             }
 

@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useOrganization } from "../utils/OrganizationContext";
 import { processGoodsIssue } from "../utils/inventoryIntegration";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
+import { createNotification } from "../utils/notificationService";
 import { logAuditTrail } from "../utils/auditTrail";
 import { postJournalEntry } from "../utils/journalService";
 import { useGLAccounts } from "../../hooks/useGLAccounts";
@@ -274,6 +275,9 @@ export default function DeliveryForm({ item, onClose }) {
                     notes:            `Auto-created from Delivery ${deliveryData.delivery_number}`,
                 });
                 toast({ title: "Invoice Draft Created", description: `${invoiceNumber} created in Sales` });
+                if (currentUser?.email) {
+                    createNotification({ userEmail: currentUser.email, notificationType: 'invoice_auto_created', priority: 'high', title: 'Invoice Draft Auto-Created', message: `${invoiceNumber} was created from Delivery ${deliveryData.delivery_number}`, relatedEntity: 'Invoice', relatedDocumentNumber: invoiceNumber, actionUrl: '/Sales' }).catch(() => {});
+                }
             } catch (_) { /* non-fatal */ }
 
             return updatedDelivery;

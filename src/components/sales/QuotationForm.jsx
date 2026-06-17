@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RefreshCw } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
+import { createNotification } from "../utils/notificationService";
 import SearchableSelect from "../shared/SearchableSelect";
 import LineItemsTable from "../shared/LineItemsTable";
 import { useOrganization } from "../utils/OrganizationContext";
@@ -21,6 +22,10 @@ export default function QuotationForm({ item, onClose }) {
     const { currentOrg } = useOrganization();
     const taxConfig = useTaxConfig();
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
+    const [currentUser, setCurrentUser] = useState(null);
+    useEffect(() => {
+        matrixSales.auth.me().then(u => setCurrentUser(u)).catch(() => {});
+    }, []);
 
     const { data: materials = [] } = useQuery({
         queryKey: ['materials', currentOrg?.id],
@@ -155,6 +160,9 @@ export default function QuotationForm({ item, onClose }) {
                     }));
                     await matrixSales.entities.SalesOrderLine.bulkCreate(soLines);
                     toast({ title: "Sales Order Created", description: `${soNumber} created as draft in Sales` });
+                    if (currentUser?.email) {
+                        createNotification({ userEmail: currentUser.email, notificationType: 'sales_order_auto_created', priority: 'high', title: 'Sales Order Auto-Created', message: `${soNumber} was created from accepted Quotation ${data.quotation_number}`, relatedEntity: 'SalesOrder', relatedDocumentNumber: soNumber, actionUrl: '/Sales' }).catch(() => {});
+                    }
                 } catch (_) { /* non-fatal */ }
             }
 

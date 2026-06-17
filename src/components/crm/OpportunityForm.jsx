@@ -9,11 +9,16 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
-import { getNextDocumentNumber } from "../utils/documentNumberGenerator"; // Added import
+import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
+import { createNotification } from "../utils/notificationService";
 
 export default function OpportunityForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const [currentUser, setCurrentUser] = useState(null);
+    useEffect(() => {
+        matrixSales.auth.me().then(u => setCurrentUser(u)).catch(() => {});
+    }, []);
 
     const { data: leads = [] } = useQuery({
         queryKey: ['leads'],
@@ -132,6 +137,9 @@ export default function OpportunityForm({ item, onClose }) {
                         notes:            `Auto-created from Opportunity ${data.opportunity_number}`,
                     });
                     toast({ title: "Sales Order Created", description: `${soNumber} created as draft in Sales` });
+                    if (currentUser?.email) {
+                        createNotification({ userEmail: currentUser.email, notificationType: 'sales_order_auto_created', priority: 'high', title: 'Sales Order Auto-Created', message: `${soNumber} was created from won Opportunity ${data.opportunity_number}`, relatedEntity: 'SalesOrder', relatedDocumentNumber: soNumber, actionUrl: '/Sales' }).catch(() => {});
+                    }
                 } catch (_) { /* non-fatal */ }
             }
 
