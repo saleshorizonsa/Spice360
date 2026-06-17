@@ -81,6 +81,7 @@ export default function CinnamonProcessing() {
             completed:        "bg-blue-100 text-blue-800",
             cancelled:        "bg-red-100 text-red-800",
             intake:           "bg-gray-100 text-gray-800",
+            freight:          "bg-amber-100 text-amber-800",
             pre_processing:   "bg-yellow-100 text-yellow-800",
             rubbing_peeling:  "bg-orange-100 text-orange-800",
             quill_making:     "bg-purple-100 text-purple-800",
@@ -97,24 +98,25 @@ export default function CinnamonProcessing() {
 
     // Column definitions
     const batchColumns = [
-        { header: "Batch #",        key: "batch_number" },
-        { header: "Supplier",       key: "supplier" },
-        { header: "Origin",         key: "origin" },
-        { header: "Input (kg)",     key: "input_weight_kg",  render: (v) => parseFloat(v || 0).toFixed(3) },
-        { header: "Moisture In %",  key: "moisture_in_pct" },
-        { header: "Harvest Date",   key: "harvest_date" },
-        { header: "Stage",          key: "current_stage",    isBadge: true },
-        { header: "Status",         key: "status",           isBadge: true },
+        { header: "Batch #",         key: "batch_number" },
+        { header: "Supplier",        key: "supplier" },
+        { header: "Input (kg)",      key: "input_weight_kg",      render: (v) => parseFloat(v || 0).toFixed(3) },
+        { header: "Usable (kg)",     key: "usable_weight_kg",     render: (v) => v ? parseFloat(v).toFixed(3) : "—" },
+        { header: "Landed LKR/kg",   key: "landed_cost_per_kg",   render: (v) => v ? `LKR ${parseFloat(v).toFixed(2)}` : "—" },
+        { header: "Harvest Date",    key: "harvest_date" },
+        { header: "Stage",           key: "current_stage",        isBadge: true },
+        { header: "Status",          key: "status",               isBadge: true },
     ];
 
     const stepColumns = [
-        { header: "Batch #",    key: "batch_number" },
-        { header: "Stage",      key: "stage",            isBadge: true },
-        { header: "Input (kg)", key: "input_weight_kg",  render: (v) => parseFloat(v || 0).toFixed(3) },
-        { header: "Output (kg)",key: "output_weight_kg", render: (v) => parseFloat(v || 0).toFixed(3) },
-        { header: "Waste (kg)", key: "waste_weight_kg",  render: (v) => parseFloat(v || 0).toFixed(3) },
-        { header: "Yield %",    key: "yield_pct",        render: (v) => v != null ? `${parseFloat(v).toFixed(1)}%` : "—" },
-        { header: "Operator",   key: "operator" },
+        { header: "Batch #",     key: "batch_number" },
+        { header: "Stage",       key: "stage",             isBadge: true },
+        { header: "Input (kg)",  key: "input_weight_kg",   render: (v) => parseFloat(v || 0).toFixed(3) },
+        { header: "Output (kg)", key: "output_weight_kg",  render: (v) => parseFloat(v || 0).toFixed(3) },
+        { header: "Waste (kg)",  key: "waste_weight_kg",   render: (v) => parseFloat(v || 0).toFixed(3) },
+        { header: "Yield %",     key: "yield_pct",         render: (v) => v != null ? `${parseFloat(v).toFixed(1)}%` : "—" },
+        { header: "Labour LKR",  key: "labour_cost_total", render: (v) => v ? `LKR ${parseFloat(v).toFixed(2)}` : "—" },
+        { header: "Operator",    key: "operator" },
     ];
 
     const gradingColumns = [

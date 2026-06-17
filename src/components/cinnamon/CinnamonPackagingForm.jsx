@@ -21,7 +21,6 @@ const PACK_SIZES = [
 
 const MOISTURE_THRESHOLD = 12;
 
-// Parse moisture reading stored in CinnamonProcessStep notes by MoistureQCForm
 const parseMoistureFromNotes = (notes) => {
     const match = String(notes || "").match(/Moisture QC:\s*([\d.]+)%/);
     return match ? parseFloat(match[1]) : null;
@@ -55,13 +54,21 @@ export default function CinnamonPackagingForm({ item, onClose }) {
         select: (d) => Array.isArray(d) ? d : [],
     });
 
+    const { data: allPackaging = [] } = useQuery({
+        queryKey: ["cinnamonPackaging"],
+        queryFn: () => matrixSales.entities.CinnamonPackaging.list(),
+        initialData: [],
+        select: (d) => Array.isArray(d) ? d : [],
+    });
+
     const [formData, setFormData] = useState({
-        packaging_number: item?.packaging_number || `CIN-PKG-${Date.now()}`,
-        batch_number:     item?.batch_number     || "",
-        grade_code:       item?.grade_code       || "",
-        pack_size:        item?.pack_size        || "",
-        qty_packs:        item?.qty_packs        || "",
-        location:         item?.location         || "",
+        packaging_number:    item?.packaging_number    || `CIN-PKG-${Date.now()}`,
+        batch_number:        item?.batch_number        || "",
+        grade_code:          item?.grade_code          || "",
+        pack_size:           item?.pack_size           || "",
+        qty_packs:           item?.qty_packs           || "",
+        sale_price_per_pack: item?.sale_price_per_pack || "",
+        location:            item?.location            || "",
     });
 
     const handleChange = (field, value) => {
@@ -72,11 +79,12 @@ export default function CinnamonPackagingForm({ item, onClose }) {
     const safeBatches        = Array.isArray(batches)        ? batches        : [];
     const safeGradingOutputs = Array.isArray(gradingOutputs) ? gradingOutputs : [];
     const safeProcessSteps   = Array.isArray(processSteps)   ? processSteps   : [];
+    const safeAllPackaging   = Array.isArray(allPackaging)   ? allPackaging   : [];
 
-    const selectedBatch  = safeBatches.find((b) => b.batch_number === formData.batch_number);
-    const batchGrades    = safeGradingOutputs.filter((g) => g.batch_number === formData.batch_number);
+    const selectedBatch = safeBatches.find((b) => b.batch_number === formData.batch_number);
+    const batchGrades   = safeGradingOutputs.filter((g) => g.batch_number === formData.batch_number);
 
-    // Latest moisture QC reading for this batch
+    // Moisture QC gate
     const latestMoistureStep = safeProcessSteps
         .filter((s) => s.batch_number === formData.batch_number && s.stage === "moisture_qc")
         .sort((a, b) => new Date(b.completed_at || b.created_at) - new Date(a.completed_at || a.created_at))[0];
@@ -84,15 +92,38 @@ export default function CinnamonPackagingForm({ item, onClose }) {
     const latestMoisture = latestMoistureStep
         ? parseMoistureFromNotes(latestMoistureStep.notes) ?? parseFloat(selectedBatch?.moisture_in_pct) ?? 0
         : parseFloat(selectedBatch?.moisture_in_pct) || 0;
-
     const moistureBlocked = selectedBatch && latestMoisture > MOISTURE_THRESHOLD;
 
+    // Pack calculations
     const selectedPackSize = PACK_SIZES.find((p) => p.value === formData.pack_size);
     const qtyPacks         = parseInt(formData.qty_packs) || 0;
     const totalWeightKg    = selectedPackSize ? qtyPacks * selectedPackSize.kg : 0;
+    const salePricePerPack = parseFloat(formData.sale_price_per_pack) || 0;
+    const totalSalesValue  = qtyPacks * salePricePerPack;
     const finishedSku      = formData.grade_code && formData.pack_size
-        ? `${formData.grade_code}-${formData.pack_size}`
-        : "";
+        ? `${formData.grade_code}-${formData.pack_size}` : "";
+
+    // ── Batch P&L summary ────────────────────────────────────────────────────
+    const batchSteps = safeProcessSteps.filter((s) => s.batch_number === formData.batch_number);
+
+    const totalLabourCost = batchSteps.reduce(
+        (sum, s) => sum + (parseFloat(s.labour_cost_total) || 0), 0
+    );
+    const totalCuttingCost = batchSteps
+        .filter((s) => s.stage === "cutting")
+        .reduce((sum, s) => sum + (parseFloat(s.step_total_cost) || 0), 0);
+
+    const landedCostBase = (parseFloat(selectedBatch?.landed_cost_per_kg) || 0)
+        * (parseFloat(selectedBatch?.usable_weight_kg) || 0);
+    const grandTotalCost = landedCostBase + totalLabourCost + totalCuttingCost;
+
+    const batchPacks = safeAllPackaging.filter(
+        (p) => p.batch_number === formData.batch_number && p.id !== item?.id
+    );
+    const existingSales      = batchPacks.reduce((sum, p) => sum + (parseFloat(p.total_sales_value) || 0), 0);
+    const projectedTotalSales = existingSales + totalSalesValue;
+    const netProfit          = projectedTotalSales - grandTotalCost;
+    const showSummary        = selectedBatch && grandTotalCost > 0;
 
     const saveMutation = useMutation({
         mutationFn: async () => {
@@ -105,9 +136,11 @@ export default function CinnamonPackagingForm({ item, onClose }) {
 
             const packData = {
                 ...formData,
-                qty_packs:       qtyPacks,
-                total_weight_kg: totalWeightKg,
-                finished_sku:    finishedSku,
+                qty_packs:           qtyPacks,
+                total_weight_kg:     totalWeightKg,
+                finished_sku:        finishedSku,
+                sale_price_per_pack: salePricePerPack,
+                total_sales_value:   totalSalesValue,
             };
 
             const packRecord = await (isEdit
@@ -115,7 +148,7 @@ export default function CinnamonPackagingForm({ item, onClose }) {
                 : matrixSales.entities.CinnamonPackaging.create({ ...packData, status: "completed" }));
 
             if (!isEdit) {
-                // Post a StockMovement for the finished goods
+                // Post finished goods stock movement
                 await matrixSales.entities.StockMovement.create({
                     movement_type:    "production_output",
                     reference_number: formData.packaging_number,
@@ -133,25 +166,24 @@ export default function CinnamonPackagingForm({ item, onClose }) {
                     status:           "posted",
                 });
 
-                // Register finished SKU as a sellable Material so it appears in sales module dropdowns
+                // Register finished SKU as sellable Material if not already present
                 try {
                     const existing = await matrixSales.entities.Material.filter({ material_code: finishedSku });
                     if (existing.length === 0) {
                         await matrixSales.entities.Material.create({
-                            material_code:               finishedSku,
-                            material_name:               `Cinnamon ${formData.grade_code} – ${formData.pack_size}`,
-                            material_type:               "finished_product",
-                            unit_of_measure:             "packs",
-                            unit_price:                  0,
-                            status:                      "active",
-                            inventory_tracking_enabled:  true,
+                            material_code:              finishedSku,
+                            material_name:              `Cinnamon ${formData.grade_code} – ${formData.pack_size}`,
+                            material_type:              "finished_product",
+                            unit_of_measure:            "packs",
+                            unit_price:                 salePricePerPack,
+                            status:                     "active",
+                            inventory_tracking_enabled: true,
                         });
                     }
                 } catch (_) {
-                    // Non-fatal — packaging still posted even if material registration fails
+                    // Non-fatal
                 }
 
-                // Advance batch stage
                 if (selectedBatch) {
                     await matrixSales.entities.CinnamonBatch.update(selectedBatch.id, {
                         current_stage: "packaging",
@@ -202,9 +234,7 @@ export default function CinnamonPackagingForm({ item, onClose }) {
                                 }}
                                 required
                             >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select batch" />
-                                </SelectTrigger>
+                                <SelectTrigger><SelectValue placeholder="Select batch" /></SelectTrigger>
                                 <SelectContent>
                                     {safeBatches.map((b) => (
                                         <SelectItem key={b.id} value={b.batch_number}>
@@ -218,24 +248,15 @@ export default function CinnamonPackagingForm({ item, onClose }) {
 
                     {/* Moisture QC gate */}
                     {selectedBatch && (
-                        <Alert
-                            className={
-                                moistureBlocked
-                                    ? "border-red-200 bg-red-50"
-                                    : "border-green-200 bg-green-50"
-                            }
-                        >
-                            {moistureBlocked ? (
-                                <AlertTriangle className="w-4 h-4 text-red-600" />
-                            ) : (
-                                <Package className="w-4 h-4 text-green-600" />
-                            )}
+                        <Alert className={moistureBlocked ? "border-red-200 bg-red-50" : "border-green-200 bg-green-50"}>
+                            {moistureBlocked
+                                ? <AlertTriangle className="w-4 h-4 text-red-600" />
+                                : <Package className="w-4 h-4 text-green-600" />}
                             <AlertDescription>
                                 {moistureBlocked ? (
                                     <span className="text-red-700 font-semibold">
-                                        Moisture is {latestMoisture}% — above threshold (
-                                        {MOISTURE_THRESHOLD}%). Packaging is blocked. Record a passing
-                                        moisture QC reading first.
+                                        Moisture is {latestMoisture}% — above threshold ({MOISTURE_THRESHOLD}%).
+                                        Packaging is blocked.
                                     </span>
                                 ) : (
                                     <span className="text-green-700">
@@ -252,17 +273,13 @@ export default function CinnamonPackagingForm({ item, onClose }) {
                             <Select
                                 value={formData.grade_code}
                                 onValueChange={(v) => handleChange("grade_code", v)}
-                                required
-                                disabled={!formData.batch_number}
+                                required disabled={!formData.batch_number}
                             >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select grade" />
-                                </SelectTrigger>
+                                <SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger>
                                 <SelectContent>
                                     {batchGrades.map((g) => (
                                         <SelectItem key={g.id} value={g.grade_code}>
-                                            {g.grade_code} ({parseFloat(g.output_weight_kg || 0).toFixed(3)} kg
-                                            graded)
+                                            {g.grade_code} ({parseFloat(g.output_weight_kg || 0).toFixed(3)} kg graded)
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -275,66 +292,94 @@ export default function CinnamonPackagingForm({ item, onClose }) {
                                 onValueChange={(v) => handleChange("pack_size", v)}
                                 required
                             >
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select pack size" />
-                                </SelectTrigger>
+                                <SelectTrigger><SelectValue placeholder="Select pack size" /></SelectTrigger>
                                 <SelectContent>
                                     {PACK_SIZES.map((p) => (
-                                        <SelectItem key={p.value} value={p.value}>
-                                            {p.label}
-                                        </SelectItem>
+                                        <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-4">
                         <div>
                             <Label>Quantity (packs) *</Label>
-                            <Input
-                                type="number"
-                                min="1"
-                                step="1"
+                            <Input type="number" min="1" step="1"
                                 value={formData.qty_packs}
-                                onChange={(e) => handleChange("qty_packs", e.target.value)}
-                                required
-                            />
+                                onChange={(e) => handleChange("qty_packs", e.target.value)} required />
+                        </div>
+                        <div>
+                            <Label>Sale Price / Pack (LKR)</Label>
+                            <Input type="number" min="0" step="0.01"
+                                value={formData.sale_price_per_pack}
+                                onChange={(e) => handleChange("sale_price_per_pack", e.target.value)}
+                                placeholder="0.00" />
                         </div>
                         <div>
                             <Label>Storage Location</Label>
-                            <Input
-                                value={formData.location}
+                            <Input value={formData.location}
                                 onChange={(e) => handleChange("location", e.target.value)}
-                                placeholder="e.g., WH-A-03"
-                            />
+                                placeholder="e.g., WH-A-03" />
                         </div>
                     </div>
 
                     {finishedSku && qtyPacks > 0 && (
                         <div className="bg-gray-50 p-3 rounded-lg border text-sm space-y-1">
-                            <p>
-                                Finished SKU: <strong>{finishedSku}</strong>
-                            </p>
-                            <p>
-                                Total Weight: <strong>{totalWeightKg.toFixed(3)} kg</strong>
-                            </p>
+                            <p>Finished SKU: <strong>{finishedSku}</strong></p>
+                            <p>Total Weight: <strong>{totalWeightKg.toFixed(3)} kg</strong></p>
+                            {salePricePerPack > 0 && (
+                                <p>Total Sales Value: <strong className="text-green-700">LKR {totalSalesValue.toFixed(2)}</strong></p>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Batch Cost vs Sales Summary */}
+                    {showSummary && (
+                        <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
+                            <h3 className="font-semibold text-sm text-slate-800">Batch Cost vs Sales Summary</h3>
+                            <div className="grid grid-cols-3 gap-3 text-sm">
+                                <div>
+                                    <p className="text-xs text-slate-500">Material + Freight</p>
+                                    <p className="font-bold">LKR {landedCostBase.toFixed(2)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-slate-500">Processing Labour</p>
+                                    <p className="font-bold">LKR {totalLabourCost.toFixed(2)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-slate-500">Cutting Costs</p>
+                                    <p className="font-bold">LKR {totalCuttingCost.toFixed(2)}</p>
+                                </div>
+                            </div>
+                            <div className="border-t border-slate-200 pt-3 grid grid-cols-3 gap-3">
+                                <div className="bg-red-50 rounded p-2">
+                                    <p className="text-xs text-red-600">Total Batch Cost</p>
+                                    <p className="text-lg font-bold text-red-800">LKR {grandTotalCost.toFixed(2)}</p>
+                                </div>
+                                <div className="bg-green-50 rounded p-2">
+                                    <p className="text-xs text-green-600">Total Sales (projected)</p>
+                                    <p className="text-lg font-bold text-green-800">LKR {projectedTotalSales.toFixed(2)}</p>
+                                </div>
+                                <div className={`${netProfit >= 0 ? "bg-emerald-50" : "bg-orange-50"} rounded p-2`}>
+                                    <p className={`text-xs ${netProfit >= 0 ? "text-emerald-600" : "text-orange-600"}`}>Net Profit</p>
+                                    <p className={`text-lg font-bold ${netProfit >= 0 ? "text-emerald-800" : "text-orange-800"}`}>
+                                        {netProfit >= 0 ? "+" : ""}LKR {netProfit.toFixed(2)}
+                                    </p>
+                                </div>
+                            </div>
+                            <p className="text-xs text-slate-400">Cost = landed material + labour + cutting costs. Per-grade allocation is a separate task.</p>
                         </div>
                     )}
 
                     <div className="flex justify-end gap-3 pt-4 border-t">
-                        <Button type="button" variant="outline" onClick={onClose}>
-                            Cancel
-                        </Button>
+                        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
                         <Button
                             className="bg-emerald-600 hover:bg-emerald-700"
                             disabled={
-                                !formData.batch_number ||
-                                !formData.grade_code ||
-                                !formData.pack_size ||
-                                !qtyPacks ||
-                                moistureBlocked ||
-                                saveMutation.isPending
+                                !formData.batch_number || !formData.grade_code ||
+                                !formData.pack_size || !qtyPacks ||
+                                moistureBlocked || saveMutation.isPending
                             }
                             onClick={() => saveMutation.mutate()}
                         >

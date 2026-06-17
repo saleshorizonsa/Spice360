@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Scale, Plus, Trash2, AlertTriangle } from "lucide-react";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 
-// Analog of CoilSlittingForm: one batch → multiple graded output rows.
+// One batch → multiple graded output rows, mirroring CoilSlittingForm.
 export default function CinnamonGradingForm({ onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
@@ -37,13 +37,14 @@ export default function CinnamonGradingForm({ onClose }) {
         select: (d) => Array.isArray(d) ? d : [],
     });
 
-    const [selectedBatch, setSelectedBatch] = useState(null);
-    const [availableWeight, setAvailableWeight] = useState(0);
-    const [wasteWeight, setWasteWeight] = useState("");
-    const [gradeRows, setGradeRows] = useState([{ grade_code: "", output_weight_kg: "" }]);
-    const [gradingNumber] = useState(`CIN-GRD-${Date.now()}`);
-    const [isDirty, setIsDirty] = useState(false);
-    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
+    const [selectedBatch, setSelectedBatch]         = useState(null);
+    const [availableWeight, setAvailableWeight]     = useState(0);
+    const [batchLandedCost, setBatchLandedCost]     = useState(0);
+    const [wasteWeight, setWasteWeight]             = useState("");
+    const [gradeRows, setGradeRows]                 = useState([{ grade_code: "", output_weight_kg: "" }]);
+    const [gradingNumber]                           = useState(`CIN-GRD-${Date.now()}`);
+    const [isDirty, setIsDirty]                     = useState(false);
+    const guardedOpenChange                         = useUnsavedChangesWarning(isDirty);
 
     const safeBatches      = Array.isArray(batches)      ? batches      : [];
     const safeGrades       = Array.isArray(grades)       ? grades       : [];
@@ -53,8 +54,9 @@ export default function CinnamonGradingForm({ onClose }) {
         setIsDirty(true);
         const batch = safeBatches.find((b) => b.batch_number === batchNumber);
         setSelectedBatch(batch || null);
+        setBatchLandedCost(parseFloat(batch?.landed_cost_per_kg) || 0);
 
-        // Available weight = last completed process step's output, or raw intake weight
+        // Available weight = last completed step output, or raw intake weight
         const batchSteps = safeProcessSteps
             .filter((s) => s.batch_number === batchNumber && s.stage !== "moisture_qc")
             .sort((a, b) => new Date(b.completed_at || b.created_at) - new Date(a.completed_at || a.created_at));
@@ -63,18 +65,16 @@ export default function CinnamonGradingForm({ onClose }) {
         setAvailableWeight(
             lastStep
                 ? parseFloat(lastStep.output_weight_kg) || 0
-                : parseFloat(batch?.input_weight_kg) || 0
+                : parseFloat(batch?.usable_weight_kg) || parseFloat(batch?.input_weight_kg) || 0
         );
     };
 
-    const totalGradeWeight = gradeRows.reduce(
-        (sum, r) => sum + (parseFloat(r.output_weight_kg) || 0),
-        0
-    );
-    const wasteKg    = parseFloat(wasteWeight) || 0;
-    const totalUsed  = totalGradeWeight + wasteKg;
-    const remaining  = availableWeight - totalUsed;
-    const isOverweight = totalUsed > availableWeight && availableWeight > 0;
+    const totalGradeWeight = gradeRows.reduce((sum, r) => sum + (parseFloat(r.output_weight_kg) || 0), 0);
+    const wasteKg          = parseFloat(wasteWeight) || 0;
+    const totalUsed        = totalGradeWeight + wasteKg;
+    const remaining        = availableWeight - totalUsed;
+    const isOverweight     = totalUsed > availableWeight && availableWeight > 0;
+    const totalCostValue   = totalGradeWeight * batchLandedCost;
 
     const addGradeRow    = () => { setIsDirty(true); setGradeRows((prev) => [...prev, { grade_code: "", output_weight_kg: "" }]); };
     const removeGradeRow = (index) => { setIsDirty(true); setGradeRows((prev) => prev.filter((_, i) => i !== index)); };
@@ -91,33 +91,35 @@ export default function CinnamonGradingForm({ onClose }) {
                 throw new Error("Every grade row needs a grade and a weight");
             }
 
-            // Record a CinnamonProcessStep for the grading stage
+            // Record a CinnamonProcessStep for grading
             await matrixSales.entities.CinnamonProcessStep.create({
-                batch_number:     selectedBatch.batch_number,
-                stage:            "grading",
-                input_weight_kg:  availableWeight,
-                output_weight_kg: totalGradeWeight,
-                waste_weight_kg:  wasteKg,
-                yield_pct:        availableWeight > 0 ? (totalGradeWeight / availableWeight) * 100 : 0,
-                started_at:       new Date().toISOString(),
-                completed_at:     new Date().toISOString(),
-                notes:            `Grading run: ${gradingNumber}`,
+                batch_number:       selectedBatch.batch_number,
+                stage:              "grading",
+                input_weight_kg:    availableWeight,
+                output_weight_kg:   totalGradeWeight,
+                waste_weight_kg:    wasteKg,
+                yield_pct:          availableWeight > 0 ? (totalGradeWeight / availableWeight) * 100 : 0,
+                started_at:         new Date().toISOString(),
+                completed_at:       new Date().toISOString(),
+                notes:              `Grading run: ${gradingNumber}`,
             });
 
-            // Create one CinnamonGradingOutput row per grade
+            // Create one CinnamonGradingOutput per grade, carrying landed cost
             for (const row of gradeRows) {
+                const outKg      = parseFloat(row.output_weight_kg) || 0;
+                const costValue  = outKg * batchLandedCost;
                 await matrixSales.entities.CinnamonGradingOutput.create({
-                    batch_number:     selectedBatch.batch_number,
-                    grading_number:   gradingNumber,
-                    grade_code:       row.grade_code,
-                    output_weight_kg: parseFloat(row.output_weight_kg) || 0,
+                    batch_number:       selectedBatch.batch_number,
+                    grading_number:     gradingNumber,
+                    grade_code:         row.grade_code,
+                    output_weight_kg:   outKg,
+                    landed_cost_per_kg: batchLandedCost,
+                    cost_value:         costValue,
                 });
             }
 
             // Advance batch stage
-            await matrixSales.entities.CinnamonBatch.update(selectedBatch.id, {
-                current_stage: "grading",
-            });
+            await matrixSales.entities.CinnamonBatch.update(selectedBatch.id, { current_stage: "grading" });
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["cinnamonBatches"] });
@@ -150,9 +152,7 @@ export default function CinnamonGradingForm({ onClose }) {
                         <div>
                             <Label>Batch *</Label>
                             <Select onValueChange={handleBatchSelect} required>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select batch" />
-                                </SelectTrigger>
+                                <SelectTrigger><SelectValue placeholder="Select batch" /></SelectTrigger>
                                 <SelectContent>
                                     {safeBatches.map((b) => (
                                         <SelectItem key={b.id} value={b.batch_number}>
@@ -166,7 +166,7 @@ export default function CinnamonGradingForm({ onClose }) {
 
                     {selectedBatch && (
                         <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                            <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div className="grid grid-cols-4 gap-4 text-sm">
                                 <div>
                                     <Label className="text-xs text-blue-900">Supplier</Label>
                                     <p className="font-medium">{selectedBatch.supplier}</p>
@@ -177,8 +177,12 @@ export default function CinnamonGradingForm({ onClose }) {
                                 </div>
                                 <div>
                                     <Label className="text-xs text-blue-900">Current Stage</Label>
-                                    <p className="font-medium capitalize">
-                                        {selectedBatch.current_stage?.replace(/_/g, " ")}
+                                    <p className="font-medium capitalize">{selectedBatch.current_stage?.replace(/_/g, " ")}</p>
+                                </div>
+                                <div>
+                                    <Label className="text-xs text-blue-900">Landed Cost / kg</Label>
+                                    <p className="font-bold text-amber-700">
+                                        {batchLandedCost > 0 ? `LKR ${batchLandedCost.toFixed(4)}` : "—"}
                                     </p>
                                 </div>
                             </div>
@@ -190,29 +194,31 @@ export default function CinnamonGradingForm({ onClose }) {
                         <div className="flex items-center justify-between mb-3">
                             <Label className="text-base font-semibold">Grade Outputs</Label>
                             <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={addGradeRow}
-                                disabled={!selectedBatch}
+                                type="button" variant="outline" size="sm"
+                                onClick={addGradeRow} disabled={!selectedBatch}
                             >
-                                <Plus className="w-4 h-4 mr-1" />
-                                Add Grade
+                                <Plus className="w-4 h-4 mr-1" /> Add Grade
                             </Button>
                         </div>
+
+                        {/* Column headers */}
+                        <div className="grid grid-cols-[1fr_120px_110px_auto] gap-3 mb-1 px-1 text-xs font-medium text-gray-500">
+                            <span>Grade</span>
+                            <span>Weight (kg)</span>
+                            <span>Cost Value (LKR)</span>
+                            <span />
+                        </div>
+
                         <div className="space-y-3">
                             {gradeRows.map((row, index) => (
-                                <div key={index} className="grid grid-cols-[1fr_140px_auto] gap-3 items-end">
+                                <div key={index} className="grid grid-cols-[1fr_120px_110px_auto] gap-3 items-end">
                                     <div>
-                                        <Label className="text-xs">Grade</Label>
                                         <Select
                                             value={row.grade_code}
                                             onValueChange={(v) => updateGradeRow(index, "grade_code", v)}
                                             disabled={!selectedBatch}
                                         >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select grade" />
-                                            </SelectTrigger>
+                                            <SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger>
                                             <SelectContent>
                                                 {safeGrades.map((g) => (
                                                     <SelectItem key={g.id} value={g.grade_code}>
@@ -223,20 +229,18 @@ export default function CinnamonGradingForm({ onClose }) {
                                         </Select>
                                     </div>
                                     <div>
-                                        <Label className="text-xs">Weight (kg)</Label>
                                         <Input
-                                            type="number"
-                                            step="0.001"
-                                            min="0"
+                                            type="number" step="0.001" min="0"
                                             value={row.output_weight_kg}
                                             onChange={(e) => updateGradeRow(index, "output_weight_kg", e.target.value)}
                                             disabled={!selectedBatch}
                                         />
                                     </div>
+                                    <div className="h-9 px-3 flex items-center bg-amber-50 border border-amber-200 rounded-md text-sm font-semibold text-amber-800">
+                                        {((parseFloat(row.output_weight_kg) || 0) * batchLandedCost).toFixed(2)}
+                                    </div>
                                     <Button
-                                        type="button"
-                                        variant="ghost"
-                                        size="icon"
+                                        type="button" variant="ghost" size="icon"
                                         onClick={() => removeGradeRow(index)}
                                         disabled={gradeRows.length === 1}
                                     >
@@ -245,14 +249,18 @@ export default function CinnamonGradingForm({ onClose }) {
                                 </div>
                             ))}
                         </div>
+
+                        {batchLandedCost > 0 && totalGradeWeight > 0 && (
+                            <div className="flex justify-end mt-2 text-sm font-semibold text-amber-800">
+                                Total Grade Cost: LKR {totalCostValue.toFixed(2)}
+                            </div>
+                        )}
                     </div>
 
                     <div>
                         <Label>Waste / Loss (kg)</Label>
                         <Input
-                            type="number"
-                            step="0.001"
-                            min="0"
+                            type="number" step="0.001" min="0"
                             value={wasteWeight}
                             onChange={(e) => { setIsDirty(true); setWasteWeight(e.target.value); }}
                             disabled={!selectedBatch}
@@ -265,15 +273,11 @@ export default function CinnamonGradingForm({ onClose }) {
                             <AlertTriangle className="w-4 h-4" />
                             <AlertDescription>
                                 <div className="text-sm space-y-1">
+                                    <p>Grade Outputs: <strong>{totalGradeWeight.toFixed(3)} kg</strong></p>
+                                    <p>Waste: <strong>{wasteKg.toFixed(3)} kg</strong></p>
                                     <p>
-                                        Grade Outputs: <strong>{totalGradeWeight.toFixed(3)} kg</strong>
-                                    </p>
-                                    <p>
-                                        Waste: <strong>{wasteKg.toFixed(3)} kg</strong>
-                                    </p>
-                                    <p>
-                                        Total Used: <strong>{totalUsed.toFixed(3)} kg</strong> /{" "}
-                                        {availableWeight.toFixed(3)} kg available
+                                        Total Used: <strong>{totalUsed.toFixed(3)} kg</strong>{" "}
+                                        / {availableWeight.toFixed(3)} kg available
                                     </p>
                                     <p className={`font-bold ${remaining < 0 ? "text-red-700" : "text-green-700"}`}>
                                         Remaining: {remaining.toFixed(3)} kg
@@ -289,9 +293,7 @@ export default function CinnamonGradingForm({ onClose }) {
                     )}
 
                     <div className="flex justify-end gap-3 pt-4 border-t">
-                        <Button type="button" variant="outline" onClick={onClose}>
-                            Cancel
-                        </Button>
+                        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
                         <Button
                             className="bg-emerald-600 hover:bg-emerald-700"
                             disabled={!selectedBatch || isOverweight || gradingMutation.isPending}
