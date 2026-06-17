@@ -22,6 +22,11 @@ export default function ProductionOrderForm({ item, onClose }) {
     const { currentOrg } = useOrganization();
     const gl = useGLAccounts();
 
+    const [currentUser, setCurrentUser] = useState(null);
+    useEffect(() => {
+        matrixSales.auth.me().then(u => setCurrentUser(u)).catch(() => {});
+    }, []);
+
     const { data: products = [] } = useQuery({
         queryKey: ['materials'],
         queryFn: () => matrixSales.entities.Material.list(),
@@ -102,13 +107,13 @@ export default function ProductionOrderForm({ item, onClose }) {
             const isCompletion = prevStatus !== 'completed' && data.status === 'completed';
             if (isCompletion && (parseFloat(data.quantity_produced) || 0) > 0) {
                 try {
-                    await processProductionReceipt(data);
+                    await processProductionReceipt(data, currentUser);
                 } catch (_) { /* non-fatal */ }
 
                 try {
                     // Look up material cost for GL valuation
-                    const mats = await matrixSales.entities.Material.filter({ material_code: data.product_code });
-                    const unitCost = parseFloat(mats?.[0]?.unit_cost) || 0;
+                    const mat = products.find(p => p.material_code === data.product_code);
+                    const unitCost = parseFloat(mat?.unit_cost) || 0;
                     const fgValue = (parseFloat(data.quantity_produced) || 0) * unitCost;
 
                     if (fgValue > 0) {
@@ -119,8 +124,8 @@ export default function ProductionOrderForm({ item, onClose }) {
                             referenceId: order.id,
                             entryType: "production",
                             lines: [
-                                { accountCode: gl.inventory,          accountName: "Finished Goods Inventory", debitAmount: fgValue, creditAmount: 0, description: data.product_name },
-                                { accountCode: gl.accrued_mfg_costs,  accountName: "Accrued Manufacturing Costs", debitAmount: 0, creditAmount: fgValue, description: data.order_number },
+                                { account_code: gl.inventory,         account_name: "Finished Goods Inventory",    debit: fgValue, credit: 0,       description: data.product_name },
+                                { account_code: gl.accrued_mfg_costs, account_name: "Accrued Manufacturing Costs", debit: 0,       credit: fgValue, description: data.order_number },
                             ],
                             orgId: currentOrg?.id,
                         });

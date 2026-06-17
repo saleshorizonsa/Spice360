@@ -88,8 +88,8 @@ export default function LoanAdvanceForm({ item, onClose }) {
                         referenceId:   loan.id,
                         entryType:     'loan',
                         lines: [
-                            { accountCode: '1150',          accountName: 'Employee Loans Receivable', debitAmount: loanAmount, creditAmount: 0,           description: data.employee_name },
-                            { accountCode: gl.cash_bank,    accountName: 'Cash / Bank',               debitAmount: 0,          creditAmount: loanAmount,   description: data.employee_name },
+                            { account_code: '1150',       account_name: 'Employee Loans Receivable', debit: loanAmount, credit: 0,          description: data.employee_name },
+                            { account_code: gl.cash_bank, account_name: 'Cash / Bank',               debit: 0,          credit: loanAmount, description: data.employee_name },
                         ],
                         orgId: currentOrg?.id,
                     });

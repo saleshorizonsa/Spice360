@@ -100,8 +100,8 @@ export default function EOSForm({ item, onClose }) {
                         referenceId:   eos.id,
                         entryType:     'eos',
                         lines: [
-                            { accountCode: gl.salaries_expense,  accountName: 'EOS Expense',   debitAmount: eosAmount, creditAmount: 0,          description: data.employee_name },
-                            { accountCode: gl.salaries_payable,  accountName: 'EOS Payable',   debitAmount: 0,         creditAmount: eosAmount,   description: data.employee_name },
+                            { account_code: gl.salaries_expense, account_name: 'EOS Expense', debit: eosAmount, credit: 0,          description: data.employee_name },
+                            { account_code: gl.salaries_payable, account_name: 'EOS Payable', debit: 0,         credit: eosAmount, description: data.employee_name },
                         ],
                         orgId: currentOrg?.id,
                     });

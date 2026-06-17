@@ -167,8 +167,10 @@ export default function CycleCountForm({ item, onClose }) {
                 if (prevStatus !== 'adjusted' && data.status === 'adjusted' && !data.adjustment_posted) {
                     try {
                         await postCycleCountAdjustment(data, currentUser);
-                        await matrixSales.entities.CycleCount.update(item.id, { adjustment_posted: true });
-                    } catch (_) { /* non-fatal — adjustment can be retried */ }
+                        try {
+                            await matrixSales.entities.CycleCount.update(item.id, { adjustment_posted: true });
+                        } catch (_) { /* flag stuck false; prevStatus guard prevents re-fire */ }
+                    } catch (_) { /* non-fatal — adjustment side-effect */ }
                 }
             } else {
                 cycleCount = await matrixSales.entities.CycleCount.create(data);

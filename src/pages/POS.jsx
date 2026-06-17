@@ -199,12 +199,12 @@ export default function POS() {
             try {
                 const lines = [];
                 // Debit Cash/Bank for total received
-                lines.push({ accountCode: gl.cash_bank, accountName: "Cash / Bank", debitAmount: data.total_amount, creditAmount: 0, description: `POS ${data.transaction_number}` });
+                lines.push({ account_code: gl.cash_bank,     account_name: "Cash / Bank",   debit: data.total_amount,                           credit: 0,                                          description: `POS ${data.transaction_number}` });
                 // Credit Sales Revenue (net of VAT)
-                lines.push({ accountCode: gl.sales_revenue, accountName: "Sales Revenue", debitAmount: 0, creditAmount: data.subtotal - (data.discount_amount || 0), description: `POS ${data.transaction_number}` });
+                lines.push({ account_code: gl.sales_revenue, account_name: "Sales Revenue", debit: 0,                                           credit: data.subtotal - (data.discount_amount || 0), description: `POS ${data.transaction_number}` });
                 // Credit VAT Output
                 if ((data.vat_amount || 0) > 0) {
-                    lines.push({ accountCode: gl.vat_output, accountName: "VAT Output", debitAmount: 0, creditAmount: data.vat_amount, description: `POS VAT ${data.transaction_number}` });
+                    lines.push({ account_code: gl.vat_output, account_name: "VAT Output",   debit: 0,                                           credit: data.vat_amount, description: `POS VAT ${data.transaction_number}` });
                 }
                 await postJournalEntry({
                     description: `POS Sale — ${data.transaction_number}`,
@@ -226,11 +226,29 @@ export default function POS() {
                     for (const lvl of available) {
                         if (remaining <= 0) break;
                         const deduct = Math.min(remaining, parseFloat(lvl.available_quantity) || 0);
-                        const newQty = Math.max(0, (parseFloat(lvl.quantity) || 0) - deduct);
+                        const prevQty = parseFloat(lvl.quantity) || 0;
+                        const newQty = Math.max(0, prevQty - deduct);
+                        const unitCost = prevQty > 0 ? (parseFloat(lvl.total_value) || 0) / prevQty : 0;
                         await matrixSales.entities.StockLevel.update(lvl.id, {
                             quantity: newQty,
                             available_quantity: Math.max(0, newQty - (parseFloat(lvl.reserved_quantity) || 0)),
+                            total_value: Math.max(0, newQty * unitCost),
                             last_movement_date: new Date().toISOString().slice(0, 10),
+                        });
+                        await matrixSales.entities.StockMovement.create({
+                            movement_number: `POS-${data.transaction_number}-${cartLine.product_code}`,
+                            movement_date: new Date().toISOString().slice(0, 10),
+                            movement_type: 'sales_issue',
+                            material_code: cartLine.product_code,
+                            material_name: cartLine.product_name,
+                            quantity: deduct,
+                            from_warehouse: lvl.warehouse_code,
+                            reference_document: data.transaction_number,
+                            reason: `POS sale — ${data.transaction_number}`,
+                            cost_per_unit: unitCost,
+                            total_value: deduct * unitCost,
+                            performed_by: data.cashier_name || null,
+                            status: 'posted',
                         });
                         remaining -= deduct;
                     }

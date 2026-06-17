@@ -131,11 +131,11 @@ export default function STOForm({ item, onClose }) {
 
                 // Issue stock from source when transitioning to in_transit
                 if (prevStatus !== 'in_transit' && data.status === 'in_transit') {
-                    try { await processSTOIssue(data, currentUser); } catch (_) { /* non-fatal */ }
+                    try { await processSTOIssue(sto, currentUser); } catch (_) { /* non-fatal */ }
                 }
                 // Receive stock at destination when transitioning to received
                 if (prevStatus !== 'received' && data.status === 'received') {
-                    try { await processSTOReceipt(data, currentUser); } catch (_) { /* non-fatal */ }
+                    try { await processSTOReceipt(sto, currentUser); } catch (_) { /* non-fatal */ }
                 }
             } else {
                 sto = await matrixSales.entities.StockTransferOrder.create(data);

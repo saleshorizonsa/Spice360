@@ -235,6 +235,22 @@ export default function GRNForm({ item, onClose }) {
                 } catch (_) {
                     // Silently ignored — inventory accounts may not be set up yet
                 }
+
+                // Update PO quantity_received; auto-close when fully received (non-fatal)
+                try {
+                    const pos = await matrixSales.entities.PurchaseOrder.filter({ po_number: savedGRN.po_number });
+                    if (pos?.length > 0) {
+                        const po = pos[0];
+                        const newQtyReceived = (parseFloat(po.quantity_received) || 0) + (parseFloat(savedGRN.quantity_received) || 0);
+                        const isFullyReceived = newQtyReceived >= (parseFloat(po.quantity) || 0) - 0.001;
+                        await matrixSales.entities.PurchaseOrder.update(po.id, {
+                            quantity_received: newQtyReceived,
+                            ...(isFullyReceived && !['closed', 'cancelled'].includes(po.status)
+                                ? { status: 'fully_received' }
+                                : {}),
+                        });
+                    }
+                } catch (_) { /* non-fatal */ }
             }
             queryClient.invalidateQueries({ queryKey: ['grns'] });
             queryClient.invalidateQueries({ queryKey: ['auditTrails'] });
