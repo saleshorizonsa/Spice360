@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -94,6 +94,62 @@ export default function Finance() {
     const dpo = apTransactions.length > 0
         ? Math.round((totalAP / (totalAR + totalAP)) * 365 / 12)
         : 0;
+
+    // Auto-refresh AR/AP aging buckets whenever records load
+    useEffect(() => {
+        if (arTransactions.length === 0 && apTransactions.length === 0) return;
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const calcBucket = (dueDate) => {
+            if (!dueDate) return 'current';
+            const due = new Date(dueDate);
+            due.setHours(0, 0, 0, 0);
+            const days = Math.floor((today - due) / (1000 * 60 * 60 * 24));
+            if (days <= 0)  return 'current';
+            if (days <= 30) return '1-30';
+            if (days <= 60) return '31-60';
+            if (days <= 90) return '61-90';
+            return '90+';
+        };
+
+        const calcDays = (dueDate) => {
+            if (!dueDate) return 0;
+            const due = new Date(dueDate);
+            due.setHours(0, 0, 0, 0);
+            return Math.max(0, Math.floor((today - due) / (1000 * 60 * 60 * 24)));
+        };
+
+        arTransactions.forEach(ar => {
+            if (['paid', 'written_off'].includes(ar.status)) return;
+            if ((parseFloat(ar.outstanding_amount) || 0) <= 0) return;
+            const bucket  = calcBucket(ar.due_date);
+            const days    = calcDays(ar.due_date);
+            const isOverdue = bucket !== 'current';
+            const newStatus = isOverdue ? 'overdue' : 'open';
+            if (ar.aging_bucket !== bucket || ar.aging_days !== days || ar.status !== newStatus) {
+                matrixSales.entities.AccountsReceivable.update(ar.id, {
+                    aging_bucket: bucket,
+                    aging_days:   days,
+                    status:       newStatus,
+                }).catch(() => {});
+            }
+        });
+
+        apTransactions.forEach(ap => {
+            if (['paid', 'written_off'].includes(ap.payment_status)) return;
+            if ((parseFloat(ap.outstanding_amount) || 0) <= 0) return;
+            const bucket = calcBucket(ap.due_date);
+            const days   = calcDays(ap.due_date);
+            if (ap.aging_bucket !== bucket || ap.aging_days !== days) {
+                matrixSales.entities.AccountsPayable.update(ap.id, {
+                    aging_bucket: bucket,
+                    aging_days:   days,
+                }).catch(() => {});
+            }
+        });
+    }, [arTransactions, apTransactions]);
 
     const markArPaidMutation = useMutation({
         mutationFn: (ar) => matrixSales.entities.AccountsReceivable.update(ar.id, {

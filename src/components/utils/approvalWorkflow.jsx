@@ -1,5 +1,6 @@
 
 import { matrixSales } from "@/api/matrixSalesClient";
+import { createNotification } from "./notificationService";
 
 /**
  * Approval Workflow Utility
@@ -102,6 +103,20 @@ export async function createApprovalRequest(documentData) {
             priority: amount > 100000 ? 'high' : 'normal'
         });
 
+        // Notify first approver
+        if (firstApprover?.email) {
+            createNotification({
+                userEmail:             firstApprover.email,
+                notificationType:      'approval_pending',
+                priority:              'high',
+                title:                 'Approval Required',
+                message:               `${documentType.replace(/_/g, ' ')} ${documentNumber} is pending your approval`,
+                relatedEntity:         documentType,
+                relatedDocumentNumber: documentNumber,
+                actionUrl:             '/Approvals',
+            }).catch(() => {});
+        }
+
         return approvalRequest;
     } catch (error) {
         console.error('Error creating approval request:', error);
@@ -195,6 +210,20 @@ export async function processApprovalAction(requestId, action, comments, approve
                 relatedDocumentId: approvalRequest.id
             });
 
+            // Notify requester of rejection
+            if (approvalRequest.requested_by) {
+                createNotification({
+                    userEmail:             approvalRequest.requested_by,
+                    notificationType:      'approval_rejected',
+                    priority:              'high',
+                    title:                 'Approval Rejected',
+                    message:               `Your ${approvalRequest.document_type.replace(/_/g, ' ')} ${approvalRequest.document_number} was rejected${comments ? `: ${comments}` : ''}`,
+                    relatedEntity:         approvalRequest.document_type,
+                    relatedDocumentNumber: approvalRequest.document_number,
+                    actionUrl:             '/Approvals',
+                }).catch(() => {});
+            }
+
             return {
                 status: 'rejected',
                 message: 'Document rejected'
@@ -227,6 +256,20 @@ export async function processApprovalAction(requestId, action, comments, approve
                 relatedDocumentType: 'approval_request',
                 relatedDocumentId: approvalRequest.id
             });
+
+            // Notify requester of final approval
+            if (approvalRequest.requested_by) {
+                createNotification({
+                    userEmail:             approvalRequest.requested_by,
+                    notificationType:      'approval_approved',
+                    priority:              'medium',
+                    title:                 'Approved',
+                    message:               `Your ${approvalRequest.document_type.replace(/_/g, ' ')} ${approvalRequest.document_number} has been approved`,
+                    relatedEntity:         approvalRequest.document_type,
+                    relatedDocumentNumber: approvalRequest.document_number,
+                    actionUrl:             '/Approvals',
+                }).catch(() => {});
+            }
 
             return {
                 status: 'approved',
@@ -262,6 +305,20 @@ export async function processApprovalAction(requestId, action, comments, approve
                 reason: comments,
                 severity: 'info'
             });
+
+            // Notify next-level approver
+            if (nextApprover?.email) {
+                createNotification({
+                    userEmail:             nextApprover.email,
+                    notificationType:      'approval_pending',
+                    priority:              'high',
+                    title:                 'Approval Required',
+                    message:               `${approvalRequest.document_type.replace(/_/g, ' ')} ${approvalRequest.document_number} requires your approval (Level ${nextLevel})`,
+                    relatedEntity:         approvalRequest.document_type,
+                    relatedDocumentNumber: approvalRequest.document_number,
+                    actionUrl:             '/Approvals',
+                }).catch(() => {});
+            }
 
             return {
                 status: 'pending',
