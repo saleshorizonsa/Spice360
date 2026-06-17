@@ -106,16 +106,17 @@ export default function CinnamonPackagingForm({ item, onClose }) {
     // ── Batch P&L summary ────────────────────────────────────────────────────
     const batchSteps = safeProcessSteps.filter((s) => s.batch_number === formData.batch_number);
 
-    const totalLabourCost = batchSteps.reduce(
-        (sum, s) => sum + (parseFloat(s.labour_cost_total) || 0), 0
-    );
+    // Cutting step's step_total_cost already embeds its own labour_cost_total — only sum non-cutting labour separately
+    const totalNonCuttingLabour = batchSteps
+        .filter((s) => s.stage !== "cutting")
+        .reduce((sum, s) => sum + (parseFloat(s.labour_cost_total) || 0), 0);
     const totalCuttingCost = batchSteps
         .filter((s) => s.stage === "cutting")
         .reduce((sum, s) => sum + (parseFloat(s.step_total_cost) || 0), 0);
 
     const landedCostBase = (parseFloat(selectedBatch?.landed_cost_per_kg) || 0)
         * (parseFloat(selectedBatch?.usable_weight_kg) || 0);
-    const grandTotalCost = landedCostBase + totalLabourCost + totalCuttingCost;
+    const grandTotalCost = landedCostBase + totalNonCuttingLabour + totalCuttingCost;
 
     const batchPacks = safeAllPackaging.filter(
         (p) => p.batch_number === formData.batch_number && p.id !== item?.id
@@ -344,8 +345,8 @@ export default function CinnamonPackagingForm({ item, onClose }) {
                                     <p className="font-bold">LKR {landedCostBase.toFixed(2)}</p>
                                 </div>
                                 <div>
-                                    <p className="text-xs text-slate-500">Processing Labour</p>
-                                    <p className="font-bold">LKR {totalLabourCost.toFixed(2)}</p>
+                                    <p className="text-xs text-slate-500">Pre-process Labour</p>
+                                    <p className="font-bold">LKR {totalNonCuttingLabour.toFixed(2)}</p>
                                 </div>
                                 <div>
                                     <p className="text-xs text-slate-500">Cutting Costs</p>

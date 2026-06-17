@@ -125,6 +125,31 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
                 if (batch) {
                     await matrixSales.entities.CinnamonBatch.update(batch.id, { current_stage: data.stage });
                 }
+                // Cutting by-products become packagable grading outputs so their sales are captured in P&L
+                if (data.stage === "cutting" && batch) {
+                    const landedCpk = parseFloat(batch.landed_cost_per_kg) || 0;
+                    const byGrNum   = `CUT-BY-${step.id}`;
+                    if ((parseFloat(data.off_cut_kg) || 0) > 0) {
+                        await matrixSales.entities.CinnamonGradingOutput.create({
+                            batch_number:       data.batch_number,
+                            grading_number:     byGrNum,
+                            grade_code:         "OFF_CUT",
+                            output_weight_kg:   parseFloat(data.off_cut_kg),
+                            landed_cost_per_kg: landedCpk,
+                            cost_value:         parseFloat(data.off_cut_kg) * landedCpk,
+                        });
+                    }
+                    if ((parseFloat(data.powder_kg) || 0) > 0) {
+                        await matrixSales.entities.CinnamonGradingOutput.create({
+                            batch_number:       data.batch_number,
+                            grading_number:     byGrNum,
+                            grade_code:         "POWDER",
+                            output_weight_kg:   parseFloat(data.powder_kg),
+                            landed_cost_per_kg: landedCpk,
+                            cost_value:         parseFloat(data.powder_kg) * landedCpk,
+                        });
+                    }
+                }
             }
 
             // Roll up labour + step costs to the batch
@@ -150,6 +175,7 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["cinnamonProcessSteps"] });
             queryClient.invalidateQueries({ queryKey: ["cinnamonBatches"] });
+            queryClient.invalidateQueries({ queryKey: ["cinnamonGradingOutputs"] });
             toast({ title: "Success", description: "Process step saved" });
             onClose();
         },

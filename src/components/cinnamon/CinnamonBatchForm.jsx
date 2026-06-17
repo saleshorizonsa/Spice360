@@ -79,7 +79,7 @@ export default function CinnamonBatchForm({ item, onClose }) {
 
     const { usableKg, baseCost, landedCostPerKg } = useMemo(() => {
         const usable  = inputKg * (1 - shrinkagePct / 100);
-        const base    = usable * purchasePrice;
+        const base    = inputKg * purchasePrice;  // pay for ALL raw input, shrinkage loss is a real cost
         const landed  = usable > 0 ? (base + freight) / usable : 0;
         return { usableKg: usable, baseCost: base, landedCostPerKg: landed };
     }, [inputKg, shrinkagePct, purchasePrice, freight]);
