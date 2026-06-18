@@ -3,6 +3,7 @@
 
 let dirtyChecker = null;
 let _persistentDirty = false; // survives component unmount during click→navigate race
+let _requestCloseHandler = null; // set by NavigationGuardProvider
 
 export const navigationGuard = {
   /** Called by useUnsavedChangesWarning — always overwrites with latest isDirty closure */
@@ -19,14 +20,17 @@ export const navigationGuard = {
   markDirty()  { _persistentDirty = true;  },
   markClean()  { _persistentDirty = false; },
 
-  /** Called by NavigationGuardProvider on mount */
-  setDialogHandler(fn) {},
-  clearDialogHandler() {},
-
-  intercept(proceedFn) {
-    if (dirtyChecker?.() || _persistentDirty) {
-      return true;
+  /**
+   * Called by guardedOpenChange when the user tries to close a dirty form dialog
+   * (outside-click, Escape, X button). Routes to the global UnsavedChangesDialog.
+   * onConfirmedLeave is called if the user clicks "Leave".
+   */
+  requestClose(onConfirmedLeave) {
+    if (_requestCloseHandler) {
+      _requestCloseHandler(onConfirmedLeave);
     }
-    return false;
   },
+
+  setRequestCloseHandler(fn) { _requestCloseHandler = fn; },
+  clearRequestCloseHandler() { _requestCloseHandler = null; },
 };

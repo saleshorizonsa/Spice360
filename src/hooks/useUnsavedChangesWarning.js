@@ -53,7 +53,12 @@ export function useUnsavedChangesWarning(isDirty) {
      */
     const guardedOpenChange = useCallback(
         (onClose) => (open) => {
-            if (!open && isDirtyRef.current) return; // block dialog-level close
+            if (!open && isDirtyRef.current) {
+                // Route to the global UnsavedChangesDialog instead of silently blocking.
+                // "Leave" will call onClose(); "Stay" dismisses.
+                navigationGuard.requestClose(onClose);
+                return;
+            }
             if (!open) onClose?.();
         },
         [] // stable — always reads the live isDirtyRef
