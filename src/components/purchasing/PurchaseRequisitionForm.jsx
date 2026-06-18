@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
 import { createNotification } from "../utils/notificationService";
 import { RefreshCw } from "lucide-react";
@@ -16,6 +17,8 @@ import { RefreshCw } from "lucide-react";
 export default function PurchaseRequisitionForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const [isDirty, setIsDirty] = useState(false);
+    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     useEffect(() => {
@@ -157,11 +160,12 @@ export default function PurchaseRequisitionForm({ item, onClose }) {
     };
 
     const handleChange = (field, value) => {
+        if (!isDirty) setIsDirty(true);
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
+        <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>

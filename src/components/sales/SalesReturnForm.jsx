@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import ReverseButton from "../shared/ReverseButton";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
@@ -18,6 +19,8 @@ import { useGLAccounts } from "@/hooks/useGLAccounts";
 export default function SalesReturnForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const [isDirty, setIsDirty] = useState(false);
+    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
     const { currentOrg } = useOrganization();
     const gl = useGLAccounts();
 
@@ -162,13 +165,14 @@ export default function SalesReturnForm({ item, onClose }) {
     };
 
     const handleChange = (field, value) => {
+        if (!isDirty) setIsDirty(true);
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
     const paidInvoices = invoices.filter(i => i.payment_status === 'paid' || i.payment_status === 'partially_paid');
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
+        <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">

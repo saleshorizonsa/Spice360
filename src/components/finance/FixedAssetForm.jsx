@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { Package2, RefreshCw, Tag } from "lucide-react";
 import { useOrganization } from "../utils/OrganizationContext";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
@@ -19,6 +20,8 @@ import { generateAssetTag } from "../utils/assetTagGenerator";
 export default function FixedAssetForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const [isDirty, setIsDirty] = useState(false);
+    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
     const { currentOrg } = useOrganization();
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
     const [isGeneratingTag, setIsGeneratingTag] = useState(false);
@@ -182,11 +185,12 @@ export default function FixedAssetForm({ item, onClose }) {
     };
 
     const handleChange = (field, value) => {
+        if (!isDirty) setIsDirty(true);
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
+        <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">

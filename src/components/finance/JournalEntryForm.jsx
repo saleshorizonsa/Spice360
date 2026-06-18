@@ -9,12 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { Paperclip } from "lucide-react";
 import DocumentList from "../shared/DocumentList";
 
 export default function JournalEntryForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const [isDirty, setIsDirty] = useState(false);
+    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
     const [activeTab, setActiveTab] = useState("details");
 
     const { data: accounts = [] } = useQuery({
@@ -53,6 +56,7 @@ export default function JournalEntryForm({ item, onClose }) {
     }, [item]);
 
     const handleAccountSelect = (field, accountCode) => {
+        if (!isDirty) setIsDirty(true);
         const account = accounts.find(a => a.account_code === accountCode);
         if (account) {
             if (field === 'debit') {
@@ -94,11 +98,12 @@ export default function JournalEntryForm({ item, onClose }) {
     };
 
     const handleChange = (field, value) => {
+        if (!isDirty) setIsDirty(true);
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
+        <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>

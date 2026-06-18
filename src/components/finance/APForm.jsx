@@ -8,12 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
 import ReverseButton from "../shared/ReverseButton";
 
 export default function APForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const [isDirty, setIsDirty] = useState(false);
+    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
     const taxConfig = useTaxConfig();
 
     const { data: vendors = [] } = useQuery({
@@ -97,11 +100,12 @@ export default function APForm({ item, onClose }) {
     };
 
     const handleChange = (field, value) => {
+        if (!isDirty) setIsDirty(true);
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
+        <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>

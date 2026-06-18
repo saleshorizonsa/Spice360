@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ArrowRight, Package, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { useOrganization } from "../utils/OrganizationContext";
 import { processGoodsIssue } from "../utils/inventoryIntegration";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
@@ -21,6 +22,8 @@ import { useGLAccounts } from "../../hooks/useGLAccounts";
 export default function DeliveryForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const [isDirty, setIsDirty] = useState(false);
+    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
     const { currentOrganization: currentOrg } = useOrganization();
     const gl = useGLAccounts();
 
@@ -346,6 +349,7 @@ export default function DeliveryForm({ item, onClose }) {
     };
 
     const handleChange = (field, value) => {
+        if (!isDirty) setIsDirty(true);
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
@@ -354,7 +358,7 @@ export default function DeliveryForm({ item, onClose }) {
     );
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
+        <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">

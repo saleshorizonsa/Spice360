@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { RefreshCw } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
 import { createNotification } from "../utils/notificationService";
 import SearchableSelect from "../shared/SearchableSelect";
@@ -19,6 +20,8 @@ import { useTaxConfig } from "@/hooks/useTaxConfig";
 export default function QuotationForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const [isDirty, setIsDirty] = useState(false);
+    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
     const { currentOrg } = useOrganization();
     const taxConfig = useTaxConfig();
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
@@ -206,6 +209,7 @@ export default function QuotationForm({ item, onClose }) {
     };
 
     const handleChange = (field, value) => {
+        if (!isDirty) setIsDirty(true);
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
@@ -220,7 +224,7 @@ export default function QuotationForm({ item, onClose }) {
     const totalAmount = subtotal + vatAmount;
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
+        <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
