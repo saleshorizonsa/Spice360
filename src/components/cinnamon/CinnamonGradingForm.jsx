@@ -44,7 +44,7 @@ export default function CinnamonGradingForm({ onClose }) {
     const [gradeRows, setGradeRows]                 = useState([{ grade_code: "", output_weight_kg: "" }]);
     const [gradingNumber]                           = useState(`CIN-GRD-${Date.now()}`);
     const [isDirty, setIsDirty]                     = useState(false);
-    const guardedOpenChange                         = useUnsavedChangesWarning(isDirty);
+    const { guardedOpenChange, guardedClose }       = useUnsavedChangesWarning(isDirty);
 
     const safeBatches      = Array.isArray(batches)      ? batches      : [];
     const safeGrades       = Array.isArray(grades)       ? grades       : [];
@@ -293,7 +293,7 @@ export default function CinnamonGradingForm({ onClose }) {
                     )}
 
                     <div className="flex justify-end gap-3 pt-4 border-t">
-                        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                        <Button type="button" variant="outline" onClick={guardedClose(onClose)}>Cancel</Button>
                         <Button
                             className="bg-emerald-600 hover:bg-emerald-700"
                             disabled={!selectedBatch || isOverweight || gradingMutation.isPending}

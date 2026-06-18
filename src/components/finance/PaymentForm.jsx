@@ -20,7 +20,7 @@ export default function PaymentForm({ item, onClose }) {
     const { currentOrg } = useOrganization();
     const gl = useGLAccounts();
     const [isDirty, setIsDirty] = useState(false);
-    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
+    const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
 
     const { data: banks = [] } = useQuery({
         queryKey: ['banks'],
@@ -446,7 +446,7 @@ export default function PaymentForm({ item, onClose }) {
                             onSuccess={onClose}
                         />
                         <div className="flex gap-3">
-                            <Button type="button" variant="outline" onClick={onClose}>
+                            <Button type="button" variant="outline" onClick={guardedClose(onClose)}>
                                 Cancel
                             </Button>
                             <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">

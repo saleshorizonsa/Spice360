@@ -1,9 +1,9 @@
-// Module-level singleton that tracks dirty forms and routes interception
-// to a dialog shown by NavigationGuardProvider.
+// Module-level singleton that tracks dirty-form state for NavigationGuardProvider's useBlocker.
+// The close-guard signal now travels via a CustomEvent on window (see useUnsavedChangesWarning)
+// so this module no longer needs a requestClose handler — no module-level state to reset on HMR.
 
 let dirtyChecker = null;
-let _persistentDirty = false; // survives component unmount during click→navigate race
-let _requestCloseHandler = null; // set by NavigationGuardProvider
+let _persistentDirty = false;
 
 export const navigationGuard = {
   /** Called by useUnsavedChangesWarning — always overwrites with latest isDirty closure */
@@ -12,25 +12,11 @@ export const navigationGuard = {
 
   /**
    * Returns true if EITHER the mounted form's ref OR the persistent flag is dirty.
-   * The persistent flag handles the race where the dialog unmounts (onInteractOutside)
-   * before React Router's useBlocker gets to check.
+   * The persistent flag handles the race where the dialog unmounts before React
+   * Router's useBlocker gets to evaluate the condition.
    */
   isDirty() { return (dirtyChecker?.() ?? false) || _persistentDirty; },
 
   markDirty()  { _persistentDirty = true;  },
   markClean()  { _persistentDirty = false; },
-
-  /**
-   * Called by guardedOpenChange when the user tries to close a dirty form dialog
-   * (outside-click, Escape, X button). Routes to the global UnsavedChangesDialog.
-   * onConfirmedLeave is called if the user clicks "Leave".
-   */
-  requestClose(onConfirmedLeave) {
-    if (_requestCloseHandler) {
-      _requestCloseHandler(onConfirmedLeave);
-    }
-  },
-
-  setRequestCloseHandler(fn) { _requestCloseHandler = fn; },
-  clearRequestCloseHandler() { _requestCloseHandler = null; },
 };

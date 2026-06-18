@@ -18,7 +18,7 @@ export default function PurchaseRequisitionForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const [isDirty, setIsDirty] = useState(false);
-    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
+    const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     useEffect(() => {
@@ -375,7 +375,7 @@ export default function PurchaseRequisitionForm({ item, onClose }) {
                     </div>
 
                     <div className="flex justify-end gap-3">
-                        <Button type="button" variant="outline" onClick={onClose}>
+                        <Button type="button" variant="outline" onClick={guardedClose(onClose)}>
                             Cancel
                         </Button>
                         <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700" disabled={saveMutation.isPending}>

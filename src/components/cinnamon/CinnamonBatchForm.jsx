@@ -31,7 +31,7 @@ export default function CinnamonBatchForm({ item, onClose }) {
     const isEdit = Boolean(item?.id);
 
     const [isDirty, setIsDirty] = useState(false);
-    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
+    const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
 
     const [formData, setFormData] = useState({
         batch_number:          item?.batch_number          || `CIN-BATCH-${Date.now()}`,
@@ -355,7 +355,7 @@ export default function CinnamonBatchForm({ item, onClose }) {
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4 border-t">
-                        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                        <Button type="button" variant="outline" onClick={guardedClose(onClose)}>Cancel</Button>
                         <Button
                             type="submit"
                             className="bg-emerald-600 hover:bg-emerald-700"

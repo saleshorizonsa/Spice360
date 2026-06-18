@@ -16,7 +16,7 @@ export default function APForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const [isDirty, setIsDirty] = useState(false);
-    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
+    const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
     const taxConfig = useTaxConfig();
 
     const { data: vendors = [] } = useQuery({
@@ -283,7 +283,7 @@ export default function APForm({ item, onClose }) {
                             onSuccess={onClose}
                         />
                         <div className="flex gap-3">
-                            <Button type="button" variant="outline" onClick={onClose}>
+                            <Button type="button" variant="outline" onClick={guardedClose(onClose)}>
                                 Cancel
                             </Button>
                             <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">

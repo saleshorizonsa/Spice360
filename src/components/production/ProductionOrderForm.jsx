@@ -21,7 +21,7 @@ export default function ProductionOrderForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const [isDirty, setIsDirty] = useState(false);
-    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
+    const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
     const { currentOrg } = useOrganization();
     const gl = useGLAccounts();
 
@@ -379,7 +379,7 @@ export default function ProductionOrderForm({ item, onClose }) {
                         <Button 
                             type="button" 
                             variant="outline" 
-                            onClick={onClose}
+                            onClick={guardedClose(onClose)}
                             disabled={saveMutation.isPending}
                         >
                             Cancel

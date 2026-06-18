@@ -26,7 +26,7 @@ export default function VendorInvoiceForm({ item, onClose }) {
     const taxConfig = useTaxConfig();
     const gl = useGLAccounts();
     const [isDirty, setIsDirty] = useState(false);
-    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
+    const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
 
     // ── Source data ───────────────────────────────────────────────────────────
     const { data: grns = [] } = useQuery({
@@ -706,7 +706,7 @@ export default function VendorInvoiceForm({ item, onClose }) {
                             onSuccess={onClose}
                         />
                         <div className="flex gap-3">
-                            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                            <Button type="button" variant="outline" onClick={guardedClose(onClose)}>Cancel</Button>
                             <Button
                                 type="submit"
                                 className="bg-emerald-600 hover:bg-emerald-700"

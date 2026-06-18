@@ -23,7 +23,7 @@ export default function DeliveryForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const [isDirty, setIsDirty] = useState(false);
-    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
+    const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
     const { currentOrganization: currentOrg } = useOrganization();
     const gl = useGLAccounts();
 
@@ -590,7 +590,7 @@ export default function DeliveryForm({ item, onClose }) {
                             )}
                         </div>
                         <div className="flex gap-3">
-                            <Button type="button" variant="outline" onClick={onClose} disabled={saveMutation.isPending || pgiMutation.isPending}>
+                            <Button type="button" variant="outline" onClick={guardedClose(onClose)} disabled={saveMutation.isPending || pgiMutation.isPending}>
                                 Cancel
                             </Button>
                             <Button 

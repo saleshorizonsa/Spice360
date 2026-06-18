@@ -31,7 +31,7 @@ export default function CinnamonMoistureQCForm({ onClose }) {
     const [instrument, setInstrument] = useState("");
     const [notes, setNotes] = useState("");
     const [isDirty, setIsDirty] = useState(false);
-    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
+    const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
 
     const moisture         = parseFloat(moisturePct) || 0;
     const isAboveThreshold = moisture > MOISTURE_THRESHOLD;
@@ -181,7 +181,7 @@ export default function CinnamonMoistureQCForm({ onClose }) {
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4 border-t">
-                        <Button type="button" variant="outline" onClick={onClose}>
+                        <Button type="button" variant="outline" onClick={guardedClose(onClose)}>
                             Cancel
                         </Button>
                         <Button

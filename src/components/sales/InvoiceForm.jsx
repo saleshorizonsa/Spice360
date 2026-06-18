@@ -28,7 +28,7 @@ export default function InvoiceForm({ item, onClose }) {
     const { currentOrg } = useOrganization();
     const gl = useGLAccounts();
     const [isDirty, setIsDirty] = useState(false);
-    const guardedOpenChange = useUnsavedChangesWarning(isDirty);
+    const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
     const [activeTab, setActiveTab] = useState("details");
 
     // ── Source data ───────────────────────────────────────────────────────────
@@ -915,7 +915,7 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
                                         </p>
                                     )}
                                     <div className="flex gap-3">
-                                        <Button type="button" variant="outline" onClick={onClose} disabled={saveMutation.isPending}>
+                                        <Button type="button" variant="outline" onClick={guardedClose(onClose)} disabled={saveMutation.isPending}>
                                             Cancel
                                         </Button>
                                         <Button
