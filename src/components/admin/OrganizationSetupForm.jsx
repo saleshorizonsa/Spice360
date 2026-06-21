@@ -587,28 +587,6 @@ export default function OrganizationSetupForm() {
                                 />
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label>ZATCA Environment</Label>
-                                    <Select value={formData.zatca_environment} onValueChange={(val) => setFormData({...formData, zatca_environment: val})}>
-                                        <SelectTrigger><SelectValue /></SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="sandbox">Sandbox (Testing)</SelectItem>
-                                            <SelectItem value="simulation">Simulation</SelectItem>
-                                            <SelectItem value="production">Production</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-
-                            <div>
-                                <Label>ZATCA Device Name (E-invoicing)</Label>
-                                <Input
-                                    value={formData.zatca_device_name}
-                                    onChange={(e) => setFormData({...formData, zatca_device_name: e.target.value})}
-                                    placeholder="MatrixERP-POS-001"
-                                />
-                            </div>
                         </TabsContent>
 
                         {/* Settings */}
