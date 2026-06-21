@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOrganization } from "@/components/utils/OrganizationContext";
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/components/ui/use-toast";
-import { Building2, Globe, CreditCard, Phone, Save, RefreshCw, Image } from "lucide-react";
+import { Building2, Globe, CreditCard, Phone, Save, RefreshCw, Image, Upload, Loader2, X } from "lucide-react";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 
 const COUNTRIES = ["Sri Lanka", "Saudi Arabia", "UAE", "Kuwait", "Bahrain", "Oman", "Qatar", "Egypt", "Jordan", "Lebanon", "Other"];
@@ -92,6 +92,8 @@ export default function OrganizationSettings() {
     const { toast } = useToast();
     const [form, setForm] = useState(EMPTY);
     const [dirty, setDirty] = useState(false);
+    const [isUploadingLogo, setIsUploadingLogo] = useState(false);
+    const logoInputRef = useRef(null);
     useUnsavedChangesWarning(dirty);
 
     useEffect(() => {
@@ -105,6 +107,23 @@ export default function OrganizationSettings() {
     const set = (field) => (e) => {
         setForm((prev) => ({ ...prev, [field]: e.target ? e.target.value : e }));
         setDirty(true);
+    };
+
+    const handleLogoUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        e.target.value = "";
+        setIsUploadingLogo(true);
+        try {
+            const { file_url } = await matrixSales.integrations.Core.UploadFile({ file });
+            setForm((prev) => ({ ...prev, logo_url: file_url }));
+            setDirty(true);
+            toast({ title: "Logo uploaded", description: "Click Save Changes to apply." });
+        } catch (err) {
+            toast({ title: "Upload failed", description: err.message || "Could not upload the logo image.", variant: "destructive" });
+        } finally {
+            setIsUploadingLogo(false);
+        }
     };
 
     const saveMutation = useMutation({
@@ -226,20 +245,59 @@ export default function OrganizationSettings() {
 
                 {/* Branding */}
                 <Section title="Branding" icon={Image}>
-                    <Field label="Logo URL" fullWidth>
-                        <Input value={form.logo_url} onChange={set("logo_url")} placeholder="https://your-cdn.com/logo.png" />
-                    </Field>
-                    {form.logo_url && (
-                        <div className="sm:col-span-2 flex items-center gap-4">
-                            <img
-                                src={form.logo_url}
-                                alt="Logo preview"
-                                className="h-12 max-w-[200px] object-contain rounded border border-slate-200 p-1"
-                                onError={(e) => { e.currentTarget.style.display = "none"; }}
-                            />
-                            <p className="text-xs text-slate-500">Logo shown on printed documents and invoices.</p>
+                    <Field label="Company Logo" fullWidth>
+                        <div className="space-y-3">
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => logoInputRef.current?.click()}
+                                    disabled={isUploadingLogo}
+                                    className="shrink-0 gap-2"
+                                >
+                                    {isUploadingLogo
+                                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                                        : <Upload className="h-4 w-4" />}
+                                    {isUploadingLogo ? "Uploading…" : "Upload Logo"}
+                                </Button>
+                                <Input
+                                    value={form.logo_url}
+                                    onChange={set("logo_url")}
+                                    placeholder="or paste a URL…"
+                                    className="flex-1"
+                                />
+                                {form.logo_url && (
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        onClick={() => { setForm((p) => ({ ...p, logo_url: "" })); setDirty(true); }}
+                                        title="Remove logo"
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                )}
+                                <input
+                                    ref={logoInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    className="hidden"
+                                    onChange={handleLogoUpload}
+                                />
+                            </div>
+                            {form.logo_url && (
+                                <div className="flex items-center gap-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+                                    <img
+                                        src={form.logo_url}
+                                        alt="Logo preview"
+                                        className="h-14 max-w-[220px] object-contain"
+                                        onError={(e) => { e.currentTarget.style.display = "none"; }}
+                                    />
+                                    <p className="text-xs text-slate-500">This logo will appear on invoices, purchase orders, and other printed documents.</p>
+                                </div>
+                            )}
                         </div>
-                    )}
+                    </Field>
                 </Section>
 
                 {/* Localization */}
