@@ -100,50 +100,59 @@ export function generateQRCodeSVG(data, size = 200) {
 /**
  * Generate asset tag label HTML for printing
  */
-export function generateAssetTagLabel(asset, includeQR = true) {
+export function generateAssetTagLabel(asset, includeQR = true, org = {}) {
     const qrData = generateAssetQRData(asset);
     const barcodeData = generateBarcodeData(asset.asset_tag);
-    
+    const orgName = org.organization_name || org.name || "Fixed Asset";
+    const logoUrl = org.logo_url || "";
+
     return `
         <div style="
-            width: 4in; 
-            height: 2in; 
-            border: 2px solid #000; 
-            padding: 10px; 
+            width: 4in;
+            height: 2in;
+            border: 2px solid #000;
+            padding: 8px;
             font-family: Arial, sans-serif;
             page-break-after: always;
+            box-sizing: border-box;
         ">
+            <div style="display: flex; align-items: center; gap: 6px; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 6px;">
+                ${logoUrl
+                    ? `<img src="${logoUrl}" alt="logo" style="height: 22px; max-width: 80px; object-fit: contain;" />`
+                    : `<span style="font-size: 10px; font-weight: bold; color: #333;">${orgName}</span>`
+                }
+            </div>
             <div style="display: flex; justify-content: space-between;">
                 <div style="flex: 1;">
-                    <h2 style="margin: 0; font-size: 18px; font-weight: bold;">
+                    <h2 style="margin: 0; font-size: 16px; font-weight: bold;">
                         ${asset.asset_tag}
                     </h2>
-                    <p style="margin: 5px 0; font-size: 14px; font-weight: bold;">
+                    <p style="margin: 4px 0; font-size: 13px; font-weight: bold;">
                         ${asset.asset_name}
                     </p>
-                    <p style="margin: 3px 0; font-size: 11px; color: #666;">
+                    <p style="margin: 2px 0; font-size: 10px; color: #666;">
                         Asset #: ${asset.asset_number}
                     </p>
                     ${asset.serial_number ? `
-                        <p style="margin: 3px 0; font-size: 11px; color: #666;">
+                        <p style="margin: 2px 0; font-size: 10px; color: #666;">
                             Serial: ${asset.serial_number}
                         </p>
                     ` : ''}
-                    <p style="margin: 3px 0; font-size: 11px; color: #666;">
+                    <p style="margin: 2px 0; font-size: 10px; color: #666;">
                         Location: ${asset.location_code || 'N/A'}
                     </p>
-                    <div style="margin-top: 10px; font-family: 'Courier New', monospace; font-size: 16px; letter-spacing: 2px;">
+                    <div style="margin-top: 6px; font-family: 'Courier New', monospace; font-size: 13px; letter-spacing: 2px;">
                         ${barcodeData}
                     </div>
                 </div>
                 ${includeQR ? `
-                    <div style="width: 100px; height: 100px; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center;">
-                        ${generateQRCodeSVG(qrData, 90)}
+                    <div style="width: 90px; height: 90px; border: 1px solid #ccc; display: flex; align-items: center; justify-content: center;">
+                        ${generateQRCodeSVG(qrData, 80)}
                     </div>
                 ` : ''}
             </div>
-            <div style="margin-top: 10px; font-size: 9px; color: #999; text-align: center; border-top: 1px solid #ddd; padding-top: 5px;">
-                ${new Date().toLocaleDateString()} | Company Fixed Asset
+            <div style="margin-top: 6px; font-size: 8px; color: #999; text-align: center; border-top: 1px solid #ddd; padding-top: 4px;">
+                ${new Date().toLocaleDateString()} | ${orgName}
             </div>
         </div>
     `;

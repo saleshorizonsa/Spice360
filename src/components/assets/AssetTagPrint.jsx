@@ -6,8 +6,10 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Printer, Download, QrCode } from "lucide-react";
 import { generateAssetTagLabel } from "../utils/assetTagGenerator";
+import { useOrganization } from "@/components/utils/OrganizationContext";
 
 export default function AssetTagPrint({ assets, onClose }) {
+    const { currentOrg } = useOrganization();
     const [printOptions, setPrintOptions] = useState({
         includeQR: true,
         labelSize: '4x2',
@@ -19,8 +21,8 @@ export default function AssetTagPrint({ assets, onClose }) {
     const handlePrint = () => {
         const printWindow = window.open('', '_blank');
         
-        const labels = assetsArray.map(asset => 
-            generateAssetTagLabel(asset, printOptions.includeQR)
+        const labels = assetsArray.map(asset =>
+            generateAssetTagLabel(asset, printOptions.includeQR, currentOrg || {})
         ).join('\n');
 
         const html = `
@@ -62,8 +64,8 @@ export default function AssetTagPrint({ assets, onClose }) {
 
     const handleDownloadPDF = () => {
         // Generate labels HTML
-        const labels = assetsArray.map(asset => 
-            generateAssetTagLabel(asset, printOptions.includeQR)
+        const labels = assetsArray.map(asset =>
+            generateAssetTagLabel(asset, printOptions.includeQR, currentOrg || {})
         ).join('\n');
 
         // Create a blob and download
@@ -107,9 +109,9 @@ export default function AssetTagPrint({ assets, onClose }) {
                         <h3 className="text-sm font-semibold mb-2">Preview</h3>
                         <div className="bg-white border-2 border-dashed border-gray-300 p-4 rounded">
                             {assetsArray.length === 1 ? (
-                                <div 
-                                    dangerouslySetInnerHTML={{ 
-                                        __html: generateAssetTagLabel(assetsArray[0], printOptions.includeQR) 
+                                <div
+                                    dangerouslySetInnerHTML={{
+                                        __html: generateAssetTagLabel(assetsArray[0], printOptions.includeQR, currentOrg || {})
                                     }}
                                 />
                             ) : (

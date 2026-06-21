@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
+import { useOrganization } from "@/components/utils/OrganizationContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function ARAgingReport() {
+    const { currentOrg } = useOrganization();
     const [asOfDate, setAsOfDate] = useState(new Date().toISOString().split('T')[0]);
     const [fromCustomer, setFromCustomer] = useState("ALL");
     const [toCustomer, setToCustomer] = useState("ALL");
@@ -235,7 +237,7 @@ export default function ARAgingReport() {
     const handleExportPDF = () => {
         const printWindow = window.open('', '_blank');
         let effectiveFromCustomer, effectiveToCustomer;
-        
+
         if (selectionMode === "search" || selectionMode === "manual") {
             effectiveFromCustomer = manualFromCustomer || "ALL";
             effectiveToCustomer = manualToCustomer || "ALL";
@@ -244,13 +246,20 @@ export default function ARAgingReport() {
             effectiveToCustomer = toCustomer;
         }
 
-        const customerRangeText = effectiveFromCustomer === "ALL" && effectiveToCustomer === "ALL" 
-            ? "All Customers" 
+        const customerRangeText = effectiveFromCustomer === "ALL" && effectiveToCustomer === "ALL"
+            ? "All Customers"
             : effectiveFromCustomer !== "ALL" && effectiveToCustomer !== "ALL"
             ? `Customers: ${effectiveFromCustomer} to ${effectiveToCustomer}`
             : effectiveFromCustomer !== "ALL"
             ? `Customers from: ${effectiveFromCustomer}`
             : `Customers up to: ${effectiveToCustomer}`;
+
+        const org = currentOrg || {};
+        const orgName = org.organization_name || org.company_legal_name || org.name || "Spice360";
+        const logoUrl = org.logo_url || "";
+        const orgAddress = [org.address, org.city, org.country].filter(Boolean).join(", ");
+        const orgPhone = org.contact_phone || org.phone || "";
+        const orgEmail = org.contact_email || org.email || "";
 
         const content = `
             <html>
@@ -258,8 +267,11 @@ export default function ARAgingReport() {
                     <title>Accounts Receivable Aging - ${asOfDate}</title>
                     <style>
                         body { font-family: Arial, sans-serif; padding: 40px; font-size: 11px; }
-                        h1 { color: #059669; text-align: center; }
-                        .header { text-align: center; margin-bottom: 20px; }
+                        h1 { color: #059669; text-align: center; margin: 4px 0; }
+                        .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #059669; padding-bottom: 14px; }
+                        .header-inner { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 8px; }
+                        .header-inner img { max-height: 52px; max-width: 160px; object-fit: contain; }
+                        .org-meta { font-size: 10px; color: #6b7280; line-height: 1.7; }
                         .filter-info { text-align: center; margin-bottom: 15px; color: #4b5563; font-style: italic; }
                         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
                         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
@@ -272,8 +284,18 @@ export default function ARAgingReport() {
                 </head>
                 <body>
                     <div class="header">
-                        <h1>MatrixERP - Accounts Receivable Aging</h1>
-                        <p>As of ${new Date(asOfDate).toLocaleDateString()}</p>
+                        <div class="header-inner">
+                            ${logoUrl ? `<img src="${logoUrl}" alt="Logo" />` : ""}
+                            <div>
+                                <h1>${orgName}</h1>
+                                <div class="org-meta">
+                                    ${orgAddress ? `<div>${orgAddress}</div>` : ""}
+                                    ${(orgPhone || orgEmail) ? `<div>${[orgPhone, orgEmail].filter(Boolean).join(" | ")}</div>` : ""}
+                                </div>
+                            </div>
+                        </div>
+                        <div style="font-size:13px;font-weight:600;color:#374151;margin-top:6px;">Accounts Receivable Aging Report</div>
+                        <p style="margin:4px 0;font-size:11px;color:#6b7280;">As of ${new Date(asOfDate).toLocaleDateString()}</p>
                     </div>
                     <div class="filter-info">
                         <p>${customerRangeText}</p>
