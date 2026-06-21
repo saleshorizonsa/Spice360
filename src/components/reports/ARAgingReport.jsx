@@ -45,21 +45,22 @@ export default function ARAgingReport() {
         initialData: []
     });
 
-    // Get unique customers sorted by code
-    const uniqueCustomers = [...new Set(arRecords.map(ar => ar.customer_code))]
-        .map(code => arRecords.find(ar => ar.customer_code === code))
-        .filter(c => c && c.customer_code)
+    // Full customer list sorted by code — used for dropdown and search suggestions.
+    // uniqueCustomers was previously derived from AR records (so only customers with
+    // existing AR entries appeared). Now we use the Customer entity list so all
+    // customers are visible regardless of whether they have open receivables.
+    const sortedCustomers = [...customers]
+        .filter(c => c.customer_code)
         .sort((a, b) => (a.customer_code || '').localeCompare(b.customer_code || ''));
 
     // Filter customers based on search query
     const getFilteredCustomers = (query) => {
         if (!query || query.length < 1) return [];
-        
         const lowerQuery = query.toLowerCase();
-        return uniqueCustomers.filter(customer => 
-            customer.customer_code.toLowerCase().includes(lowerQuery) ||
-            customer.customer_name.toLowerCase().includes(lowerQuery)
-        ).slice(0, 10); // Limit to 10 suggestions
+        return sortedCustomers.filter(customer =>
+            (customer.customer_code || '').toLowerCase().includes(lowerQuery) ||
+            (customer.customer_name || '').toLowerCase().includes(lowerQuery)
+        ).slice(0, 10);
     };
 
     const fromSuggestions = getFilteredCustomers(fromSearchQuery);
@@ -129,14 +130,14 @@ export default function ARAgingReport() {
     };
 
     const selectFromCustomer = (customer) => {
-        setFromSearchQuery(`${customer.customer_code} - ${customer.customer_name}`);
+        setFromSearchQuery(`${customer.customer_code}${customer.customer_name ? ` - ${customer.customer_name}` : ''}`);
         setManualFromCustomer(customer.customer_code);
         setShowFromSuggestions(false);
         setFromFocusedIndex(-1);
     };
 
     const selectToCustomer = (customer) => {
-        setToSearchQuery(`${customer.customer_code} - ${customer.customer_name}`);
+        setToSearchQuery(`${customer.customer_code}${customer.customer_name ? ` - ${customer.customer_name}` : ''}`);
         setManualToCustomer(customer.customer_code);
         setShowToSuggestions(false);
         setToFocusedIndex(-1);
@@ -405,7 +406,7 @@ export default function ARAgingReport() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="ALL">All Customers</SelectItem>
-                                        {uniqueCustomers.map(customer => (
+                                        {sortedCustomers.map(customer => (
                                             <SelectItem key={customer.customer_code} value={customer.customer_code}>
                                                 {customer.customer_code} - {customer.customer_name}
                                             </SelectItem>
@@ -421,7 +422,7 @@ export default function ARAgingReport() {
                                     </SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="ALL">All Customers</SelectItem>
-                                        {uniqueCustomers.map(customer => (
+                                        {sortedCustomers.map(customer => (
                                             <SelectItem key={customer.customer_code} value={customer.customer_code}>
                                                 {customer.customer_code} - {customer.customer_name}
                                             </SelectItem>
