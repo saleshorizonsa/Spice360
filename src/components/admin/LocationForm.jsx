@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -29,6 +30,8 @@ export default function LocationForm({ item, onClose }) {
         status: 'active',
         notes: ''
     });
+    const [isDirty, setIsDirty] = useState(false);
+    const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
 
     useEffect(() => {
         if (item) {
@@ -60,11 +63,12 @@ export default function LocationForm({ item, onClose }) {
     };
 
     const handleChange = (field, value) => {
+        if (!isDirty) setIsDirty(true);
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
+        <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>
@@ -225,7 +229,7 @@ export default function LocationForm({ item, onClose }) {
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4 border-t">
-                        <Button type="button" variant="outline" onClick={onClose}>
+                        <Button type="button" variant="outline" onClick={guardedClose(onClose)}>
                             Cancel
                         </Button>
                         <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">

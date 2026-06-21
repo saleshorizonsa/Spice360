@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,6 +79,8 @@ export default function DocumentNumberRangeForm({ item, onClose }) {
     const isEdit = !!item;
 
     const [form, setForm] = useState({ ...EMPTY });
+    const [isDirty, setIsDirty] = useState(false);
+    const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
 
     useEffect(() => {
         if (item) {
@@ -103,9 +106,10 @@ export default function DocumentNumberRangeForm({ item, onClose }) {
 
     const preview = useMemo(() => buildPreview(form), [form]);
 
-    const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
+    const set = (key, val) => { if (!isDirty) setIsDirty(true); setForm(f => ({ ...f, [key]: val })); };
 
     const handleDocTypeChange = (val) => {
+        if (!isDirty) setIsDirty(true);
         const dt = DOCUMENT_TYPES.find(d => d.value === val);
         setForm(f => ({
             ...f,
@@ -162,7 +166,7 @@ export default function DocumentNumberRangeForm({ item, onClose }) {
     };
 
     return (
-        <Dialog open={true} onOpenChange={onClose}>
+        <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-lg">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
@@ -380,7 +384,7 @@ export default function DocumentNumberRangeForm({ item, onClose }) {
                     </div>
 
                     <DialogFooter className="pt-2">
-                        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                        <Button type="button" variant="outline" onClick={guardedClose(onClose)}>Cancel</Button>
                         <Button type="submit" disabled={saveMutation.isPending}
                             className="bg-indigo-600 hover:bg-indigo-700">
                             {saveMutation.isPending ? "Saving…" : isEdit ? "Update Range" : "Create Range"}

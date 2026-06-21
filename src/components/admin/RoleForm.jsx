@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -29,6 +30,8 @@ export default function RoleForm({ item, onClose }) {
 
     const [expandedModules, setExpandedModules] = useState({});
     const [activeTab, setActiveTab] = useState('basic');
+    const [isDirty, setIsDirty] = useState(false);
+    const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
 
     useEffect(() => {
         if (item) {
@@ -78,6 +81,7 @@ export default function RoleForm({ item, onClose }) {
     };
 
     const toggleAllInModule = (moduleName, subModuleName, value) => {
+        if (!isDirty) setIsDirty(true);
         setFormData(prev => {
             const newPermissions = { ...prev.permissions };
             const module = newPermissions[moduleName];
@@ -92,6 +96,7 @@ export default function RoleForm({ item, onClose }) {
     };
 
     const togglePermission = (moduleName, subModuleName, action) => {
+        if (!isDirty) setIsDirty(true);
         setFormData(prev => {
             const newPermissions = { ...prev.permissions };
             const currentValue = newPermissions[moduleName][subModuleName][action];
@@ -103,7 +108,7 @@ export default function RoleForm({ item, onClose }) {
     const permissionModules = getPermissionModules();
 
     return (
-        <Dialog open onOpenChange={onClose}>
+        <Dialog open onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-6xl max-h-[90vh]">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
@@ -124,7 +129,7 @@ export default function RoleForm({ item, onClose }) {
                                 <Label>Role Code *</Label>
                                 <Input
                                     value={formData.role_code}
-                                    onChange={(e) => setFormData({ ...formData, role_code: e.target.value })}
+                                    onChange={(e) => { if (!isDirty) setIsDirty(true); setFormData({ ...formData, role_code: e.target.value }); }}
                                     placeholder="e.g., FIN_MGR"
                                     disabled={item?.is_system_role}
                                 />
@@ -133,7 +138,7 @@ export default function RoleForm({ item, onClose }) {
                                 <Label>Status</Label>
                                 <Select 
                                     value={formData.status} 
-                                    onValueChange={(value) => setFormData({ ...formData, status: value })}
+                                    onValueChange={(value) => { if (!isDirty) setIsDirty(true); setFormData({ ...formData, status: value }); }}
                                 >
                                     <SelectTrigger>
                                         <SelectValue />
@@ -150,7 +155,7 @@ export default function RoleForm({ item, onClose }) {
                             <Label>Role Name *</Label>
                             <Input
                                 value={formData.role_name}
-                                onChange={(e) => setFormData({ ...formData, role_name: e.target.value })}
+                                onChange={(e) => { if (!isDirty) setIsDirty(true); setFormData({ ...formData, role_name: e.target.value }); }}
                                 placeholder="e.g., Finance Manager"
                             />
                         </div>
@@ -160,7 +165,7 @@ export default function RoleForm({ item, onClose }) {
                             <Label>Description</Label>
                             <Textarea
                                 value={formData.description}
-                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                onChange={(e) => { if (!isDirty) setIsDirty(true); setFormData({ ...formData, description: e.target.value }); }}
                                 placeholder="Describe the role and its responsibilities..."
                                 rows={4}
                             />
@@ -230,7 +235,7 @@ export default function RoleForm({ item, onClose }) {
                 </Tabs>
 
                 <DialogFooter>
-                    <Button variant="outline" onClick={onClose}>
+                    <Button variant="outline" onClick={guardedClose(onClose)}>
                         <X className="w-4 h-4 mr-2" />
                         Cancel
                     </Button>

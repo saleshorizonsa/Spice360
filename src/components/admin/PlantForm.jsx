@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -32,6 +33,13 @@ export default function PlantForm({ item, onClose, open }) {
 
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const [isDirty, setIsDirty] = useState(false);
+    const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
+    const _isFirstRender = useRef(true);
+    useEffect(() => {
+        if (_isFirstRender.current) { _isFirstRender.current = false; return; }
+        if (!isDirty) setIsDirty(true);
+    }, [formData]);
 
     const { data: organizations = [] } = useQuery({
         queryKey: ['organizations'],
@@ -69,7 +77,7 @@ export default function PlantForm({ item, onClose, open }) {
     };
 
     return (
-        <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+        <Dialog open={open} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle>{item ? 'Edit' : 'New'} Plant</DialogTitle>
@@ -234,7 +242,7 @@ export default function PlantForm({ item, onClose, open }) {
                     </div>
 
                     <div className="flex justify-end gap-2">
-                        <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+                        <Button type="button" variant="outline" onClick={guardedClose(onClose)}>Cancel</Button>
                         <Button type="submit" className="bg-emerald-600">
                             {item ? 'Update' : 'Create'} Plant
                         </Button>

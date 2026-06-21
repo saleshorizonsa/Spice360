@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -28,6 +29,8 @@ export default function UnitConversionForm({ item, materialCode, onClose = () =>
         status: 'active',
         notes: ''
     });
+    const [isDirty, setIsDirty] = useState(false);
+    const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
 
     const { data: materials = [] } = useQuery({
         queryKey: ['materials'],
@@ -85,6 +88,7 @@ export default function UnitConversionForm({ item, materialCode, onClose = () =>
     };
 
     const handleChange = (field, value) => {
+        if (!isDirty) setIsDirty(true);
         setFormData(prev => {
             const updated = { ...prev, [field]: value };
             
@@ -111,7 +115,7 @@ export default function UnitConversionForm({ item, materialCode, onClose = () =>
     ];
 
     return (
-        <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+        <Dialog open={open} onOpenChange={guardedOpenChange(onClose)}>
             <DialogContent className="max-w-2xl">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
@@ -276,7 +280,7 @@ export default function UnitConversionForm({ item, materialCode, onClose = () =>
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4 border-t">
-                        <Button type="button" variant="outline" onClick={onClose}>
+                        <Button type="button" variant="outline" onClick={guardedClose(onClose)}>
                             Cancel
                         </Button>
                         <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
