@@ -8,7 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import SearchableSelect from "@/components/ui/SearchableSelect";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
@@ -80,21 +81,18 @@ export default function JournalEntry() {
     initialData: []
   });
 
-  const groupedAccounts = useMemo(() => {
+  const accountOptions = useMemo(() => {
     const accountMap = Object.fromEntries(accounts.map(a => [a.account_code, a]));
-    const selectable = accounts.filter(a => !a.is_header && a.allow_direct_posting !== false);
-    const groups = {};
-    const ungrouped = [];
-    for (const acc of selectable) {
-      const parent = acc.parent_account && accountMap[acc.parent_account];
-      if (parent) {
-        if (!groups[parent.account_code]) groups[parent.account_code] = { label: parent.account_name, items: [] };
-        groups[parent.account_code].items.push(acc);
-      } else {
-        ungrouped.push(acc);
-      }
-    }
-    return { groups, ungrouped };
+    return accounts
+      .filter(a => !a.is_header && a.allow_direct_posting !== false)
+      .map(acc => {
+        const parent = acc.parent_account && accountMap[acc.parent_account];
+        return {
+          value: acc.account_code,
+          label: `${acc.account_code} - ${acc.account_name}`,
+          group: parent?.account_name ?? undefined,
+        };
+      });
   }, [accounts]);
 
   const { data: journals = [] } = useQuery({
@@ -239,32 +237,14 @@ export default function JournalEntry() {
                 {lines.map((line, index) => (
                   <TableRow key={index}>
                     <TableCell className="min-w-[280px]">
-                      <Select value={line.account_code || ""} onValueChange={(value) => updateLine(index, "account_code", value)}>
-                        <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(groupedAccounts.groups).map(([parentCode, group]) => (
-                            <SelectGroup key={parentCode}>
-                              <SelectLabel>{group.label}</SelectLabel>
-                              {group.items.map(account => (
-                                <SelectItem key={account.id || account.account_code} value={account.account_code}>
-                                  {account.account_code} - {account.account_name}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          ))}
-                          {groupedAccounts.ungrouped.length > 0 && (
-                            <SelectGroup>
-                              <SelectLabel>Other</SelectLabel>
-                              {groupedAccounts.ungrouped.map(account => (
-                                <SelectItem key={account.id || account.account_code} value={account.account_code}>
-                                  {account.account_code} - {account.account_name}
-                                </SelectItem>
-                              ))}
-                            </SelectGroup>
-                          )}
-                        </SelectContent>
-                      </Select>
-                      <div className="mt-1 text-xs text-slate-500">{line.account_name}</div>
+                      <SearchableSelect
+                        value={line.account_code || ""}
+                        onChange={(val) => updateLine(index, "account_code", val)}
+                        options={accountOptions}
+                        placeholder="Select account"
+                        searchPlaceholder="Search by code or name…"
+                        clearable
+                      />
                     </TableCell>
                     <TableCell><Input value={line.description || ""} onChange={(e) => updateLine(index, "description", e.target.value)} /></TableCell>
                     <TableCell><Input type="number" step="0.01" value={line.debit} onChange={(e) => updateLine(index, "debit", Number(e.target.value || 0))} /></TableCell>
