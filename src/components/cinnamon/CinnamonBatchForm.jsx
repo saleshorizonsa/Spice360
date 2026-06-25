@@ -136,9 +136,18 @@ export default function CinnamonBatchForm({ item, onClose }) {
             isEdit
                 ? matrixSales.entities.CinnamonBatch.update(item.id, data)
                 : matrixSales.entities.CinnamonBatch.create(data),
-        onSuccess: () => {
+        onSuccess: (savedBatch) => {
             queryClient.invalidateQueries({ queryKey: ["cinnamonBatches"] });
             toast({ title: "Success", description: isEdit ? "Batch updated" : "Batch created" });
+            if (!isEdit && !savedBatch?.grn_reference && (parseFloat(savedBatch?.purchase_price_per_kg) || 0) > 0) {
+                const rawCost = (parseFloat(savedBatch.purchase_price_per_kg) || 0) * (parseFloat(savedBatch.input_weight_kg) || 0);
+                toast({
+                    title: "No GRN linked — raw material cost not in GL",
+                    description: `Rs ${rawCost.toFixed(2)} bark purchase has not hit account 1200. Post the purchase through Purchasing → GRN before running processing steps, or account 1200 will go negative on delivery.`,
+                    variant: "destructive",
+                    duration: 12000,
+                });
+            }
             setIsDirty(false);
             onClose();
         },

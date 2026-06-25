@@ -47,7 +47,7 @@ export const getServiceContractLines = (contract = {}) => {
       quantity: 1,
       unit: "month",
       unit_price: Number(contract.monthly_amount || contract.contract_amount || 0),
-      vat_rate: Number(contract.vat_rate ?? 15),
+      vat_rate: Number(contract.vat_rate ?? 18),
       discount_percent: 0
     }];
 
@@ -56,7 +56,7 @@ export const getServiceContractLines = (contract = {}) => {
     const unitPrice = Number(line.unit_price || 0);
     const discountPercent = Number(line.discount_percent || 0);
     const taxableAmount = quantity * unitPrice * (1 - discountPercent / 100);
-    const vatRate = Number(line.vat_rate ?? contract.vat_rate ?? 15);
+    const vatRate = Number(line.vat_rate ?? contract.vat_rate ?? 18);
     const vatAmount = taxableAmount * (vatRate / 100);
     return {
       line_number: index + 1,
@@ -113,7 +113,7 @@ export const buildServiceInvoiceFromContract = (contract = {}, billingDateInput 
     unit_price: firstLine.unit_price || 0,
     unit_of_measure: firstLine.unit || "month",
     subtotal,
-    tax_percent: Number(contract.vat_rate ?? firstLine.vat_rate ?? 15),
+    tax_percent: Number(contract.vat_rate ?? firstLine.vat_rate ?? 18),
     tax_amount: taxAmount,
     total_amount: totalAmount,
     payment_terms: contract.payment_terms || "net_30",

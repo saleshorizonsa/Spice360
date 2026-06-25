@@ -1,7 +1,7 @@
 ﻿import React, { useMemo, useState } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Eye, Plus, RotateCcw, Save, Send, Trash2 } from "lucide-react";
+import { Eye, Plus, RotateCcw, Save, Search, Send, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,6 +61,7 @@ export default function JournalEntry() {
   const orgId = currentOrg?.id;
   const [periodFilter, setPeriodFilter] = useState(new Date().toISOString().slice(0, 7));
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [search, setSearch] = useState("");
   const [detailJournal, setDetailJournal] = useState(null);
   const [detailLines, setDetailLines] = useState([]);
   const [form, setForm] = useState({
@@ -92,10 +93,18 @@ export default function JournalEntry() {
     return { totalDebit, totalCredit, difference: totalDebit - totalCredit, balanced: Math.abs(totalDebit - totalCredit) < 0.01 };
   }, [lines]);
 
-  const filteredJournals = journals.filter((journal) =>
-    (!periodFilter || journal.period === periodFilter || journal.entry_date?.startsWith(periodFilter)) &&
-    (statusFilter === "ALL" || journal.status === statusFilter)
-  );
+  const filteredJournals = journals.filter((journal) => {
+    if (periodFilter && !journal.period?.startsWith(periodFilter) && !journal.entry_date?.startsWith(periodFilter)) return false;
+    if (statusFilter !== "ALL" && journal.status !== statusFilter) return false;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      return (journal.journal_number || '').toLowerCase().includes(q) ||
+        (journal.description || '').toLowerCase().includes(q) ||
+        (journal.reference_id || '').toLowerCase().includes(q) ||
+        (journal.entry_type || '').toLowerCase().includes(q);
+    }
+    return true;
+  });
 
   const updateLine = (index, field, value) => {
     setLines((prev) => prev.map((line, lineIndex) => {
@@ -250,14 +259,20 @@ export default function JournalEntry() {
 
       <Card>
         <CardHeader>
-          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-            <CardTitle>Journal List</CardTitle>
-            <div className="flex gap-2">
-              <Input type="month" value={periodFilter} onChange={(e) => setPeriodFilter(e.target.value)} />
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="ALL">All</SelectItem><SelectItem value="draft">Draft</SelectItem><SelectItem value="posted">Posted</SelectItem><SelectItem value="reversed">Reversed</SelectItem></SelectContent>
-              </Select>
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <CardTitle>Journal List</CardTitle>
+              <div className="flex flex-wrap gap-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input placeholder="Search journals..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10 w-48" />
+                </div>
+                <Input type="month" value={periodFilter} onChange={(e) => setPeriodFilter(e.target.value)} />
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="ALL">All</SelectItem><SelectItem value="draft">Draft</SelectItem><SelectItem value="posted">Posted</SelectItem><SelectItem value="reversed">Reversed</SelectItem></SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
         </CardHeader>

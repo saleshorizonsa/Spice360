@@ -10,8 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { X, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { validateDuplicateItemCode } from "@/lib/itemSelection";
+import { useTaxConfig } from "@/hooks/useTaxConfig";
 
 export default function MaterialForm({ material, initialValues = {}, onClose, onSaved }) {
+    const taxConfig = useTaxConfig();
     const [formData, setFormData] = useState(material || {
         material_code: "",
         material_name: "",
@@ -29,7 +31,7 @@ export default function MaterialForm({ material, initialValues = {}, onClose, on
         supplier_name: "",
         lead_time_days: 0,
         specifications: "",
-        vat_rate: 15,
+        vat_rate: taxConfig.vat_standard_rate,
         inventory_tracking_enabled: true,
         status: "active"
     });

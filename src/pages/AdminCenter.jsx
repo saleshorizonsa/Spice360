@@ -397,7 +397,6 @@ export default function AdminCenter() {
                                 ]}
                                 onEdit={handleEditUnitConversion}
                                 enableSorting={true}
-                                showSearch={false}
                             />
                         </CardContent>
                     </Card>
@@ -448,7 +447,6 @@ export default function AdminCenter() {
                                 onBulkStatusChange={handleBulkStatusChangePlants}
                                 enableBulkActions={true}
                                 enableSorting={true}
-                                showSearch={false}
                             />
                         </CardContent>
                     </Card>
@@ -487,7 +485,6 @@ export default function AdminCenter() {
                                 onBulkStatusChange={handleBulkStatusChangeLocations}
                                 enableBulkActions={true}
                                 enableSorting={true}
-                                showSearch={false}
                             />
                         </CardContent>
                     </Card>

@@ -201,8 +201,8 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
                             entryType:     "production",
                             orgId:         currentOrg.id,
                         });
-                    } catch (_) {
-                        // Non-fatal: accounts may not yet be configured
+                    } catch (glError) {
+                        toast({ title: "Step saved — GL not posted", description: glError.message || "Check GL account setup in Finance → Chart of Accounts.", variant: "destructive" });
                     }
                 }
             }

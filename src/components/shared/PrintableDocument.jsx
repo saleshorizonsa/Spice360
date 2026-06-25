@@ -153,7 +153,7 @@ export default function PrintableDocument({
                         )}
                         {totals.vat_amount != null && (
                             <div style={{ display: "flex", justifyContent: "space-between", fontSize: "13px", padding: "5px 0", color: "#475569" }}>
-                                <span>VAT ({totals.vat_percent || 15}%)</span>
+                                <span>VAT ({totals.vat_percent || 18}%)</span>
                                 <span>{totals.currency || "LKR"} {Number(totals.vat_amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                             </div>
                         )}

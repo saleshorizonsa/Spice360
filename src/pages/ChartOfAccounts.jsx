@@ -248,6 +248,7 @@ export default function ChartOfAccounts() {
   const { toast } = useToast();
   const [editing, setEditing] = useState(null);
   const [showForm, setShowForm] = useState(false);
+  const [search, setSearch] = useState("");
   const orgId = currentOrg?.id;
 
   const { data: accounts = [], isLoading } = useQuery({
@@ -354,7 +355,20 @@ export default function ChartOfAccounts() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Accounts</CardTitle></CardHeader>
+        <CardHeader>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <CardTitle>Accounts</CardTitle>
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                placeholder="Search by code or name..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          </div>
+        </CardHeader>
         <CardContent>
           <div className="overflow-auto rounded-md border">
             <Table>
@@ -371,7 +385,13 @@ export default function ChartOfAccounts() {
               <TableBody>
                 {isLoading ? (
                   <TableRow><TableCell colSpan={6} className="py-8 text-center">Loading accounts...</TableCell></TableRow>
-                ) : rows.map((account) => (
+                ) : rows.filter((account) => {
+                    if (!search.trim()) return true;
+                    const q = search.toLowerCase();
+                    return (account.account_code || '').toLowerCase().includes(q) ||
+                      (account.account_name || '').toLowerCase().includes(q) ||
+                      (account.account_type || '').toLowerCase().includes(q);
+                  }).map((account) => (
                   <TableRow key={`${account.id || account.account_code}`}>
                     <TableCell className={account.is_header ? "font-bold" : "font-mono"}>{account.account_code}</TableCell>
                     <TableCell className={account.is_header ? "font-bold" : ""} style={{ paddingInlineStart: `${account.depth * 16 + 16}px` }}>

@@ -333,7 +333,7 @@ export default function QuotationForm({ item, onClose }) {
                             <span className="font-semibold">LKR {subtotal.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span>VAT (15%):</span>
+                            <span>VAT ({taxConfig.vat_standard_rate}%):</span>
                             <span className="font-semibold">LKR {vatAmount.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-lg font-bold border-t pt-2">

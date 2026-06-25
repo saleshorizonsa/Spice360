@@ -258,6 +258,23 @@ export default function CinnamonPackagingForm({ item, onClose }) {
                 title: "Success",
                 description: isEdit ? "Packaging updated" : "Packaging recorded and stock posted",
             });
+            if (!isEdit) {
+                const usableKgNow = parseFloat(selectedBatch?.usable_weight_kg) || parseFloat(selectedBatch?.total_output_kg) || 0;
+                if (usableKgNow > 0) {
+                    const prevPackagedKg = batchPacks.reduce((sum, p) => sum + (parseFloat(p.total_weight_kg) || 0), 0);
+                    const totalPackagedKg = prevPackagedKg + totalWeightKg;
+                    const wasteKg = parseFloat((usableKgNow - totalPackagedKg).toFixed(3));
+                    if (wasteKg > 0.01) {
+                        const costPerKg = grandTotalCost / usableKgNow;
+                        toast({
+                            title: `${wasteKg} kg unpackaged — account 1200 will not clear`,
+                            description: `Rs ${(wasteKg * costPerKg).toFixed(2)} processing waste cost is stranded on account 1200. Post a manual write-off (DR 5001 / CR 1200) when the batch is complete.`,
+                            variant: "destructive",
+                            duration: 12000,
+                        });
+                    }
+                }
+            }
             onClose();
         },
         onError: (error) => {

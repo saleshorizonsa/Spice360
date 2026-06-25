@@ -269,6 +269,39 @@ export default function InvoiceForm({ item, onClose }) {
                 } catch (error) {
                     toast({ title: "Invoice saved but GL posting failed", description: error.message, variant: "destructive" });
                 }
+
+                // COGS — only when no Delivery PGI exists for this invoice.
+                // When a Delivery was completed first, DeliveryForm already posted DR 5001 / CR 1200.
+                // Guard: delivery_references empty AND invoice carries a physical product_code.
+                const storedRefs = savedInvoice.delivery_references;
+                const hasDelivery = Array.isArray(storedRefs)
+                    ? storedRefs.length > 0
+                    : (typeof storedRefs === 'string' && storedRefs)
+                        ? (() => { try { return JSON.parse(storedRefs).length > 0; } catch { return false; } })()
+                        : false;
+                if (savedInvoice.product_code && !hasDelivery) {
+                    try {
+                        const stockLevels = await matrixSales.entities.StockLevel.filter({ material_code: savedInvoice.product_code });
+                        const unitCost    = parseFloat(stockLevels?.[0]?.unit_cost || 0);
+                        const cogsAmount  = unitCost * (savedInvoice.quantity || 0);
+                        if (cogsAmount > 0) {
+                            await postJournalEntry({
+                                lines: [
+                                    { account_code: gl.cogs_general, account_name: 'Cost of Goods Sold', debit: cogsAmount, credit: 0,          description: `${savedInvoice.product_name} × ${savedInvoice.quantity}` },
+                                    { account_code: gl.inventory,    account_name: 'Inventory',          debit: 0,          credit: cogsAmount, description: `Goods issue: ${savedInvoice.invoice_number}` }
+                                ],
+                                referenceType: 'sales_invoice_cogs',
+                                referenceId:   savedInvoice.invoice_number,
+                                description:   `COGS – ${savedInvoice.invoice_number} – ${savedInvoice.customer_name}`,
+                                entryDate:     savedInvoice.invoice_date,
+                                entryType:     'goods_issue',
+                                orgId:         currentOrg?.id
+                            });
+                        }
+                    } catch (cogsError) {
+                        toast({ title: "Invoice posted — COGS not posted", description: cogsError.message || "Create a Delivery for this invoice to record COGS.", variant: "destructive" });
+                    }
+                }
             }
 
             // Create AR record on first submission so customer balance is tracked in Finance → AR

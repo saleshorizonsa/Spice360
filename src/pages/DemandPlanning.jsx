@@ -228,7 +228,6 @@ export default function DemandPlanning() {
                         data={forecasts}
                         columns={forecastColumns}
                         getBadgeColor={getBadgeColor}
-                        showSearch={false}
                     />
 
                     {forecasts.length === 0 && (

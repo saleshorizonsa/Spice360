@@ -11,21 +11,22 @@ import { matrixSales } from "@/api/matrixSalesClient";
 import SearchableSelect from "@/components/shared/SearchableSelect";
 import { useOrganization } from "@/components/utils/OrganizationContext";
 import { calculateNextBillingDate } from "@/lib/serviceBilling";
+import { useTaxConfig } from "@/hooks/useTaxConfig";
 import { Plus, Trash2 } from "lucide-react";
-
-const emptyLine = {
-  service_description: "Monthly IT Support Services",
-  quantity: 1,
-  unit: "month",
-  unit_price: 0,
-  vat_rate: 15,
-  discount_percent: 0
-};
 
 export default function ServiceContractForm({ item, onClose }) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const { currentOrg } = useOrganization();
+  const taxConfig = useTaxConfig();
+  const emptyLine = {
+    service_description: "Monthly IT Support Services",
+    quantity: 1,
+    unit: "month",
+    unit_price: 0,
+    vat_rate: taxConfig.vat_standard_rate,
+    discount_percent: 0
+  };
   const [formData, setFormData] = useState(item || {
     contract_number: "",
     customer_code: "",
@@ -40,7 +41,7 @@ export default function ServiceContractForm({ item, onClose }) {
     end_date: "",
     next_billing_date: new Date().toISOString().slice(0, 10),
     monthly_amount: 0,
-    vat_rate: 15,
+    vat_rate: taxConfig.vat_standard_rate,
     payment_terms: "net_30",
     invoice_type: "standard_tax_invoice",
     auto_send_invoice: false,

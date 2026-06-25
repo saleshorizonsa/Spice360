@@ -129,7 +129,7 @@ export const normalizeInvoiceForPrint = (invoice = {}, organization = {}, prefer
   const unitPrice = Number(invoice.unit_price || 0);
   const discount = Number(invoice.discount_amount || invoice.discount || 0);
   const taxableAmount = Number(invoice.subtotal ?? Math.max(quantity * unitPrice - discount, 0));
-  const vatRate = Number(invoice.tax_percent ?? invoice.vat_percent ?? 15);
+  const vatRate = Number(invoice.tax_percent ?? invoice.vat_percent ?? 18);
   const vatAmount = Number(invoice.tax_amount ?? invoice.vat_amount ?? taxableAmount * (vatRate / 100));
   const totalAmount = Number(invoice.total_amount ?? taxableAmount + vatAmount);
   const currency = invoice.currency || "SAR";
@@ -142,7 +142,7 @@ export const normalizeInvoiceForPrint = (invoice = {}, organization = {}, prefer
       unit_price: Number(line.unit_price || 0),
       discount: Number(line.discount_amount || line.discount || 0),
       taxable_amount: Number(line.taxable_amount || 0),
-      vat_rate: Number(line.vat_rate ?? invoice.tax_percent ?? 15),
+      vat_rate: Number(line.vat_rate ?? invoice.tax_percent ?? 18),
       vat_amount: Number(line.vat_amount || 0),
       total_amount: Number(line.line_total ?? line.total_amount ?? 0)
     }))
@@ -209,7 +209,7 @@ export const validateZatcaPrintPreferences = (preferences = {}, invoice = {}) =>
     warnings.push("Commercial registration number is commonly required on Saudi commercial documents.");
   }
 
-  if (Number(invoice.tax_percent ?? invoice.vat_percent ?? 15) > 0 && !fields.vatNumbers) {
+  if (Number(invoice.tax_percent ?? invoice.vat_percent ?? 18) > 0 && !fields.vatNumbers) {
     errors.push("VAT numbers must remain visible on taxable invoices.");
   }
 

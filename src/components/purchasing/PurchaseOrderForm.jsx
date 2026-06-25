@@ -18,11 +18,13 @@ import { useOrganization } from "../utils/OrganizationContext";
 import DocumentList from "../shared/DocumentList";
 import ReverseButton from "../shared/ReverseButton";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
+import { useTaxConfig } from "@/hooks/useTaxConfig";
 
 export default function PurchaseOrderForm({ po, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { currentOrganization: currentOrg } = useOrganization();
+    const taxConfig = useTaxConfig();
     const [isDirty, setIsDirty] = useState(false);
     const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
@@ -92,7 +94,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
         freight_cost: 0,
         duty_cost: 0,
         other_costs: 0,
-        vat_percent: 15,
+        vat_percent: taxConfig.vat_standard_rate,
         vat_amount: 0,
         total_amount: 0,
         currency: 'LKR',

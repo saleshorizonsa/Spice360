@@ -2,7 +2,7 @@
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Download } from "lucide-react";
+import { Download, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +35,7 @@ export default function AccountLedger() {
   const [fromDate, setFromDate] = useState(monthStart);
   const [toDate, setToDate] = useState(new Date().toISOString().slice(0, 10));
   const [selectedAccount, setSelectedAccount] = useState(queryAccount);
+  const [search, setSearch] = useState("");
 
   const { data: accounts = [] } = useQuery({
     queryKey: ["accounts", orgId],
@@ -127,6 +128,13 @@ export default function AccountLedger() {
             </div>
             <div><Label>From</Label><Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} /></div>
             <div><Label>To</Label><Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} /></div>
+            <div>
+              <Label>Search</Label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input placeholder="Journal #, description..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
+              </div>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -162,7 +170,14 @@ export default function AccountLedger() {
                   <TableCell />
                   <TableCell className="text-right font-mono">{fmt(account?.opening_balance)}</TableCell>
                 </TableRow>
-                {ledgerRows.map((line) => (
+                {ledgerRows.filter((line) => {
+                    if (!search.trim()) return true;
+                    const q = search.toLowerCase();
+                    return (line.journal_number || '').toLowerCase().includes(q) ||
+                      (line.description || '').toLowerCase().includes(q) ||
+                      (line.journal?.description || '').toLowerCase().includes(q) ||
+                      (line.journal?.reference_id || '').toLowerCase().includes(q);
+                  }).map((line) => (
                   <TableRow key={line.id || `${line.journal_number}-${line.line_number}`}>
                     <TableCell>{line.journal?.entry_date}</TableCell>
                     <TableCell>

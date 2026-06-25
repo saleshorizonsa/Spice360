@@ -243,7 +243,6 @@ export default function Approvals() {
                                 data={pendingRequests}
                                 columns={requestColumns}
                                 getBadgeColor={getBadgeColor}
-                                showSearch={false}
                             />
                         </CardContent>
                     </Card>

@@ -11,6 +11,7 @@ import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
+import { useTaxConfig } from "@/hooks/useTaxConfig";
 import ReverseButton from "../shared/ReverseButton";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
@@ -23,6 +24,7 @@ export default function SalesReturnForm({ item, onClose }) {
     const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
     const { currentOrg } = useOrganization();
     const gl = useGLAccounts();
+    const taxConfig = useTaxConfig();
 
     const { data: invoices = [] } = useQuery({
         queryKey: ['invoices'],
@@ -44,7 +46,7 @@ export default function SalesReturnForm({ item, onClose }) {
         quantity_returned: 0,
         unit_price: 0,
         subtotal: 0,
-        vat_percent: 15,
+        vat_percent: taxConfig.vat_standard_rate,
         vat_amount: 0,
         total_return_amount: 0,
         credit_note_number: '',
@@ -90,7 +92,7 @@ export default function SalesReturnForm({ item, onClose }) {
                 product_name: selectedInvoice.product_name,
                 quantity_returned: selectedInvoice.quantity,
                 unit_price: selectedInvoice.unit_price,
-                vat_percent: selectedInvoice.vat_percent || 15,
+                vat_percent: selectedInvoice.vat_percent ?? taxConfig.vat_standard_rate,
                 notes: `Return for Invoice: ${invoiceNumber}`
             }));
         }

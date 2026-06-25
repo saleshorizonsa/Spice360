@@ -55,7 +55,7 @@ export default function DocumentPrintPreview({
             subtotal: document.subtotal ?? document.total_amount,
             discount: document.discount_amount || 0,
             vat_amount: document.tax_amount || document.vat_amount || null,
-            vat_percent: document.tax_percent || document.vat_percent || 15,
+            vat_percent: document.tax_percent || document.vat_percent || 18,
             total: document.total_amount,
             currency: document.currency || "LKR",
             qr_code: document.zatca_qr_code

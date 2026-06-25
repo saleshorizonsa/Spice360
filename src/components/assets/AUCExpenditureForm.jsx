@@ -260,7 +260,7 @@ export default function AUCExpenditureForm({ aucNumber, onClose }) {
                                 />
                             </div>
                             <div>
-                                <Label>VAT Amount (15%)</Label>
+                                <Label>VAT Amount ({taxConfig.vat_standard_rate}%)</Label>
                                 <Input
                                     type="number"
                                     step="0.01"

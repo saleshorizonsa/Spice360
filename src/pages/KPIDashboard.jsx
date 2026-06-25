@@ -134,7 +134,6 @@ export default function KPIDashboard() {
                                 data={filteredKPIs}
                                 columns={kpiColumns}
                                 getBadgeColor={getBadgeColor}
-                                showSearch={false}
                             />
                         </CardContent>
                     </Card>

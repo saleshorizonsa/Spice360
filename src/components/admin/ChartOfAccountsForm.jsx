@@ -60,6 +60,7 @@ export default function ChartOfAccountsForm({ item, onClose }) {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['chartOfAccounts'] });
+            queryClient.invalidateQueries({ queryKey: ['accounts'] });
             toast({
                 title: "Success",
                 description: `Account ${item ? 'updated' : 'created'} successfully`,

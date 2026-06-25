@@ -279,7 +279,6 @@ export default function TreasuryManagement() {
                                 data={forecasts}
                                 columns={forecastColumns}
                                 getBadgeColor={getBadgeColor}
-                                showSearch={false}
                             />
                         </CardContent>
                     </Card>

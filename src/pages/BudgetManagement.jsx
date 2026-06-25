@@ -340,7 +340,6 @@ export default function BudgetManagement() {
                                 getBadgeColor={getBadgeColor}
                                 onEdit={handleEdit}
                                 onDelete={handleDelete}
-                                showSearch={false}
                             />
                         </CardContent>
                     </Card>
@@ -364,7 +363,6 @@ export default function BudgetManagement() {
                                     data={approvalRequests}
                                     columns={approvalColumns}
                                     getBadgeColor={getBadgeColor}
-                                    showSearch={false}
                                 />
                             )}
                         </CardContent>
