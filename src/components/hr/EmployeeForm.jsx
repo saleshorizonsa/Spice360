@@ -166,9 +166,10 @@ export default function EmployeeForm({ item, onClose }) {
         []
     );
 
-    const bloodGroupOptions = [
-        'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'
-    ].map(bg => ({ value: bg, label: bg }));
+    const bloodGroupOptions = useMemo(
+        () => ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(bg => ({ value: bg, label: bg })),
+        []
+    );
 
     const saveMutation = useMutation({
         mutationFn: (data) => {

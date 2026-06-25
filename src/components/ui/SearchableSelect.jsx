@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { Check, ChevronDown, X, Loader2, Plus } from "lucide-react";
 import {
     Command, CommandEmpty, CommandGroup,
@@ -58,6 +59,7 @@ export default function SearchableSelect({
     showCreateOption = false,
     onCreateOption,
     createOptionLabel = "Create new",
+    required = false,
 }) {
     const handleChange = onChange || onValueChange || (() => {});
     const emptyMsg = emptyText || noResultsMessage || emptyMessage || "No results found.";
@@ -200,7 +202,18 @@ export default function SearchableSelect({
                 </span>
             </button>
 
-            {open && (
+            {/* Hidden input so HTML5 `required` validation fires on the real form */}
+            <input
+                type="text"
+                required={required}
+                value={value || ""}
+                readOnly
+                tabIndex={-1}
+                aria-hidden="true"
+                style={{ position: "absolute", width: 0, height: 0, opacity: 0, pointerEvents: "none" }}
+            />
+
+            {open && createPortal(
                 <>
                     {/* backdrop — closes on outside click */}
                     <div
@@ -209,7 +222,9 @@ export default function SearchableSelect({
                         onClick={close}
                     />
 
-                    {/* ── Dropdown ── */}
+                    {/* ── Dropdown — rendered in document.body via portal so
+                        CSS transforms on Dialog/Sheet ancestors don't trap
+                        position:fixed relative to the modal stacking context ── */}
                     <div
                         style={{ ...dropStyle, position: "fixed", zIndex: 9999 }}
                         className="overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg"
@@ -298,7 +313,8 @@ export default function SearchableSelect({
                             )}
                         </Command>
                     </div>
-                </>
+                </>,
+                document.body
             )}
         </div>
     );
