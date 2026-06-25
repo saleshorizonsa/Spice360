@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectLabel, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
@@ -79,6 +79,23 @@ export default function JournalEntry() {
     queryFn: () => matrixSales.entities.ChartOfAccounts.filter({ organization_id: orgId }),
     initialData: []
   });
+
+  const groupedAccounts = useMemo(() => {
+    const accountMap = Object.fromEntries(accounts.map(a => [a.account_code, a]));
+    const selectable = accounts.filter(a => !a.is_header && a.allow_direct_posting !== false);
+    const groups = {};
+    const ungrouped = [];
+    for (const acc of selectable) {
+      const parent = acc.parent_account && accountMap[acc.parent_account];
+      if (parent) {
+        if (!groups[parent.account_code]) groups[parent.account_code] = { label: parent.account_name, items: [] };
+        groups[parent.account_code].items.push(acc);
+      } else {
+        ungrouped.push(acc);
+      }
+    }
+    return { groups, ungrouped };
+  }, [accounts]);
 
   const { data: journals = [] } = useQuery({
     queryKey: ["journalEntries", orgId],
@@ -225,9 +242,26 @@ export default function JournalEntry() {
                       <Select value={line.account_code || ""} onValueChange={(value) => updateLine(index, "account_code", value)}>
                         <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
                         <SelectContent>
-                          {accounts.filter((account) => !account.is_header && account.allow_direct_posting !== false).map((account) => (
-                            <SelectItem key={account.id || account.account_code} value={account.account_code}>{account.account_code} - {account.account_name}</SelectItem>
+                          {Object.entries(groupedAccounts.groups).map(([parentCode, group]) => (
+                            <SelectGroup key={parentCode}>
+                              <SelectLabel>{group.label}</SelectLabel>
+                              {group.items.map(account => (
+                                <SelectItem key={account.id || account.account_code} value={account.account_code}>
+                                  {account.account_code} - {account.account_name}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
                           ))}
+                          {groupedAccounts.ungrouped.length > 0 && (
+                            <SelectGroup>
+                              <SelectLabel>Other</SelectLabel>
+                              {groupedAccounts.ungrouped.map(account => (
+                                <SelectItem key={account.id || account.account_code} value={account.account_code}>
+                                  {account.account_code} - {account.account_name}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          )}
                         </SelectContent>
                       </Select>
                       <div className="mt-1 text-xs text-slate-500">{line.account_name}</div>
