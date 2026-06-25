@@ -165,7 +165,8 @@ export default function FixedAssets() {
                     description: `Monthly depreciation ${fiscalYear}-${period}`,
                     entryDate: `${fiscalYear}-${period}-01`,
                     entryType: 'depreciation',
-                    orgId: currentOrg?.id
+                    orgId: currentOrg?.id,
+                    area: "assets"
                 });
             }
             

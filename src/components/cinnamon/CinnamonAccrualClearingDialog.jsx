@@ -120,6 +120,7 @@ export default function CinnamonAccrualClearingDialog({ batch, onClose }) {
                     entryDate:     date,
                     entryType:     "payment",
                     orgId:         currentOrg.id,
+                    area:          "ap",
                 });
             } else {
                 // ── AP path: DR 2120 / CR 2100 (clears accrual, creates payable) ──
@@ -157,6 +158,7 @@ export default function CinnamonAccrualClearingDialog({ batch, onClose }) {
                     entryDate:     date,
                     entryType:     "invoice",
                     orgId:         currentOrg.id,
+                    area:          "ap",
                 });
             }
         },

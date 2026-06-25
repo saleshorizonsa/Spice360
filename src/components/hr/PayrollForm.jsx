@@ -183,6 +183,7 @@ export default function PayrollForm({ item, onClose }) {
                         entryDate: `${saved.payroll_month}-01`,
                         entryType: "payroll",
                         orgId: currentOrg?.id,
+                        area: "gl",
                     });
                     await matrixSales.entities.Payroll.update(saved.id, { ...saved, gl_posted: true });
                 } catch (err) {

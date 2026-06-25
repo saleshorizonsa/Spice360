@@ -214,6 +214,7 @@ export default function POS() {
                     entryType: "sales",
                     lines,
                     orgId: currentOrg?.id,
+                    area: "ar",
                 });
             } catch (_) { /* non-fatal */ }
 

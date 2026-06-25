@@ -78,7 +78,8 @@ export default function PaymentForm({ item, onClose }) {
                         description: `Payment ${savedPayment.payment_number}`,
                         entryDate: savedPayment.payment_date,
                         entryType: 'payment',
-                        orgId: currentOrg?.id
+                        orgId: currentOrg?.id,
+                        area: isIncoming ? "ar" : "ap"
                     });
                     await matrixSales.entities.Payment.update(savedPayment.id, { ...savedPayment, gl_posted: true });
                 } catch (error) {

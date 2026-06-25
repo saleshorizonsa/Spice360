@@ -229,7 +229,8 @@ export default function GRNForm({ item, onClose }) {
                             description:   `Goods receipt ${savedGRN.grn_number}`,
                             entryDate:     savedGRN.grn_date || new Date().toISOString().split('T')[0],
                             entryType:     'goods_receipt',
-                            orgId:         currentOrg?.id
+                            orgId:         currentOrg?.id,
+                            area:          "inventory"
                         });
                     }
                 } catch (_) {

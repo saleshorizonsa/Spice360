@@ -120,7 +120,8 @@ export default function SalesReturnForm({ item, onClose }) {
                         description:   `Sales return / credit note ${savedReturn.return_number}`,
                         entryDate:     savedReturn.return_date,
                         entryType:     'credit_note',
-                        orgId:         currentOrg?.id
+                        orgId:         currentOrg?.id,
+                        area:          "ar"
                     });
                     await matrixSales.entities.SalesReturn.update(savedReturn.id, { ...savedReturn, gl_posted: true });
                 } catch (glErr) {

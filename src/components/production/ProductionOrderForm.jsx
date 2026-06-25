@@ -131,6 +131,7 @@ export default function ProductionOrderForm({ item, onClose }) {
                                 { account_code: gl.accrued_mfg_costs, account_name: "Accrued Manufacturing Costs", debit: 0,       credit: fgValue, description: data.order_number },
                             ],
                             orgId: currentOrg?.id,
+                            area: "inventory",
                         });
                     }
                 } catch (_) { /* non-fatal */ }

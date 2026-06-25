@@ -210,6 +210,7 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
                             entryDate:     (data.completed_at || data.started_at || "").slice(0, 10) || new Date().toISOString().slice(0, 10),
                             entryType:     "production",
                             orgId:         currentOrg.id,
+                            area:          "inventory",
                         });
                     } catch (glError) {
                         toast({ title: "Step saved — GL not posted", description: glError.message || "Check GL account setup in Finance → Chart of Accounts.", variant: "destructive" });

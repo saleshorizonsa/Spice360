@@ -109,7 +109,9 @@ const auditableEntityNames = new Set([
   'CinnamonBatch',
   'CinnamonProcessStep',
   'CinnamonGradingOutput',
-  'CinnamonPackaging'
+  'CinnamonPackaging',
+  'PeriodControl',
+  'PeriodControlLog'
 ]);
 
 const periodControlledEntityConfig = {

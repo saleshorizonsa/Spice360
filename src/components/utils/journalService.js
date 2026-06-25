@@ -1,6 +1,7 @@
 ﻿import { matrixSales } from "@/api/matrixSalesClient";
 import { getNextDocumentNumber } from "./documentNumberGenerator";
 import { logAuditTrail } from "./auditTrail";
+import { dateToFiscalPeriod, fiscalPeriodLabel } from "./fiscalPeriod";
 
 const toAmount = (value) => Number(value || 0);
 const money = (value) => Math.round(toAmount(value) * 100) / 100;
@@ -31,7 +32,49 @@ const assertDirectPostingAllowed = async (lines, orgId) => {
   });
 };
 
-const assertOpenPeriod = async (entryDate, orgId) => {
+// OB52-aware period gate. Checks period_control (new) with fallback to accounting_period (legacy).
+const assertPeriodAllowed = async (entryDate, orgId, area = "gl", specialPeriod = null) => {
+  const fp = dateToFiscalPeriod(entryDate);
+  const periodNumber = specialPeriod != null ? parseInt(specialPeriod, 10) : fp.period;
+
+  if (specialPeriod != null && (periodNumber < 13 || periodNumber > 16)) {
+    throw new Error(`Special period must be 13–16, got ${periodNumber}.`);
+  }
+
+  // Try OB52 period_control first
+  try {
+    const rows = await matrixSales.entities.PeriodControl.filter({
+      fiscal_year: fp.year,
+      area,
+      organization_id: orgId,
+    });
+
+    if (rows.length > 0) {
+      const ctrl = rows[0];
+      const n = periodNumber;
+      const inCurrent = ctrl.current_from != null && n >= ctrl.current_from && n <= ctrl.current_to;
+      const inPrior   = ctrl.prior_from != null && n >= ctrl.prior_from && n <= ctrl.prior_to;
+
+      if (!inCurrent && !inPrior) {
+        const currentRange = ctrl.current_from != null
+          ? `${fiscalPeriodLabel(ctrl.current_from)}–${fiscalPeriodLabel(ctrl.current_to)}`
+          : "none";
+        const priorRange = ctrl.prior_from != null
+          ? `, prior: ${fiscalPeriodLabel(ctrl.prior_from)}–${fiscalPeriodLabel(ctrl.prior_to)}`
+          : "";
+        throw new Error(
+          `Period ${fiscalPeriodLabel(n)} (FY ${fp.year}) is not open for ${area.toUpperCase()}. ` +
+          `Open: ${currentRange}${priorRange}.`
+        );
+      }
+      return periodFromDate(entryDate);
+    }
+  } catch (err) {
+    if (err.message.includes("is not open for") || err.message.includes("Special period must be")) throw err;
+    // Table not yet provisioned — fall through to legacy check
+  }
+
+  // Legacy fallback: accounting_period table
   const period = periodFromDate(entryDate);
   const periods = await matrixSales.entities.AccountingPeriod.filter({ period, organization_id: orgId });
   const accountingPeriod = periods[0];
@@ -49,14 +92,16 @@ export async function postJournalEntry({
   entryDate = new Date().toISOString().slice(0, 10),
   entryType = "adjustment",
   createdBy = "",
-  orgId
+  orgId,
+  area = "gl",          // 'gl' | 'ar' | 'ap' | 'inventory' | 'assets'
+  specialPeriod = null, // 13-16 for year-end special periods
 }) {
   if (!orgId) throw new Error("Organization is required to post a journal entry.");
   if (!Array.isArray(lines) || lines.length < 2) throw new Error("Journal entry requires at least two lines.");
 
   await assertDirectPostingAllowed(lines, orgId);
   const { totalDebit, totalCredit } = assertBalanced(lines);
-  const period = await assertOpenPeriod(entryDate, orgId);
+  const period = await assertPeriodAllowed(entryDate, orgId, area, specialPeriod);
   const journalNumber = await getNextDocumentNumber("JE");
   const now = new Date().toISOString();
 
@@ -127,7 +172,8 @@ export async function reverseJournalEntry(originalJeNumber, reversalDate, revers
     entryDate: reversalDate,
     entryType: "reversal",
     createdBy: reversedBy,
-    orgId: original.organization_id
+    orgId: original.organization_id,
+    area: "gl",
   });
 
   await matrixSales.entities.JournalEntry.update(original.id, {

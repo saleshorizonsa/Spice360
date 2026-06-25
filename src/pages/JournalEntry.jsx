@@ -147,7 +147,8 @@ export default function JournalEntry() {
       entryDate: form.entry_date,
       entryType: form.entry_type,
       createdBy: "",
-      orgId
+      orgId,
+      area: "gl"
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["journalEntries", orgId] });

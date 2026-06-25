@@ -92,6 +92,7 @@ export default function LoanAdvanceForm({ item, onClose }) {
                             { account_code: gl.cash_bank, account_name: 'Cash / Bank',               debit: 0,          credit: loanAmount, description: data.employee_name },
                         ],
                         orgId: currentOrg?.id,
+                        area: "gl",
                     });
                     await matrixSales.entities.LoanAdvance.update(loan.id, { gl_posted: true });
                 } catch (_) { /* non-fatal */ }

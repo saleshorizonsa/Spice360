@@ -91,6 +91,7 @@ export default function EPFETFForm({ item, onClose }) {
                         entryDate: `${saved.period_month}-01`,
                         entryType: "payroll",
                         orgId: currentOrg?.id,
+                        area: "gl",
                     });
                     await matrixSales.entities.SLEPFContribution.update(saved.id, { ...saved, gl_posted: true });
                 } catch (err) {

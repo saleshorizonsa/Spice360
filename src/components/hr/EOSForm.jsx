@@ -104,6 +104,7 @@ export default function EOSForm({ item, onClose }) {
                             { account_code: gl.salaries_payable, account_name: 'EOS Payable', debit: 0,         credit: eosAmount, description: data.employee_name },
                         ],
                         orgId: currentOrg?.id,
+                        area: "gl",
                     });
                     await matrixSales.entities.EndOfService.update(eos.id, { gl_posted: true });
                 } catch (_) { /* non-fatal */ }

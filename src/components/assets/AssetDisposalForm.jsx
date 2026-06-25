@@ -196,7 +196,8 @@ export default function AssetDisposalForm({ asset, onClose }) {
                         entryDate: data.disposal_date,
                         entryType: 'disposal',
                         createdBy: currentUser?.email || '',
-                        orgId: currentOrg.id
+                        orgId: currentOrg.id,
+                        area: "assets"
                     });
                 }
             }

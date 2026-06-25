@@ -263,7 +263,8 @@ export default function InvoiceForm({ item, onClose }) {
                         description: `Sales invoice ${savedInvoice.invoice_number}`,
                         entryDate: savedInvoice.invoice_date,
                         entryType: 'invoice',
-                        orgId: currentOrg?.id
+                        orgId: currentOrg?.id,
+                        area: "ar"
                     });
                     await matrixSales.entities.Invoice.update(savedInvoice.id, { ...savedInvoice, gl_posted: true });
                 } catch (error) {
@@ -295,7 +296,8 @@ export default function InvoiceForm({ item, onClose }) {
                                 description:   `COGS – ${savedInvoice.invoice_number} – ${savedInvoice.customer_name}`,
                                 entryDate:     savedInvoice.invoice_date,
                                 entryType:     'goods_issue',
-                                orgId:         currentOrg?.id
+                                orgId:         currentOrg?.id,
+                                area:          "ar"
                             });
                         }
                     } catch (cogsError) {

@@ -223,7 +223,8 @@ export default function DeliveryForm({ item, onClose }) {
                         entryDate: deliveryData.delivery_date,
                         entryType: 'goods_issue',
                         createdBy: currentUser?.email || '',
-                        orgId: currentOrg.id
+                        orgId: currentOrg.id,
+                        area: "inventory"
                     });
                 }
             }

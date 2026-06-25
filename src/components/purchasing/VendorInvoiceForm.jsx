@@ -265,7 +265,8 @@ export default function VendorInvoiceForm({ item, onClose }) {
                         description:   `Vendor invoice ${savedInvoice.vendor_invoice_number}`,
                         entryDate:     savedInvoice.invoice_date,
                         entryType:     'invoice',
-                        orgId:         currentOrg?.id
+                        orgId:         currentOrg?.id,
+                        area:          "ap"
                     });
                     await matrixSales.entities.VendorInvoice.update(savedInvoice.id, { ...savedInvoice, gl_posted: true });
                 } catch (err) {

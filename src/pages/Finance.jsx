@@ -23,10 +23,11 @@ import CostCenterForm from "@/components/finance/CostCenterForm";
 import CustomerStatementDialog from "@/components/finance/CustomerStatementDialog";
 import BankReconciliationDialog from "@/components/finance/BankReconciliationDialog";
 import DocumentPrintPreview from "@/components/shared/DocumentPrintPreview";
+import PeriodControlOB52 from "@/pages/PeriodControlOB52";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLanguage } from "@/components/utils/languageContext";
-import { Settings, MapPin, Scale, Globe } from "lucide-react";
+import { Settings, MapPin, Scale, Globe, Calendar } from "lucide-react";
 
 export default function Finance() {
     const [activeTab, setActiveTab] = useState("gl");
@@ -405,7 +406,7 @@ export default function Finance() {
             </Alert>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-                <TabsList className="grid grid-cols-12 w-full">
+                <TabsList className="flex flex-wrap h-auto gap-1 w-full">
                     <TabsTrigger value="gl">GL</TabsTrigger>
                     <TabsTrigger value="ar">AR</TabsTrigger>
                     <TabsTrigger value="ap">AP</TabsTrigger>
@@ -417,6 +418,9 @@ export default function Finance() {
                     <TabsTrigger value="cashflow">Cash Flow</TabsTrigger>
                     <TabsTrigger value="budget">Budget</TabsTrigger>
                     <TabsTrigger value="reports">Reports</TabsTrigger>
+                    <TabsTrigger value="periods" className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />Periods
+                    </TabsTrigger>
                     <TabsTrigger value="settings" className="flex items-center gap-1">
                         <Settings className="w-3 h-3" />Settings
                     </TabsTrigger>
@@ -809,6 +813,10 @@ export default function Finance() {
                             </Card>
                         </div>
                     </div>
+                </TabsContent>
+
+                <TabsContent value="periods">
+                    <PeriodControlOB52 />
                 </TabsContent>
 
                 <TabsContent value="settings" className="space-y-6">

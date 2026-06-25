@@ -110,6 +110,7 @@ function WHTForm({ item, onClose }) {
                         entryDate: `${saved.period_month}-01`,
                         entryType: "wht",
                         orgId: currentOrg?.id,
+                        area: "gl",
                     });
                     await matrixSales.entities.SLWHTReturn.update(saved.id, { ...saved, gl_posted: true });
                 } catch {}
