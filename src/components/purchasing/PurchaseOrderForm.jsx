@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -19,6 +19,7 @@ import DocumentList from "../shared/DocumentList";
 import ReverseButton from "../shared/ReverseButton";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
+import SearchableSelect from "@/components/ui/SearchableSelect";
 
 export default function PurchaseOrderForm({ po, onClose }) {
     const queryClient = useQueryClient();
@@ -30,7 +31,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [activeTab, setActiveTab] = useState("details");
-    
+
     useEffect(() => {
         const fetchUser = async () => {
             try {
@@ -140,7 +141,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
         const totalBeforeVat = subtotal + landedCosts;
         const vatAmount = totalBeforeVat * ((formData.vat_percent || 0) / 100);
         const total = totalBeforeVat + vatAmount;
-        
+
         setFormData(prev => ({
             ...prev,
             subtotal,
@@ -192,15 +193,51 @@ export default function PurchaseOrderForm({ po, onClose }) {
         }
     };
 
+    const rfqOptions = useMemo(() =>
+        rfqs
+            .filter(r => r.status === 'awarded')
+            .map(r => ({
+                value: r.rfq_number,
+                label: `${r.rfq_number} - ${r.material_name}`
+            })),
+        [rfqs]
+    );
+
+    const vendorOptions = useMemo(() =>
+        vendors
+            .filter(v => v.status === 'active')
+            .map(v => ({
+                value: v.vendor_code,
+                label: `${v.vendor_code} - ${v.vendor_name}`
+            })),
+        [vendors]
+    );
+
+    const materialOptions = useMemo(() =>
+        materials.map(m => ({
+            value: m.material_code,
+            label: `${m.material_code} - ${m.material_name}`
+        })),
+        [materials]
+    );
+
+    const costCenterOptions = useMemo(() =>
+        costCenters.map(cc => ({
+            value: cc.cost_center_code,
+            label: `${cc.cost_center_code} - ${cc.cost_center_name}`
+        })),
+        [costCenters]
+    );
+
     const saveMutation = useMutation({
         mutationFn: async (data) => {
             let purchaseOrder;
             const beforeData = po ? { ...po } : null;
             const auditSeverity = data.total_amount > 100000 ? 'warning' : 'info';
-            
+
             if (po) {
                 purchaseOrder = await matrixSales.entities.PurchaseOrder.update(po.id, data);
-                
+
                 await logAuditTrail({
                     entityType: 'purchase_order',
                     entityId: po.id,
@@ -213,7 +250,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
                 });
             } else {
                 purchaseOrder = await matrixSales.entities.PurchaseOrder.create(data);
-                
+
                 await logAuditTrail({
                     entityType: 'purchase_order',
                     entityId: purchaseOrder.id,
@@ -248,7 +285,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
                     purchaseOrder = await matrixSales.entities.PurchaseOrder.update(purchaseOrder.id, {
                         status: 'pending_approval'
                     });
-                    
+
                     await logAuditTrail({
                         entityType: 'purchase_order',
                         entityId: purchaseOrder.id,
@@ -269,12 +306,12 @@ export default function PurchaseOrderForm({ po, onClose }) {
             queryClient.invalidateQueries({ queryKey: ['purchaseOrders'] });
             queryClient.invalidateQueries({ queryKey: ['approvalRequests'] });
             queryClient.invalidateQueries({ queryKey: ['auditTrails'] });
-            
+
             let descriptionMessage = po ? "Purchase order updated successfully" : "Purchase order created successfully";
             if (!po && savedPO.status === 'pending_approval') {
                 descriptionMessage = "Purchase order created and submitted for approval.";
             }
-            
+
             toast({
                 title: "Success",
                 description: descriptionMessage,
@@ -336,8 +373,8 @@ export default function PurchaseOrderForm({ po, onClose }) {
                                 </div>
                                 <div>
                                     <Label>PO Type</Label>
-                                    <Select 
-                                        value={formData.po_type} 
+                                    <Select
+                                        value={formData.po_type}
                                         onValueChange={(val) => handleChange('po_type', val)}
                                     >
                                         <SelectTrigger>
@@ -365,21 +402,14 @@ export default function PurchaseOrderForm({ po, onClose }) {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <Label>RFQ Reference</Label>
-                                    <Select 
-                                        value={formData.rfq_reference} 
-                                        onValueChange={handleRFQSelect}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select RFQ (optional)" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {rfqs.filter(r => r.status === 'awarded').map(rfq => (
-                                                <SelectItem key={rfq.id} value={rfq.rfq_number}>
-                                                    {rfq.rfq_number} - {rfq.material_name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <SearchableSelect
+                                        mode="client"
+                                        value={formData.rfq_reference}
+                                        onChange={handleRFQSelect}
+                                        options={rfqOptions}
+                                        placeholder="Select RFQ (optional)"
+                                        clearable
+                                    />
                                 </div>
                                 <div>
                                     <Label>PR Reference</Label>
@@ -396,22 +426,13 @@ export default function PurchaseOrderForm({ po, onClose }) {
                                 <h3 className="font-semibold text-lg border-b pb-2">Vendor Information</h3>
                                 <div>
                                     <Label>Vendor *</Label>
-                                    <Select 
-                                        value={formData.vendor_code} 
-                                        onValueChange={handleVendorSelect}
-                                        required
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select vendor" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {vendors.filter(v => v.status === 'active').map(v => (
-                                                <SelectItem key={v.id} value={v.vendor_code}>
-                                                    {v.vendor_code} - {v.vendor_name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <SearchableSelect
+                                        mode="client"
+                                        value={formData.vendor_code}
+                                        onChange={handleVendorSelect}
+                                        options={vendorOptions}
+                                        placeholder="Select vendor"
+                                    />
                                 </div>
                                 {formData.vendor_code && (
                                     <div className="grid grid-cols-3 gap-4 p-3 bg-gray-50 rounded-lg">
@@ -436,22 +457,13 @@ export default function PurchaseOrderForm({ po, onClose }) {
                                 <h3 className="font-semibold text-lg border-b pb-2">Material & Pricing</h3>
                                 <div>
                                     <Label>Material *</Label>
-                                    <Select 
-                                        value={formData.material_code} 
-                                        onValueChange={handleMaterialSelect}
-                                        required
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select material" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {materials.map(m => (
-                                                <SelectItem key={m.id} value={m.material_code}>
-                                                    {m.material_code} - {m.material_name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <SearchableSelect
+                                        mode="client"
+                                        value={formData.material_code}
+                                        onChange={handleMaterialSelect}
+                                        options={materialOptions}
+                                        placeholder="Select material"
+                                    />
                                 </div>
 
                                 <div className="grid grid-cols-4 gap-4">
@@ -615,8 +627,8 @@ export default function PurchaseOrderForm({ po, onClose }) {
                                 </div>
                                 <div>
                                     <Label>Payment Terms</Label>
-                                    <Select 
-                                        value={formData.payment_terms} 
+                                    <Select
+                                        value={formData.payment_terms}
                                         onValueChange={(val) => handleChange('payment_terms', val)}
                                     >
                                         <SelectTrigger>
@@ -646,21 +658,14 @@ export default function PurchaseOrderForm({ po, onClose }) {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <Label>Cost Center</Label>
-                                    <Select 
-                                        value={formData.cost_center} 
-                                        onValueChange={(val) => handleChange('cost_center', val)}
-                                    >
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select cost center" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {costCenters.map(cc => (
-                                                <SelectItem key={cc.id} value={cc.cost_center_code}>
-                                                    {cc.cost_center_code} - {cc.cost_center_name}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <SearchableSelect
+                                        mode="client"
+                                        value={formData.cost_center}
+                                        onChange={(val) => handleChange('cost_center', val)}
+                                        options={costCenterOptions}
+                                        placeholder="Select cost center"
+                                        clearable
+                                    />
                                 </div>
                                 <div>
                                     <Label>GL Account Code</Label>
@@ -673,8 +678,8 @@ export default function PurchaseOrderForm({ po, onClose }) {
 
                             <div>
                                 <Label>Status</Label>
-                                <Select 
-                                    value={formData.status} 
+                                <Select
+                                    value={formData.status}
                                     onValueChange={(val) => handleChange('status', val)}
                                     disabled={!po}
                                 >

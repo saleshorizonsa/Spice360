@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -14,6 +14,7 @@ import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
 import { createNotification } from "../utils/notificationService";
 import { useOrganization } from "../utils/OrganizationContext";
 import { RefreshCw } from "lucide-react";
+import SearchableSelect from "@/components/ui/SearchableSelect";
 
 export default function RFQForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -112,6 +113,24 @@ export default function RFQForm({ item, onClose }) {
             }));
         }
     };
+
+    const prOptions = useMemo(() =>
+        requisitions
+            .filter(r => r.status === 'approved')
+            .map(pr => ({
+                value: pr.pr_number,
+                label: `${pr.pr_number} - ${pr.material_name}`
+            })),
+        [requisitions]
+    );
+
+    const materialOptions = useMemo(() =>
+        materials.map(m => ({
+            value: m.material_code,
+            label: `${m.material_code} - ${m.material_name}`
+        })),
+        [materials]
+    );
 
     const saveMutation = useMutation({
         mutationFn: async (data) => {
@@ -220,42 +239,26 @@ export default function RFQForm({ item, onClose }) {
                     </div>
 
                     <div>
-                        <Label>PR Reference</Label>
-                        <Select
+                        <SearchableSelect
+                            label="PR Reference"
+                            mode="client"
                             value={formData.pr_reference}
-                            onValueChange={handlePRSelect}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select PR (optional)" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {requisitions.filter(r => r.status === 'approved').map(pr => (
-                                    <SelectItem key={pr.id} value={pr.pr_number}>
-                                        {pr.pr_number} - {pr.material_name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            onChange={handlePRSelect}
+                            options={prOptions}
+                            placeholder="Select PR (optional)"
+                            clearable
+                        />
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Material *</Label>
-                        <Select
+                        <SearchableSelect
+                            label="Material *"
+                            mode="client"
                             value={formData.material_code}
-                            onValueChange={handleMaterialSelect}
-                            required
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select material" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {materials.map(m => (
-                                    <SelectItem key={m.id} value={m.material_code}>
-                                        {m.material_code} - {m.material_name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                            onChange={handleMaterialSelect}
+                            options={materialOptions}
+                            placeholder="Select material"
+                        />
                     </div>
 
                     <div className="grid grid-cols-3 gap-4">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -18,6 +18,7 @@ import { createNotification } from "../utils/notificationService";
 import { logAuditTrail } from "../utils/auditTrail";
 import { postJournalEntry } from "../utils/journalService";
 import { useGLAccounts } from "../../hooks/useGLAccounts";
+import SearchableSelect from "@/components/ui/SearchableSelect";
 
 export default function DeliveryForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -353,8 +354,16 @@ export default function DeliveryForm({ item, onClose }) {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    const confirmedOrders = salesOrders.filter(o => 
+    const confirmedOrders = salesOrders.filter(o =>
         o.status === 'confirmed' || o.status === 'in_production' || o.status === 'shipped' || o.status === 'partially_delivered'
+    );
+
+    const salesOrderOptions = useMemo(() =>
+        confirmedOrders.map(o => ({
+            value: o.order_number,
+            label: `${o.order_number} - ${o.customer_name} - ${o.product_name} (${o.quantity} units)`
+        })),
+        [confirmedOrders]
     );
 
     return (
@@ -380,25 +389,15 @@ export default function DeliveryForm({ item, onClose }) {
                     {/* Sales Order Reference Section */}
                     {!item && (
                         <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
-                            <Label className="text-emerald-900 font-semibold mb-2 block">
-                                Select Sales Order *
-                            </Label>
-                            <Select 
-                                value={formData.sales_order_number} 
-                                onValueChange={handleSalesOrderSelect}
-                                required
-                            >
-                                <SelectTrigger className="bg-white">
-                                    <SelectValue placeholder="Select a sales order..." />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {confirmedOrders.map(o => (
-                                        <SelectItem key={o.id} value={o.order_number}>
-                                            {o.order_number} - {o.customer_name} - {o.product_name} ({o.quantity} units)
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <SearchableSelect
+                                label="Select Sales Order *"
+                                value={formData.sales_order_number}
+                                onChange={handleSalesOrderSelect}
+                                options={salesOrderOptions}
+                                mode="client"
+                                placeholder="Select a sales order..."
+                                searchPlaceholder="Search sales orders..."
+                            />
                             {formData.sales_order_number && (
                                 <p className="text-sm text-emerald-700 mt-2 flex items-center gap-2">
                                     <ArrowRight className="w-4 h-4" />

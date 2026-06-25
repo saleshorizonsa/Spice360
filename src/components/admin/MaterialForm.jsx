@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,7 @@ import { X, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { validateDuplicateItemCode } from "@/lib/itemSelection";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
+import SearchableSelect from "@/components/ui/SearchableSelect";
 
 export default function MaterialForm({ material, initialValues = {}, onClose, onSaved }) {
     const taxConfig = useTaxConfig();
@@ -57,6 +58,22 @@ export default function MaterialForm({ material, initialValues = {}, onClose, on
         queryFn: () => matrixSales.entities.Material.list(),
         initialData: []
     });
+
+    const materialGroupOptions = useMemo(() =>
+        materialGroups.map(group => ({
+            value: group.group_code,
+            label: group.group_name
+        })),
+        [materialGroups]
+    );
+
+    const vendorOptions = useMemo(() =>
+        vendors.map(vendor => ({
+            value: vendor.vendor_code,
+            label: vendor.vendor_code + " - " + vendor.vendor_name
+        })),
+        [vendors]
+    );
 
     React.useEffect(() => {
         if (!material && Object.keys(initialValues || {}).length > 0) {
@@ -269,37 +286,31 @@ export default function MaterialForm({ material, initialValues = {}, onClose, on
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <Label>Material Group</Label>
-                            <Select value={formData.group_code} onValueChange={(val) => handleChange('group_code', val)}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select group" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {materialGroups.map(group => (
-                                        <SelectItem key={group.group_code} value={group.group_code}>
-                                            {group.group_name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <SearchableSelect
+                                mode="client"
+                                value={formData.group_code}
+                                onChange={(val) => handleChange('group_code', val)}
+                                options={materialGroupOptions}
+                                placeholder="Select group"
+                                searchPlaceholder="Search groups..."
+                                clearable
+                            />
                         </div>
                         <div>
                             <Label>Primary Supplier</Label>
-                            <Select value={formData.supplier_code} onValueChange={(val) => {
-                                handleChange('supplier_code', val);
-                                const vendor = vendors.find(v => v.vendor_code === val);
-                                if (vendor) handleChange('supplier_name', vendor.vendor_name);
-                            }}>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select supplier" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {vendors.map(vendor => (
-                                        <SelectItem key={vendor.vendor_code} value={vendor.vendor_code}>
-                                            {vendor.vendor_code} - {vendor.vendor_name}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <SearchableSelect
+                                mode="client"
+                                value={formData.supplier_code}
+                                onChange={(val) => {
+                                    handleChange('supplier_code', val);
+                                    const vendor = vendors.find(v => v.vendor_code === val);
+                                    if (vendor) handleChange('supplier_name', vendor.vendor_name);
+                                }}
+                                options={vendorOptions}
+                                placeholder="Select supplier"
+                                searchPlaceholder="Search suppliers..."
+                                clearable
+                            />
                         </div>
                     </div>
 
@@ -341,8 +352,8 @@ export default function MaterialForm({ material, initialValues = {}, onClose, on
                         <Button type="button" variant="outline" onClick={onClose}>
                             Cancel
                         </Button>
-                        <Button 
-                            type="submit" 
+                        <Button
+                            type="submit"
                             className="bg-emerald-600 hover:bg-emerald-700"
                             disabled={saveMutation.isPending}
                         >

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import ReverseButton from "../shared/ReverseButton";
+import SearchableSelect from "@/components/ui/SearchableSelect";
 
 export default function ARForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -24,6 +25,14 @@ export default function ARForm({ item, onClose }) {
         queryFn: () => matrixSales.entities.Customer.list(),
         initialData: []
     });
+
+    const customerOptions = useMemo(() =>
+        customers.map(c => ({
+            value: c.customer_code,
+            label: `${c.customer_code} - ${c.customer_name}`
+        })),
+        [customers]
+    );
 
     const [formData, setFormData] = useState({
         ar_number: '',
@@ -132,22 +141,15 @@ export default function ARForm({ item, onClose }) {
                     </div>
 
                     <div>
-                        <Label>Customer *</Label>
-                        <Select 
-                            value={formData.customer_code} 
-                            onValueChange={handleCustomerSelect}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select customer" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {customers.map(customer => (
-                                    <SelectItem key={customer.id} value={customer.customer_code}>
-                                        {customer.customer_code} - {customer.customer_name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <SearchableSelect
+                            label="Customer *"
+                            value={formData.customer_code}
+                            onChange={handleCustomerSelect}
+                            options={customerOptions}
+                            mode="client"
+                            placeholder="Select customer"
+                            searchPlaceholder="Search customers..."
+                        />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -209,8 +211,8 @@ export default function ARForm({ item, onClose }) {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <Label>Payment Terms</Label>
-                            <Select 
-                                value={formData.payment_terms} 
+                            <Select
+                                value={formData.payment_terms}
                                 onValueChange={(val) => handleChange('payment_terms', val)}
                             >
                                 <SelectTrigger>
@@ -227,8 +229,8 @@ export default function ARForm({ item, onClose }) {
                         </div>
                         <div>
                             <Label>Aging Bucket</Label>
-                            <Select 
-                                value={formData.aging_bucket} 
+                            <Select
+                                value={formData.aging_bucket}
                                 onValueChange={(val) => handleChange('aging_bucket', val)}
                             >
                                 <SelectTrigger>
@@ -247,8 +249,8 @@ export default function ARForm({ item, onClose }) {
 
                     <div>
                         <Label>Status</Label>
-                        <Select 
-                            value={formData.status} 
+                        <Select
+                            value={formData.status}
                             onValueChange={(val) => handleChange('status', val)}
                         >
                             <SelectTrigger>

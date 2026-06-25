@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { useOrganization } from "../utils/OrganizationContext";
+import SearchableSelect from "@/components/ui/SearchableSelect";
 
 export default function ChartOfAccountsForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -151,6 +152,14 @@ export default function ChartOfAccountsForm({ item, onClose }) {
 
     const controlAccounts = accounts.filter(a => a.is_control_account || a.level === 1);
 
+    const parentAccountOptions = useMemo(() => [
+        { value: '', label: 'None (Top Level)' },
+        ...controlAccounts.map(acc => ({
+            value: acc.account_code,
+            label: `${acc.account_code} - ${acc.account_name}`
+        }))
+    ], [controlAccounts]);
+
     return (
         <Dialog open={true} onOpenChange={onClose}>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -277,23 +286,16 @@ export default function ChartOfAccountsForm({ item, onClose }) {
                         <h3 className="font-semibold text-lg border-b pb-2">Account Hierarchy</h3>
                         <div className="grid grid-cols-3 gap-4">
                             <div>
-                                <Label>Parent Account</Label>
-                                <Select 
-                                    value={formData.parent_account} 
-                                    onValueChange={(val) => handleChange('parent_account', val)}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="None (Top Level)" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value={null}>None (Top Level)</SelectItem>
-                                        {controlAccounts.map(acc => (
-                                            <SelectItem key={acc.id} value={acc.account_code}>
-                                                {acc.account_code} - {acc.account_name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                <SearchableSelect
+                                    label="Parent Account"
+                                    mode="client"
+                                    value={formData.parent_account}
+                                    onChange={(val) => handleChange('parent_account', val)}
+                                    options={parentAccountOptions}
+                                    placeholder="None (Top Level)"
+                                    searchPlaceholder="Search accounts..."
+                                    clearable
+                                />
                             </div>
                             <div>
                                 <Label>Level</Label>

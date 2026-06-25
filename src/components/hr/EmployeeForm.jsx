@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import SearchableSelect from "@/components/ui/SearchableSelect";
 
 const nationalities = [
     "Sri Lankan", "Indian", "Pakistani", "Bangladeshi", "Filipino", "Nepalese",
@@ -160,6 +161,15 @@ export default function EmployeeForm({ item, onClose }) {
         setFormData(prev => ({ ...prev, nationality: value }));
     };
 
+    const nationalityOptions = useMemo(
+        () => nationalities.map(nat => ({ value: nat, label: nat })),
+        []
+    );
+
+    const bloodGroupOptions = [
+        'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'
+    ].map(bg => ({ value: bg, label: bg }));
+
     const saveMutation = useMutation({
         mutationFn: (data) => {
             if (item) {
@@ -248,16 +258,13 @@ export default function EmployeeForm({ item, onClose }) {
                             <div className="grid grid-cols-3 gap-4">
                                 <div>
                                     <Label>Nationality *</Label>
-                                    <Select value={formData.nationality} onValueChange={handleNationalityChange}>
-                                        <SelectTrigger>
-                                            <SelectValue placeholder="Select nationality" />
-                                        </SelectTrigger>
-                                        <SelectContent className="max-h-[300px]">
-                                            {nationalities.map(nat => (
-                                                <SelectItem key={nat} value={nat}>{nat}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <SearchableSelect
+                                        value={formData.nationality}
+                                        onChange={handleNationalityChange}
+                                        options={nationalityOptions}
+                                        placeholder="Select nationality"
+                                        searchPlaceholder="Search nationality..."
+                                    />
                                 </div>
                                 <div>
                                     <Label>National ID / Iqama *</Label>
@@ -332,14 +339,13 @@ export default function EmployeeForm({ item, onClose }) {
                                 </div>
                                 <div>
                                     <Label>Blood Group</Label>
-                                    <Select value={formData.blood_group} onValueChange={(val) => setFormData({...formData, blood_group: val})}>
-                                        <SelectTrigger><SelectValue placeholder="Select blood group" /></SelectTrigger>
-                                        <SelectContent>
-                                            {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(bg => (
-                                                <SelectItem key={bg} value={bg}>{bg}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
+                                    <SearchableSelect
+                                        value={formData.blood_group}
+                                        onChange={(val) => setFormData({...formData, blood_group: val})}
+                                        options={bloodGroupOptions}
+                                        placeholder="Select blood group"
+                                        searchPlaceholder="Search blood group..."
+                                    />
                                 </div>
                             </div>
                         </TabsContent>

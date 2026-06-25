@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
 import ReverseButton from "../shared/ReverseButton";
+import SearchableSelect from "@/components/ui/SearchableSelect";
 
 export default function APForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -24,6 +25,11 @@ export default function APForm({ item, onClose }) {
         queryFn: () => matrixSales.entities.Vendor.list(),
         initialData: []
     });
+
+    const vendorOptions = useMemo(
+        () => vendors.map(v => ({ value: v.vendor_code, label: `${v.vendor_code} - ${v.vendor_name}` })),
+        [vendors]
+    );
 
     const [formData, setFormData] = useState({
         ap_number: '',
@@ -134,22 +140,15 @@ export default function APForm({ item, onClose }) {
                     </div>
 
                     <div>
-                        <Label>Vendor *</Label>
-                        <Select 
-                            value={formData.vendor_code} 
-                            onValueChange={handleVendorSelect}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select vendor" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {vendors.map(vendor => (
-                                    <SelectItem key={vendor.id} value={vendor.vendor_code}>
-                                        {vendor.vendor_code} - {vendor.vendor_name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <SearchableSelect
+                            label="Vendor *"
+                            mode="client"
+                            options={vendorOptions}
+                            value={formData.vendor_code}
+                            onChange={handleVendorSelect}
+                            placeholder="Select vendor"
+                            searchPlaceholder="Search vendors..."
+                        />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
@@ -211,8 +210,8 @@ export default function APForm({ item, onClose }) {
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <Label>Payment Terms</Label>
-                            <Select 
-                                value={formData.payment_terms} 
+                            <Select
+                                value={formData.payment_terms}
                                 onValueChange={(val) => handleChange('payment_terms', val)}
                             >
                                 <SelectTrigger>
@@ -229,8 +228,8 @@ export default function APForm({ item, onClose }) {
                         </div>
                         <div>
                             <Label>Payment Status</Label>
-                            <Select 
-                                value={formData.payment_status} 
+                            <Select
+                                value={formData.payment_status}
                                 onValueChange={(val) => handleChange('payment_status', val)}
                             >
                                 <SelectTrigger>
@@ -249,8 +248,8 @@ export default function APForm({ item, onClose }) {
 
                     <div>
                         <Label>Aging Bucket</Label>
-                        <Select 
-                            value={formData.aging_bucket} 
+                        <Select
+                            value={formData.aging_bucket}
                             onValueChange={(val) => handleChange('aging_bucket', val)}
                         >
                             <SelectTrigger>

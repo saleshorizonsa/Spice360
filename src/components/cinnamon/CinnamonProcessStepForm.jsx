@@ -14,6 +14,7 @@ import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { postJournalEntry } from "../utils/journalService";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
 import { useOrganization } from "../utils/OrganizationContext";
+import SearchableSelect from "@/components/ui/SearchableSelect";
 
 // Steps 3, 4, 6 from the 7-step costing model (grading=5 and packaging=7 have their own forms)
 const STAGES = [
@@ -103,6 +104,15 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
         formData.other_labour_cost, totalLabourCost]);
 
     const safeBatches = Array.isArray(batches) ? batches : [];
+
+    // ── Batch options for SearchableSelect ───────────────────────────────────
+    const batchOptions = useMemo(
+        () => safeBatches.map((b) => ({
+            value: b.batch_number,
+            label: `${b.batch_number} — ${b.supplier}`,
+        })),
+        [safeBatches]
+    );
 
     // ── Labour row handlers ───────────────────────────────────────────────────
     const addWorker = () => { setIsDirty(true); setLabourEntries(prev => [...prev, { ...EMPTY_WORKER }]); };
@@ -261,21 +271,14 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label>Batch *</Label>
-                            <Select
+                            <SearchableSelect
+                                label="Batch *"
                                 value={formData.batch_number}
-                                onValueChange={(v) => handleChange("batch_number", v)}
-                                required
-                            >
-                                <SelectTrigger><SelectValue placeholder="Select batch" /></SelectTrigger>
-                                <SelectContent>
-                                    {safeBatches.map((b) => (
-                                        <SelectItem key={b.id} value={b.batch_number}>
-                                            {b.batch_number} — {b.supplier}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                onChange={(v) => handleChange("batch_number", v)}
+                                options={batchOptions}
+                                placeholder="Select batch"
+                                mode="client"
+                            />
                         </div>
                         <div>
                             <Label>Stage *</Label>

@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
+import SearchableSelect from "@/components/ui/SearchableSelect";
 
 export default function CustomerForm({ customer, onClose }) {
     const queryClient = useQueryClient();
@@ -45,6 +46,13 @@ export default function CustomerForm({ customer, onClose }) {
         queryFn: () => matrixSales.entities.Salesman.list(),
         initialData: []
     });
+
+    const salesmanOptions = useMemo(() =>
+        salesmen
+            .filter(s => s.status === 'active')
+            .map(s => ({ value: s.salesman_code, label: `${s.salesman_code} - ${s.salesman_name}` })),
+        [salesmen]
+    );
 
     useEffect(() => {
         if (customer) {
@@ -116,8 +124,8 @@ export default function CustomerForm({ customer, onClose }) {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label>Customer Type</Label>
-                                <Select 
-                                    value={formData.customer_type} 
+                                <Select
+                                    value={formData.customer_type}
                                     onValueChange={(val) => handleChange('customer_type', val)}
                                 >
                                     <SelectTrigger>
@@ -133,25 +141,18 @@ export default function CustomerForm({ customer, onClose }) {
                             </div>
                             <div>
                                 <Label>Assigned Salesman</Label>
-                                <Select 
-                                    value={formData.salesman_code} 
-                                    onValueChange={(val) => {
+                                <SearchableSelect
+                                    mode="client"
+                                    value={formData.salesman_code}
+                                    onChange={(val) => {
                                         handleChange('salesman_code', val);
                                         const salesman = salesmen.find(s => s.salesman_code === val);
                                         if (salesman) handleChange('salesman_name', salesman.salesman_name);
                                     }}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select salesman" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {salesmen.filter(s => s.status === 'active').map(salesman => (
-                                            <SelectItem key={salesman.salesman_code} value={salesman.salesman_code}>
-                                                {salesman.salesman_code} - {salesman.salesman_name}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                    options={salesmanOptions}
+                                    placeholder="Select salesman"
+                                    clearable
+                                />
                             </div>
                         </div>
 
@@ -166,8 +167,8 @@ export default function CustomerForm({ customer, onClose }) {
                             </div>
                             <div>
                                 <Label>Status</Label>
-                                <Select 
-                                    value={formData.status} 
+                                <Select
+                                    value={formData.status}
                                     onValueChange={(val) => handleChange('status', val)}
                                 >
                                     <SelectTrigger>
@@ -285,8 +286,8 @@ export default function CustomerForm({ customer, onClose }) {
                             </div>
                             <div>
                                 <Label>Payment Terms</Label>
-                                <Select 
-                                    value={formData.payment_terms} 
+                                <Select
+                                    value={formData.payment_terms}
                                     onValueChange={(val) => handleChange('payment_terms', val)}
                                 >
                                     <SelectTrigger>

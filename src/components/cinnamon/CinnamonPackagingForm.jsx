@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/components/ui/use-toast";
 import { Package, AlertTriangle } from "lucide-react";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
+import SearchableSelect from "@/components/ui/SearchableSelect";
 
 const PACK_SIZES = [
     { label: "50g",  value: "50g",  kg: 0.05 },
@@ -81,8 +82,21 @@ export default function CinnamonPackagingForm({ item, onClose }) {
     const safeProcessSteps   = Array.isArray(processSteps)   ? processSteps   : [];
     const safeAllPackaging   = Array.isArray(allPackaging)   ? allPackaging   : [];
 
+    const batchOptions = useMemo(
+        () => safeBatches.map((b) => ({ value: b.batch_number, label: `${b.batch_number} — ${b.supplier}` })),
+        [safeBatches]
+    );
+
     const selectedBatch = safeBatches.find((b) => b.batch_number === formData.batch_number);
     const batchGrades   = safeGradingOutputs.filter((g) => g.batch_number === formData.batch_number);
+
+    const gradeOptions = useMemo(
+        () => batchGrades.map((g) => ({
+            value: g.grade_code,
+            label: `${g.grade_code} (${parseFloat(g.output_weight_kg || 0).toFixed(3)} kg graded)`,
+        })),
+        [batchGrades]
+    );
 
     // Moisture QC gate
     const latestMoistureStep = safeProcessSteps
@@ -298,24 +312,17 @@ export default function CinnamonPackagingForm({ item, onClose }) {
                             <Input value={formData.packaging_number} disabled />
                         </div>
                         <div>
-                            <Label>Batch *</Label>
-                            <Select
+                            <SearchableSelect
+                                label="Batch *"
+                                placeholder="Select batch"
                                 value={formData.batch_number}
-                                onValueChange={(v) => {
+                                onChange={(v) => {
                                     handleChange("batch_number", v);
                                     handleChange("grade_code", "");
                                 }}
-                                required
-                            >
-                                <SelectTrigger><SelectValue placeholder="Select batch" /></SelectTrigger>
-                                <SelectContent>
-                                    {safeBatches.map((b) => (
-                                        <SelectItem key={b.id} value={b.batch_number}>
-                                            {b.batch_number} — {b.supplier}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                options={batchOptions}
+                                mode="client"
+                            />
                         </div>
                     </div>
 
@@ -342,21 +349,15 @@ export default function CinnamonPackagingForm({ item, onClose }) {
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label>Grade *</Label>
-                            <Select
+                            <SearchableSelect
+                                label="Grade *"
+                                placeholder="Select grade"
                                 value={formData.grade_code}
-                                onValueChange={(v) => handleChange("grade_code", v)}
-                                required disabled={!formData.batch_number}
-                            >
-                                <SelectTrigger><SelectValue placeholder="Select grade" /></SelectTrigger>
-                                <SelectContent>
-                                    {batchGrades.map((g) => (
-                                        <SelectItem key={g.id} value={g.grade_code}>
-                                            {g.grade_code} ({parseFloat(g.output_weight_kg || 0).toFixed(3)} kg graded)
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                                onChange={(v) => handleChange("grade_code", v)}
+                                options={gradeOptions}
+                                mode="client"
+                                disabled={!formData.batch_number}
+                            />
                         </div>
                         <div>
                             <Label>Pack Size *</Label>

@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
+import SearchableSelect from "@/components/ui/SearchableSelect";
 
 const ACCOUNT_FIELDS = [
   { key: "ar_receivables",     label: "Accounts Receivable",          category: "Assets",      fallback: "1100" },
@@ -97,6 +97,15 @@ export default function GLAccountMappingForm() {
 
   const nonHeaderAccounts = accounts.filter((a) => !a.is_header);
 
+  const accountOptions = useMemo(
+    () =>
+      nonHeaderAccounts.map((acc) => ({
+        value: acc.account_code,
+        label: `${acc.account_code} - ${acc.account_name}`,
+      })),
+    [nonHeaderAccounts]
+  );
+
   if (isLoading) {
     return <div className="py-8 text-center text-gray-500 text-sm">Loading account mapping…</div>;
   }
@@ -127,18 +136,14 @@ export default function GLAccountMappingForm() {
                 return (
                   <div key={key}>
                     <Label className="text-xs text-gray-700 mb-1 block">{label}</Label>
-                    <Select value={currentCode} onValueChange={(val) => handleChange(key, val)}>
-                      <SelectTrigger className="h-8 text-sm bg-white">
-                        <SelectValue placeholder={`Default: ${fallback}`} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {nonHeaderAccounts.map((acc) => (
-                          <SelectItem key={acc.id} value={acc.account_code}>
-                            {acc.account_code} — {acc.account_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      mode="client"
+                      value={currentCode}
+                      onChange={(val) => handleChange(key, val)}
+                      options={accountOptions}
+                      placeholder={`Default: ${fallback}`}
+                      searchPlaceholder="Search accounts…"
+                    />
                     {matchedAcc && (
                       <p className="text-xs text-gray-400 mt-0.5">{matchedAcc.account_name}</p>
                     )}
