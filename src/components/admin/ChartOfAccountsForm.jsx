@@ -31,7 +31,11 @@ export default function ChartOfAccountsForm({ item, onClose }) {
         normal_balance: 'debit',
         parent_account: '',
         level: 1,
+        is_header: false,
         is_control_account: false,
+        allow_direct_posting: true,
+        cost_center_required: false,
+        is_active: true,
         currency: 'LKR',
         opening_balance: 0,
         current_balance: 0,
@@ -85,7 +89,11 @@ export default function ChartOfAccountsForm({ item, onClose }) {
     };
 
     const handleChange = (field, value) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        setFormData(prev => ({
+            ...prev,
+            [field]: value,
+            ...(field === "is_header" && value ? { allow_direct_posting: false } : {})
+        }));
     };
 
     const subtypeOptions = {
@@ -358,6 +366,23 @@ export default function ChartOfAccountsForm({ item, onClose }) {
                                     <SelectItem value="closed">Closed</SelectItem>
                                 </SelectContent>
                             </Select>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3">
+                            {[
+                                ["is_header",            "Header account"],
+                                ["is_active",            "Active"],
+                                ["allow_direct_posting", "Allow direct posting"],
+                                ["cost_center_required", "Cost center required"],
+                            ].map(([field, label]) => (
+                                <label key={field} className="flex items-center gap-3 rounded-md border p-3 cursor-pointer">
+                                    <Switch
+                                        checked={Boolean(formData[field])}
+                                        onCheckedChange={(value) => handleChange(field, value)}
+                                    />
+                                    <span>{label}</span>
+                                </label>
+                            ))}
                         </div>
 
                         <div>
