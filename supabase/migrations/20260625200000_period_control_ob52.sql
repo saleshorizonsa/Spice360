@@ -9,19 +9,20 @@
 -- ────────────────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.period_control (
     id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id uuid NOT NULL,
-    tenant_id       uuid,
-    fiscal_year     text NOT NULL,        -- e.g. '2025-26'
-    area            text NOT NULL,        -- 'gl' | 'ar' | 'ap' | 'inventory' | 'assets'
+    organization_id  uuid NOT NULL,
+    organization_key text,
+    tenant_id        uuid,
+    fiscal_year      text NOT NULL,        -- e.g. '2025-26'
+    area             text NOT NULL,        -- 'gl' | 'ar' | 'ap' | 'inventory' | 'assets'
     -- Interval 1: currently active range (new transactions)
-    current_from    integer,              -- fiscal period 1-16; NULL = nothing open
-    current_to      integer,
+    current_from     integer,              -- fiscal period 1-16; NULL = nothing open
+    current_to       integer,
     -- Interval 2: prior-period adjustment range (NULL = prior posting not allowed)
-    prior_from      integer,
-    prior_to        integer,
-    created_at      timestamptz NOT NULL DEFAULT now(),
-    updated_at      timestamptz NOT NULL DEFAULT now(),
-    updated_by      text,
+    prior_from       integer,
+    prior_to         integer,
+    created_at       timestamptz NOT NULL DEFAULT now(),
+    updated_at       timestamptz NOT NULL DEFAULT now(),
+    updated_by       text,
 
     CONSTRAINT period_control_unique      UNIQUE (organization_id, fiscal_year, area),
     CONSTRAINT period_control_area_check  CHECK (area IN ('gl','ar','ap','inventory','assets')),
@@ -39,9 +40,10 @@ CREATE TABLE IF NOT EXISTS public.period_control (
 -- 2. period_control_log: immutable audit trail for every open/close action
 -- ────────────────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS public.period_control_log (
-    id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id uuid NOT NULL,
-    tenant_id       uuid,
+    id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    organization_id  uuid NOT NULL,
+    organization_key text,
+    tenant_id        uuid,
     fiscal_year     text NOT NULL,
     area            text NOT NULL,
     interval_slot   text NOT NULL,        -- 'current' | 'prior'
