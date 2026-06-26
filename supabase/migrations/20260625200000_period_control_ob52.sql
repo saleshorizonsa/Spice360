@@ -9,6 +9,7 @@
 CREATE TABLE IF NOT EXISTS public.period_control (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   base44_id        text UNIQUE,
+  tenant_id        uuid,
   organization_id  uuid,
   organization_key text,
   record           jsonb NOT NULL DEFAULT '{}'::jsonb,
@@ -54,6 +55,7 @@ END $$;
 CREATE TABLE IF NOT EXISTS public.period_control_log (
   id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   base44_id        text UNIQUE,
+  tenant_id        uuid,
   organization_id  uuid,
   organization_key text,
   record           jsonb NOT NULL DEFAULT '{}'::jsonb,
