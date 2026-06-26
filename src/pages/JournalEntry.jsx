@@ -5,7 +5,7 @@ import { Eye, Plus, RotateCcw, Save, Search, Send, Trash2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -65,6 +65,8 @@ export default function JournalEntry() {
   const [search, setSearch] = useState("");
   const [detailJournal, setDetailJournal] = useState(null);
   const [detailLines, setDetailLines] = useState([]);
+  const [reversalTarget, setReversalTarget] = useState(null);
+  const [reversalDate, setReversalDate] = useState(new Date().toISOString().slice(0, 10));
   const [form, setForm] = useState({
     entry_date: new Date().toISOString().slice(0, 10),
     entry_type: "adjustment",
@@ -191,14 +193,24 @@ export default function JournalEntry() {
   });
 
   const reverseMutation = useMutation({
-    mutationFn: (journal) => reverseJournalEntry(journal.journal_number, new Date().toISOString().slice(0, 10), ""),
+    mutationFn: ({ journalNumber, date }) => reverseJournalEntry(journalNumber, date, ""),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["journalEntries", orgId] });
       queryClient.invalidateQueries({ queryKey: ["journalLines", orgId] });
-      toast({ title: "Journal reversed", description: "A reversal entry was posted." });
+      toast({ title: "Journal reversed", description: "Reversal entry posted to the current period." });
+      setReversalTarget(null);
     },
     onError: (error) => toast({ title: "Unable to reverse journal", description: error.message, variant: "destructive" })
   });
+
+  const openReversal = (journal) => {
+    setReversalDate(new Date().toISOString().slice(0, 10));
+    setReversalTarget(journal);
+  };
+
+  const confirmReversal = () => {
+    reverseMutation.mutate({ journalNumber: reversalTarget.journal_number, date: reversalDate });
+  };
 
   const openDetail = async (journal) => {
     setDetailJournal(journal);
@@ -307,7 +319,7 @@ export default function JournalEntry() {
                     <TableCell className="text-right font-mono">{fmt(journal.total_credit)}</TableCell>
                     <TableCell className="text-right">
                       <Button variant="ghost" size="icon" onClick={() => openDetail(journal)}><Eye className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" disabled={journal.status !== "posted"} onClick={() => reverseMutation.mutate(journal)}><RotateCcw className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" title="Reverse" disabled={journal.status !== "posted"} onClick={() => openReversal(journal)}><RotateCcw className="h-4 w-4" /></Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -317,6 +329,76 @@ export default function JournalEntry() {
         </CardContent>
       </Card>
       <JournalDetail journal={detailJournal} lines={detailLines} onClose={() => setDetailJournal(null)} />
+
+      {/* ── Reversal confirmation dialog ──────────────────────────── */}
+      <Dialog open={!!reversalTarget} onOpenChange={(open) => { if (!open) setReversalTarget(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RotateCcw className="w-4 h-4 text-amber-600" />
+              Confirm Reversal
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-1">
+            {/* Original entry summary */}
+            <div className="rounded-md bg-slate-50 border px-4 py-3 space-y-1.5 text-sm">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Journal #</span>
+                <span className="font-mono font-semibold">{reversalTarget?.journal_number}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Original date</span>
+                <span>{reversalTarget?.entry_date}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Type</span>
+                <span className="capitalize">{reversalTarget?.entry_type}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Amount</span>
+                <span className="font-mono">{fmt(reversalTarget?.total_debit)}</span>
+              </div>
+              {reversalTarget?.description && (
+                <div className="pt-1 border-t text-slate-600 text-xs">{reversalTarget.description}</div>
+              )}
+            </div>
+
+            {/* Reversal date — defaults to today (current month/year) */}
+            <div>
+              <Label className="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5 block">
+                Reversal Posting Date
+              </Label>
+              <Input
+                type="date"
+                value={reversalDate}
+                onChange={(e) => setReversalDate(e.target.value)}
+              />
+              <p className="text-xs text-slate-400 mt-1">
+                Defaults to today. The reversal posts into whichever period this date falls in.
+              </p>
+            </div>
+
+            <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-800">
+              A new <strong>reversal</strong> journal entry will be created with all debits and credits
+              swapped. The original entry will be marked as <em>reversed</em> and cannot be changed.
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReversalTarget(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmReversal}
+              disabled={reverseMutation.isPending || !reversalDate}
+            >
+              {reverseMutation.isPending ? "Reversing…" : "Confirm Reversal"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
