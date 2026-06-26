@@ -90,9 +90,9 @@ CREATE POLICY "period_control_tenant_read" ON public.period_control
     FOR SELECT USING (
         auth.email() = 'shareef6695@gmail.com'
         OR organization_id IN (
-            SELECT id FROM public.organizations
+            SELECT id FROM public.organization
             WHERE tenant_id = (
-                SELECT tenant_id FROM public.organizations
+                SELECT tenant_id FROM public.organization
                 WHERE id = period_control.organization_id
                 LIMIT 1
             )
@@ -103,9 +103,9 @@ CREATE POLICY "period_control_tenant_write" ON public.period_control
     FOR ALL USING (
         auth.email() = 'shareef6695@gmail.com'
         OR organization_id IN (
-            SELECT id FROM public.organizations
+            SELECT id FROM public.organization
             WHERE tenant_id = (
-                SELECT tenant_id FROM public.organizations
+                SELECT tenant_id FROM public.organization
                 WHERE id = period_control.organization_id
                 LIMIT 1
             )
@@ -116,9 +116,9 @@ CREATE POLICY "period_control_log_tenant_read" ON public.period_control_log
     FOR SELECT USING (
         auth.email() = 'shareef6695@gmail.com'
         OR organization_id IN (
-            SELECT id FROM public.organizations
+            SELECT id FROM public.organization
             WHERE tenant_id = (
-                SELECT tenant_id FROM public.organizations
+                SELECT tenant_id FROM public.organization
                 WHERE id = period_control_log.organization_id
                 LIMIT 1
             )
@@ -129,9 +129,9 @@ CREATE POLICY "period_control_log_tenant_insert" ON public.period_control_log
     FOR INSERT WITH CHECK (
         auth.email() = 'shareef6695@gmail.com'
         OR organization_id IN (
-            SELECT id FROM public.organizations
+            SELECT id FROM public.organization
             WHERE tenant_id = (
-                SELECT tenant_id FROM public.organizations
+                SELECT tenant_id FROM public.organization
                 WHERE id = period_control_log.organization_id
                 LIMIT 1
             )
