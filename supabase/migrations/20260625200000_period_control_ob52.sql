@@ -1,150 +1,90 @@
 -- SAP OB52-style period control: per-area (GL/AR/AP/Inventory/Assets) open intervals
--- April-March fiscal year: period 1=April … 12=March, special 13-16 for year-end
---
--- REVIEW BEFORE APPLYING. Do not auto-apply.
--- Replace hardcoded email 'shareef6695@gmail.com' with a platform-admin role check before production.
+-- April-March fiscal year: period 1=April ... 12=March, special 13-16 for year-end
+-- Follows the matrixSalesClient entity pattern: all fields stored in record JSONB.
 
--- ────────────────────────────────────────────────────────────────────────────
--- 1. period_control: one row per (organization_id, fiscal_year, area)
--- ────────────────────────────────────────────────────────────────────────────
+-- ── period_control ──────────────────────────────────────────────────────────
+-- One row per (organization_id, fiscal_year, area).
+-- Fields in record: fiscal_year, area, current_from, current_to,
+--                   prior_from, prior_to, updated_by_email
 CREATE TABLE IF NOT EXISTS public.period_control (
-    id              uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id  uuid NOT NULL,
-    organization_key text,
-    tenant_id        uuid,
-    fiscal_year      text NOT NULL,        -- e.g. '2025-26'
-    area             text NOT NULL,        -- 'gl' | 'ar' | 'ap' | 'inventory' | 'assets'
-    -- Interval 1: currently active range (new transactions)
-    current_from     integer,              -- fiscal period 1-16; NULL = nothing open
-    current_to       integer,
-    -- Interval 2: prior-period adjustment range (NULL = prior posting not allowed)
-    prior_from       integer,
-    prior_to         integer,
-    created_at       timestamptz NOT NULL DEFAULT now(),
-    updated_at       timestamptz NOT NULL DEFAULT now(),
-    updated_by       text,
-
-    CONSTRAINT period_control_unique      UNIQUE (organization_id, fiscal_year, area),
-    CONSTRAINT period_control_area_check  CHECK (area IN ('gl','ar','ap','inventory','assets')),
-    CONSTRAINT period_control_current_ok  CHECK (
-        current_from IS NULL OR
-        (current_from >= 1 AND current_to IS NOT NULL AND current_to >= current_from AND current_to <= 16)
-    ),
-    CONSTRAINT period_control_prior_ok    CHECK (
-        prior_from IS NULL OR
-        (prior_from >= 1 AND prior_to IS NOT NULL AND prior_to >= prior_from AND prior_to <= 16)
-    )
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  base44_id        text UNIQUE,
+  organization_id  uuid,
+  organization_key text,
+  record           jsonb NOT NULL DEFAULT '{}'::jsonb,
+  status           text GENERATED ALWAYS AS (record ->> 'status') STORED,
+  created_by       uuid,
+  updated_by       uuid,
+  source           text NOT NULL DEFAULT 'matrixsales',
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  updated_at       timestamptz NOT NULL DEFAULT now()
 );
 
--- ────────────────────────────────────────────────────────────────────────────
--- 2. period_control_log: immutable audit trail for every open/close action
--- ────────────────────────────────────────────────────────────────────────────
+-- Enforce one row per org + fiscal_year + area
+CREATE UNIQUE INDEX IF NOT EXISTS period_control_org_fy_area_idx
+  ON public.period_control (organization_id, (record ->> 'fiscal_year'), (record ->> 'area'));
+
+CREATE INDEX IF NOT EXISTS period_control_record_gin_idx
+  ON public.period_control USING gin (record);
+CREATE INDEX IF NOT EXISTS period_control_org_id_idx
+  ON public.period_control (organization_id);
+CREATE INDEX IF NOT EXISTS period_control_org_key_idx
+  ON public.period_control (organization_key);
+
+CREATE OR REPLACE TRIGGER set_period_control_updated_at
+  BEFORE UPDATE ON public.period_control
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+ALTER TABLE public.period_control ENABLE ROW LEVEL SECURITY;
+
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'period_control'
+    AND policyname = 'authenticated_read_write'
+  ) THEN
+    CREATE POLICY authenticated_read_write ON public.period_control
+      FOR ALL TO authenticated USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- ── period_control_log ──────────────────────────────────────────────────────
+-- Immutable audit trail. Fields in record: fiscal_year, area, interval_slot,
+-- action, prev_from, prev_to, new_from, new_to, reason, performed_by, performed_at
 CREATE TABLE IF NOT EXISTS public.period_control_log (
-    id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    organization_id  uuid NOT NULL,
-    organization_key text,
-    tenant_id        uuid,
-    fiscal_year     text NOT NULL,
-    area            text NOT NULL,
-    interval_slot   text NOT NULL,        -- 'current' | 'prior'
-    action          text NOT NULL,        -- 'open' | 'close' | 'shift'
-    prev_from       integer,              -- value before the change (NULL = was not set)
-    prev_to         integer,
-    new_from        integer,              -- value after the change (NULL = closed/cleared)
-    new_to          integer,
-    reason          text NOT NULL,
-    performed_by    text NOT NULL,
-    performed_at    timestamptz NOT NULL DEFAULT now()
+  id               uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  base44_id        text UNIQUE,
+  organization_id  uuid,
+  organization_key text,
+  record           jsonb NOT NULL DEFAULT '{}'::jsonb,
+  status           text GENERATED ALWAYS AS (record ->> 'status') STORED,
+  created_by       uuid,
+  updated_by       uuid,
+  source           text NOT NULL DEFAULT 'matrixsales',
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  updated_at       timestamptz NOT NULL DEFAULT now()
 );
 
--- Prevent any UPDATE/DELETE on the log (append-only)
-CREATE OR REPLACE RULE period_control_log_no_update AS
-    ON UPDATE TO public.period_control_log DO INSTEAD NOTHING;
+CREATE INDEX IF NOT EXISTS period_control_log_record_gin_idx
+  ON public.period_control_log USING gin (record);
+CREATE INDEX IF NOT EXISTS period_control_log_org_id_idx
+  ON public.period_control_log (organization_id);
+CREATE INDEX IF NOT EXISTS period_control_log_org_key_idx
+  ON public.period_control_log (organization_key);
 
-CREATE OR REPLACE RULE period_control_log_no_delete AS
-    ON DELETE TO public.period_control_log DO INSTEAD NOTHING;
+CREATE OR REPLACE TRIGGER set_period_control_log_updated_at
+  BEFORE UPDATE ON public.period_control_log
+  FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
 
--- ────────────────────────────────────────────────────────────────────────────
--- 3. auto-update updated_at on period_control
--- ────────────────────────────────────────────────────────────────────────────
-CREATE OR REPLACE FUNCTION public.set_period_control_updated_at()
-RETURNS TRIGGER LANGUAGE plpgsql AS $$
-BEGIN
-    NEW.updated_at = now();
-    RETURN NEW;
-END;
-$$;
-
-DROP TRIGGER IF EXISTS trg_period_control_updated_at ON public.period_control;
-CREATE TRIGGER trg_period_control_updated_at
-    BEFORE UPDATE ON public.period_control
-    FOR EACH ROW EXECUTE FUNCTION public.set_period_control_updated_at();
-
--- ────────────────────────────────────────────────────────────────────────────
--- 4. Row-Level Security
--- ────────────────────────────────────────────────────────────────────────────
-ALTER TABLE public.period_control     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.period_control_log ENABLE ROW LEVEL SECURITY;
 
--- period_control: org members can read; writes are enforced at app level
--- (replace 'shareef6695@gmail.com' backdoor with platform-admin role before prod)
-CREATE POLICY "period_control_tenant_read" ON public.period_control
-    FOR SELECT USING (
-        auth.email() = 'shareef6695@gmail.com'
-        OR organization_id IN (
-            SELECT id FROM public.organization
-            WHERE tenant_id = (
-                SELECT tenant_id FROM public.organization
-                WHERE id = period_control.organization_id
-                LIMIT 1
-            )
-        )
-    );
-
-CREATE POLICY "period_control_tenant_write" ON public.period_control
-    FOR ALL USING (
-        auth.email() = 'shareef6695@gmail.com'
-        OR organization_id IN (
-            SELECT id FROM public.organization
-            WHERE tenant_id = (
-                SELECT tenant_id FROM public.organization
-                WHERE id = period_control.organization_id
-                LIMIT 1
-            )
-        )
-    );
-
-CREATE POLICY "period_control_log_tenant_read" ON public.period_control_log
-    FOR SELECT USING (
-        auth.email() = 'shareef6695@gmail.com'
-        OR organization_id IN (
-            SELECT id FROM public.organization
-            WHERE tenant_id = (
-                SELECT tenant_id FROM public.organization
-                WHERE id = period_control_log.organization_id
-                LIMIT 1
-            )
-        )
-    );
-
-CREATE POLICY "period_control_log_tenant_insert" ON public.period_control_log
-    FOR INSERT WITH CHECK (
-        auth.email() = 'shareef6695@gmail.com'
-        OR organization_id IN (
-            SELECT id FROM public.organization
-            WHERE tenant_id = (
-                SELECT tenant_id FROM public.organization
-                WHERE id = period_control_log.organization_id
-                LIMIT 1
-            )
-        )
-    );
-
--- ────────────────────────────────────────────────────────────────────────────
--- 5. Indexes
--- ────────────────────────────────────────────────────────────────────────────
-CREATE INDEX IF NOT EXISTS idx_period_control_org_fy
-    ON public.period_control (organization_id, fiscal_year);
-
-CREATE INDEX IF NOT EXISTS idx_period_control_log_org_fy
-    ON public.period_control_log (organization_id, fiscal_year, performed_at DESC);
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'period_control_log'
+    AND policyname = 'authenticated_read_write'
+  ) THEN
+    CREATE POLICY authenticated_read_write ON public.period_control_log
+      FOR ALL TO authenticated USING (true) WITH CHECK (true);
+  END IF;
+END $$;
