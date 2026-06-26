@@ -376,7 +376,7 @@ export default function Finance() {
         setEditingItem(null);
     };
 
-    const handlePrint = (item, type) => {
+    const handlePrint = async (item, type) => {
         const typeLabels = {
             'Journal Entry': 'Journal Entry',
             'AR': 'Accounts Receivable',
@@ -384,7 +384,16 @@ export default function Finance() {
             'Payment': 'Payment Receipt',
             'Fixed Asset': 'Fixed Asset Card',
         };
-        setSelectedDocument({ ...item, type: typeLabels[type] || type });
+        let doc = { ...item, type: typeLabels[type] || type };
+        if (type === 'Journal Entry' && item.journal_number) {
+            try {
+                const lines = await matrixSales.entities.JournalLine.filter({
+                    journal_number: item.journal_number,
+                });
+                doc.journal_lines = lines.sort((a, b) => (a.line_number || 0) - (b.line_number || 0));
+            } catch { /* proceed without lines */ }
+        }
+        setSelectedDocument(doc);
         setShowPrintPreview(true);
     };
 
