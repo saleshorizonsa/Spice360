@@ -31,7 +31,7 @@ export default function GeneralLedgerReport() {
         const dateMatch = entry.posting_date >= periodStart && entry.posting_date <= periodEnd;
         const accountMatch = selectedAccount === 'ALL' || entry.account_code === selectedAccount;
         const costCenterMatch = costCenter === 'ALL' || entry.cost_center === costCenter;
-        const statusMatch = entry.status === 'posted';
+        const statusMatch = entry.status === 'posted' || entry.status === 'reversed';
         return dateMatch && accountMatch && costCenterMatch && statusMatch;
     });
 

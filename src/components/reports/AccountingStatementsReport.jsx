@@ -48,7 +48,14 @@ export default function AccountingStatementsReport({ initialTab = "trial_balance
     initialData: []
   });
 
-  const journalMap = useMemo(() => new Map(journals.filter((journal) => journal.status === "posted").map((journal) => [journal.journal_number, journal])), [journals]);
+  // Include both posted AND reversed: a reversed JE's Dr/Cr are permanent accounting
+  // movements. Excluding reversed entries leaves the original side of a reversal pair
+  // out of all three reports (trial balance, P&L, balance sheet).
+  const journalMap = useMemo(() => new Map(
+    journals
+      .filter((journal) => journal.status === "posted" || journal.status === "reversed")
+      .map((journal) => [journal.journal_number, journal])
+  ), [journals]);
 
   const postedLines = useMemo(() => lines
     .map((line) => ({ ...line, journal: journalMap.get(line.journal_number) }))
