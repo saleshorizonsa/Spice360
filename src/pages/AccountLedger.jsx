@@ -69,7 +69,11 @@ export default function AccountLedger() {
       .map((line) => ({ ...line, journal: journalMap.get(line.journal_number) }))
       .filter((line) => {
         const date = line.journal?.entry_date || "";
-        return line.journal?.status === "posted" && date >= fromDate && date <= toDate;
+        const status = line.journal?.status;
+        // Include posted AND reversed: a reversed entry's Dr/Cr are real accounting
+        // movements — excluding them removes the original side of a reversal pair and
+        // corrupts the running balance.
+        return (status === "posted" || status === "reversed") && date >= fromDate && date <= toDate;
       })
       .sort((a, b) => String(a.journal?.entry_date).localeCompare(String(b.journal?.entry_date)) || Number(a.line_number || 0) - Number(b.line_number || 0))
       .map((line) => {
@@ -177,21 +181,38 @@ export default function AccountLedger() {
                       (line.description || '').toLowerCase().includes(q) ||
                       (line.journal?.description || '').toLowerCase().includes(q) ||
                       (line.journal?.reference_id || '').toLowerCase().includes(q);
-                  }).map((line) => (
-                  <TableRow key={line.id || `${line.journal_number}-${line.line_number}`}>
-                    <TableCell>{line.journal?.entry_date}</TableCell>
-                    <TableCell>
-                      <button className="font-mono text-blue-700 hover:underline" onClick={() => navigate(`/JournalEntry?journal=${encodeURIComponent(line.journal_number)}`)}>
-                        {line.journal_number}
-                      </button>
-                    </TableCell>
-                    <TableCell>{line.journal?.reference_id || line.journal?.reference_type || "-"}</TableCell>
-                    <TableCell>{line.description || line.journal?.description || "-"}</TableCell>
-                    <TableCell className="text-right font-mono">{line.debit ? fmt(line.debit) : "-"}</TableCell>
-                    <TableCell className="text-right font-mono">{line.credit ? fmt(line.credit) : "-"}</TableCell>
-                    <TableCell className="text-right font-mono">{fmt(line.running_balance)}</TableCell>
-                  </TableRow>
-                ))}
+                  }).map((line) => {
+                    const isReversed = line.journal?.status === "reversed";
+                    const isReversal = line.journal?.entry_type === "reversal";
+                    return (
+                      <TableRow
+                        key={line.id || `${line.journal_number}-${line.line_number}`}
+                        className={isReversed ? "bg-red-50/40" : isReversal ? "bg-amber-50/40" : ""}
+                      >
+                        <TableCell>{line.journal?.entry_date}</TableCell>
+                        <TableCell>
+                          <div className="flex flex-col gap-0.5">
+                            <button className="font-mono text-blue-700 hover:underline text-left" onClick={() => navigate(`/JournalEntry?journal=${encodeURIComponent(line.journal_number)}`)}>
+                              {line.journal_number}
+                            </button>
+                            {isReversed && (
+                              <Badge className="w-fit text-[10px] px-1.5 py-0 bg-red-100 text-red-700 border-red-200">Reversed</Badge>
+                            )}
+                            {isReversal && (
+                              <Badge className="w-fit text-[10px] px-1.5 py-0 bg-amber-100 text-amber-700 border-amber-200">Reversal</Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>{line.journal?.reference_id || line.journal?.reference_type || "-"}</TableCell>
+                        <TableCell className={isReversed ? "text-slate-400 line-through" : ""}>
+                          {line.description || line.journal?.description || "-"}
+                        </TableCell>
+                        <TableCell className="text-right font-mono">{line.debit ? fmt(line.debit) : "-"}</TableCell>
+                        <TableCell className="text-right font-mono">{line.credit ? fmt(line.credit) : "-"}</TableCell>
+                        <TableCell className="text-right font-mono">{fmt(line.running_balance)}</TableCell>
+                      </TableRow>
+                    );
+                  })}
                 <TableRow className="bg-slate-100 font-bold">
                   <TableCell>Closing</TableCell>
                   <TableCell colSpan={5}>Closing Balance</TableCell>
