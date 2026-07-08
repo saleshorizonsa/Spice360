@@ -88,18 +88,19 @@ export default function AccountLedger() {
 
   const exportCsv = () => {
     downloadCsv(`account-ledger-${selectedAccount || "all"}-${fromDate}-${toDate}.csv`, [
-      ["Date", "Journal Number", "Reference", "Description", "Debit", "Credit", "Running Balance"],
-      ["Opening Balance", "", "", "", "", "", Number(account?.opening_balance || 0).toFixed(2)],
+      ["Date", "Journal Number", "Status", "Reference", "Description", "Debit", "Credit", "Running Balance"],
+      ["Opening Balance", "", "", "", "", "", "", Number(account?.opening_balance || 0).toFixed(2)],
       ...ledgerRows.map((line) => [
         line.journal?.entry_date,
         line.journal_number,
+        line.journal?.status || "",
         line.journal?.reference_id || line.journal?.reference_type || "",
         line.description || line.journal?.description || "",
         Number(line.debit || 0).toFixed(2),
         Number(line.credit || 0).toFixed(2),
         Number(line.running_balance || 0).toFixed(2)
       ]),
-      ["Closing Balance", "", "", "", "", "", Number(closingBalance || 0).toFixed(2)]
+      ["Closing Balance", "", "", "", "", "", "", Number(closingBalance || 0).toFixed(2)]
     ]);
   };
 

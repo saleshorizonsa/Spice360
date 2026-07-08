@@ -17,7 +17,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { Calendar, Edit2, Plus, Printer, RefreshCw, Trash2 } from "lucide-react";
 
 const NONE_VALUE = "__none__";
@@ -178,7 +178,9 @@ export default function PeriodControlOB52() {
             return { previousData };
         },
         onError: (e, _vars, context) => {
-            queryClient.setQueryData(["periodControl", orgId, fiscalYear], context.previousData);
+            if (context?.previousData !== undefined) {
+                queryClient.setQueryData(["periodControl", orgId, fiscalYear], context.previousData);
+            }
             toast({ title: "Error", description: e.message, variant: "destructive" });
         },
         onSuccess: () => {
@@ -193,6 +195,7 @@ export default function PeriodControlOB52() {
         mutationFn: async ({ area, reason, userEmail }) => {
             const existing = controlMap[area];
             if (!existing) throw new Error(`No period control found for area ${area}`);
+            await matrixSales.entities.PeriodControl.delete(existing.id);
             await matrixSales.entities.PeriodControlLog.create({
                 organization_id: orgId,
                 fiscal_year: fiscalYear,
@@ -207,7 +210,6 @@ export default function PeriodControlOB52() {
                 performed_by: userEmail,
                 performed_at: new Date().toISOString(),
             });
-            await matrixSales.entities.PeriodControl.delete(existing.id);
         },
         onMutate: async ({ area }) => {
             await queryClient.cancelQueries({ queryKey: ["periodControl", orgId, fiscalYear] });
@@ -218,7 +220,9 @@ export default function PeriodControlOB52() {
             return { previousData };
         },
         onError: (e, _vars, context) => {
-            queryClient.setQueryData(["periodControl", orgId, fiscalYear], context.previousData);
+            if (context?.previousData !== undefined) {
+                queryClient.setQueryData(["periodControl", orgId, fiscalYear], context.previousData);
+            }
             toast({ title: "Error", description: e.message, variant: "destructive" });
         },
         onSuccess: () => {
@@ -667,13 +671,13 @@ export default function PeriodControlOB52() {
                     </div>
                     <AlertDialogFooter>
                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
+                        <Button
                             onClick={handleDelete}
                             disabled={deleteMutation.isPending}
-                            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+                            className="bg-red-600 hover:bg-red-700 text-white"
                         >
                             {deleteMutation.isPending ? "Deleting…" : "Delete"}
-                        </AlertDialogAction>
+                        </Button>
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>

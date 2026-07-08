@@ -297,7 +297,7 @@ export default function InvoiceForm({ item, onClose }) {
                                 entryDate:     savedInvoice.invoice_date,
                                 entryType:     'goods_issue',
                                 orgId:         currentOrg?.id,
-                                area:          "ar"
+                                area:          "inventory"
                             });
                         }
                     } catch (cogsError) {

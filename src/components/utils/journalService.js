@@ -116,6 +116,7 @@ export async function postJournalEntry({
     total_debit: totalDebit,
     total_credit: totalCredit,
     period,
+    area,
     created_by: createdBy,
     posted_by: createdBy,
     posted_at: now,
@@ -173,7 +174,7 @@ export async function reverseJournalEntry(originalJeNumber, reversalDate, revers
     entryType: "reversal",
     createdBy: reversedBy,
     orgId: original.organization_id,
-    area: "gl",
+    area: original.area || "gl",
   });
 
   await matrixSales.entities.JournalEntry.update(original.id, {
