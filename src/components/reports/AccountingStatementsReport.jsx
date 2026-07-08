@@ -123,10 +123,29 @@ export default function AccountingStatementsReport({ initialTab = "trial_balance
   const revenue = plRows.filter((row) => row.account.account_type === "revenue").reduce((sum, row) => sum + row.balance, 0);
   const expenses = plRows.filter((row) => row.account.account_type === "expense").reduce((sum, row) => sum + row.balance, 0);
   const netIncome = revenue - expenses;
+
+  // Balance sheet needs its own net income: fiscal year start → asOfDate.
+  // Using the P&L tab's fromDate/toDate would corrupt BS when user changes P&L range.
+  const bsNetIncome = useMemo(() => {
+    const fyStart = `${dateToFiscalPeriod(asOfDate).fyStart}-04-01`;
+    let rev = 0, exp = 0;
+    postedLines
+      .filter((line) => line.journal.entry_date >= fyStart && line.journal.entry_date <= asOfDate)
+      .forEach((line) => {
+        const account = accountMap.get(line.account_code);
+        if (!account) return;
+        const dr = Number(line.debit || 0);
+        const cr = Number(line.credit || 0);
+        if (account.account_type === "revenue") rev += cr - dr;
+        if (account.account_type === "expense") exp += dr - cr;
+      });
+    return rev - exp;
+  }, [postedLines, accountMap, asOfDate]);
+
   const assets = bsRows.filter((row) => row.account.account_type === "asset").reduce((sum, row) => sum + row.balance, 0);
   const liabilities = bsRows.filter((row) => row.account.account_type === "liability").reduce((sum, row) => sum + row.balance, 0);
   const equity = bsRows.filter((row) => row.account.account_type === "equity").reduce((sum, row) => sum + row.balance, 0);
-  const bsDifference = assets - (liabilities + equity + netIncome);
+  const bsDifference = assets - (liabilities + equity + bsNetIncome);
 
   return (
     <Card>
@@ -172,6 +191,13 @@ export default function AccountingStatementsReport({ initialTab = "trial_balance
                 <div key={type} className="overflow-hidden rounded-md border">
                   <div className="bg-slate-50 px-4 py-2 font-semibold">{label}</div>
                   <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Account</TableHead>
+                        <TableHead className="text-right">Amount</TableHead>
+                        <TableHead className="text-right w-20">% of Rev</TableHead>
+                      </TableRow>
+                    </TableHeader>
                     <TableBody>
                       {rows.length === 0 && (
                         <TableRow><TableCell colSpan={3} className="text-center text-slate-400 py-4">No {label.toLowerCase()} accounts with activity in this period</TableCell></TableRow>
@@ -200,14 +226,14 @@ export default function AccountingStatementsReport({ initialTab = "trial_balance
 
           <TabsContent value="balance_sheet" className="space-y-4">
             <div className="max-w-xs"><Label>As of Date</Label><Input type="date" value={asOfDate} onChange={(e) => setAsOfDate(e.target.value)} /></div>
-            {Math.abs(bsDifference) > 0.01 && <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertDescription>Balance sheet is out of balance by {fmt(Math.abs(bsDifference))} â€” check for entries posted to wrong account type</AlertDescription></Alert>}
+            {Math.abs(bsDifference) > 0.01 && <Alert variant=”destructive”><AlertTriangle className=”h-4 w-4” /><AlertDescription>Balance sheet is out of balance by {fmt(Math.abs(bsDifference))} — check for entries posted to wrong account type</AlertDescription></Alert>}
             {["asset", "liability", "equity"].map((type) => (
               <div key={type} className="overflow-hidden rounded-md border">
                 <div className="flex items-center justify-between bg-slate-50 px-4 py-2 font-semibold capitalize"><span>{type}</span><Badge>{fmt(bsRows.filter((row) => row.account.account_type === type).reduce((sum, row) => sum + row.balance, 0))}</Badge></div>
                 <Table><TableBody>{bsRows.filter((row) => row.account.account_type === type && Math.abs(row.balance) > 0.01).map((row) => <TableRow key={row.account.account_code}><TableCell>{row.account.account_code} - {row.account.account_name}</TableCell><TableCell className="text-right font-mono">{fmt(row.balance)}</TableCell></TableRow>)}</TableBody></Table>
               </div>
             ))}
-            <div className="rounded-md bg-blue-50 p-4 font-bold">Current Period Net Income in Equity: {fmt(netIncome)}</div>
+            <div className="rounded-md bg-blue-50 p-4 font-bold">Current Fiscal Year Net Income: {fmt(bsNetIncome)}</div>
           </TabsContent>
         </Tabs>
       </CardContent>
