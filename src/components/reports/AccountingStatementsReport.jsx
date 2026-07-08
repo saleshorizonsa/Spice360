@@ -124,28 +124,36 @@ export default function AccountingStatementsReport({ initialTab = "trial_balance
   const expenses = plRows.filter((row) => row.account.account_type === "expense").reduce((sum, row) => sum + row.balance, 0);
   const netIncome = revenue - expenses;
 
-  // Balance sheet needs its own net income: fiscal year start → asOfDate.
-  // Using the P&L tab's fromDate/toDate would corrupt BS when user changes P&L range.
-  const bsNetIncome = useMemo(() => {
+  // bsAllTimeNetIncome: ALL revenue/expense from inception to asOfDate.
+  // Must match bsRows which also sums all-time journal lines — using fiscal-year-only
+  // would leave prior-year P&L entries unaccounted, causing a permanent imbalance.
+  // bsFiscalNetIncome is the current-year figure shown at the bottom for reference.
+  const { bsAllTimeNetIncome, bsFiscalNetIncome } = useMemo(() => {
     const fyStart = `${dateToFiscalPeriod(asOfDate).fyStart}-04-01`;
-    let rev = 0, exp = 0;
+    let allRev = 0, allExp = 0, fyRev = 0, fyExp = 0;
     postedLines
-      .filter((line) => line.journal.entry_date >= fyStart && line.journal.entry_date <= asOfDate)
+      .filter((line) => line.journal.entry_date <= asOfDate)
       .forEach((line) => {
         const account = accountMap.get(line.account_code);
         if (!account) return;
         const dr = Number(line.debit || 0);
         const cr = Number(line.credit || 0);
-        if (account.account_type === "revenue") rev += cr - dr;
-        if (account.account_type === "expense") exp += dr - cr;
+        if (account.account_type === "revenue") {
+          allRev += cr - dr;
+          if (line.journal.entry_date >= fyStart) fyRev += cr - dr;
+        }
+        if (account.account_type === "expense") {
+          allExp += dr - cr;
+          if (line.journal.entry_date >= fyStart) fyExp += dr - cr;
+        }
       });
-    return rev - exp;
+    return { bsAllTimeNetIncome: allRev - allExp, bsFiscalNetIncome: fyRev - fyExp };
   }, [postedLines, accountMap, asOfDate]);
 
   const assets = bsRows.filter((row) => row.account.account_type === "asset").reduce((sum, row) => sum + row.balance, 0);
   const liabilities = bsRows.filter((row) => row.account.account_type === "liability").reduce((sum, row) => sum + row.balance, 0);
   const equity = bsRows.filter((row) => row.account.account_type === "equity").reduce((sum, row) => sum + row.balance, 0);
-  const bsDifference = assets - (liabilities + equity + bsNetIncome);
+  const bsDifference = assets - (liabilities + equity + bsAllTimeNetIncome);
 
   return (
     <Card>
@@ -233,7 +241,14 @@ export default function AccountingStatementsReport({ initialTab = "trial_balance
                 <Table><TableBody>{bsRows.filter((row) => row.account.account_type === type && Math.abs(row.balance) > 0.01).map((row) => <TableRow key={row.account.account_code}><TableCell>{row.account.account_code} - {row.account.account_name}</TableCell><TableCell className="text-right font-mono">{fmt(row.balance)}</TableCell></TableRow>)}</TableBody></Table>
               </div>
             ))}
-            <div className="rounded-md bg-blue-50 p-4 font-bold">Current Fiscal Year Net Income: {fmt(bsNetIncome)}</div>
+            <div className="rounded-md bg-blue-50 p-4 font-bold">
+              Current Fiscal Year Net Income: {fmt(bsFiscalNetIncome)}
+              {Math.abs(bsAllTimeNetIncome - bsFiscalNetIncome) > 0.01 && (
+                <span className="ml-4 text-sm font-normal text-slate-600">
+                  (All-time retained: {fmt(bsAllTimeNetIncome - bsFiscalNetIncome)})
+                </span>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </CardContent>
