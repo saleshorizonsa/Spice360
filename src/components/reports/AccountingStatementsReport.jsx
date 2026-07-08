@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle } from "lucide-react";
@@ -125,7 +125,7 @@ export default function AccountingStatementsReport({ initialTab = "trial_balance
   const netIncome = revenue - expenses;
 
   // bsAllTimeNetIncome: ALL revenue/expense from inception to asOfDate.
-  // Must match bsRows which also sums all-time journal lines — using fiscal-year-only
+  // Must match bsRows which also sums all-time journal lines - using fiscal-year-only
   // would leave prior-year P&L entries unaccounted, causing a permanent imbalance.
   // bsFiscalNetIncome is the current-year figure shown at the bottom for reference.
   const { bsAllTimeNetIncome, bsFiscalNetIncome } = useMemo(() => {
@@ -214,7 +214,7 @@ export default function AccountingStatementsReport({ initialTab = "trial_balance
                         <TableRow key={row.account.account_code}>
                           <TableCell>{row.account.account_code} - {row.account.account_name}</TableCell>
                           <TableCell className="text-right font-mono">{fmt(row.balance)}</TableCell>
-                          <TableCell className="text-right text-slate-500 text-sm">{revenue ? `${((row.balance / revenue) * 100).toFixed(1)}%` : "—"}</TableCell>
+                          <TableCell className="text-right text-slate-500 text-sm">{revenue ? `${((row.balance / revenue) * 100).toFixed(1)}%` : "-"}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -235,8 +235,8 @@ export default function AccountingStatementsReport({ initialTab = "trial_balance
           <TabsContent value="balance_sheet" className="space-y-4">
             <div className="max-w-xs"><Label>As of Date</Label><Input type="date" value={asOfDate} onChange={(e) => setAsOfDate(e.target.value)} /></div>
             {Math.abs(bsDifference) > 0.01 && (
-              <Alert variant=”destructive”>
-                <AlertTriangle className=”h-4 w-4” />
+              <Alert variant="destructive">
+                <AlertTriangle className="h-4 w-4" />
                 <AlertDescription>
                   Balance sheet is out of balance by {fmt(Math.abs(bsDifference))} - check for entries posted to wrong account type
                 </AlertDescription>
