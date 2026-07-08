@@ -10,10 +10,15 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useOrganization } from "@/components/utils/OrganizationContext";
+import { dateToFiscalPeriod } from "@/components/utils/fiscalPeriod";
 
 const fmt = (value) => `LKR ${Number(value || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const today = () => new Date().toISOString().slice(0, 10);
-const yearStart = () => `${new Date().getFullYear()}-01-01`;
+// April-March fiscal year: start of the fiscal year that contains today
+const fiscalYearStart = () => {
+  const { fyStart } = dateToFiscalPeriod(new Date().toISOString().slice(0, 10));
+  return `${fyStart}-04-01`;
+};
 
 const balanceFor = (account, debit, credit) =>
   account.normal_balance === "credit" ? credit - debit : debit - credit;
@@ -23,7 +28,7 @@ export default function AccountingStatementsReport({ initialTab = "trial_balance
   const orgId = currentOrg?.id;
   const [activeTab, setActiveTab] = useState(initialTab);
   const [period, setPeriod] = useState(new Date().toISOString().slice(0, 7));
-  const [fromDate, setFromDate] = useState(yearStart());
+  const [fromDate, setFromDate] = useState(fiscalYearStart());
   const [toDate, setToDate] = useState(today());
   const [asOfDate, setAsOfDate] = useState(today());
 
@@ -158,13 +163,39 @@ export default function AccountingStatementsReport({ initialTab = "trial_balance
 
           <TabsContent value="profit_loss" className="space-y-4">
             <div className="grid max-w-xl grid-cols-2 gap-3"><div><Label>From</Label><Input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} /></div><div><Label>To</Label><Input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} /></div></div>
-            {["revenue", "expense"].map((type) => (
-              <div key={type} className="overflow-hidden rounded-md border">
-                <div className="bg-slate-50 px-4 py-2 font-semibold capitalize">{type}</div>
-                <Table><TableBody>{plRows.filter((row) => row.account.account_type === type).map((row) => <TableRow key={row.account.account_code}><TableCell>{row.account.account_code} - {row.account.account_name}</TableCell><TableCell className="text-right font-mono">{fmt(row.balance)}</TableCell><TableCell className="text-right">{revenue ? `${((row.balance / revenue) * 100).toFixed(1)}%` : "0.0%"}</TableCell></TableRow>)}</TableBody></Table>
-              </div>
-            ))}
-            <div className="rounded-md bg-emerald-50 p-4 text-xl font-bold text-emerald-900">Net Income: {fmt(netIncome)} ({revenue ? ((netIncome / revenue) * 100).toFixed(1) : "0.0"}% of revenue)</div>
+            {[
+              { type: "revenue", label: "Revenue", totalLabel: "Total Revenue", totalValue: revenue, colorClass: "bg-emerald-50 text-emerald-800" },
+              { type: "expense", label: "Expenses", totalLabel: "Total Expenses", totalValue: expenses, colorClass: "bg-red-50 text-red-800" },
+            ].map(({ type, label, totalLabel, totalValue, colorClass }) => {
+              const rows = plRows.filter((row) => row.account.account_type === type);
+              return (
+                <div key={type} className="overflow-hidden rounded-md border">
+                  <div className="bg-slate-50 px-4 py-2 font-semibold">{label}</div>
+                  <Table>
+                    <TableBody>
+                      {rows.length === 0 && (
+                        <TableRow><TableCell colSpan={3} className="text-center text-slate-400 py-4">No {label.toLowerCase()} accounts with activity in this period</TableCell></TableRow>
+                      )}
+                      {rows.map((row) => (
+                        <TableRow key={row.account.account_code}>
+                          <TableCell>{row.account.account_code} - {row.account.account_name}</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(row.balance)}</TableCell>
+                          <TableCell className="text-right text-slate-500 text-sm">{revenue ? `${((row.balance / revenue) * 100).toFixed(1)}%` : "—"}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  <div className={`flex justify-between px-4 py-2 font-semibold text-sm ${colorClass}`}>
+                    <span>{totalLabel}</span>
+                    <span className="font-mono">{fmt(totalValue)}</span>
+                  </div>
+                </div>
+              );
+            })}
+            <div className={`rounded-md p-4 text-xl font-bold ${netIncome >= 0 ? "bg-emerald-50 text-emerald-900" : "bg-red-50 text-red-900"}`}>
+              {netIncome >= 0 ? "Net Profit" : "Net Loss"}: {fmt(Math.abs(netIncome))}
+              <span className="ml-3 text-base font-normal">({revenue ? `${((netIncome / revenue) * 100).toFixed(1)}% of revenue` : "no revenue"})</span>
+            </div>
           </TabsContent>
 
           <TabsContent value="balance_sheet" className="space-y-4">
