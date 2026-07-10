@@ -47,31 +47,11 @@ export default function OpportunityForm({ item, onClose }) {
         notes: ''
     });
 
-    const [isGeneratingNumber, setIsGeneratingNumber] = useState(false); // Added state
-
     useEffect(() => {
         if (item) {
             setFormData(item);
         }
     }, [item]);
-
-    // Added function to generate opportunity number
-    const generateOpportunityNumber = async () => {
-        setIsGeneratingNumber(true);
-        try {
-            const number = await getNextDocumentNumber('opportunity');
-            setFormData(prev => ({ ...prev, opportunity_number: number }));
-        } catch (error) {
-            console.error("Error generating opportunity number:", error);
-            toast({
-                title: "Error",
-                description: "Failed to generate opportunity number.",
-                variant: "destructive",
-            });
-        } finally {
-            setIsGeneratingNumber(false);
-        }
-    };
 
     useEffect(() => {
         const weighted = (formData.estimated_value || 0) * (formData.probability || 0) / 100;
@@ -184,7 +164,7 @@ export default function OpportunityForm({ item, onClose }) {
                                 value={formData.opportunity_number}
                                 onChange={(e) => setFormData({...formData, opportunity_number: e.target.value})}
                                 placeholder={item ? '' : 'Auto-generated on save'}
-                                disabled={item || isGeneratingNumber} // Disable if editing or generating
+                                disabled={item} // Disable if editing
                             />
                         </div>
                         <div>
@@ -356,7 +336,7 @@ export default function OpportunityForm({ item, onClose }) {
                         <Button type="button" variant="outline" onClick={onClose}>
                             Cancel
                         </Button>
-                        <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700" disabled={saveMutation.isPending || isGeneratingNumber}>
+                        <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700" disabled={saveMutation.isPending}>
                             {saveMutation.isPending ? 'Saving...' : (item ? 'Update' : 'Create') + ' Opportunity'}
                         </Button>
                     </div>

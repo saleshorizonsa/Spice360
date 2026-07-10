@@ -27,7 +27,6 @@ export default function WorkOrderForm({ item, onClose }) {
         assigned_to: '',
         status: 'open'
     });
-    const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
 
     const { data: equipment = [] } = useQuery({
         queryKey: ['equipment'],
@@ -40,23 +39,6 @@ export default function WorkOrderForm({ item, onClose }) {
             setFormData(item);
         }
     }, [item]);
-
-    const generateWONumber = async () => {
-        setIsGeneratingNumber(true);
-        try {
-            const number = await getNextDocumentNumber('work_order');
-            setFormData(prev => ({ ...prev, work_order_number: number }));
-        } catch (error) {
-            console.error("Error generating work order number:", error);
-            toast({
-                title: "Error",
-                description: "Failed to generate work order number.",
-                variant: "destructive",
-            });
-        } finally {
-            setIsGeneratingNumber(false);
-        }
-    };
 
     const saveMutation = useMutation({
         mutationFn: async (data) => {
@@ -104,7 +86,7 @@ export default function WorkOrderForm({ item, onClose }) {
                             <Input
                                 value={formData.work_order_number}
                                 onChange={(e) => setFormData({...formData, work_order_number: e.target.value})}
-                                disabled={isGeneratingNumber || !!item} // Disable if generating or for existing items
+                                disabled={!!item} // Disable for existing items
                                 placeholder={item ? '' : 'Auto-generated on save'}
                             />
                         </div>
@@ -218,7 +200,7 @@ export default function WorkOrderForm({ item, onClose }) {
                         <Button type="button" variant="outline" onClick={onClose}>
                             Cancel
                         </Button>
-                        <Button type="submit" disabled={saveMutation.isPending || isGeneratingNumber}>
+                        <Button type="submit" disabled={saveMutation.isPending}>
                             {saveMutation.isPending ? 'Saving...' : 'Save'}
                         </Button>
                     </div>
