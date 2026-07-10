@@ -60,13 +60,15 @@ export default function APForm({ item, onClose }) {
 
     useEffect(() => {
         const outstanding = (formData.invoice_amount || 0) - (formData.paid_amount || 0);
-        const vat = (formData.invoice_amount || 0) * (taxConfig.vat_standard_rate / 100);
-        setFormData(prev => ({
-            ...prev,
-            outstanding_amount: outstanding,
-            vat_amount: vat
-        }));
-    }, [formData.invoice_amount, formData.paid_amount, taxConfig.vat_standard_rate]);
+        setFormData(prev => {
+            const updates = { outstanding_amount: outstanding };
+            if (!item) {
+                const rate = taxConfig.vat_standard_rate;
+                updates.vat_amount = (formData.invoice_amount || 0) * rate / (100 + rate);
+            }
+            return { ...prev, ...updates };
+        });
+    }, [formData.invoice_amount, formData.paid_amount, taxConfig.vat_standard_rate, item]);
 
     const handleVendorSelect = (vendorCode) => {
         const vendor = vendors.find(v => v.vendor_code === vendorCode);
@@ -196,7 +198,7 @@ export default function APForm({ item, onClose }) {
 
                     <div className="bg-gray-50 p-4 rounded-lg space-y-2">
                         <div className="flex justify-between">
-                            <span className="text-gray-600">VAT (15%):</span>
+                            <span className="text-gray-600">VAT ({taxConfig.vat_standard_rate}%):</span>
                             <span className="font-semibold">LKR {formData.vat_amount.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-lg border-t pt-2">

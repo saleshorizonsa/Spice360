@@ -1,4 +1,4 @@
-﻿import { matrixSales } from "@/api/matrixSalesClient";
+import { matrixSales } from "@/api/matrixSalesClient";
 import { getNextDocumentNumber } from "./documentNumberGenerator";
 import { logAuditTrail } from "./auditTrail";
 import { dateToFiscalPeriod, fiscalPeriodLabel } from "./fiscalPeriod";
@@ -149,8 +149,10 @@ export async function postJournalEntry({
   return journalEntry;
 }
 
-export async function reverseJournalEntry(originalJeNumber, reversalDate, reversedBy) {
-  const originals = await matrixSales.entities.JournalEntry.filter({ journal_number: originalJeNumber });
+export async function reverseJournalEntry(originalJeNumber, reversalDate, reversedBy, orgId) {
+  const filterParams = { journal_number: originalJeNumber };
+  if (orgId) filterParams.organization_id = orgId;
+  const originals = await matrixSales.entities.JournalEntry.filter(filterParams);
   const original = originals[0];
   if (!original) throw new Error(`Journal entry ${originalJeNumber} was not found.`);
   if (original.status !== "posted") throw new Error("Only posted journal entries can be reversed.");

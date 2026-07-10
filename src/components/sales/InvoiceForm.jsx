@@ -299,6 +299,8 @@ export default function InvoiceForm({ item, onClose }) {
                                 orgId:         currentOrg?.id,
                                 area:          "inventory"
                             });
+                        } else {
+                            toast({ title: "COGS not posted", description: `Unit cost for ${savedInvoice.product_code} is zero — update the stock level unit cost to record COGS.`, variant: "default" });
                         }
                     } catch (cogsError) {
                         toast({ title: "Invoice posted — COGS not posted", description: cogsError.message || "Create a Delivery for this invoice to record COGS.", variant: "destructive" });
@@ -310,7 +312,8 @@ export default function InvoiceForm({ item, onClose }) {
             if (savedInvoice?.status === 'submitted') {
                 try {
                     const existingAR = await matrixSales.entities.AccountsReceivable.filter({
-                        invoice_number: savedInvoice.invoice_number
+                        invoice_number: savedInvoice.invoice_number,
+                        organization_id: currentOrg?.id
                     });
                     if (existingAR.length === 0) {
                         await matrixSales.entities.AccountsReceivable.create({
@@ -330,6 +333,7 @@ export default function InvoiceForm({ item, onClose }) {
                             aging_bucket:       'current',
                             status:             'open',
                             notes:              `From Sales Invoice ${savedInvoice.invoice_number}`,
+                            organization_id:    currentOrg?.id,
                         });
                     }
                     queryClient.invalidateQueries({ queryKey: ['ar'] });

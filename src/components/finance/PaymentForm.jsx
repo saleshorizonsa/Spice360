@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
+import { useAuth } from "@/lib/AuthContext";
 import ReverseButton from "../shared/ReverseButton";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
@@ -18,6 +19,7 @@ export default function PaymentForm({ item, onClose }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
+    const { user } = useAuth();
     const gl = useGLAccounts();
     const [isDirty, setIsDirty] = useState(false);
     const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
@@ -60,6 +62,10 @@ export default function PaymentForm({ item, onClose }) {
             return matrixSales.entities.Payment.create(data);
         },
         onSuccess: async (savedPayment) => {
+            // Only run clearing side-effects once — on first transition to 'cleared'.
+            // Editing an already-cleared payment must not re-post GL, re-adjust bank, or re-apply AP/AR.
+            const wasAlreadyCleared = item?.status === 'cleared';
+
             if (savedPayment?.status === 'cleared' && !savedPayment.gl_posted) {
                 try {
                     const isIncoming = savedPayment.payment_type === 'incoming';
@@ -79,7 +85,8 @@ export default function PaymentForm({ item, onClose }) {
                         entryDate: savedPayment.payment_date,
                         entryType: 'payment',
                         orgId: currentOrg?.id,
-                        area: isIncoming ? "ar" : "ap"
+                        area: isIncoming ? "ar" : "ap",
+                        createdBy: user?.email || ""
                     });
                     await matrixSales.entities.Payment.update(savedPayment.id, { ...savedPayment, gl_posted: true });
                 } catch (error) {
@@ -87,8 +94,8 @@ export default function PaymentForm({ item, onClose }) {
                 }
             }
 
-            // Reduce AP outstanding balance when outgoing vendor payment clears
-            if (savedPayment?.status === 'cleared' && savedPayment.payment_type === 'outgoing' && savedPayment.party_code) {
+            // Reduce AP outstanding balance when outgoing vendor payment clears (first time only)
+            if (!wasAlreadyCleared && savedPayment?.status === 'cleared' && savedPayment.payment_type === 'outgoing' && savedPayment.party_code) {
                 try {
                     let apRecords = [];
                     if (savedPayment.reference_number) {
@@ -145,8 +152,8 @@ export default function PaymentForm({ item, onClose }) {
                 }
             }
 
-            // Reduce AR outstanding balance when incoming customer payment clears
-            if (savedPayment?.status === 'cleared' && savedPayment.payment_type === 'incoming' && savedPayment.party_code) {
+            // Reduce AR outstanding balance when incoming customer payment clears (first time only)
+            if (!wasAlreadyCleared && savedPayment?.status === 'cleared' && savedPayment.payment_type === 'incoming' && savedPayment.party_code) {
                 try {
                     let arRecords = [];
                     if (savedPayment.reference_number) {
@@ -213,8 +220,8 @@ export default function PaymentForm({ item, onClose }) {
                 }
             }
 
-            // Update bank account balance when payment clears
-            if (savedPayment?.status === 'cleared' && savedPayment.bank_account) {
+            // Update bank account balance when payment clears (first time only)
+            if (!wasAlreadyCleared && savedPayment?.status === 'cleared' && savedPayment.bank_account) {
                 try {
                     const bankList = await matrixSales.entities.BankAccount.filter({
                         account_number: savedPayment.bank_account

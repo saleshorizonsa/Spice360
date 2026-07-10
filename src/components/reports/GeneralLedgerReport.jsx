@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,41 +8,66 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, FileText, Mail, Search } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useOrganization } from "@/components/utils/OrganizationContext";
 
 export default function GeneralLedgerReport() {
-    const [periodStart, setPeriodStart] = useState(new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0]);
+    const { currentOrg } = useOrganization();
+    const orgId = currentOrg?.id;
+
+    const fyStart = (() => {
+        const d = new Date();
+        const y = d.getMonth() >= 3 ? d.getFullYear() : d.getFullYear() - 1;
+        return `${y}-04-01`;
+    })();
+
+    const [periodStart, setPeriodStart] = useState(fyStart);
     const [periodEnd, setPeriodEnd] = useState(new Date().toISOString().split('T')[0]);
     const [selectedAccount, setSelectedAccount] = useState("ALL");
     const [costCenter, setCostCenter] = useState("ALL");
 
     const { data: chartOfAccounts = [] } = useQuery({
-        queryKey: ['chartOfAccounts'],
-        queryFn: () => matrixSales.entities.ChartOfAccounts.list(),
+        queryKey: ['chartOfAccounts', orgId],
+        queryFn: () => matrixSales.entities.ChartOfAccounts.filter({ organization_id: orgId }),
+        enabled: !!orgId,
         initialData: []
     });
 
     const { data: journalEntries = [] } = useQuery({
-        queryKey: ['journalEntries'],
-        queryFn: () => matrixSales.entities.JournalEntry.list('-posting_date'),
+        queryKey: ['journalEntries', orgId],
+        queryFn: () => matrixSales.entities.JournalEntry.filter({ organization_id: orgId }, '-entry_date'),
+        enabled: !!orgId,
         initialData: []
     });
 
-    const filteredEntries = journalEntries.filter(entry => {
-        const dateMatch = entry.posting_date >= periodStart && entry.posting_date <= periodEnd;
-        const accountMatch = selectedAccount === 'ALL' || entry.account_code === selectedAccount;
-        const costCenterMatch = costCenter === 'ALL' || entry.cost_center === costCenter;
-        const statusMatch = entry.status === 'posted' || entry.status === 'reversed';
-        return dateMatch && accountMatch && costCenterMatch && statusMatch;
+    const { data: journalLines = [] } = useQuery({
+        queryKey: ['journalLines', orgId],
+        queryFn: () => matrixSales.entities.JournalLine.filter({ organization_id: orgId }),
+        enabled: !!orgId,
+        initialData: []
     });
 
-    let runningBalance = 0;
-    const ledgerData = filteredEntries.map(entry => {
-        runningBalance += (entry.debit_amount || 0) - (entry.credit_amount || 0);
-        return {
-            ...entry,
-            running_balance: runningBalance
-        };
-    });
+    const journalMap = useMemo(() =>
+        new Map(journalEntries.map(je => [je.journal_number, je])),
+    [journalEntries]);
+
+    const ledgerData = useMemo(() => {
+        const lines = journalLines
+            .map(line => ({ ...line, journal: journalMap.get(line.journal_number) }))
+            .filter(line => {
+                if (!line.journal) return false;
+                const dateMatch = line.journal.entry_date >= periodStart && line.journal.entry_date <= periodEnd;
+                const accountMatch = selectedAccount === 'ALL' || line.account_code === selectedAccount;
+                const costCenterMatch = costCenter === 'ALL' || line.cost_center === costCenter;
+                const statusMatch = line.journal.status === 'posted' || line.journal.status === 'reversed';
+                return dateMatch && accountMatch && costCenterMatch && statusMatch;
+            })
+            .sort((a, b) => (a.journal.entry_date || '').localeCompare(b.journal.entry_date || ''));
+        let running = 0;
+        return lines.map(line => {
+            running += (Number(line.debit) || 0) - (Number(line.credit) || 0);
+            return { ...line, running_balance: running };
+        });
+    }, [journalLines, journalMap, periodStart, periodEnd, selectedAccount, costCenter]);
 
     const handleExportPDF = () => {
         const printWindow = window.open('', '_blank');
@@ -85,12 +110,12 @@ export default function GeneralLedgerReport() {
                         <tbody>
                             ${ledgerData.map(entry => `
                                 <tr>
-                                    <td>${new Date(entry.posting_date).toLocaleDateString()}</td>
+                                    <td>${entry.journal?.entry_date ? new Date(entry.journal.entry_date).toLocaleDateString() : '-'}</td>
                                     <td>${entry.journal_number}</td>
-                                    <td>${entry.description}</td>
+                                    <td>${entry.description || entry.journal?.description || '-'}</td>
                                     <td>${entry.cost_center || '-'}</td>
-                                    <td class="number">${entry.debit_amount ? entry.debit_amount.toLocaleString('en-US', {minimumFractionDigits: 2}) : '-'}</td>
-                                    <td class="number">${entry.credit_amount ? entry.credit_amount.toLocaleString('en-US', {minimumFractionDigits: 2}) : '-'}</td>
+                                    <td class="number">${entry.debit ? Number(entry.debit).toLocaleString('en-US', {minimumFractionDigits: 2}) : '-'}</td>
+                                    <td class="number">${entry.credit ? Number(entry.credit).toLocaleString('en-US', {minimumFractionDigits: 2}) : '-'}</td>
                                     <td class="number">${entry.running_balance.toLocaleString('en-US', {minimumFractionDigits: 2})}</td>
                                 </tr>
                             `).join('')}
@@ -201,7 +226,7 @@ export default function GeneralLedgerReport() {
                         <CardContent className="p-4">
                             <p className="text-sm text-gray-600">Total Debit</p>
                             <p className="text-xl font-bold text-emerald-700">
-                                LKR {ledgerData.reduce((sum, e) => sum + (e.debit_amount || 0), 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                                LKR {ledgerData.reduce((sum, e) => sum + (Number(e.debit) || 0), 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
                             </p>
                         </CardContent>
                     </Card>
@@ -209,7 +234,7 @@ export default function GeneralLedgerReport() {
                         <CardContent className="p-4">
                             <p className="text-sm text-gray-600">Total Credit</p>
                             <p className="text-xl font-bold text-amber-700">
-                                LKR {ledgerData.reduce((sum, e) => sum + (e.credit_amount || 0), 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
+                                LKR {ledgerData.reduce((sum, e) => sum + (Number(e.credit) || 0), 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
                             </p>
                         </CardContent>
                     </Card>
@@ -240,17 +265,17 @@ export default function GeneralLedgerReport() {
                         </TableHeader>
                         <TableBody>
                             {ledgerData.map((entry, idx) => (
-                                <TableRow key={idx} className="hover:bg-gray-50">
-                                    <TableCell>{new Date(entry.posting_date).toLocaleDateString()}</TableCell>
+                                <TableRow key={entry.id || idx} className="hover:bg-gray-50">
+                                    <TableCell>{entry.journal?.entry_date ? new Date(entry.journal.entry_date).toLocaleDateString() : '-'}</TableCell>
                                     <TableCell className="font-medium">{entry.journal_number}</TableCell>
-                                    <TableCell>{entry.description}</TableCell>
+                                    <TableCell>{entry.description || entry.journal?.description || '-'}</TableCell>
                                     <TableCell className="text-sm">{entry.account_code}</TableCell>
                                     <TableCell className="text-sm">{entry.cost_center || '-'}</TableCell>
                                     <TableCell className="text-right font-mono">
-                                        {entry.debit_amount ? entry.debit_amount.toLocaleString('en-US', {minimumFractionDigits: 2}) : '-'}
+                                        {entry.debit ? Number(entry.debit).toLocaleString('en-US', {minimumFractionDigits: 2}) : '-'}
                                     </TableCell>
                                     <TableCell className="text-right font-mono">
-                                        {entry.credit_amount ? entry.credit_amount.toLocaleString('en-US', {minimumFractionDigits: 2}) : '-'}
+                                        {entry.credit ? Number(entry.credit).toLocaleString('en-US', {minimumFractionDigits: 2}) : '-'}
                                     </TableCell>
                                     <TableCell className="text-right font-mono font-semibold">
                                         {entry.running_balance.toLocaleString('en-US', {minimumFractionDigits: 2})}

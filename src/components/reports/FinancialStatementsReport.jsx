@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { usePermissions } from "@/components/utils/usePermissions";
+import { useOrganization } from "@/components/utils/OrganizationContext";
 import {
   buildBalanceSheet,
   buildManagementSummary,
@@ -28,8 +29,12 @@ const currency = (value) =>
 
 const percent = (value) => `${Number(value || 0).toFixed(1)}%`;
 
-const currentYearStart = () => `${new Date().getFullYear()}-01-01`;
 const today = () => new Date().toISOString().slice(0, 10);
+const fiscalYearStart = () => {
+  const d = today();
+  const y = parseInt(d.slice(0, 4), 10);
+  return parseInt(d.slice(5, 7), 10) >= 4 ? `${y}-04-01` : `${y - 1}-04-01`;
+};
 
 const previousPeriod = (startDate, endDate) => {
   const start = new Date(`${startDate}T00:00:00Z`);
@@ -145,6 +150,7 @@ function SummaryCard({ label, value, tone = "slate" }) {
 
 function DrillDownDialog({ row, onClose }) {
   const transactions = row?.transactions || [];
+  const isDebitNormal = (row?.normal_balance || 'debit') === 'debit';
   let running = 0;
 
   return (
@@ -172,7 +178,9 @@ function DrillDownDialog({ row, onClose }) {
                   <TableCell colSpan={7} className="py-8 text-center text-slate-500">No ledger transactions for this line.</TableCell>
                 </TableRow>
               ) : transactions.map((line) => {
-                running += Number(line.debit || 0) - Number(line.credit || 0);
+                running += isDebitNormal
+                  ? Number(line.debit || 0) - Number(line.credit || 0)
+                  : Number(line.credit || 0) - Number(line.debit || 0);
                 return (
                   <TableRow key={line.line_id}>
                     <TableCell>{line.transaction_date}</TableCell>
@@ -195,7 +203,7 @@ function DrillDownDialog({ row, onClose }) {
 
 export default function FinancialStatementsReport({ initialTab = "profit_loss" }) {
   const [activeTab, setActiveTab] = useState(initialTab);
-  const [startDate, setStartDate] = useState(currentYearStart());
+  const [startDate, setStartDate] = useState(fiscalYearStart());
   const [endDate, setEndDate] = useState(today());
   const [asOfDate, setAsOfDate] = useState(today());
   const [branch, setBranch] = useState("ALL");
@@ -205,65 +213,94 @@ export default function FinancialStatementsReport({ initialTab = "profit_loss" }
   const [comparisonMode, setComparisonMode] = useState("monthly");
   const [selectedLine, setSelectedLine] = useState(null);
   const { hasPermission, isAdmin, loading: permissionsLoading } = usePermissions();
+  const { currentOrg } = useOrganization();
+  const orgId = currentOrg?.id;
 
   const { data: accounts = [], isLoading: loadingAccounts, error: accountsError } = useQuery({
-    queryKey: ["chartOfAccounts"],
-    queryFn: () => matrixSales.entities.ChartOfAccounts.list(),
+    queryKey: ["chartOfAccounts", orgId],
+    queryFn: () => matrixSales.entities.ChartOfAccounts.filter({ organization_id: orgId }),
+    enabled: !!orgId,
     ...queryOptions
   });
   const { data: journalEntries = [], isLoading: loadingJournals, error: journalsError } = useQuery({
-    queryKey: ["journalEntries"],
-    queryFn: () => matrixSales.entities.JournalEntry.list("-posting_date"),
+    queryKey: ["journalEntries", orgId],
+    queryFn: () => matrixSales.entities.JournalEntry.filter({ organization_id: orgId }, "-entry_date"),
+    enabled: !!orgId,
+    ...queryOptions
+  });
+  const { data: journalLines = [], isLoading: loadingLines } = useQuery({
+    queryKey: ["journalLines", orgId],
+    queryFn: () => matrixSales.entities.JournalLine.filter({ organization_id: orgId }),
+    enabled: !!orgId,
     ...queryOptions
   });
   const { data: budgets = [] } = useQuery({
-    queryKey: ["budgets"],
-    queryFn: () => matrixSales.entities.Budget.list("-fiscal_period"),
+    queryKey: ["budgets", orgId],
+    queryFn: () => matrixSales.entities.Budget.filter({ organization_id: orgId }, "-fiscal_period"),
+    enabled: !!orgId,
     ...queryOptions
   });
   const { data: arRecords = [] } = useQuery({
-    queryKey: ["ar"],
-    queryFn: () => matrixSales.entities.AccountsReceivable.list("-invoice_date"),
+    queryKey: ["ar", orgId],
+    queryFn: () => matrixSales.entities.AccountsReceivable.filter({ organization_id: orgId }, "-invoice_date"),
+    enabled: !!orgId,
     ...queryOptions
   });
   const { data: apRecords = [] } = useQuery({
-    queryKey: ["ap"],
-    queryFn: () => matrixSales.entities.AccountsPayable.list("-invoice_date"),
+    queryKey: ["ap", orgId],
+    queryFn: () => matrixSales.entities.AccountsPayable.filter({ organization_id: orgId }, "-invoice_date"),
+    enabled: !!orgId,
     ...queryOptions
   });
   const { data: bankAccounts = [] } = useQuery({
-    queryKey: ["banks"],
-    queryFn: () => matrixSales.entities.BankAccount.list(),
+    queryKey: ["banks", orgId],
+    queryFn: () => matrixSales.entities.BankAccount.filter({ organization_id: orgId }),
+    enabled: !!orgId,
     ...queryOptions
   });
 
   const filters = { branch, costCenter, project, currency: currencyFilter };
   const previous = previousPeriod(startDate, endDate);
 
+  // JournalEntry has no embedded lines — they live in JournalLine.
+  // Attach each entry's lines so normalizeLedgerEntries can read Dr/Cr amounts.
+  const mergedJournals = useMemo(() => {
+    const linesByJournal = new Map();
+    journalLines.forEach((line) => {
+      const key = line.journal_number;
+      if (!linesByJournal.has(key)) linesByJournal.set(key, []);
+      linesByJournal.get(key).push(line);
+    });
+    return journalEntries.map((entry) => ({
+      ...entry,
+      lines: linesByJournal.get(entry.journal_number) || []
+    }));
+  }, [journalEntries, journalLines]);
+
   const profitAndLoss = useMemo(() => buildProfitAndLoss({
     accounts,
-    journalEntries,
+    journalEntries: mergedJournals,
     startDate,
     endDate,
     comparisonStartDate: previous.startDate,
     comparisonEndDate: previous.endDate,
     budgets,
     filters
-  }), [accounts, journalEntries, startDate, endDate, budgets, branch, costCenter, project, currencyFilter]);
+  }), [accounts, mergedJournals, startDate, endDate, budgets, branch, costCenter, project, currencyFilter]);
 
   const balanceSheet = useMemo(() => buildBalanceSheet({
     accounts,
-    journalEntries,
+    journalEntries: mergedJournals,
     asOfDate,
     filters
-  }), [accounts, journalEntries, asOfDate, branch, costCenter, project, currencyFilter]);
+  }), [accounts, mergedJournals, asOfDate, branch, costCenter, project, currencyFilter]);
 
   const trialBalance = useMemo(() => buildTrialBalance({
     accounts,
-    journalEntries,
+    journalEntries: mergedJournals,
     asOfDate,
     filters
-  }), [accounts, journalEntries, asOfDate, branch, costCenter, project, currencyFilter]);
+  }), [accounts, mergedJournals, asOfDate, branch, costCenter, project, currencyFilter]);
 
   const managementSummary = useMemo(() => buildManagementSummary({
     profitAndLoss,
@@ -275,14 +312,14 @@ export default function FinancialStatementsReport({ initialTab = "profit_loss" }
 
   const periodComparison = useMemo(() => buildPeriodComparison({
     accounts,
-    journalEntries,
+    journalEntries: mergedJournals,
     startDate,
     endDate,
     mode: comparisonMode,
     filters
-  }), [accounts, journalEntries, startDate, endDate, comparisonMode, branch, costCenter, project, currencyFilter]);
+  }), [accounts, mergedJournals, startDate, endDate, comparisonMode, branch, costCenter, project, currencyFilter]);
 
-  const loading = loadingAccounts || loadingJournals;
+  const loading = loadingAccounts || loadingJournals || loadingLines;
   const error = accountsError || journalsError;
   const warnings = [...profitAndLoss.warnings, ...balanceSheet.warnings]
     .filter((warning, index, all) => all.findIndex((item) => item.message === warning.message) === index);

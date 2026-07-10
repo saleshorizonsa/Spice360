@@ -71,7 +71,7 @@ export default function AccountingStatementsReport({ initialTab = "trial_balance
   const trialRows = useMemo(() => {
     const rows = new Map();
     postedLines
-      .filter((line) => line.journal.entry_date?.startsWith(period))
+      .filter((line) => line.journal.entry_date <= `${period}-31`)
       .forEach((line) => {
         const account = accountMap.get(line.account_code);
         if (!account) return;

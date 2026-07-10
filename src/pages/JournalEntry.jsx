@@ -1,4 +1,4 @@
-﻿import React, { useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Plus, RotateCcw, Save, Search, Send, Trash2 } from "lucide-react";
@@ -16,6 +16,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { getNextDocumentNumber } from "@/components/utils/documentNumberGenerator";
 import { postJournalEntry, reverseJournalEntry } from "@/components/utils/journalService";
 import { useOrganization } from "@/components/utils/OrganizationContext";
+import { useAuth } from "@/lib/AuthContext";
 
 const fmt = (value) => `LKR ${Number(value || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const blankLine = { account_code: "", account_name: "", description: "", debit: 0, credit: 0, cost_center: "", vat_code: "", currency: "LKR" };
@@ -57,6 +58,7 @@ function JournalDetail({ journal, lines, onClose }) {
 
 export default function JournalEntry() {
   const { currentOrg } = useOrganization();
+  const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const orgId = currentOrg?.id;
@@ -148,7 +150,7 @@ export default function JournalEntry() {
       description: form.description,
       entryDate: form.entry_date,
       entryType: form.entry_type,
-      createdBy: "",
+      createdBy: user?.email || "",
       orgId,
       area: "gl"
     }),
@@ -193,7 +195,7 @@ export default function JournalEntry() {
   });
 
   const reverseMutation = useMutation({
-    mutationFn: ({ journalNumber, date }) => reverseJournalEntry(journalNumber, date, ""),
+    mutationFn: ({ journalNumber, date }) => reverseJournalEntry(journalNumber, date, user?.email || "", orgId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["journalEntries", orgId] });
       queryClient.invalidateQueries({ queryKey: ["journalLines", orgId] });
@@ -214,7 +216,7 @@ export default function JournalEntry() {
 
   const openDetail = async (journal) => {
     setDetailJournal(journal);
-    setDetailLines(await matrixSales.entities.JournalLine.filter({ journal_number: journal.journal_number }));
+    setDetailLines(await matrixSales.entities.JournalLine.filter({ journal_number: journal.journal_number, organization_id: orgId }));
   };
 
   return (

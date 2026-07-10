@@ -21,7 +21,7 @@ const FALLBACK = {
   depreciation_exp:   "5500",
   accum_depreciation: "1410",
   wht_expense:        "5900",
-  wht_net_payable:    "2100",
+  wht_net_payable:    "2320",
   fixed_asset_cost:      "1400",
   gain_on_disposal:      "7001",
   loss_on_disposal:      "6001",

@@ -64,7 +64,7 @@ export const normalBalanceForAccount = (account = {}) => {
 
 const isPostedLedgerEntry = (entry = {}) => {
   const status = normalizeText(entry.status || entry.posting_status);
-  return !status || ['posted', 'approved', 'cleared', 'paid', 'open'].includes(status);
+  return !status || ['posted', 'approved', 'cleared', 'paid', 'open', 'reversed'].includes(status);
 };
 
 const entryDate = (entry = {}) =>
@@ -101,7 +101,7 @@ export const normalizeLedgerEntries = (journalEntries = []) => {
       cost_center: entry.cost_center || entry.cost_center_code || '',
       project_code: entry.project_code || entry.project_id || '',
       branch_code: entry.branch_code || entry.plant_code || '',
-      currency: entry.currency || 'SAR',
+      currency: entry.currency || 'LKR',
       tenant_id: entry.tenant_id || entry.organization_id
     };
 
@@ -335,12 +335,17 @@ export const buildProfitAndLoss = ({ accounts = [], journalEntries = [], startDa
   };
 };
 
-export const buildBalanceSheet = ({ accounts = [], journalEntries = [], asOfDate, previousAsOfDate, filters = {} }) => {
+export const buildBalanceSheet = ({ accounts = [], journalEntries = [], asOfDate, previousAsOfDate, filters = {}, fyStartDate }) => {
   const trial = buildTrialBalance({ accounts, journalEntries, asOfDate, filters });
+  const computedFyStart = fyStartDate || (() => {
+    const d = asOfDate || new Date().toISOString().slice(0, 10);
+    const y = parseInt(d.slice(0, 4), 10);
+    return parseInt(d.slice(5, 7), 10) >= 4 ? `${y}-04-01` : `${y - 1}-04-01`;
+  })();
   const pl = buildProfitAndLoss({
     accounts,
     journalEntries,
-    startDate: `${String(asOfDate || new Date().toISOString().slice(0, 10)).slice(0, 4)}-01-01`,
+    startDate: null,
     endDate: asOfDate,
     filters
   });
@@ -355,7 +360,7 @@ export const buildBalanceSheet = ({ accounts = [], journalEntries = [], asOfDate
 
   const currentYearProfitRow = {
     account_code: 'CY-PROFIT',
-    account_name: 'Current Year Profit / Loss',
+    account_name: 'Retained Earnings',
     statement_category: 'equity',
     balance: pl.totals.netProfit,
     transactions: pl.transactions
