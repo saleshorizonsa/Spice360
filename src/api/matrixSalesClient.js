@@ -655,6 +655,24 @@ const getNextSupabaseDocumentNumber = async (entityName, record = {}) => {
   const fiscalYear = new Date().getFullYear().toString().slice(-2);
   const prefix = documentPrefixMap[documentType] || 'DOC';
 
+  // Prefer the atomic Postgres allocator (migration 20260711000000) so concurrent
+  // creates can't be assigned the same number. Fall back to the legacy
+  // read-modify-write below when the RPC is not yet deployed.
+  try {
+    const { data: rpcNumber, error: rpcError } = await client.rpc('next_document_number', {
+      p_document_type: documentType,
+      p_branch_code: branchCode,
+      p_fiscal_year: fiscalYear,
+      p_prefix: prefix,
+      p_number_width: 6,
+    });
+    if (!rpcError && typeof rpcNumber === 'string' && rpcNumber) {
+      return rpcNumber;
+    }
+  } catch (_) {
+    // fall through to legacy path
+  }
+
   const { data: existingSeries, error: readError } = await client
     .from('document_number_series')
     .select('*')

@@ -1,4 +1,5 @@
 import { matrixSales } from "@/api/matrixSalesClient";
+import { supabase } from "@/lib/supabaseClient";
 
 /**
  * Auto-generates document numbers based on series configuration
@@ -7,6 +8,32 @@ import { matrixSales } from "@/api/matrixSalesClient";
  */
 
 export const getNextDocumentNumber = async (documentType, branchCode = 'ALL') => {
+    // Prefer the atomic Postgres allocator (migration 20260711000000). It
+    // increments the counter under a row lock so concurrent saves can't collide.
+    // Falls back to the legacy read-modify-write when the RPC is not deployed,
+    // so this is safe to ship before the migration is applied.
+    if (supabase) {
+        try {
+            const currentYear = new Date().getFullYear().toString().slice(-2);
+            const { data, error } = await supabase.rpc('next_document_number', {
+                p_document_type: documentType,
+                p_branch_code: branchCode,
+                p_fiscal_year: currentYear,
+                p_prefix: getDocumentPrefix(documentType),
+                p_number_width: 6,
+            });
+            if (!error && typeof data === 'string' && data) {
+                return data;
+            }
+            // error (e.g. function not found) or empty → fall through to legacy path
+        } catch (_) {
+            // fall through to legacy path
+        }
+    }
+    return legacyGetNextDocumentNumber(documentType, branchCode);
+};
+
+const legacyGetNextDocumentNumber = async (documentType, branchCode = 'ALL') => {
     try {
         // Get current year (last 2 digits)
         const currentYear = new Date().getFullYear().toString().slice(-2);
