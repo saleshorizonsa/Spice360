@@ -105,7 +105,6 @@ export default function SalesOrderForm({ order, onClose }) {
             loadLineItems();
         } else {
             setFormData(prev => ({ ...prev, organization_id: currentOrg?.id }));
-            generateOrderNumber();
         }
     }, [order, currentOrg]);
 
@@ -236,6 +235,9 @@ export default function SalesOrderForm({ order, onClose }) {
                     severity: data.total_amount > 100000 ? 'warning' : 'info'
                 });
             } else {
+                // Claim the sequence number here, not on form open — an abandoned
+                // form must not consume a number.
+                data = { ...data, order_number: data.order_number?.trim() || await getNextDocumentNumber('sales_order') };
                 salesOrder = await matrixSales.entities.SalesOrder.create(data);
                 
                 // Log audit trail for creation
@@ -421,14 +423,13 @@ export default function SalesOrderForm({ order, onClose }) {
                         <h3 className="font-semibold text-lg border-b pb-2">Order Information</h3>
                         <div className="grid grid-cols-3 gap-4">
                             <div>
-                                <Label>Order Number *</Label>
+                                <Label>Order Number</Label>
                                 <div className="flex gap-2">
                                     <Input
                                         value={formData.order_number}
                                         onChange={(e) => handleChange('order_number', e.target.value)}
-                                        required
                                         disabled={isGeneratingNumber}
-                                        placeholder="SO-2025-0001"
+                                        placeholder={order ? '' : 'Auto-generated on save'}
                                         className={!order ? "bg-gray-50" : ""}
                                     />
                                     {!order && (

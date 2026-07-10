@@ -86,7 +86,6 @@ export default function StockMovementForm({ item, onClose }) {
             });
         } else {
             setFormData(prev => ({ ...prev, organization_id: currentOrg?.id }));
-            generateMovementNumber();
         }
     }, [item, currentOrg]);
 
@@ -141,6 +140,9 @@ export default function StockMovementForm({ item, onClose }) {
                     severity: 'info'
                 });
             } else {
+                // Claim the sequence number here, not on form open — an abandoned
+                // form must not consume a number.
+                data = { ...data, movement_number: data.movement_number?.trim() || await getNextDocumentNumber('stock_movement') };
                 movement = await matrixSales.entities.StockMovement.create(data);
                 
                 // Log audit trail
@@ -307,12 +309,12 @@ export default function StockMovementForm({ item, onClose }) {
                         <h3 className="font-semibold text-lg border-b pb-2">Movement Information</h3>
                         <div className="grid grid-cols-3 gap-4">
                             <div>
-                                <Label>Movement Number *</Label>
+                                <Label>Movement Number</Label>
                                 <div className="flex gap-2">
                                     <Input
                                         value={formData.movement_number}
                                         onChange={(e) => handleChange('movement_number', e.target.value)}
-                                        required
+                                        placeholder={item ? '' : 'Auto-generated on save'}
                                         disabled={isGeneratingNumber}
                                     />
                                     {!item && (

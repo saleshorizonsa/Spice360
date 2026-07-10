@@ -52,8 +52,6 @@ export default function OpportunityForm({ item, onClose }) {
     useEffect(() => {
         if (item) {
             setFormData(item);
-        } else {
-            generateOpportunityNumber(); // Call for new opportunity
         }
     }, [item]);
 
@@ -115,6 +113,9 @@ export default function OpportunityForm({ item, onClose }) {
             if (item) {
                 opp = await matrixSales.entities.Opportunity.update(item.id, data);
             } else {
+                // Claim the sequence number here, not on form open — an abandoned
+                // form must not consume a number.
+                data = { ...data, opportunity_number: data.opportunity_number?.trim() || await getNextDocumentNumber('opportunity') };
                 opp = await matrixSales.entities.Opportunity.create(data);
             }
 
@@ -178,12 +179,11 @@ export default function OpportunityForm({ item, onClose }) {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label>Opportunity Number *</Label>
+                            <Label>Opportunity Number</Label>
                             <Input
                                 value={formData.opportunity_number}
                                 onChange={(e) => setFormData({...formData, opportunity_number: e.target.value})}
-                                required
-                                placeholder="OPP-2025-0001"
+                                placeholder={item ? '' : 'Auto-generated on save'}
                                 disabled={item || isGeneratingNumber} // Disable if editing or generating
                             />
                         </div>

@@ -91,7 +91,6 @@ export default function QuotationForm({ item, onClose }) {
             loadLineItems();
         } else {
             setFormData(prev => ({ ...prev, organization_id: currentOrg?.id }));
-            generateQuotationNumber();
         }
     }, [item, currentOrg]);
 
@@ -117,6 +116,9 @@ export default function QuotationForm({ item, onClose }) {
             if (item) {
                 quotation = await matrixSales.entities.Quotation.update(item.id, data);
             } else {
+                // Claim the sequence number here, not on form open — an abandoned
+                // form must not consume a number.
+                data = { ...data, quotation_number: data.quotation_number?.trim() || await getNextDocumentNumber('quotation') };
                 quotation = await matrixSales.entities.Quotation.create(data);
             }
 
@@ -235,14 +237,13 @@ export default function QuotationForm({ item, onClose }) {
                     {/* Header Information */}
                     <div className="grid grid-cols-3 gap-4">
                         <div>
-                            <Label>Quotation Number *</Label>
+                            <Label>Quotation Number</Label>
                             <div className="flex gap-2">
                                 <Input
                                     value={formData.quotation_number}
                                     onChange={(e) => handleChange('quotation_number', e.target.value)}
-                                    required
                                     disabled={isGeneratingNumber}
-                                    placeholder="QT-2025-0001"
+                                    placeholder={item ? '' : 'Auto-generated on save'}
                                 />
                                 {!item && (
                                     <Button

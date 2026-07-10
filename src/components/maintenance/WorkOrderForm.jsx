@@ -38,8 +38,6 @@ export default function WorkOrderForm({ item, onClose }) {
     useEffect(() => {
         if (item) {
             setFormData(item);
-        } else {
-            generateWONumber();
         }
     }, [item]);
 
@@ -61,10 +59,13 @@ export default function WorkOrderForm({ item, onClose }) {
     };
 
     const saveMutation = useMutation({
-        mutationFn: (data) => {
+        mutationFn: async (data) => {
             if (item) {
                 return matrixSales.entities.WorkOrder.update(item.id, data);
             }
+            // Claim the sequence number here, not on form open — an abandoned
+            // form must not consume a number.
+            data = { ...data, work_order_number: data.work_order_number?.trim() || await getNextDocumentNumber('work_order') };
             return matrixSales.entities.WorkOrder.create(data);
         },
         onSuccess: () => {
@@ -103,9 +104,8 @@ export default function WorkOrderForm({ item, onClose }) {
                             <Input
                                 value={formData.work_order_number}
                                 onChange={(e) => setFormData({...formData, work_order_number: e.target.value})}
-                                required
                                 disabled={isGeneratingNumber || !!item} // Disable if generating or for existing items
-                                placeholder={isGeneratingNumber ? "Generating..." : ""}
+                                placeholder={item ? '' : 'Auto-generated on save'}
                             />
                         </div>
                         <div>

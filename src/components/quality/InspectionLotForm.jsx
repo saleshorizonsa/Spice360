@@ -78,8 +78,6 @@ export default function InspectionLotForm({ item, onClose }) {
     useEffect(() => {
         if (item) {
             setFormData(item);
-        } else {
-            generateLotNumber();
         }
     }, [item]);
 
@@ -143,10 +141,13 @@ export default function InspectionLotForm({ item, onClose }) {
     };
 
     const saveMutation = useMutation({
-        mutationFn: (data) => {
+        mutationFn: async (data) => {
             if (item) {
                 return matrixSales.entities.InspectionLot.update(item.id, data);
             }
+            // Claim the sequence number here, not on form open — an abandoned
+            // form must not consume a number.
+            data = { ...data, inspection_lot_number: data.inspection_lot_number?.trim() || await getNextDocumentNumber('inspection_lot') };
             return matrixSales.entities.InspectionLot.create(data);
         },
         onSuccess: () => {
@@ -182,14 +183,13 @@ export default function InspectionLotForm({ item, onClose }) {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label>Inspection Lot Number *</Label>
+                            <Label>Inspection Lot Number</Label>
                             <div className="flex gap-2">
                                 <Input
                                     value={formData.inspection_lot_number}
                                     onChange={(e) => setFormData({...formData, inspection_lot_number: e.target.value})}
-                                    required
                                     disabled={isGeneratingNumber || item}
-                                    placeholder="IL-2025-0001"
+                                    placeholder={item ? '' : 'Auto-generated on save'}
                                 />
                                 {!item && (
                                     <Button

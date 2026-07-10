@@ -89,12 +89,11 @@ export default function CycleCountForm({ item, onClose }) {
                 organization_id: item.organization_id || currentOrg?.id
             });
         } else {
-            setFormData(prev => ({ 
-                ...prev, 
+            setFormData(prev => ({
+                ...prev,
                 organization_id: currentOrg?.id,
                 counted_by: currentUser?.full_name || ''
             }));
-            generateCountNumber();
         }
     }, [item, currentOrg, currentUser]);
 
@@ -176,6 +175,9 @@ export default function CycleCountForm({ item, onClose }) {
                     } catch (_) { /* non-fatal — adjustment side-effect */ }
                 }
             } else {
+                // Claim the sequence number here, not on form open — an abandoned
+                // form must not consume a number.
+                data = { ...data, count_number: data.count_number?.trim() || await getNextDocumentNumber('cycle_count') };
                 cycleCount = await matrixSales.entities.CycleCount.create(data);
 
                 await logAuditTrail({
@@ -239,12 +241,12 @@ export default function CycleCountForm({ item, onClose }) {
                         <h3 className="font-semibold text-lg border-b pb-2">Count Information</h3>
                         <div className="grid grid-cols-3 gap-4">
                             <div>
-                                <Label>Count Number *</Label>
+                                <Label>Count Number</Label>
                                 <div className="flex gap-2">
                                     <Input
                                         value={formData.count_number}
                                         onChange={(e) => handleChange('count_number', e.target.value)}
-                                        required
+                                        placeholder={item ? '' : 'Auto-generated on save'}
                                         disabled={isGeneratingNumber}
                                     />
                                     {!item && (

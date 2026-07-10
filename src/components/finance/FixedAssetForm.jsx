@@ -84,7 +84,6 @@ export default function FixedAssetForm({ item, onClose }) {
         if (item) {
             setFormData(item);
         } else {
-            generateAssetNumber();
             generateAssetTagNumber(); // Generate asset tag for new items
         }
     }, [item]);
@@ -152,6 +151,9 @@ export default function FixedAssetForm({ item, onClose }) {
                     severity: 'info'
                 });
             } else {
+                // Claim the sequence number here, not on form open — an abandoned
+                // form must not consume a number.
+                data = { ...data, asset_number: data.asset_number?.trim() || await getNextDocumentNumber('fixed_asset') };
                 asset = await matrixSales.entities.FixedAsset.create(data);
                 
                 await logAuditTrail({
@@ -203,13 +205,12 @@ export default function FixedAssetForm({ item, onClose }) {
                         <h3 className="font-semibold text-lg border-b pb-2">Asset Information</h3>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label>Asset Number *</Label>
+                                <Label>Asset Number</Label>
                                 <div className="flex gap-2">
                                     <Input
                                         value={formData.asset_number}
                                         onChange={(e) => handleChange('asset_number', e.target.value)}
-                                        required
-                                        placeholder="FA-2025-0001"
+                                        placeholder={item ? '' : 'Auto-generated on save'}
                                         disabled={isGeneratingNumber}
                                     />
                                     {!item && (

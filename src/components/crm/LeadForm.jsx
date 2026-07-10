@@ -57,16 +57,17 @@ export default function LeadForm({ item, onClose }) {
     useEffect(() => {
         if (item) {
             setFormData(item);
-        } else {
-            generateLeadNumber();
         }
     }, [item]);
 
     const saveMutation = useMutation({
-        mutationFn: (data) => {
+        mutationFn: async (data) => {
             if (item) {
                 return matrixSales.entities.Lead.update(item.id, data);
             }
+            // Claim the sequence number here, not on form open — an abandoned
+            // form must not consume a number.
+            data = { ...data, lead_number: data.lead_number?.trim() || await getNextDocumentNumber('lead') };
             return matrixSales.entities.Lead.create(data);
         },
         onSuccess: () => {
@@ -93,13 +94,12 @@ export default function LeadForm({ item, onClose }) {
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label>Lead Number *</Label>
+                            <Label>Lead Number</Label>
                             <div className="flex gap-2">
                                 <Input
                                     value={formData.lead_number}
                                     onChange={(e) => setFormData({...formData, lead_number: e.target.value})}
-                                    required
-                                    placeholder="LEAD-2025-0001"
+                                    placeholder={item ? '' : 'Auto-generated on save'}
                                     disabled={isGeneratingNumber || !!item}
                                 />
                                 {!item && (

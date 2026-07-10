@@ -79,8 +79,6 @@ export default function ProductionOrderForm({ item, onClose }) {
     useEffect(() => {
         if (item) {
             setFormData(item);
-        } else {
-            generateOrderNumber();
         }
     }, [item]);
 
@@ -103,6 +101,9 @@ export default function ProductionOrderForm({ item, onClose }) {
             if (item) {
                 order = await matrixSales.entities.ProductionOrder.update(item.id, data);
             } else {
+                // Claim the sequence number here, not on form open — an abandoned
+                // form must not consume a number.
+                data = { ...data, order_number: data.order_number?.trim() || await getNextDocumentNumber('production_order') };
                 order = await matrixSales.entities.ProductionOrder.create(data);
             }
 
@@ -216,13 +217,12 @@ export default function ProductionOrderForm({ item, onClose }) {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-3 gap-4">
                         <div>
-                            <Label>Order Number *</Label>
+                            <Label>Order Number</Label>
                             <div className="flex gap-2">
                                 <Input
                                     value={formData.order_number}
                                     onChange={(e) => handleChange('order_number', e.target.value)}
-                                    required
-                                    placeholder="PROD-2025-0001"
+                                    placeholder={item ? '' : 'Auto-generated on save'}
                                     disabled={isGeneratingNumber || !!item}
                                 />
                                 {!item && (

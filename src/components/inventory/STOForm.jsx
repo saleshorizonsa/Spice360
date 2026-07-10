@@ -84,7 +84,6 @@ export default function STOForm({ item, onClose }) {
             });
         } else {
             setFormData(prev => ({ ...prev, organization_id: currentOrg?.id }));
-            generateSTONumber();
         }
     }, [item, currentOrg]);
 
@@ -141,6 +140,9 @@ export default function STOForm({ item, onClose }) {
                     try { await processSTOReceipt(sto, currentUser); } catch (_) { /* non-fatal */ }
                 }
             } else {
+                // Claim the sequence number here, not on form open — an abandoned
+                // form must not consume a number.
+                data = { ...data, sto_number: data.sto_number?.trim() || await getNextDocumentNumber('stock_transfer') };
                 sto = await matrixSales.entities.StockTransferOrder.create(data);
 
                 await logAuditTrail({
@@ -204,12 +206,12 @@ export default function STOForm({ item, onClose }) {
                         <h3 className="font-semibold text-lg border-b pb-2">Transfer Information</h3>
                         <div className="grid grid-cols-3 gap-4">
                             <div>
-                                <Label>STO Number *</Label>
+                                <Label>STO Number</Label>
                                 <div className="flex gap-2">
                                     <Input
                                         value={formData.sto_number}
                                         onChange={(e) => handleChange('sto_number', e.target.value)}
-                                        required
+                                        placeholder={item ? '' : 'Auto-generated on save'}
                                         disabled={isGeneratingNumber}
                                     />
                                     {!item && (
