@@ -13,7 +13,8 @@ import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
 import { createNotification } from "../utils/notificationService";
 import { useOrganization } from "../utils/OrganizationContext";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, X } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import SearchableSelect from "@/components/ui/SearchableSelect";
 
 export default function RFQForm({ item, onClose }) {
@@ -57,6 +58,8 @@ export default function RFQForm({ item, onClose }) {
         required_date: '',
         closing_date: '',
         suppliers_invited: [],
+        vendor_code: '',
+        vendor_name: '',
         specifications: '',
         status: 'draft',
         notes: ''
@@ -79,13 +82,56 @@ export default function RFQForm({ item, onClose }) {
         }
     };
 
+    // suppliers_invited round-trips through jsonb and may come back as a JSON string
+    const normalizeSuppliers = (value) => {
+        if (Array.isArray(value)) return value;
+        if (typeof value === 'string' && value) {
+            try {
+                const parsed = JSON.parse(value);
+                return Array.isArray(parsed) ? parsed : [];
+            } catch {
+                return value.split(',').map(s => s.trim()).filter(Boolean);
+            }
+        }
+        return [];
+    };
+
     useEffect(() => {
         if (item) {
-            setFormData(item);
-        } else {
-            generateRFQNumber();
+            setFormData({ ...item, suppliers_invited: normalizeSuppliers(item.suppliers_invited) });
         }
     }, [item]);
+
+    const vendorName = (code) =>
+        vendors.find(v => v.vendor_code === code)?.vendor_name || code;
+
+    const handleInviteSupplier = (vendorCode) => {
+        if (!vendorCode || formData.suppliers_invited.includes(vendorCode)) return;
+        if (!isDirty) setIsDirty(true);
+        setFormData(prev => ({
+            ...prev,
+            suppliers_invited: [...prev.suppliers_invited, vendorCode]
+        }));
+    };
+
+    const handleRemoveSupplier = (vendorCode) => {
+        if (!isDirty) setIsDirty(true);
+        setFormData(prev => ({
+            ...prev,
+            suppliers_invited: prev.suppliers_invited.filter(c => c !== vendorCode),
+            // dropping the awarded vendor from the invite list clears the award
+            ...(prev.vendor_code === vendorCode ? { vendor_code: '', vendor_name: '' } : {})
+        }));
+    };
+
+    const handleAwardVendor = (vendorCode) => {
+        if (!isDirty) setIsDirty(true);
+        setFormData(prev => ({
+            ...prev,
+            vendor_code: vendorCode,
+            vendor_name: vendorCode ? vendorName(vendorCode) : ''
+        }));
+    };
 
     const handleMaterialSelect = (materialCode) => {
         const material = materials.find(m => m.material_code === materialCode);
@@ -132,6 +178,32 @@ export default function RFQForm({ item, onClose }) {
         [materials]
     );
 
+    const activeVendors = useMemo(() =>
+        vendors.filter(v => v.status !== 'inactive' && v.status !== 'blocked'),
+        [vendors]
+    );
+
+    // Vendors not yet invited — the "invite another supplier" picker
+    const inviteOptions = useMemo(() =>
+        activeVendors
+            .filter(v => !formData.suppliers_invited.includes(v.vendor_code))
+            .map(v => ({
+                value: v.vendor_code,
+                label: `${v.vendor_code} - ${v.vendor_name}`
+            })),
+        [activeVendors, formData.suppliers_invited]
+    );
+
+    // You can only award the RFQ to a supplier you invited
+    const awardOptions = useMemo(() =>
+        formData.suppliers_invited.map(code => ({
+            value: code,
+            label: `${code} - ${vendorName(code)}`
+        })),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [formData.suppliers_invited, vendors]
+    );
+
     const saveMutation = useMutation({
         mutationFn: async (data) => {
             const prevStatus = item?.status;
@@ -139,6 +211,12 @@ export default function RFQForm({ item, onClose }) {
             if (item) {
                 rfq = await matrixSales.entities.RFQ.update(item.id, data);
             } else {
+                // Claim the sequence number here, not on form open — an abandoned
+                // form must not consume a number.
+                data = {
+                    ...data,
+                    rfq_number: data.rfq_number?.trim() || await getNextDocumentNumber('rfq'),
+                };
                 rfq = await matrixSales.entities.RFQ.create(data);
             }
 
@@ -153,6 +231,8 @@ export default function RFQForm({ item, onClose }) {
                         organization_id: currentOrg?.id,
                         rfq_reference:   data.rfq_number,
                         pr_reference:    data.pr_reference || '',
+                        vendor_code:     data.vendor_code || '',
+                        vendor_name:     data.vendor_name || '',
                         material_code:   data.material_code,
                         material_name:   data.material_name,
                         quantity:        data.quantity,
@@ -163,9 +243,9 @@ export default function RFQForm({ item, onClose }) {
                         status:          'draft',
                         notes:           `Auto-created from RFQ ${data.rfq_number}`,
                     });
-                    toast({ title: "Purchase Order Created", description: `${poNumber} created as draft — add vendor to complete` });
+                    toast({ title: "Purchase Order Created", description: `${poNumber} created as draft for ${data.vendor_name} — add pricing to complete` });
                     if (currentUser?.email) {
-                        createNotification({ userEmail: currentUser.email, notificationType: 'purchase_order_auto_created', priority: 'high', title: 'Purchase Order Auto-Created', message: `${poNumber} was created from awarded RFQ ${data.rfq_number} — add vendor to complete`, relatedEntity: 'PurchaseOrder', relatedDocumentNumber: poNumber, actionUrl: '/Purchasing' }).catch(() => {});
+                        createNotification({ userEmail: currentUser.email, notificationType: 'purchase_order_auto_created', priority: 'high', title: 'Purchase Order Auto-Created', message: `${poNumber} was created from awarded RFQ ${data.rfq_number} for ${data.vendor_name} — add pricing to complete`, relatedEntity: 'PurchaseOrder', relatedDocumentNumber: poNumber, actionUrl: '/Purchasing' }).catch(() => {});
                     }
                 } catch (_) { /* non-fatal */ }
             }
@@ -181,11 +261,28 @@ export default function RFQForm({ item, onClose }) {
                 variant: "default"
             });
             onClose();
+        },
+        onError: (error) => {
+            console.error("Error saving RFQ:", error);
+            toast({
+                title: "Error",
+                description: `Failed to save RFQ: ${error.message || 'Unknown error'}`,
+                variant: "destructive"
+            });
         }
     });
 
     const handleSubmit = (e) => {
         e.preventDefault();
+        // An awarded RFQ becomes a PO, and a PO without a vendor is unusable.
+        if (formData.status === 'awarded' && !formData.vendor_code) {
+            toast({
+                title: "Awarded Vendor Required",
+                description: "Select the vendor this RFQ is awarded to before saving.",
+                variant: "destructive"
+            });
+            return;
+        }
         saveMutation.mutate(formData);
     };
 
@@ -205,14 +302,13 @@ export default function RFQForm({ item, onClose }) {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label>RFQ Number *</Label>
+                            <Label>RFQ Number</Label>
                             <div className="flex gap-2">
                                 <Input
                                     value={formData.rfq_number}
                                     onChange={(e) => handleChange('rfq_number', e.target.value)}
-                                    required
                                     disabled={isGeneratingNumber}
-                                    placeholder="RFQ-2025-0001"
+                                    placeholder={item ? '' : 'Auto-generated on save'}
                                 />
                                 {!item && (
                                     <Button
@@ -299,6 +395,67 @@ export default function RFQForm({ item, onClose }) {
                             onChange={(e) => handleChange('closing_date', e.target.value)}
                             required
                         />
+                    </div>
+
+                    {/* Vendors */}
+                    <div className="space-y-4">
+                        <h3 className="font-semibold text-lg border-b pb-2">Vendors</h3>
+
+                        <div>
+                            <SearchableSelect
+                                label="Suppliers Invited"
+                                mode="client"
+                                value=""
+                                onChange={handleInviteSupplier}
+                                options={inviteOptions}
+                                placeholder="Select a vendor to invite…"
+                                searchPlaceholder="Search vendors…"
+                                emptyText={
+                                    activeVendors.length === 0
+                                        ? "No active vendors. Add one under Admin → Vendors."
+                                        : "All active vendors are already invited."
+                                }
+                            />
+
+                            {formData.suppliers_invited.length > 0 ? (
+                                <div className="flex flex-wrap gap-2 mt-3">
+                                    {formData.suppliers_invited.map(code => (
+                                        <Badge key={code} variant="secondary" className="gap-1 pr-1 py-1">
+                                            {code} - {vendorName(code)}
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveSupplier(code)}
+                                                aria-label={`Remove ${code}`}
+                                                className="rounded p-0.5 text-gray-500 hover:bg-gray-200 hover:text-gray-800"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                        </Badge>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-xs text-gray-500 mt-2">
+                                    No suppliers invited yet. Invite at least one before sending this RFQ.
+                                </p>
+                            )}
+                        </div>
+
+                        <div>
+                            <SearchableSelect
+                                label={`Awarded Vendor${formData.status === 'awarded' ? ' *' : ''}`}
+                                mode="client"
+                                value={formData.vendor_code}
+                                onChange={handleAwardVendor}
+                                options={awardOptions}
+                                placeholder="Select the winning vendor"
+                                searchPlaceholder="Search invited suppliers…"
+                                emptyText="Invite suppliers above before awarding."
+                                clearable
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                                Used to create the Purchase Order when this RFQ is set to Awarded.
+                            </p>
+                        </div>
                     </div>
 
                     <div>

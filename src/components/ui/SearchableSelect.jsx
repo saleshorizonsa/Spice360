@@ -218,15 +218,19 @@ export default function SearchableSelect({
                     {/* backdrop — closes on outside click */}
                     <div
                         className="fixed inset-0"
-                        style={{ zIndex: 9998 }}
+                        style={{ zIndex: 9998, pointerEvents: "auto" }}
                         onClick={close}
                     />
 
                     {/* ── Dropdown — rendered in document.body via portal so
                         CSS transforms on Dialog/Sheet ancestors don't trap
-                        position:fixed relative to the modal stacking context ── */}
+                        position:fixed relative to the modal stacking context.
+
+                        pointerEvents:"auto" is required: a modal Radix Dialog sets
+                        `pointer-events: none` on <body> while open, which this portal
+                        would otherwise inherit — options render but never take a click. ── */}
                     <div
-                        style={{ ...dropStyle, position: "fixed", zIndex: 9999 }}
+                        style={{ ...dropStyle, position: "fixed", zIndex: 9999, pointerEvents: "auto" }}
                         className="overflow-hidden rounded-md border border-gray-200 bg-white shadow-lg"
                     >
                         <Command>

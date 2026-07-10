@@ -100,12 +100,11 @@ export default function GRNForm({ item, onClose }) {
                 organization_id: item.organization_id || currentOrg?.id
             });
         } else {
-            setFormData(prev => ({ 
-                ...prev, 
+            setFormData(prev => ({
+                ...prev,
                 organization_id: currentOrg?.id,
                 received_by: currentUser?.full_name || ''
             }));
-            generateGRNNumber();
         }
     }, [item, currentOrg, currentUser]);
 
@@ -165,8 +164,14 @@ export default function GRNForm({ item, onClose }) {
                     severity: 'info'
                 });
             } else {
+                // Claim the sequence number here, not on form open — an abandoned
+                // form must not consume a number.
+                data = {
+                    ...data,
+                    grn_number: data.grn_number?.trim() || await getNextDocumentNumber('grn'),
+                };
                 grn = await matrixSales.entities.GoodsReceiptNote.create(data);
-                
+
                 // Log audit trail
                 await logAuditTrail({
                     entityType: 'grn',
@@ -345,11 +350,16 @@ export default function GRNForm({ item, onClose }) {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
-    const approvedPOs = purchaseOrders.filter(po => 
-        po.status === 'approved' || po.status === 'sent_to_vendor'
+    // Any PO still open for receiving. Previously this only allowed
+    // 'approved'/'sent_to_vendor', which hid every PO — new POs are created as
+    // 'draft' and stay there unless an approval matrix moves them on.
+    const NON_RECEIVABLE_PO_STATUSES = ['fully_received', 'closed', 'cancelled'];
+
+    const receivablePOs = purchaseOrders.filter(po =>
+        !NON_RECEIVABLE_PO_STATUSES.includes(po.status)
     );
 
-    const poOptions = approvedPOs.map(po => ({
+    const poOptions = receivablePOs.map(po => ({
         value: po.po_number,
         label: `${po.po_number} - ${po.vendor_name} - ${po.material_name}`
     }));
@@ -379,13 +389,13 @@ export default function GRNForm({ item, onClose }) {
                         <h3 className="font-semibold text-lg border-b pb-2">GRN Information</h3>
                         <div className="grid grid-cols-3 gap-4">
                             <div>
-                                <Label>GRN Number *</Label>
+                                <Label>GRN Number</Label>
                                 <div className="flex gap-2">
                                     <Input
                                         value={formData.grn_number}
                                         onChange={(e) => handleChange('grn_number', e.target.value)}
-                                        required
                                         disabled={isGeneratingNumber}
+                                        placeholder={item ? '' : 'Auto-generated on save'}
                                     />
                                     {!item && (
                                         <Button
@@ -591,7 +601,7 @@ export default function GRNForm({ item, onClose }) {
                                 <Label>Vehicle Number</Label>
                                 <Input
                                     value={formData.vehicle_number}
-                                    onChange={(e) => handleChange('vehicle_note', e.target.value)}
+                                    onChange={(e) => handleChange('vehicle_number', e.target.value)}
                                 />
                             </div>
                         </div>

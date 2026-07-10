@@ -28,7 +28,6 @@ export default function PurchaseOrderForm({ po, onClose }) {
     const taxConfig = useTaxConfig();
     const [isDirty, setIsDirty] = useState(false);
     const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
-    const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     const [activeTab, setActiveTab] = useState("details");
 
@@ -113,27 +112,8 @@ export default function PurchaseOrderForm({ po, onClose }) {
     useEffect(() => {
         if (po) {
             setFormData(po);
-        } else {
-            generatePONumber();
         }
     }, [po]);
-
-    const generatePONumber = async () => {
-        setIsGeneratingNumber(true);
-        try {
-            const number = await getNextDocumentNumber('purchase_order');
-            setFormData(prev => ({ ...prev, po_number: number }));
-        } catch (error) {
-            console.error("Error generating PO number:", error);
-            toast({
-                title: "Error",
-                description: "Failed to generate PO number automatically. Please enter manually.",
-                variant: "destructive"
-            });
-        } finally {
-            setIsGeneratingNumber(false);
-        }
-    };
 
     useEffect(() => {
         const subtotal = (formData.quantity || 0) * (formData.unit_price || 0);
@@ -249,6 +229,12 @@ export default function PurchaseOrderForm({ po, onClose }) {
                     severity: auditSeverity
                 });
             } else {
+                // Claim the sequence number here, not on form open — an abandoned
+                // form must not consume a number.
+                data = {
+                    ...data,
+                    po_number: data.po_number?.trim() || await getNextDocumentNumber('purchase_order'),
+                };
                 purchaseOrder = await matrixSales.entities.PurchaseOrder.create(data);
 
                 await logAuditTrail({
@@ -362,13 +348,12 @@ export default function PurchaseOrderForm({ po, onClose }) {
                             {/* Header */}
                             <div className="grid grid-cols-3 gap-4">
                                 <div>
-                                    <Label>PO Number *</Label>
+                                    <Label>PO Number</Label>
                                     <Input
                                         value={formData.po_number}
                                         onChange={(e) => handleChange('po_number', e.target.value)}
-                                        required
-                                        placeholder="PO-2025-0001"
-                                        disabled={isGeneratingNumber || !!po}
+                                        placeholder={po ? '' : 'Auto-generated on save'}
+                                        disabled={!!po}
                                     />
                                 </div>
                                 <div>
@@ -720,7 +705,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
                                     <Button type="button" variant="outline" onClick={guardedClose(onClose)}>
                                         Cancel
                                     </Button>
-                                    <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700" disabled={isGeneratingNumber || saveMutation.isPending}>
+                                    <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700" disabled={saveMutation.isPending}>
                                         {po ? 'Update' : 'Create'} PO
                                     </Button>
                                 </div>

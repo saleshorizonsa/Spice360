@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -13,6 +13,7 @@ import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
 import { createNotification } from "../utils/notificationService";
 import { RefreshCw } from "lucide-react";
+import SearchableSelect from "@/components/ui/SearchableSelect";
 
 export default function PurchaseRequisitionForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -37,12 +38,30 @@ export default function PurchaseRequisitionForm({ item, onClose }) {
         initialData: []
     });
 
+    const { data: vendors = [] } = useQuery({
+        queryKey: ['vendors'],
+        queryFn: () => matrixSales.entities.Vendor.list(),
+        initialData: []
+    });
+
+    const vendorOptions = useMemo(() =>
+        vendors
+            .filter(v => v.status !== 'inactive' && v.status !== 'blocked')
+            .map(v => ({
+                value: v.vendor_code,
+                label: `${v.vendor_code} - ${v.vendor_name}`
+            })),
+        [vendors]
+    );
+
     const [formData, setFormData] = useState({
         pr_number: '',
         pr_date: new Date().toISOString().split('T')[0],
         requested_by: '',
         department: '',
         cost_center: '',
+        preferred_vendor_code: '',
+        preferred_vendor_name: '',
         material_code: '',
         material_name: '',
         quantity_required: 0,
@@ -75,10 +94,18 @@ export default function PurchaseRequisitionForm({ item, onClose }) {
     useEffect(() => {
         if (item) {
             setFormData(item);
-        } else {
-            generatePRNumber();
         }
     }, [item]);
+
+    const handleVendorSelect = (vendorCode) => {
+        const vendor = vendors.find(v => v.vendor_code === vendorCode);
+        if (!isDirty) setIsDirty(true);
+        setFormData(prev => ({
+            ...prev,
+            preferred_vendor_code: vendorCode,
+            preferred_vendor_name: vendor?.vendor_name || ''
+        }));
+    };
 
     const handleMaterialSelect = (materialCode) => {
         const material = materials.find(m => m.material_code === materialCode);
@@ -99,6 +126,12 @@ export default function PurchaseRequisitionForm({ item, onClose }) {
             if (item) {
                 pr = await matrixSales.entities.PurchaseRequisition.update(item.id, data);
             } else {
+                // Claim the sequence number here, not on form open — an abandoned
+                // form must not consume a number.
+                data = {
+                    ...data,
+                    pr_number: data.pr_number?.trim() || await getNextDocumentNumber('purchase_requisition'),
+                };
                 pr = await matrixSales.entities.PurchaseRequisition.create(data);
             }
 
@@ -119,7 +152,9 @@ export default function PurchaseRequisitionForm({ item, onClose }) {
                         unit_of_measure:   data.unit_of_measure,
                         required_date:     data.required_date,
                         closing_date:      closingDate,
-                        suppliers_invited: [],
+                        suppliers_invited: data.preferred_vendor_code ? [data.preferred_vendor_code] : [],
+                        vendor_code:       data.preferred_vendor_code || '',
+                        vendor_name:       data.preferred_vendor_name || '',
                         specifications:    data.purpose || '',
                         status:            'draft',
                         notes:             `Auto-created from PR ${data.pr_number}`,
@@ -175,15 +210,14 @@ export default function PurchaseRequisitionForm({ item, onClose }) {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label htmlFor="pr_number">PR Number *</Label>
+                            <Label htmlFor="pr_number">PR Number</Label>
                             <div className="flex gap-2">
                                 <Input
                                     id="pr_number"
                                     value={formData.pr_number}
                                     onChange={(e) => handleChange('pr_number', e.target.value)}
-                                    required
                                     disabled={isGeneratingNumber}
-                                    placeholder="PR-2025-0001"
+                                    placeholder={item ? '' : 'Auto-generated on save'}
                                 />
                                 {!item && (
                                     <Button
@@ -250,10 +284,27 @@ export default function PurchaseRequisitionForm({ item, onClose }) {
                         </Select>
                     </div>
 
+                    <div>
+                        <SearchableSelect
+                            label="Preferred Vendor"
+                            mode="client"
+                            value={formData.preferred_vendor_code}
+                            onChange={handleVendorSelect}
+                            options={vendorOptions}
+                            placeholder="Select vendor (optional)"
+                            searchPlaceholder="Search vendors…"
+                            emptyText="No vendors found. Add one under Admin → Vendors."
+                            clearable
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                            Carried through to the RFQ that is auto-created when this PR is approved.
+                        </p>
+                    </div>
+
                     <div className="space-y-2">
                         <Label htmlFor="material_select">Material *</Label>
-                        <Select 
-                            value={formData.material_code} 
+                        <Select
+                            value={formData.material_code}
                             onValueChange={handleMaterialSelect}
                             required
                         >
