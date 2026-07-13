@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { useOrganization } from "../utils/OrganizationContext";
-import { Package, RefreshCw } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Package, RefreshCw, AlertTriangle } from "lucide-react";
 import SearchableSelect from "../shared/SearchableSelect";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
 import { processGoodsReceipt, reverseGoodsReceipt } from "../utils/inventoryIntegration";
@@ -196,83 +197,57 @@ export default function GRNForm({ item, onClose }) {
                 variant: "destructive"
             });
         },
-        onSuccess: async (savedGRN) => {
-            // Auto-post to stock when creating a new GRN
-            if (!item && savedGRN?.id && savedGRN?.receiving_location) {
-                try {
-                    // Use savedGRN (the stored record) to avoid stale closure issues
-                    await processGoodsReceipt(savedGRN, currentUser);
-                    await matrixSales.entities.GoodsReceiptNote.update(savedGRN.id, {
-                        stock_posted: true,
-                        status: 'completed'
-                    });
-                } catch (postErr) {
-                    console.error('Auto post-to-stock failed:', postErr);
-                    toast({
-                        title: "GRN Created",
-                        description: "GRN saved but stock posting failed. Use 'Post to Stock' to retry.",
-                        variant: "destructive"
-                    });
-                    queryClient.invalidateQueries({ queryKey: ['grns'] });
-                    onClose();
-                    return;
-                }
-
-                // Post inventory GL: Dr. Inventory, Cr. GRNI (Goods Received Not Invoiced)
-                // Non-fatal — GRN and stock posting succeed regardless
-                try {
-                    const grnValue = (parseFloat(savedGRN.quantity_received || savedGRN.quantity) || 0)
-                        * (parseFloat(savedGRN.unit_cost || savedGRN.unit_price) || 0);
-                    if (grnValue > 0) {
-                        await postJournalEntry({
-                            lines: [
-                                { account_code: gl.inventory, account_name: 'Inventory',                    debit: grnValue, credit: 0 },
-                                { account_code: gl.grni,      account_name: 'Goods Received Not Invoiced',  debit: 0, credit: grnValue },
-                            ],
-                            referenceType: 'grn',
-                            referenceId:   savedGRN.grn_number,
-                            description:   `Goods receipt ${savedGRN.grn_number}`,
-                            entryDate:     savedGRN.grn_date || new Date().toISOString().split('T')[0],
-                            entryType:     'goods_receipt',
-                            orgId:         currentOrg?.id,
-                            area:          "inventory"
-                        });
-                    }
-                } catch (_) {
-                    // Silently ignored — inventory accounts may not be set up yet
-                }
-
-                // Update PO quantity_received; auto-close when fully received (non-fatal)
-                try {
-                    const pos = await matrixSales.entities.PurchaseOrder.filter({ po_number: savedGRN.po_number });
-                    if (pos?.length > 0) {
-                        const po = pos[0];
-                        const newQtyReceived = (parseFloat(po.quantity_received) || 0) + (parseFloat(savedGRN.quantity_received) || 0);
-                        const isFullyReceived = newQtyReceived >= (parseFloat(po.quantity) || 0) - 0.001;
-                        await matrixSales.entities.PurchaseOrder.update(po.id, {
-                            quantity_received: newQtyReceived,
-                            ...(isFullyReceived && !['closed', 'cancelled'].includes(po.status)
-                                ? { status: 'fully_received' }
-                                : {}),
-                        });
-                    }
-                } catch (_) { /* non-fatal */ }
-            }
+        onSuccess: () => {
+            // A GRN is never posted on save — it is created as a draft so it can be
+            // reviewed and corrected first. Stock, GL and the PO are only touched by
+            // the explicit "Post GRN" action below.
             queryClient.invalidateQueries({ queryKey: ['grns'] });
             queryClient.invalidateQueries({ queryKey: ['auditTrails'] });
             toast({
                 title: "Success",
-                description: item ? "GRN updated" : "GRN created and stock posted",
+                description: item
+                    ? "GRN updated"
+                    : "GRN saved as draft. Reopen it to review and post to stock.",
             });
             onClose();
         }
     });
 
+    /**
+     * Complete the GRN. This is the ONLY path that touches stock, the GL and the PO
+     * — saving merely stores a reviewable draft. It persists any edits made in the
+     * form first, so what you reviewed is what gets posted.
+     */
     const handlePostToStock = async () => {
+        const grnId = item?.id || formData.id;
+        if (!grnId) {
+            toast({
+                title: "Save First",
+                description: "Save the GRN as a draft before posting it.",
+                variant: "destructive"
+            });
+            return;
+        }
+        if (item?.stock_posted) {
+            toast({
+                title: "Already Posted",
+                description: "This GRN has already been posted to stock.",
+                variant: "destructive"
+            });
+            return;
+        }
         if (!formData.receiving_location) {
             toast({
-                title: "Error",
-                description: "Please select a receiving location before posting to stock",
+                title: "Receiving Location Required",
+                description: "Select a receiving location before posting to stock.",
+                variant: "destructive"
+            });
+            return;
+        }
+        if (!formData.quantity_received || formData.quantity_received <= 0) {
+            toast({
+                title: "Quantity Required",
+                description: "Enter the received quantity before posting to stock.",
                 variant: "destructive"
             });
             return;
@@ -280,40 +255,76 @@ export default function GRNForm({ item, onClose }) {
 
         setIsPosting(true);
         try {
-            // Process goods receipt
-            await processGoodsReceipt(formData, currentUser);
+            // 1. Persist whatever is on screen, so the posted stock matches the
+            //    reviewed document rather than the last-saved version.
+            const posted = { ...formData, stock_posted: true, status: 'completed' };
+            await matrixSales.entities.GoodsReceiptNote.update(grnId, posted);
 
-            // Update GRN
-            await matrixSales.entities.GoodsReceiptNote.update(item?.id || formData.id, {
-                stock_posted: true,
-                status: 'completed'
-            });
+            // 2. Move the stock. Fatal — if this fails, nothing below should run.
+            await processGoodsReceipt(posted, currentUser);
 
-            // Update PO quantity received; auto-close when fully received
-            const pos = await matrixSales.entities.PurchaseOrder.filter({ po_number: formData.po_number });
-            if (pos && pos.length > 0) {
-                const po = pos[0];
-                const newQtyReceived = (parseFloat(po.quantity_received) || 0) + (parseFloat(formData.quantity_received) || 0);
-                const isFullyReceived = newQtyReceived >= (parseFloat(po.quantity) || 0) - 0.001;
-                await matrixSales.entities.PurchaseOrder.update(po.id, {
-                    quantity_received: newQtyReceived,
-                    ...(isFullyReceived && !['closed', 'cancelled'].includes(po.status)
-                        ? { status: 'fully_received' }
-                        : {}),
-                });
-            }
+            // 3. Inventory GL: Dr. Inventory, Cr. GRNI (Goods Received Not Invoiced).
+            //    Non-fatal: inventory accounts may not be configured yet.
+            try {
+                const grnValue = (parseFloat(posted.quantity_received || posted.quantity) || 0)
+                    * (parseFloat(posted.unit_cost || posted.unit_price) || 0);
+                if (grnValue > 0) {
+                    await postJournalEntry({
+                        lines: [
+                            { account_code: gl.inventory, account_name: 'Inventory',                   debit: grnValue, credit: 0 },
+                            { account_code: gl.grni,      account_name: 'Goods Received Not Invoiced', debit: 0, credit: grnValue },
+                        ],
+                        referenceType: 'grn',
+                        referenceId:   posted.grn_number,
+                        description:   `Goods receipt ${posted.grn_number}`,
+                        entryDate:     posted.grn_date || new Date().toISOString().split('T')[0],
+                        entryType:     'goods_receipt',
+                        orgId:         currentOrg?.id,
+                        area:          "inventory"
+                    });
+                }
+            } catch (_) { /* non-fatal — accounts may not be set up */ }
+
+            // 4. Roll the receipt up to the PO; auto-close when fully received. Non-fatal.
+            try {
+                const pos = await matrixSales.entities.PurchaseOrder.filter({ po_number: posted.po_number });
+                if (pos?.length > 0) {
+                    const po = pos[0];
+                    const newQtyReceived = (parseFloat(po.quantity_received) || 0) + (parseFloat(posted.quantity_received) || 0);
+                    const isFullyReceived = newQtyReceived >= (parseFloat(po.quantity) || 0) - 0.001;
+                    await matrixSales.entities.PurchaseOrder.update(po.id, {
+                        quantity_received: newQtyReceived,
+                        ...(isFullyReceived && !['closed', 'cancelled'].includes(po.status)
+                            ? { status: 'fully_received' }
+                            : {}),
+                    });
+                }
+            } catch (_) { /* non-fatal */ }
+
+            await logAuditTrail({
+                entityType: 'grn',
+                entityId: grnId,
+                documentNumber: posted.grn_number,
+                actionType: 'post_to_stock',
+                beforeData: item,
+                afterData: posted,
+                user: currentUser,
+                severity: 'warning',
+                relatedDocumentType: 'purchase_order',
+                relatedDocumentId: posted.po_number
+            }).catch(() => {});
 
             queryClient.invalidateQueries();
             toast({
-                title: "Success",
-                description: "Stock posted successfully. Inventory updated.",
+                title: "GRN Posted",
+                description: `${posted.grn_number} completed. Inventory updated.`,
             });
             onClose();
         } catch (error) {
             console.error('Error posting stock:', error);
             toast({
-                title: "Error",
-                description: "Failed to post stock. Please try again.",
+                title: "Post Failed",
+                description: error?.message || "Failed to post stock. The GRN remains a draft.",
                 variant: "destructive"
             });
         } finally {
@@ -323,25 +334,8 @@ export default function GRNForm({ item, onClose }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        // Only enforce required fields on create (auto-post requires them)
-        if (!item) {
-            if (!formData.receiving_location) {
-                toast({
-                    title: "Receiving Location Required",
-                    description: "Please select a receiving location before saving the GRN.",
-                    variant: "destructive"
-                });
-                return;
-            }
-            if (!formData.quantity_received || formData.quantity_received <= 0) {
-                toast({
-                    title: "Quantity Required",
-                    description: "Please enter the received quantity before saving.",
-                    variant: "destructive"
-                });
-                return;
-            }
-        }
+        // A draft is a work-in-progress: it can be saved incomplete and corrected
+        // later. The fields required to move stock are enforced at POST time instead.
         saveMutation.mutate(formData);
     };
 
@@ -349,6 +343,10 @@ export default function GRNForm({ item, onClose }) {
         if (!isDirty) setIsDirty(true);
         setFormData(prev => ({ ...prev, [field]: value }));
     };
+
+    // A posted GRN has already moved stock and hit the GL, so its fields are locked.
+    // Correcting it means reversing it, not editing it behind inventory's back.
+    const isPosted = Boolean(item?.stock_posted);
 
     // Any PO still open for receiving. Previously this only allowed
     // 'approved'/'sent_to_vendor', which hid every PO — new POs are created as
@@ -381,9 +379,45 @@ export default function GRNForm({ item, onClose }) {
                     <DialogTitle className="flex items-center gap-2">
                         <Package className="w-5 h-5 text-emerald-600" />
                         {item ? 'Edit Goods Receipt Note' : 'New Goods Receipt Note'}
+                        {item && (
+                            isPosted ? (
+                                <Badge className="bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                    Posted
+                                </Badge>
+                            ) : (
+                                <Badge className="bg-amber-100 text-amber-800 border border-amber-300">
+                                    Draft
+                                </Badge>
+                            )
+                        )}
                     </DialogTitle>
                 </DialogHeader>
+
+                {item && !isPosted && (
+                    <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                        <p className="text-sm text-amber-800">
+                            This GRN is a <strong>draft</strong> — no stock has moved yet. Review the
+                            quantities and storage location, then use <strong>Post GRN</strong> to
+                            complete it and update inventory.
+                        </p>
+                    </div>
+                )}
+
+                {isPosted && (
+                    <div className="flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+                        <Package className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+                        <p className="text-sm text-emerald-800">
+                            This GRN has been posted and inventory was updated, so it can no longer be
+                            edited. Use <strong>Reverse GRN</strong> if it was posted in error.
+                        </p>
+                    </div>
+                )}
+
                 <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Once posted, every field is read-only — a posted GRN must be
+                        reversed, not quietly edited out from under inventory. */}
+                    <fieldset disabled={isPosted} className="space-y-6 m-0 p-0 border-0 disabled:opacity-70">
                     {/* GRN Header */}
                     <div className="space-y-4">
                         <h3 className="font-semibold text-lg border-b pb-2">GRN Information</h3>
@@ -622,19 +656,10 @@ export default function GRNForm({ item, onClose }) {
                             </div>
                         </div>
                     </div>
+                    </fieldset>
 
                     <div className="flex justify-between gap-3 pt-4 border-t">
                         <div className="flex gap-2">
-                            {item && !item.stock_posted && (
-                                <Button
-                                    type="button"
-                                    onClick={handlePostToStock}
-                                    className="bg-indigo-600 hover:bg-indigo-700"
-                                    disabled={isPosting}
-                                >
-                                    {isPosting ? 'Posting...' : 'Post to Stock'}
-                                </Button>
-                            )}
                             <ReverseButton
                                 item={item}
                                 entityName="GoodsReceiptNote"
@@ -646,11 +671,33 @@ export default function GRNForm({ item, onClose }) {
                         </div>
                         <div className="flex gap-3">
                             <Button type="button" variant="outline" onClick={guardedClose(onClose)}>
-                                Cancel
+                                {isPosted ? 'Close' : 'Cancel'}
                             </Button>
-                            <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700">
-                                {item ? 'Update' : 'Create'} GRN
-                            </Button>
+
+                            {!isPosted && (
+                                <Button
+                                    type="submit"
+                                    variant="outline"
+                                    disabled={saveMutation.isPending || isPosting}
+                                >
+                                    {saveMutation.isPending
+                                        ? 'Saving…'
+                                        : item ? 'Save Draft' : 'Save as Draft'}
+                                </Button>
+                            )}
+
+                            {/* The GRN is only completed here — this is what moves stock,
+                                posts the GL entry and updates the PO. */}
+                            {item && !isPosted && (
+                                <Button
+                                    type="button"
+                                    onClick={handlePostToStock}
+                                    className="bg-emerald-600 hover:bg-emerald-700"
+                                    disabled={isPosting || saveMutation.isPending}
+                                >
+                                    {isPosting ? 'Posting…' : 'Post GRN'}
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </form>
