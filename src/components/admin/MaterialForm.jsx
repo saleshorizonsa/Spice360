@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { X, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { validateDuplicateItemCode } from "@/lib/itemSelection";
@@ -32,6 +33,7 @@ export default function MaterialForm({ material, initialValues = {}, onClose, on
         supplier_name: "",
         lead_time_days: 0,
         specifications: "",
+        vat_applicable: false,
         vat_rate: taxConfig.vat_standard_rate,
         inventory_tracking_enabled: true,
         status: "active"
@@ -237,6 +239,20 @@ export default function MaterialForm({ material, initialValues = {}, onClose, on
                         </div>
                     </div>
 
+                    <div className="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                        <div>
+                            <Label className="text-sm font-medium">VAT applicable on this item</Label>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                                Off by default. VAT is only charged when this is on <em>and</em> the
+                                vendor/customer on the document is also VAT-activated.
+                            </p>
+                        </div>
+                        <Switch
+                            checked={!!formData.vat_applicable}
+                            onCheckedChange={(checked) => handleChange('vat_applicable', checked)}
+                        />
+                    </div>
+
                     <div className="grid grid-cols-2 gap-4">
                         <div>
                             <Label>VAT Rate (%)</Label>
@@ -245,7 +261,13 @@ export default function MaterialForm({ material, initialValues = {}, onClose, on
                                 step="0.01"
                                 value={formData.vat_rate}
                                 onChange={(e) => handleChange('vat_rate', parseFloat(e.target.value) || 0)}
+                                disabled={!formData.vat_applicable}
                             />
+                            {!formData.vat_applicable && (
+                                <p className="text-xs text-gray-500 mt-1">
+                                    Enable "VAT applicable" above to set a rate.
+                                </p>
+                            )}
                         </div>
                         <div>
                             <Label>Inventory Tracking</Label>

@@ -16,6 +16,7 @@ import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
 import ReverseButton from "../shared/ReverseButton";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
+import { resolveVatRate } from "@/lib/vat";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
 import SearchableSelect from "../shared/SearchableSelect";
 
@@ -38,6 +39,18 @@ export default function VendorInvoiceForm({ item, onClose }) {
     const { data: pos = [] } = useQuery({
         queryKey: ['purchaseOrders'],
         queryFn: () => matrixSales.entities.PurchaseOrder.list(),
+        initialData: []
+    });
+
+    const { data: vendors = [] } = useQuery({
+        queryKey: ['vendors'],
+        queryFn: () => matrixSales.entities.Vendor.list(),
+        initialData: []
+    });
+
+    const { data: materials = [] } = useQuery({
+        queryKey: ['materials'],
+        queryFn: () => matrixSales.entities.Material.list(),
         initialData: []
     });
 
@@ -73,6 +86,7 @@ export default function VendorInvoiceForm({ item, onClose }) {
         subtotal: 0,
         freight_cost: 0,
         other_charges: 0,
+        vat_percent: 0,
         vat_amount: 0,
         total_amount: 0,
         currency: 'LKR',
@@ -129,7 +143,9 @@ export default function VendorInvoiceForm({ item, onClose }) {
     useEffect(() => {
         const subtotal   = (formData.invoiced_quantity || 0) * (formData.unit_price || 0);
         const beforeVat  = subtotal + (formData.freight_cost || 0) + (formData.other_charges || 0);
-        const vatAmount  = beforeVat * (taxConfig.vat_standard_rate / 100);
+        // VAT is opt-in: vat_percent stays 0 unless the vendor AND item are VAT-activated
+        // (resolved when the first GRN is linked), or the user overrides it below.
+        const vatAmount  = beforeVat * ((formData.vat_percent || 0) / 100);
         const total      = beforeVat + vatAmount;
 
         const qtyVariance   = (formData.invoiced_quantity || 0) - totalGRNQty;
@@ -163,7 +179,7 @@ export default function VendorInvoiceForm({ item, onClose }) {
         formData.freight_cost,
         formData.other_charges,
         formData.po_unit_price,
-        taxConfig.vat_standard_rate,
+        formData.vat_percent,
         totalGRNQty,
         linkedGRNs,
     ]);
@@ -196,6 +212,8 @@ export default function VendorInvoiceForm({ item, onClose }) {
 
         // Auto-fill vendor + material from the FIRST GRN added
         if (isFirst) {
+            const vendor   = vendors.find(v => v.vendor_code === grn.vendor_code);
+            const material = materials.find(m => m.material_code === grn.material_code);
             setFormData(prev => ({
                 ...prev,
                 vendor_code:   grn.vendor_code   || prev.vendor_code,
@@ -204,6 +222,8 @@ export default function VendorInvoiceForm({ item, onClose }) {
                 material_name: grn.material_name || prev.material_name,
                 unit_price:    unitCost           || prev.unit_price,
                 invoiced_quantity: qty,           // default to first GRN qty; user adjusts
+                // VAT only when both the vendor and the item are VAT-activated
+                vat_percent:   resolveVatRate(vendor, material, taxConfig.vat_standard_rate),
             }));
         }
     };
@@ -599,7 +619,7 @@ export default function VendorInvoiceForm({ item, onClose }) {
                             </div>
 
                             {/* Additional charges */}
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-3 gap-4">
                                 <div>
                                     <Label>Freight Cost (LKR)</Label>
                                     <Input
@@ -620,6 +640,21 @@ export default function VendorInvoiceForm({ item, onClose }) {
                                         step="0.01"
                                     />
                                 </div>
+                                <div>
+                                    <Label>VAT %</Label>
+                                    <Input
+                                        type="number"
+                                        value={formData.vat_percent}
+                                        onChange={(e) => handleChange('vat_percent', parseFloat(e.target.value) || 0)}
+                                        min="0"
+                                        step="0.01"
+                                    />
+                                    <p className="text-xs text-gray-500 mt-1">
+                                        {formData.vat_percent > 0
+                                            ? 'Vendor and item are VAT-activated.'
+                                            : 'No VAT — vendor or item not VAT-activated. Override here if needed.'}
+                                    </p>
+                                </div>
                             </div>
 
                             {/* Totals */}
@@ -635,7 +670,7 @@ export default function VendorInvoiceForm({ item, onClose }) {
                                     </div>
                                 )}
                                 <div className="flex justify-between text-sm">
-                                    <span className="text-gray-600">VAT ({taxConfig.vat_standard_rate}%):</span>
+                                    <span className="text-gray-600">VAT ({formData.vat_percent || 0}%):</span>
                                     <span className="font-semibold">LKR {Number(formData.vat_amount || 0).toFixed(2)}</span>
                                 </div>
                                 <div className="flex justify-between text-base font-bold border-t pt-2">

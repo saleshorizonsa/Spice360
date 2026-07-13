@@ -34,7 +34,10 @@ export const materialToSalesLinePatch = (material = {}) => {
     description: material.description || material.specifications || material.material_type || "",
     unit_of_measure: material.unit_of_measure || "piece",
     unit_price: price,
-    vat_rate: Number(material.vat_rate ?? 18) || 0
+    // VAT is opt-in per item. An item that is not VAT-activated carries a 0 rate,
+    // and the party (customer/vendor) flag gates it again at document level.
+    vat_applicable: Boolean(material.vat_applicable),
+    vat_rate: material.vat_applicable ? (Number(material.vat_rate) || 0) : 0
   };
 };
 

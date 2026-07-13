@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function VendorForm({ item, onClose }) {
@@ -28,6 +29,7 @@ export default function VendorForm({ item, onClose }) {
         postal_code: '',
         country: 'Sri Lanka',
         tax_id: '',
+        vat_applicable: false,
         payment_terms: 'net_30',
         currency: 'LKR',
         rating: 3,
@@ -131,6 +133,19 @@ export default function VendorForm({ item, onClose }) {
                                     placeholder="Tax registration number"
                                 />
                             </div>
+                        </div>
+                        <div className="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                            <div>
+                                <Label className="text-sm font-medium">Charge VAT from this vendor</Label>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                    Off by default. VAT is only added to a purchase document when this is on
+                                    <em> and</em> the item itself is VAT-activated.
+                                </p>
+                            </div>
+                            <Switch
+                                checked={!!formData.vat_applicable}
+                                onCheckedChange={(checked) => handleChange('vat_applicable', checked)}
+                            />
                         </div>
                     </div>
 

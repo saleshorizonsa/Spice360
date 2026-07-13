@@ -59,7 +59,6 @@ export default function POS() {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const taxConfig = useTaxConfig();
-    const vatRate = taxConfig.vat_standard_rate / 100;
     const gl = useGLAccounts();
     const { currentOrg } = useOrganization();
 
@@ -81,17 +80,24 @@ export default function POS() {
         initialData: []
     });
 
-    // Combine products + finished materials
+    // Combine products + finished materials.
+    // vat_rate is carried per item: 0 unless the item is VAT-activated. POS has no
+    // customer master record (just a walk-in name), so the item flag alone gates VAT.
+    const itemVatRate = (i) =>
+        i?.vat_applicable ? (Number(i.vat_rate) || taxConfig.vat_standard_rate || 0) : 0;
+
     const allItems = [
         ...products.map(p => ({
             id: p.id, code: p.product_code, name: p.product_name,
             price: p.unit_price || 0, category: p.category || 'other',
-            stock: p.current_stock, source: 'product'
+            stock: p.current_stock, source: 'product',
+            vat_rate: itemVatRate(p)
         })),
         ...materials.filter(m => m.material_type === 'finished_product').map(m => ({
             id: m.id, code: m.material_code, name: m.material_name,
             price: m.unit_price || 0, category: m.material_type || 'other',
-            stock: m.current_stock, source: 'material'
+            stock: m.current_stock, source: 'material',
+            vat_rate: itemVatRate(m)
         }))
     ];
 
@@ -145,11 +151,17 @@ export default function POS() {
         };
     }, [barcodeBuffer, allItems]);
 
-    // Cart calculations
+    // Cart calculations. VAT is per line and only applies to VAT-activated items;
+    // a cart of non-VAT items totals with no VAT at all.
     const cartSubtotal = cart.reduce((sum, item) => sum + item.line_total, 0);
     const discountAmount = (cartSubtotal * discountPercent) / 100;
     const taxableAmount = cartSubtotal - discountAmount;
-    const vatAmount = taxableAmount * vatRate;
+    // Apply the cart-level discount proportionally before taxing each line.
+    const discountFactor = cartSubtotal > 0 ? taxableAmount / cartSubtotal : 0;
+    const vatAmount = cart.reduce(
+        (sum, item) => sum + (item.line_total * discountFactor) * ((Number(item.vat_rate) || 0) / 100),
+        0
+    );
     const totalAmount = taxableAmount + vatAmount;
     const changeGiven = paymentMethod === 'cash' ? Math.max(0, parseFloat(cashReceived || 0) - totalAmount) : 0;
 
@@ -169,10 +181,11 @@ export default function POS() {
                 unit_price: item.price,
                 discount_percent: 0,
                 line_total: item.price,
-                vat_amount: item.price * vatRate
+                vat_rate: Number(item.vat_rate) || 0,
+                vat_amount: item.price * ((Number(item.vat_rate) || 0) / 100)
             }];
         });
-    }, [vatRate]);
+    }, []);
 
     const updateQty = (code, delta) => {
         setCart(prev => prev
@@ -530,7 +543,7 @@ export default function POS() {
                                 <div className="space-y-0.5 text-sm">
                                     <div className="flex justify-between text-gray-500"><span>Subtotal</span><span>LKR {cartSubtotal.toFixed(2)}</span></div>
                                     {discountAmount > 0 && <div className="flex justify-between text-red-500"><span>Discount ({discountPercent}%)</span><span>−LKR {discountAmount.toFixed(2)}</span></div>}
-                                    <div className="flex justify-between text-gray-500"><span>VAT 18%</span><span>LKR {vatAmount.toFixed(2)}</span></div>
+                                    <div className="flex justify-between text-gray-500"><span>VAT</span><span>LKR {vatAmount.toFixed(2)}</span></div>
                                 </div>
                                 <div className="flex justify-between font-extrabold text-xl border-t pt-1.5 text-emerald-700">
                                     <span>Total</span><span>LKR {totalAmount.toFixed(2)}</span>
@@ -677,7 +690,7 @@ export default function POS() {
                             <div className="flex justify-between"><span className="text-gray-500">Items</span><span>{lastTransaction.items?.length}</span></div>
                             <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>LKR {lastTransaction.subtotal?.toFixed(2)}</span></div>
                             {lastTransaction.discount_amount > 0 && <div className="flex justify-between text-red-500"><span>Discount</span><span>−LKR {lastTransaction.discount_amount?.toFixed(2)}</span></div>}
-                            <div className="flex justify-between"><span className="text-gray-500">VAT 18%</span><span>LKR {lastTransaction.vat_amount?.toFixed(2)}</span></div>
+                            <div className="flex justify-between"><span className="text-gray-500">VAT</span><span>LKR {lastTransaction.vat_amount?.toFixed(2)}</span></div>
                             <div className="flex justify-between font-extrabold text-lg border-t pt-2"><span>Total</span><span className="text-emerald-700">LKR {lastTransaction.total_amount?.toFixed(2)}</span></div>
                             {lastTransaction.payment_method === 'cash' && lastTransaction.change_given > 0 && (
                                 <div className="flex justify-between text-blue-600 font-bold"><span>Change</span><span>LKR {lastTransaction.change_given?.toFixed(2)}</span></div>

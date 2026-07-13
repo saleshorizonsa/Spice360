@@ -12,6 +12,7 @@ import SearchableSelect from "@/components/shared/SearchableSelect";
 import { useOrganization } from "@/components/utils/OrganizationContext";
 import { calculateNextBillingDate } from "@/lib/serviceBilling";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
+import { resolvePartyVatRate } from "@/lib/vat";
 import { Plus, Trash2 } from "lucide-react";
 
 export default function ServiceContractForm({ item, onClose }) {
@@ -19,12 +20,14 @@ export default function ServiceContractForm({ item, onClose }) {
   const { toast } = useToast();
   const { currentOrg } = useOrganization();
   const taxConfig = useTaxConfig();
+  // VAT is opt-in — a new line carries no VAT until the customer is VAT-activated
+  // (resolved on customer select) or the user sets a rate manually.
   const emptyLine = {
     service_description: "Monthly IT Support Services",
     quantity: 1,
     unit: "month",
     unit_price: 0,
-    vat_rate: taxConfig.vat_standard_rate,
+    vat_rate: 0,
     discount_percent: 0
   };
   const [formData, setFormData] = useState(item || {
@@ -41,7 +44,7 @@ export default function ServiceContractForm({ item, onClose }) {
     end_date: "",
     next_billing_date: new Date().toISOString().slice(0, 10),
     monthly_amount: 0,
-    vat_rate: taxConfig.vat_standard_rate,
+    vat_rate: 0,
     payment_terms: "net_30",
     invoice_type: "standard_tax_invoice",
     auto_send_invoice: false,
@@ -88,6 +91,9 @@ export default function ServiceContractForm({ item, onClose }) {
   const handleCustomerSelect = (customerCode) => {
     const customer = customers.find((row) => row.customer_code === customerCode);
     if (!customer) return;
+    // A service contract has no item master behind it, so VAT is gated on the
+    // customer alone. Stays 0 unless the customer is VAT-activated.
+    const vatRate = resolvePartyVatRate(customer, taxConfig.vat_standard_rate);
     setFormData((prev) => ({
       ...prev,
       customer_code: customer.customer_code,
@@ -95,6 +101,10 @@ export default function ServiceContractForm({ item, onClose }) {
       customer_email: customer.email,
       customer_vat_number: customer.vat_number,
       customer_address: customer.address,
+      vat_rate: vatRate,
+      service_lines: Array.isArray(prev.service_lines)
+        ? prev.service_lines.map((line) => ({ ...line, vat_rate: vatRate }))
+        : prev.service_lines,
       payment_terms: customer.payment_terms || prev.payment_terms,
       preferred_language: customer.preferred_language || prev.preferred_language,
       preferred_delivery_method: customer.preferred_delivery_method || prev.preferred_delivery_method

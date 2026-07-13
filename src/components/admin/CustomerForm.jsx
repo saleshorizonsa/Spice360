@@ -35,6 +35,7 @@ export default function CustomerForm({ customer, onClose }) {
         credit_limit: 0,
         payment_terms: 'net_30',
         outstanding_balance: 0,
+        vat_applicable: false,
         is_export_customer: false,
         export_tolerance_percent: 5,
         status: 'active',
@@ -302,6 +303,24 @@ export default function CustomerForm({ customer, onClose }) {
                                     </SelectContent>
                                 </Select>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* VAT Settings */}
+                    <div className="space-y-4">
+                        <h3 className="font-semibold text-lg border-b pb-2">VAT Settings</h3>
+                        <div className="flex items-center justify-between p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                            <div>
+                                <Label className="text-sm font-medium">Charge VAT to this customer</Label>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                    Off by default. VAT is only added to a sales document when this is on
+                                    <em> and</em> the item itself is VAT-activated.
+                                </p>
+                            </div>
+                            <Switch
+                                checked={!!formData.vat_applicable}
+                                onCheckedChange={(checked) => handleChange('vat_applicable', checked)}
+                            />
                         </div>
                     </div>
 

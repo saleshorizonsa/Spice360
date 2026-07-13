@@ -47,7 +47,8 @@ export const getServiceContractLines = (contract = {}) => {
       quantity: 1,
       unit: "month",
       unit_price: Number(contract.monthly_amount || contract.contract_amount || 0),
-      vat_rate: Number(contract.vat_rate ?? 18),
+      // VAT is opt-in — never assume the standard rate.
+      vat_rate: Number(contract.vat_rate) || 0,
       discount_percent: 0
     }];
 
@@ -56,7 +57,7 @@ export const getServiceContractLines = (contract = {}) => {
     const unitPrice = Number(line.unit_price || 0);
     const discountPercent = Number(line.discount_percent || 0);
     const taxableAmount = quantity * unitPrice * (1 - discountPercent / 100);
-    const vatRate = Number(line.vat_rate ?? contract.vat_rate ?? 18);
+    const vatRate = Number(line.vat_rate ?? contract.vat_rate) || 0;
     const vatAmount = taxableAmount * (vatRate / 100);
     return {
       line_number: index + 1,

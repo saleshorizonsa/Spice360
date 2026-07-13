@@ -19,6 +19,7 @@ import { logAuditTrail } from "../utils/auditTrail";
 import { reserveStock } from "../utils/inventoryIntegration";
 import { createNotification } from "../utils/notificationService";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
+import { sumLineVat } from "@/lib/vat";
 
 export default function SalesOrderForm({ order, onClose }) {
     const queryClient = useQueryClient();
@@ -81,6 +82,8 @@ export default function SalesOrderForm({ order, onClose }) {
         order_date: new Date().toISOString().split('T')[0],
         delivery_date: '',
         status: 'pending',
+        subtotal: 0,
+        vat_amount: 0,
         total_amount: 0,
         payment_terms: 'net_30',
         delivery_address: '',
@@ -88,9 +91,19 @@ export default function SalesOrderForm({ order, onClose }) {
     });
 
     useEffect(() => {
-        const newTotal = lineItems.reduce((sum, lineItem) => sum + (lineItem.line_total || 0), 0);
-        setFormData(prev => ({ ...prev, total_amount: newTotal }));
-    }, [lineItems]);
+        // VAT is charged per line, and only when the customer AND the item on that
+        // line are both VAT-activated. Both default off, so totals stay VAT-free
+        // until VAT is explicitly switched on.
+        const customer = customers.find(c => c.customer_code === formData.customer_code);
+        const newSubtotal = lineItems.reduce((sum, lineItem) => sum + (lineItem.line_total || 0), 0);
+        const newVat = sumLineVat(customer, lineItems);
+        setFormData(prev => ({
+            ...prev,
+            subtotal: newSubtotal,
+            vat_amount: newVat,
+            total_amount: newSubtotal + newVat,
+        }));
+    }, [lineItems, customers, formData.customer_code]);
 
     useEffect(() => {
         if (order) {

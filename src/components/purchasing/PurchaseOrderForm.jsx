@@ -19,6 +19,7 @@ import DocumentList from "../shared/DocumentList";
 import ReverseButton from "../shared/ReverseButton";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
+import { resolveVatRate } from "@/lib/vat";
 import SearchableSelect from "@/components/ui/SearchableSelect";
 
 export default function PurchaseOrderForm({ po, onClose }) {
@@ -94,7 +95,7 @@ export default function PurchaseOrderForm({ po, onClose }) {
         freight_cost: 0,
         duty_cost: 0,
         other_costs: 0,
-        vat_percent: taxConfig.vat_standard_rate,
+        vat_percent: 0,
         vat_amount: 0,
         total_amount: 0,
         currency: 'LKR',
@@ -133,28 +134,37 @@ export default function PurchaseOrderForm({ po, onClose }) {
     const handleVendorSelect = (vendorCode) => {
         const vendor = vendors.find(v => v.vendor_code === vendorCode);
         if (vendor) {
-            setFormData(prev => ({
-                ...prev,
-                vendor_code: vendorCode,
-                vendor_name: vendor.vendor_name,
-                vendor_contact: vendor.contact_person || '',
-                vendor_email: vendor.email || '',
-                vendor_phone: vendor.phone || '',
-                payment_terms: vendor.payment_terms || 'net_30'
-            }));
+            setFormData(prev => {
+                const material = materials.find(m => m.material_code === prev.material_code);
+                return {
+                    ...prev,
+                    vendor_code: vendorCode,
+                    vendor_name: vendor.vendor_name,
+                    vendor_contact: vendor.contact_person || '',
+                    vendor_email: vendor.email || '',
+                    vendor_phone: vendor.phone || '',
+                    payment_terms: vendor.payment_terms || 'net_30',
+                    // VAT only when both vendor and item are VAT-activated
+                    vat_percent: resolveVatRate(vendor, material, taxConfig.vat_standard_rate)
+                };
+            });
         }
     };
 
     const handleMaterialSelect = (materialCode) => {
         const material = materials.find(m => m.material_code === materialCode);
         if (material) {
-            setFormData(prev => ({
-                ...prev,
-                material_code: materialCode,
-                material_name: material.material_name,
-                unit_of_measure: material.unit_of_measure,
-                unit_price: material.unit_cost || 0
-            }));
+            setFormData(prev => {
+                const vendor = vendors.find(v => v.vendor_code === prev.vendor_code);
+                return {
+                    ...prev,
+                    material_code: materialCode,
+                    material_name: material.material_name,
+                    unit_of_measure: material.unit_of_measure,
+                    unit_price: material.unit_cost || 0,
+                    vat_percent: resolveVatRate(vendor, material, taxConfig.vat_standard_rate)
+                };
+            });
         }
     };
 

@@ -15,7 +15,7 @@ import { createNotification } from "../utils/notificationService";
 import SearchableSelect from "../shared/SearchableSelect";
 import LineItemsTable from "../shared/LineItemsTable";
 import { useOrganization } from "../utils/OrganizationContext";
-import { useTaxConfig } from "@/hooks/useTaxConfig";
+import { sumLineVat } from "@/lib/vat";
 
 export default function QuotationForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -23,7 +23,6 @@ export default function QuotationForm({ item, onClose }) {
     const [isDirty, setIsDirty] = useState(false);
     const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
     const { currentOrg } = useOrganization();
-    const taxConfig = useTaxConfig();
     const [isGeneratingNumber, setIsGeneratingNumber] = useState(false);
     const [currentUser, setCurrentUser] = useState(null);
     useEffect(() => {
@@ -197,9 +196,10 @@ export default function QuotationForm({ item, onClose }) {
             return;
         }
 
-        // Calculate totals from line items
+        // Calculate totals from line items. VAT is per-line and only applies when
+        // the customer AND the item are both VAT-activated.
         const subtotal = lineItems.reduce((sum, line) => sum + (line.line_total || 0), 0);
-        const vatAmount = subtotal * (taxConfig.vat_standard_rate / 100);
+        const vatAmount = sumLineVat(selectedCustomer, lineItems);
         const totalAmount = subtotal + vatAmount;
 
         saveMutation.mutate({
@@ -220,9 +220,11 @@ export default function QuotationForm({ item, onClose }) {
         label: `${c.customer_code} - ${c.customer_name}`
     }));
 
-    // Calculate totals
+    // Calculate totals. VAT is charged per line, and only when the customer AND
+    // the item on that line are both VAT-activated.
+    const selectedCustomer = customers.find(c => c.customer_code === formData.customer_code);
     const subtotal = lineItems.reduce((sum, line) => sum + (line.line_total || 0), 0);
-    const vatAmount = subtotal * (taxConfig.vat_standard_rate / 100);
+    const vatAmount = sumLineVat(selectedCustomer, lineItems);
     const totalAmount = subtotal + vatAmount;
 
     return (
@@ -334,7 +336,7 @@ export default function QuotationForm({ item, onClose }) {
                             <span className="font-semibold">LKR {subtotal.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between">
-                            <span>VAT ({taxConfig.vat_standard_rate}%):</span>
+                            <span>{vatAmount > 0 ? 'VAT' : 'VAT (not applicable)'}:</span>
                             <span className="font-semibold">LKR {vatAmount.toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-lg font-bold border-t pt-2">

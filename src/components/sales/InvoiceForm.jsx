@@ -19,6 +19,8 @@ import { useOrganization } from "../utils/OrganizationContext";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
 import { useSubscription } from "@/lib/SubscriptionContext";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
+import { useTaxConfig } from "@/hooks/useTaxConfig";
+import { resolveVatRate } from "@/lib/vat";
 import SearchableSelect from "../shared/SearchableSelect";
 
 export default function InvoiceForm({ item, onClose }) {
@@ -27,6 +29,7 @@ export default function InvoiceForm({ item, onClose }) {
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
     const gl = useGLAccounts();
+    const taxConfig = useTaxConfig();
     const [isDirty, setIsDirty] = useState(false);
     const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
     const [activeTab, setActiveTab] = useState("details");
@@ -47,6 +50,12 @@ export default function InvoiceForm({ item, onClose }) {
     const { data: deliveries = [] } = useQuery({
         queryKey: ['deliveries'],
         queryFn: () => matrixSales.entities.Delivery.list('-delivery_date'),
+        initialData: []
+    });
+
+    const { data: materials = [] } = useQuery({
+        queryKey: ['materials'],
+        queryFn: () => matrixSales.entities.Material.list(),
         initialData: []
     });
 
@@ -75,8 +84,10 @@ export default function InvoiceForm({ item, onClose }) {
         quantity: 0,
         unit_price: 0,
         subtotal: 0,
-        tax_type: 'standard',
-        tax_percent: 18,
+        // VAT is opt-in: stays at 0 unless the customer AND the item are both
+        // VAT-activated (resolved on sales-order select), or the user overrides.
+        tax_type: 'exempt',
+        tax_percent: 0,
         tax_amount: 0,
         total_amount: 0,
         payment_terms: 'net_30',
@@ -194,6 +205,13 @@ export default function InvoiceForm({ item, onClose }) {
         const isExport = !!customerRecord?.is_export_customer;
         const exportTolPct = isExport ? (parseFloat(customerRecord?.export_tolerance_percent) || 5) : 5;
 
+        // VAT only when both the customer and the item are VAT-activated.
+        const productCode = selectedOrder.product_code || '';
+        const materialRecord = materials.find(
+            m => m.material_code === productCode || m.product_code === productCode
+        );
+        const vatRate = resolveVatRate(customerRecord, materialRecord, taxConfig.vat_standard_rate);
+
         setIsDirty(true);
         setFormData(prev => ({
             ...prev,
@@ -203,6 +221,8 @@ export default function InvoiceForm({ item, onClose }) {
             customer_name: selectedOrder.customer_name,
             customer_email: selectedOrder.customer_email || '',
             billing_address: selectedOrder.delivery_address || '',
+            tax_type: vatRate > 0 ? 'standard' : 'exempt',
+            tax_percent: vatRate,
             product_code: selectedOrder.product_code || '',
             product_name: selectedOrder.product_name || '',
             so_quantity: parseFloat(selectedOrder.quantity) || 0,
