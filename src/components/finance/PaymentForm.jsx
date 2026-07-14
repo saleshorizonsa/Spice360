@@ -452,6 +452,10 @@ export default function PaymentForm({ item, onClose }) {
                             entityName="Payment"
                             queryKeys={['payments']}
                             onSuccess={onClose}
+                            // A payment posts under one of two types depending on direction;
+                            // pass both so whichever was raised gets reversed.
+                            journalReferenceType={['customer_payment', 'vendor_payment']}
+                            journalReferenceId={item?.payment_number}
                         />
                         <div className="flex gap-3">
                             <Button type="button" variant="outline" onClick={guardedClose(onClose)}>

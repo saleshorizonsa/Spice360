@@ -667,6 +667,8 @@ export default function GRNForm({ item, onClose }) {
                                 onSuccess={onClose}
                                 preAction={() => item?.stock_posted ? reverseGoodsReceipt(formData, currentUser) : Promise.resolve()}
                                 label="Reverse GRN"
+                                journalReferenceType="grn"
+                                journalReferenceId={item?.grn_number}
                             />
                         </div>
                         <div className="flex gap-3">

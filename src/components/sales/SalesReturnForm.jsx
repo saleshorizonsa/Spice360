@@ -453,6 +453,8 @@ export default function SalesReturnForm({ item, onClose }) {
                             entityName="SalesReturn"
                             queryKeys={['returns']}
                             onSuccess={onClose}
+                            journalReferenceType="sales_return"
+                            journalReferenceId={item?.return_number}
                         />
                         <div className="flex gap-3">
                             <Button type="button" variant="outline" onClick={guardedClose(onClose)}>

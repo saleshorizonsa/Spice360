@@ -149,6 +149,47 @@ export async function postJournalEntry({
   return journalEntry;
 }
 
+/**
+ * Reverse every posted journal entry raised by a source document.
+ *
+ * Reversing a document (GRN, vendor invoice, payment…) used to move stock back but
+ * leave its journal entry standing, so the GL kept the original debit/credit forever
+ * — e.g. a reversed GRN left Inventory permanently overstated. This posts the mirror
+ * entry for each JE the document raised, so the affected accounts net back to zero.
+ *
+ * Idempotent: only entries still in `posted` status are reversed, so a retry after a
+ * partial failure will not double-reverse.
+ *
+ * @param referenceType string | string[] — one document can raise several entries
+ *                      (e.g. an invoice posts both `sales_invoice` and `sales_invoice_cogs`).
+ */
+export async function reverseJournalEntriesForDocument({
+  referenceType,
+  referenceId,
+  reversalDate = new Date().toISOString().slice(0, 10),
+  reversedBy = "",
+  orgId,
+}) {
+  if (!referenceType || !referenceId) return [];
+  const types = Array.isArray(referenceType) ? referenceType : [referenceType];
+
+  const found = [];
+  for (const type of types) {
+    const filterParams = { reference_type: type, reference_id: referenceId };
+    if (orgId) filterParams.organization_id = orgId;
+    const entries = await matrixSales.entities.JournalEntry.filter(filterParams);
+    found.push(...entries.filter((entry) => entry.status === "posted"));
+  }
+
+  const reversals = [];
+  for (const entry of found) {
+    reversals.push(
+      await reverseJournalEntry(entry.journal_number, reversalDate, reversedBy, orgId || entry.organization_id)
+    );
+  }
+  return reversals;
+}
+
 export async function reverseJournalEntry(originalJeNumber, reversalDate, reversedBy, orgId) {
   const filterParams = { journal_number: originalJeNumber };
   if (orgId) filterParams.organization_id = orgId;

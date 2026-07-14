@@ -740,6 +740,8 @@ export default function VendorInvoiceForm({ item, onClose }) {
                             entityName="VendorInvoice"
                             queryKeys={['vendorInvoices']}
                             onSuccess={onClose}
+                            journalReferenceType="vendor_invoice"
+                            journalReferenceId={item?.vendor_invoice_number}
                         />
                         <div className="flex gap-3">
                             <Button type="button" variant="outline" onClick={guardedClose(onClose)}>Cancel</Button>

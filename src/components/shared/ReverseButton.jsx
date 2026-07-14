@@ -3,6 +3,8 @@ import { matrixSales } from '@/api/matrixSalesClient';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
+import { reverseJournalEntriesForDocument } from '@/components/utils/journalService';
+import { useOrganization } from '@/components/utils/OrganizationContext';
 import {
     AlertDialog,
     AlertDialogAction,
@@ -39,9 +41,12 @@ export default function ReverseButton({
     onSuccess,
     preAction,
     label = 'Reverse',
+    journalReferenceType,   // string | string[] — the reference_type(s) this doc posts under
+    journalReferenceId,     // the reference_id used on those journal entries
 }) {
     const { toast } = useToast();
     const queryClient = useQueryClient();
+    const { currentOrg } = useOrganization();
     const [isReversing, setIsReversing] = useState(false);
 
     if (!item?.id || !lockedStatuses.has(String(item.status || '').toLowerCase())) {
@@ -51,19 +56,35 @@ export default function ReverseButton({
     const handleReverse = async () => {
         setIsReversing(true);
         try {
+            // 1. Reverse the GL FIRST. This is idempotent (only `posted` entries are
+            //    reversed), so if a later step fails the whole action can be retried
+            //    safely. Doing it after the stock move would risk double-reversing
+            //    stock on retry. Fatal on failure: a document must never be marked
+            //    reversed while its journal entry still stands.
+            await reverseJournalEntriesForDocument({
+                referenceType: journalReferenceType,
+                referenceId: journalReferenceId,
+                orgId: currentOrg?.id,
+            });
+
+            // 2. Undo the physical effect (e.g. put the stock back).
             if (preAction) await preAction();
+
+            // 3. Only now mark the document reversed.
             await matrixSales.entities[entityName].update(item.id, { status: 'reversed' });
+
             queryKeys.forEach(key =>
                 queryClient.invalidateQueries({ queryKey: Array.isArray(key) ? key : [key] })
             );
             if (!queryKeys.length) queryClient.invalidateQueries();
-            toast({ title: 'Reversed', description: 'Document has been reversed successfully.' });
+            queryClient.invalidateQueries({ queryKey: ['journalEntries'] });
+            toast({ title: 'Reversed', description: 'Document reversed and its journal entry reversed.' });
             onSuccess?.();
         } catch (error) {
             console.error('Reversal failed:', error);
             toast({
                 title: 'Reversal Failed',
-                description: error?.message || 'Could not reverse. Please try again.',
+                description: error?.message || 'Could not reverse. Nothing was changed — please try again.',
                 variant: 'destructive',
             });
         } finally {

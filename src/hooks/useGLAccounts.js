@@ -1,7 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { matrixSales } from "@/api/matrixSalesClient";
 
-const FALLBACK = {
+// Default account codes, used only until the mapping is configured in
+// Finance → GL Account Mapping. They are generic guesses — if your chart of
+// accounts uses different codes, map them there; the saved mapping always wins.
+export const GL_ACCOUNT_FALLBACK = {
   ar_receivables:     "1100",
   sales_revenue:      "4001",
   vat_output:         "2200",
@@ -35,5 +38,18 @@ export function useGLAccounts() {
     staleTime: 15 * 60 * 1000,
   });
   const record = Array.isArray(data) && data.length > 0 ? data[0] : {};
-  return { ...FALLBACK, ...record };
+
+  // Only take known keys with a real value. Spreading the whole record used to
+  // (a) let a blank field in the mapping screen overwrite a fallback with "",
+  // producing a journal line with no account code, and (b) leak DB metadata
+  // (id, status, created_at…) into the returned account map.
+  const mapped = {};
+  for (const key of Object.keys(GL_ACCOUNT_FALLBACK)) {
+    const value = record?.[key];
+    if (value === 0 || (value != null && String(value).trim() !== "")) {
+      mapped[key] = String(value).trim();
+    }
+  }
+
+  return { ...GL_ACCOUNT_FALLBACK, ...mapped };
 }

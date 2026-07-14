@@ -6,29 +6,43 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import SearchableSelect from "@/components/ui/SearchableSelect";
+import { GL_ACCOUNT_FALLBACK } from "@/hooks/useGLAccounts";
 
-const ACCOUNT_FIELDS = [
-  { key: "ar_receivables",     label: "Accounts Receivable",          category: "Assets",      fallback: "1100" },
-  { key: "inventory",          label: "Inventory",                    category: "Assets",      fallback: "1200" },
-  { key: "cash_bank",          label: "Cash & Bank",                  category: "Assets",      fallback: "1010" },
-  { key: "vat_input",          label: "VAT Input (Recoverable)",      category: "Assets",      fallback: "2210" },
-  { key: "accum_depreciation", label: "Accumulated Depreciation",     category: "Assets",      fallback: "1410" },
-  { key: "trade_payables",     label: "Trade Payables",               category: "Liabilities", fallback: "2100" },
-  { key: "grni",               label: "Goods Received Not Invoiced",  category: "Liabilities", fallback: "2110" },
-  { key: "vat_output",         label: "VAT Output (Payable)",         category: "Liabilities", fallback: "2200" },
-  { key: "salaries_payable",   label: "Salaries Payable",             category: "Liabilities", fallback: "2410" },
-  { key: "epf_payable",        label: "EPF Payable",                  category: "Liabilities", fallback: "2420" },
-  { key: "etf_payable",        label: "ETF Payable",                  category: "Liabilities", fallback: "2430" },
-  { key: "apit_payable",       label: "APIT Payable",                 category: "Liabilities", fallback: "2310" },
-  { key: "wht_net_payable",    label: "WHT Net Payable",              category: "Liabilities", fallback: "2100" },
-  { key: "sales_revenue",      label: "Sales Revenue",                category: "Revenue",     fallback: "4001" },
-  { key: "cogs_general",       label: "Cost of Goods Sold",           category: "Expenses",    fallback: "5001" },
-  { key: "salaries_expense",   label: "Salaries Expense",             category: "Expenses",    fallback: "5100" },
-  { key: "epf_employer_exp",   label: "EPF Employer Expense",         category: "Expenses",    fallback: "5210" },
-  { key: "etf_employer_exp",   label: "ETF Employer Expense",         category: "Expenses",    fallback: "5220" },
-  { key: "depreciation_exp",   label: "Depreciation Expense",         category: "Expenses",    fallback: "5500" },
-  { key: "wht_expense",        label: "Withholding Tax Expense",      category: "Expenses",    fallback: "5900" },
+// Fallback codes come from GL_ACCOUNT_FALLBACK (the same table the posting code
+// reads) so the two can never drift. They previously did: this screen pre-filled
+// "WHT Net Payable" with 2100 — the Trade Payables code — so saving the mapping
+// silently pointed withholding tax at Trade Payables.
+const ACCOUNT_FIELD_LABELS = [
+  { key: "ar_receivables",     label: "Accounts Receivable",          category: "Assets" },
+  { key: "inventory",          label: "Inventory",                    category: "Assets" },
+  { key: "cash_bank",          label: "Cash & Bank",                  category: "Assets" },
+  { key: "vat_input",          label: "VAT Input (Recoverable)",      category: "Assets" },
+  { key: "accum_depreciation", label: "Accumulated Depreciation",     category: "Assets" },
+  { key: "fixed_asset_cost",   label: "Fixed Asset Cost",             category: "Assets" },
+  { key: "trade_payables",     label: "Trade Payables",               category: "Liabilities" },
+  { key: "grni",               label: "Goods Received Not Invoiced",  category: "Liabilities" },
+  { key: "vat_output",         label: "VAT Output (Payable)",         category: "Liabilities" },
+  { key: "salaries_payable",   label: "Salaries Payable",             category: "Liabilities" },
+  { key: "epf_payable",        label: "EPF Payable",                  category: "Liabilities" },
+  { key: "etf_payable",        label: "ETF Payable",                  category: "Liabilities" },
+  { key: "apit_payable",       label: "APIT Payable",                 category: "Liabilities" },
+  { key: "wht_net_payable",    label: "WHT Net Payable",              category: "Liabilities" },
+  { key: "accrued_mfg_costs",  label: "Accrued Manufacturing Costs",  category: "Liabilities" },
+  { key: "sales_revenue",      label: "Sales Revenue",                category: "Revenue" },
+  { key: "gain_on_disposal",   label: "Gain on Asset Disposal",       category: "Revenue" },
+  { key: "cogs_general",       label: "Cost of Goods Sold",           category: "Expenses" },
+  { key: "salaries_expense",   label: "Salaries Expense",             category: "Expenses" },
+  { key: "epf_employer_exp",   label: "EPF Employer Expense",         category: "Expenses" },
+  { key: "etf_employer_exp",   label: "ETF Employer Expense",         category: "Expenses" },
+  { key: "depreciation_exp",   label: "Depreciation Expense",         category: "Expenses" },
+  { key: "wht_expense",        label: "Withholding Tax Expense",      category: "Expenses" },
+  { key: "loss_on_disposal",   label: "Loss on Asset Disposal",       category: "Expenses" },
 ];
+
+const ACCOUNT_FIELDS = ACCOUNT_FIELD_LABELS.map((field) => ({
+  ...field,
+  fallback: GL_ACCOUNT_FALLBACK[field.key],
+}));
 
 const CATEGORIES = ["Assets", "Liabilities", "Revenue", "Expenses"];
 
