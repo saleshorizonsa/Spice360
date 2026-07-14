@@ -16,6 +16,7 @@ import CinnamonYieldReport from "../components/cinnamon/CinnamonYieldReport";
 import CinnamonAccrualClearingDialog from "../components/cinnamon/CinnamonAccrualClearingDialog";
 import CinnamonBatchTraceDialog from "../components/cinnamon/CinnamonBatchTraceDialog";
 import { stepAccrual } from "../components/cinnamon/cinnamonUtils";
+import TransportDoubleCountAudit from "../components/cinnamon/TransportDoubleCountAudit";
 import { useToast } from "@/components/ui/use-toast";
 
 export default function CinnamonProcessing() {
@@ -320,6 +321,10 @@ export default function CinnamonProcessing() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Transport can now be costed on every stage, so the same haulage could be
+                booked both here and as batch Inbound Freight. Surface the overlap. */}
+            <TransportDoubleCountAudit batches={batches} steps={processSteps} />
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
                 <TabsList className="grid grid-cols-6 w-full">
