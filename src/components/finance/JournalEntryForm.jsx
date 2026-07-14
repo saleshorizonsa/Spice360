@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
+import { useActiveAccounts } from "@/hooks/useActiveAccounts";
 import { Paperclip } from "lucide-react";
 import DocumentList from "../shared/DocumentList";
 
@@ -20,11 +21,7 @@ export default function JournalEntryForm({ item, onClose }) {
     const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
     const [activeTab, setActiveTab] = useState("details");
 
-    const { data: accounts = [] } = useQuery({
-        queryKey: ['chartOfAccounts'],
-        queryFn: () => matrixSales.entities.ChartOfAccounts.filter({ status: 'active' }),
-        initialData: []
-    });
+    const { accounts } = useActiveAccounts();
 
     const { data: costCenters = [] } = useQuery({
         queryKey: ['costCenters'],

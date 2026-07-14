@@ -7,6 +7,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import SearchableSelect from "@/components/ui/SearchableSelect";
 import { GL_ACCOUNT_FALLBACK } from "@/hooks/useGLAccounts";
+import { useActiveAccounts } from "@/hooks/useActiveAccounts";
 
 // Fallback codes come from GL_ACCOUNT_FALLBACK (the same table the posting code
 // reads) so the two can never drift. They previously did: this screen pre-filled
@@ -57,11 +58,7 @@ export default function GLAccountMappingForm() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: accounts = [] } = useQuery({
-    queryKey: ["chartOfAccounts"],
-    queryFn: () => matrixSales.entities.ChartOfAccounts.filter({ status: "active" }),
-    initialData: [],
-  });
+  const { accounts, isLoading: accountsLoading } = useActiveAccounts();
 
   const { data: mappings = [], isLoading } = useQuery({
     queryKey: ["glAccountMapping"],
@@ -120,7 +117,7 @@ export default function GLAccountMappingForm() {
     [nonHeaderAccounts]
   );
 
-  if (isLoading) {
+  if (isLoading || accountsLoading) {
     return <div className="py-8 text-center text-gray-500 text-sm">Loading account mapping…</div>;
   }
 
@@ -137,6 +134,16 @@ export default function GLAccountMappingForm() {
           </Badge>
         )}
       </div>
+
+      {/* Never fail silently: an empty account list used to surface only as
+          "No results found" inside every dropdown, with no hint as to why. */}
+      {nonHeaderAccounts.length === 0 && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          <strong>No postable accounts found.</strong> The dropdowns below will be empty. Add accounts under{" "}
+          <em>Admin → Chart of Accounts</em>. If accounts already exist there, check that they are not all marked as
+          header accounts and that their status is not set to inactive.
+        </div>
+      )}
 
       {CATEGORIES.map((category) => {
         const fields = ACCOUNT_FIELDS.filter((f) => f.category === category);
