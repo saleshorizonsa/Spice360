@@ -13,6 +13,7 @@ import StockLevelCard from "@/components/inventory/StockLevelCard";
 import StockLevelAlerts from "@/components/inventory/StockLevelAlerts";
 import MultiLocationStockView from "@/components/inventory/MultiLocationStockView";
 import InventoryValuationReport from "@/components/inventory/InventoryValuationReport";
+import StockRevaluationTool from "@/components/inventory/StockRevaluationTool";
 import RealTimeStockSync from "@/components/inventory/RealTimeStockSync";
 import DocumentPrintPreview from "@/components/shared/DocumentPrintPreview";
 import { useToast } from "@/components/ui/use-toast";
@@ -590,8 +591,9 @@ export default function Inventory() {
                     <MultiLocationStockView />
                 </TabsContent>
 
-                <TabsContent value="valuation">
+                <TabsContent value="valuation" className="space-y-8">
                     <InventoryValuationReport />
+                    <StockRevaluationTool />
                 </TabsContent>
             </Tabs>
 
