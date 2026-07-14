@@ -8,6 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import SearchableSelect from "@/components/ui/SearchableSelect";
 import { GL_ACCOUNT_FALLBACK } from "@/hooks/useGLAccounts";
 import { useActiveAccounts } from "@/hooks/useActiveAccounts";
+import { suggestGlMapping, findUnknownMappings } from "@/lib/glAccountAutoMap";
+import { Wand2, AlertTriangle } from "lucide-react";
 
 // Fallback codes come from GL_ACCOUNT_FALLBACK (the same table the posting code
 // reads) so the two can never drift. They previously did: this screen pre-filled
@@ -70,21 +72,50 @@ export default function GLAccountMappingForm() {
   const [formData, setFormData] = useState({});
   const [isDirty, setIsDirty] = useState(false);
 
+  // You cannot post to a header/parent account, so it is never a valid target.
+  const nonHeaderAccounts = useMemo(() => accounts.filter((a) => !a.is_header), [accounts]);
+
+  // Suggested mapping derived from the accounts that actually exist.
+  const suggestions = useMemo(() => suggestGlMapping(nonHeaderAccounts), [nonHeaderAccounts]);
+
   useEffect(() => {
-    if (existing) {
-      const initial = {};
-      ACCOUNT_FIELDS.forEach(({ key, fallback }) => {
-        initial[key] = existing[key] || fallback;
+    if (isLoading || accountsLoading) return;
+
+    // A hard-coded fallback is only a sane starting point if that code actually
+    // exists in this chart of accounts. Pre-filling "2100" when 2100 is Accrued
+    // Expenses (or does not exist at all) is how the wrong-account postings
+    // happened: the field looked filled in, so nobody changed it before saving.
+    const known = new Set(nonHeaderAccounts.map((a) => String(a.account_code)));
+    const seed = (key, fallback) => {
+      const saved = existing?.[key];
+      if (saved) return saved;                       // an explicit choice always wins
+      if (suggestions[key]) return suggestions[key]; // matched against the real chart
+      if (fallback && known.has(String(fallback))) return fallback;
+      return "";                                     // better blank than confidently wrong
+    };
+
+    const initial = {};
+    ACCOUNT_FIELDS.forEach(({ key, fallback }) => { initial[key] = seed(key, fallback); });
+    setFormData(initial);
+    setIsDirty(false);
+  }, [existing?.id, isLoading, accountsLoading, suggestions]);
+
+  const applySuggestions = () => {
+    if (!Object.keys(suggestions).length) {
+      toast({
+        title: "Nothing to auto-map",
+        description: "No accounts in the Chart of Accounts matched the posting roles by name.",
+        variant: "destructive",
       });
-      setFormData(initial);
-      setIsDirty(false);
-    } else if (!isLoading) {
-      // No existing mapping — pre-fill with fallbacks
-      const initial = {};
-      ACCOUNT_FIELDS.forEach(({ key, fallback }) => { initial[key] = fallback; });
-      setFormData(initial);
+      return;
     }
-  }, [existing?.id, isLoading]);
+    setFormData((prev) => ({ ...prev, ...suggestions }));
+    setIsDirty(true);
+    toast({
+      title: `Auto-mapped ${Object.keys(suggestions).length} role(s)`,
+      description: "Matched against your Chart of Accounts. Review each one, then Save.",
+    });
+  };
 
   const saveMutation = useMutation({
     mutationFn: (data) => {
@@ -106,7 +137,12 @@ export default function GLAccountMappingForm() {
     setIsDirty(true);
   };
 
-  const nonHeaderAccounts = accounts.filter((a) => !a.is_header);
+  // Roles pointing at a code that is not in the Chart of Accounts. These post to
+  // an account that does not exist — silently, until someone reads the ledger.
+  const unknownMappings = useMemo(
+    () => findUnknownMappings(formData, nonHeaderAccounts),
+    [formData, nonHeaderAccounts]
+  );
 
   const accountOptions = useMemo(
     () =>
@@ -142,6 +178,43 @@ export default function GLAccountMappingForm() {
           <strong>No postable accounts found.</strong> The dropdowns below will be empty. Add accounts under{" "}
           <em>Admin → Chart of Accounts</em>. If accounts already exist there, check that they are not all marked as
           header accounts and that their status is not set to inactive.
+        </div>
+      )}
+
+      {nonHeaderAccounts.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+          <Wand2 className="h-4 w-4 shrink-0 text-emerald-600" />
+          <p className="flex-1 text-sm text-emerald-900">
+            Match each role to your Chart of Accounts automatically, by account name and type.
+            You can override any of them before saving.
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            className="shrink-0 border-emerald-500 text-emerald-700 hover:bg-emerald-100"
+            onClick={applySuggestions}
+          >
+            Auto-map from Chart of Accounts
+          </Button>
+        </div>
+      )}
+
+      {/* A code that isn't in the chart posts to an account that doesn't exist. */}
+      {unknownMappings.length > 0 && (
+        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+          <div className="mb-1 flex items-center gap-2 font-semibold">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            {unknownMappings.length} role(s) point at an account that does not exist in your Chart of Accounts
+          </div>
+          <ul className="ml-6 list-disc">
+            {unknownMappings.map(({ role, code }) => (
+              <li key={role}>
+                <strong>{ACCOUNT_FIELD_LABELS.find((f) => f.key === role)?.label || role}</strong> → code{" "}
+                <code>{code}</code> not found
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1">Postings to these roles will not reach a real account. Fix them before saving.</p>
         </div>
       )}
 
