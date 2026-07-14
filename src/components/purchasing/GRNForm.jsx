@@ -13,7 +13,12 @@ import { Badge } from "@/components/ui/badge";
 import { Package, RefreshCw, AlertTriangle } from "lucide-react";
 import SearchableSelect from "../shared/SearchableSelect";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
-import { processGoodsReceipt, reverseGoodsReceipt } from "../utils/inventoryIntegration";
+import {
+    processGoodsReceipt,
+    reverseGoodsReceipt,
+    rollbackPurchaseOrderReceipt,
+    assertGoodsReceiptReversible
+} from "../utils/inventoryIntegration";
 import ReverseButton from "../shared/ReverseButton";
 import { logAuditTrail } from "../utils/auditTrail";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
@@ -665,7 +670,15 @@ export default function GRNForm({ item, onClose }) {
                                 entityName="GoodsReceiptNote"
                                 queryKeys={['grns']}
                                 onSuccess={onClose}
-                                preAction={() => item?.stock_posted ? reverseGoodsReceipt(formData, currentUser) : Promise.resolve()}
+                                preflight={() => assertGoodsReceiptReversible(item)}
+                                preAction={async () => {
+                                    // Put the stock back, then take the receipt back off the
+                                    // PO so it no longer claims the goods arrived.
+                                    if (item?.stock_posted) {
+                                        await reverseGoodsReceipt(formData, currentUser);
+                                    }
+                                    await rollbackPurchaseOrderReceipt(formData);
+                                }}
                                 label="Reverse GRN"
                                 journalReferenceType="grn"
                                 journalReferenceId={item?.grn_number}

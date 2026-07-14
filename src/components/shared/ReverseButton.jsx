@@ -31,6 +31,9 @@ const lockedStatuses = new Set([
  *   entityName  – matrixSales.entities key, e.g. "VendorInvoice"
  *   queryKeys   – array of TanStack Query keys to invalidate on success
  *   onSuccess   – callback after successful reversal (usually onClose)
+ *   preflight   – optional async fn run BEFORE anything is written. Throw from here
+ *                 to abort the whole reversal with nothing changed (e.g. the stock
+ *                 has already been issued, so the receipt cannot be taken back).
  *   preAction   – optional async fn to run before status update (e.g. stock reversal)
  *   label       – button label override (default "Reverse")
  */
@@ -39,6 +42,7 @@ export default function ReverseButton({
     entityName,
     queryKeys = [],
     onSuccess,
+    preflight,
     preAction,
     label = 'Reverse',
     journalReferenceType,   // string | string[] — the reference_type(s) this doc posts under
@@ -56,6 +60,12 @@ export default function ReverseButton({
     const handleReverse = async () => {
         setIsReversing(true);
         try {
+            // 0. Check the reversal is actually possible BEFORE touching anything.
+            //    The GL is reversed first (below), so a failure discovered later
+            //    would leave the ledger reversed while the physical effect stands.
+            //    Anything that can make a reversal impossible must fail here.
+            if (preflight) await preflight();
+
             // 1. Reverse the GL FIRST. This is idempotent (only `posted` entries are
             //    reversed), so if a later step fails the whole action can be retried
             //    safely. Doing it after the stock move would risk double-reversing

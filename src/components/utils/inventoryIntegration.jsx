@@ -1,5 +1,6 @@
 import { matrixSales } from "@/api/matrixSalesClient";
 import { logAuditTrail } from "./auditTrail";
+import { applyStockChange, StockShortfallError } from "@/lib/stockValuation";
 
 /**
  * Inventory Integration Utilities
@@ -68,8 +69,62 @@ export async function processGoodsReceipt(grn, user = null) {
 /**
  * Reverse a posted Goods Receipt (undo stock posting)
  */
+/**
+ * Read-only check that a posted GRN can still be reversed — i.e. the goods it
+ * brought in are still on hand and have not been issued, sold or consumed.
+ *
+ * Must run BEFORE the GL is reversed. Reversing the journal entry and only then
+ * discovering the stock is gone would leave Inventory credited out while the
+ * goods remain on the books as issued.
+ */
+export async function assertGoodsReceiptReversible(grn) {
+    if (!grn?.stock_posted) return; // nothing was posted, nothing to take back
+
+    const filter = {
+        material_code: grn.material_code,
+        warehouse_code: grn.receiving_location
+    };
+    if (grn.storage_bin) filter.bin_code = grn.storage_bin;
+    if (grn.batch_number) filter.batch_number = grn.batch_number;
+
+    const levels = await matrixSales.entities.StockLevel.filter(filter);
+    const onHand = parseFloat(levels?.[0]?.quantity) || 0;
+    const needed = parseFloat(grn.quantity_received) || 0;
+
+    if (needed > onHand) {
+        throw new StockShortfallError({
+            materialCode: grn.material_code,
+            warehouse: grn.receiving_location,
+            available: onHand,
+            requested: needed
+        });
+    }
+}
+
 export async function reverseGoodsReceipt(grn, user = null) {
     try {
+        // Take the stock back FIRST, in strict mode. If the goods have already
+        // been issued there is not enough on hand to reverse, and this throws
+        // rather than clamping the position to zero — the GL reverses the full
+        // receipt value, so a silent clamp would leave the ledger and the
+        // warehouse permanently out of step.
+        //
+        // Order matters: the movement record is only written once the stock has
+        // actually moved, otherwise a failure here would leave an orphan GRR
+        // movement claiming stock was returned when it never was.
+        await updateStockLevel({
+            materialCode: grn.material_code,
+            materialName: grn.material_name,
+            warehouse: grn.receiving_location,
+            bin: grn.storage_bin,
+            batch: grn.batch_number,
+            quantity: parseFloat(grn.quantity_received) || 0,
+            unitOfMeasure: grn.unit_of_measure,
+            unitCost: parseFloat(grn.unit_price) || 0,
+            operation: 'decrease',
+            strict: true
+        });
+
         const movement = await matrixSales.entities.StockMovement.create({
             movement_number: `GRR-${grn.grn_number}`,
             movement_date: new Date().toISOString().split('T')[0],
@@ -88,23 +143,42 @@ export async function reverseGoodsReceipt(grn, user = null) {
             status: 'posted'
         });
 
-        await updateStockLevel({
-            materialCode: grn.material_code,
-            materialName: grn.material_name,
-            warehouse: grn.receiving_location,
-            bin: grn.storage_bin,
-            batch: grn.batch_number,
-            quantity: parseFloat(grn.quantity_received) || 0,
-            unitOfMeasure: grn.unit_of_measure,
-            unitCost: parseFloat(grn.unit_price) || 0,
-            operation: 'decrease'
-        });
-
         return movement;
     } catch (error) {
         console.error('Error reversing goods receipt:', error);
         throw error;
     }
+}
+
+/**
+ * Roll the received quantity back off the Purchase Order when a GRN is reversed.
+ * Posting a GRN adds to PurchaseOrder.quantity_received and can flip the PO to
+ * 'fully_received'; nothing used to undo that, so a reversed GRN left its PO
+ * still claiming the goods had arrived and closed to further receipts.
+ */
+export async function rollbackPurchaseOrderReceipt(grn) {
+    if (!grn?.po_number) return null;
+
+    const pos = await matrixSales.entities.PurchaseOrder.filter({ po_number: grn.po_number });
+    if (!pos?.length) return null;
+
+    const po = pos[0];
+    const received = parseFloat(po.quantity_received) || 0;
+    const reversing = parseFloat(grn.quantity_received) || 0;
+    const newQtyReceived = Math.max(0, received - reversing);
+    const ordered = parseFloat(po.quantity) || 0;
+    const stillFullyReceived = ordered > 0 && newQtyReceived >= ordered - 0.001;
+
+    // Re-open the PO if backing this receipt out means it is no longer complete.
+    // Never resurrect a PO the user has deliberately closed or cancelled.
+    const reopen =
+        !stillFullyReceived &&
+        po.status === 'fully_received';
+
+    return matrixSales.entities.PurchaseOrder.update(po.id, {
+        quantity_received: newQtyReceived,
+        ...(reopen ? { status: newQtyReceived > 0 ? 'partially_received' : 'approved' } : {})
+    });
 }
 
 /**
@@ -221,16 +295,20 @@ export async function reserveStock(salesOrder, lineItems, user = null) {
 /**
  * Update stock level (core function)
  */
-export async function updateStockLevel({ 
-    materialCode, 
-    materialName, 
-    warehouse, 
-    bin, 
-    batch, 
-    quantity, 
+export async function updateStockLevel({
+    materialCode,
+    materialName,
+    warehouse,
+    bin,
+    batch,
+    quantity,
     unitOfMeasure,
     unitCost = 0,
-    operation 
+    operation,
+    // Refuse to remove more stock than is on hand instead of silently clamping to
+    // zero. Reversals opt in: writing stock down to 0 while the GL reverses the
+    // full receipt value leaves the ledger and the warehouse permanently apart.
+    strict = false
 }) {
     try {
         // Find existing stock level
@@ -246,19 +324,37 @@ export async function updateStockLevel({
         if (existingStock && existingStock.length > 0) {
             // Update existing
             const stock = existingStock[0];
-            const qty = parseFloat(quantity) || 0;
-            const currentQty = parseFloat(stock.quantity) || 0;
-            const newQty = operation === 'increase'
-                ? currentQty + qty
-                : Math.max(0, currentQty - qty);
-            const newAvailable = newQty - (parseFloat(stock.reserved_quantity) || 0);
+
+            // Weighted moving average — recalculates unit_cost on receipt. This
+            // previously kept the old cost, so receiving at a new price silently
+            // mis-valued the whole position.
+            const next = applyStockChange({
+                currentQty: stock.quantity,
+                currentUnitCost: stock.unit_cost,
+                quantity,
+                unitCost,
+                operation,
+                strict,
+                materialCode,
+                warehouse
+            });
+            const newAvailable = next.quantity - (parseFloat(stock.reserved_quantity) || 0);
 
             await matrixSales.entities.StockLevel.update(stock.id, {
-                quantity: newQty,
+                quantity: next.quantity,
                 available_quantity: newAvailable,
-                total_value: newQty * (parseFloat(stock.unit_cost) || parseFloat(unitCost) || 0),
+                unit_cost: next.unitCost,
+                total_value: next.totalValue,
                 last_movement_date: new Date().toISOString().split('T')[0],
                 aging_days: 0
+            });
+        } else if (operation === 'decrease' && strict) {
+            // Nothing on hand at all, yet something is trying to remove stock.
+            throw new StockShortfallError({
+                materialCode,
+                warehouse,
+                available: 0,
+                requested: Math.abs(parseFloat(quantity) || 0)
             });
         } else if (operation === 'increase') {
             // Create new stock level (only on receipt)
