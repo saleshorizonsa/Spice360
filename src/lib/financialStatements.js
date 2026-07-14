@@ -25,10 +25,14 @@ export const normalizeAccountType = (account = {}) => {
 
   if (raw.includes('liabil')) return 'liability';
   if (raw.includes('equity') || raw.includes('capital')) return 'equity';
-  if (raw.includes('revenue') || raw === 'income' || raw.includes('sales')) return 'revenue';
+  // Cost-of-sales MUST be tested before revenue: "cost_of_sales" contains the
+  // substring "sales", so a revenue-first check silently classified every COGS
+  // account as revenue (credit-normal), emptying Cost of Sales and understating
+  // the top line by the COGS amount.
   if (raw.includes('cost') || subtype.includes('cost_of_goods') || subtype.includes('cost of goods')) return 'cost_of_sales';
   if (raw.includes('other income') || subtype.includes('other_revenue') || subtype.includes('other income')) return 'other_income';
   if (raw.includes('other expense') || subtype.includes('other_expense') || subtype.includes('other expense')) return 'other_expense';
+  if (raw.includes('revenue') || raw === 'income' || raw.includes('sales')) return 'revenue';
   if (raw.includes('expense')) return 'expense';
   return 'asset';
 };
@@ -67,14 +71,22 @@ const isPostedLedgerEntry = (entry = {}) => {
   return !status || ['posted', 'approved', 'cleared', 'paid', 'open', 'reversed'].includes(status);
 };
 
+// Dates are compared as plain strings against a YYYY-MM-DD cutoff, so a full
+// timestamp must be truncated to its date part. Otherwise `created_at`
+// ("2026-05-10T09:30:00Z") compares as GREATER than "2026-05-10" and the entry
+// vanishes from a trial balance as-of its own date, surfacing a day late.
+const toDateOnly = (value) => String(value || '').slice(0, 10);
+
 const entryDate = (entry = {}) =>
-  entry.posting_date ||
-  entry.je_date ||
-  entry.entry_date ||
-  entry.transaction_date ||
-  entry.document_date ||
-  entry.created_at ||
-  '';
+  toDateOnly(
+    entry.posting_date ||
+    entry.je_date ||
+    entry.entry_date ||
+    entry.transaction_date ||
+    entry.document_date ||
+    entry.created_at ||
+    ''
+  );
 
 const documentNumber = (entry = {}) =>
   entry.journal_number ||
@@ -342,10 +354,15 @@ export const buildBalanceSheet = ({ accounts = [], journalEntries = [], asOfDate
     const y = parseInt(d.slice(0, 4), 10);
     return parseInt(d.slice(5, 7), 10) >= 4 ? `${y}-04-01` : `${y - 1}-04-01`;
   })();
+  // Current-year profit must run from the start of the fiscal year, not from
+  // inception. computedFyStart was already derived here but never passed in, so
+  // `startDate: null` accumulated every prior year's profit into "current year
+  // profit" — double-counting against the Retained Earnings account whenever
+  // year-end closing entries had not been posted.
   const pl = buildProfitAndLoss({
     accounts,
     journalEntries,
-    startDate: null,
+    startDate: computedFyStart,
     endDate: asOfDate,
     filters
   });
@@ -358,9 +375,34 @@ export const buildBalanceSheet = ({ accounts = [], journalEntries = [], asOfDate
     equity: rowsForCategories(trial.rows, ['equity', 'retained_earnings'])
   };
 
+  // Profit earned in prior years that has NOT been closed out into the Retained
+  // Earnings account. It still belongs in equity, otherwise the balance sheet is
+  // out by exactly that amount. This is self-correcting: once year-end closing
+  // entries zero the P&L accounts, this evaluates to 0 and cannot double-count
+  // against a Retained Earnings account that now carries the balance itself.
+  const priorPl = buildProfitAndLoss({
+    accounts,
+    journalEntries,
+    startDate: null,
+    endDate: previousDate(computedFyStart),
+    filters
+  });
+
+  const priorYearProfitRow = {
+    account_code: 'PY-PROFIT',
+    account_name: 'Retained Earnings (prior years)',
+    statement_category: 'retained_earnings',
+    balance: priorPl.totals.netProfit,
+    transactions: priorPl.transactions
+  };
+
+  if (Math.abs(priorYearProfitRow.balance) > 0.01) {
+    sections.equity.push(priorYearProfitRow);
+  }
+
   const currentYearProfitRow = {
     account_code: 'CY-PROFIT',
-    account_name: 'Retained Earnings',
+    account_name: 'Profit for the Year',
     statement_category: 'equity',
     balance: pl.totals.netProfit,
     transactions: pl.transactions

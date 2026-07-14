@@ -140,3 +140,74 @@ test('builds monthly financial statement comparison periods', () => {
   assert.equal(periods[0].netProfit, 500);
   assert.equal(periods[1].revenue, 0);
 });
+
+// ── Regression: Cost of Sales was classified as Revenue ──────────────────────
+// "cost_of_sales" contains the substring "sales", and the revenue check ran
+// before the cost check — so every COGS account became credit-normal revenue.
+// Cost of Sales rendered empty and the top line was understated by the COGS.
+test('classifies cost_of_sales as cost of sales, not revenue', () => {
+  const coa = [
+    { account_code: '4001', account_name: 'Sales',    account_type: 'revenue' },
+    { account_code: '5001', account_name: 'COGS',     account_type: 'cost_of_sales' },
+  ];
+  const entries = [
+    { id: 'r', status: 'posted', entry_date: '2026-05-10', lines: [
+      { account_code: '4001', debit: 0, credit: 1000000 },
+      { account_code: '1100', debit: 1000000, credit: 0 }] },
+    { id: 'c', status: 'posted', entry_date: '2026-05-10', lines: [
+      { account_code: '5001', debit: 600000, credit: 0 },
+      { account_code: '1200', debit: 0, credit: 600000 }] },
+  ];
+  const pl = buildProfitAndLoss({ accounts: coa, journalEntries: entries, startDate: '2026-05-01', endDate: '2026-05-31' });
+
+  assert.equal(pl.totals.revenue, 1000000);
+  assert.equal(pl.totals.costOfSales, 600000);
+  assert.equal(pl.totals.grossProfit, 400000);
+  assert.equal(Math.round(pl.totals.grossMarginPercent), 40);
+  assert.equal(pl.sections.costOfSales.length, 1);
+  assert.equal(pl.sections.revenue.length, 1); // COGS must NOT sit inside revenue
+});
+
+// ── Regression: an entry dated only by created_at (a full timestamp) ─────────
+// "2026-05-10T09:30:00Z" <= "2026-05-10" is false, so it surfaced a day late.
+test('includes entries dated by created_at on their own date', () => {
+  const coa = [
+    { account_code: '1010', account_name: 'Cash',  account_type: 'asset' },
+    { account_code: '4001', account_name: 'Sales', account_type: 'revenue' },
+  ];
+  const entries = [{ id: 'x', status: 'posted', created_at: '2026-05-10T09:30:00.000Z', lines: [
+    { account_code: '1010', debit: 1000, credit: 0 },
+    { account_code: '4001', debit: 0, credit: 1000 }] }];
+
+  assert.equal(buildTrialBalance({ accounts: coa, journalEntries: entries, asOfDate: '2026-05-10' }).totalDebit, 1000);
+});
+
+// ── Regression: balance sheet "current year profit" was all-time profit ──────
+// computedFyStart was derived and then never passed in. Current-year profit must
+// run from the FY start, and prior-year profit must still land in equity (as
+// unclosed retained earnings) or the balance sheet goes out by that amount.
+test('balance sheet reports FY-to-date profit and stays balanced', () => {
+  const coa = [
+    { account_code: '1010', account_name: 'Cash',              account_type: 'asset' },
+    { account_code: '3900', account_name: 'Retained Earnings', account_type: 'equity' },
+    { account_code: '4001', account_name: 'Sales',             account_type: 'revenue' },
+  ];
+  const priorYear   = { id: 'p', status: 'posted', entry_date: '2025-06-01', lines: [
+    { account_code: '1010', debit: 200000, credit: 0 }, { account_code: '4001', debit: 0, credit: 200000 }] };
+  const currentYear = { id: 'c', status: 'posted', entry_date: '2026-05-01', lines: [
+    { account_code: '1010', debit: 50000, credit: 0 }, { account_code: '4001', debit: 0, credit: 50000 }] };
+
+  // (a) year-end closing entries NOT posted
+  const open = buildBalanceSheet({ accounts: coa, journalEntries: [priorYear, currentYear], asOfDate: '2026-06-30' });
+  assert.equal(open.totals.currentYearProfit, 50000);        // not 250000
+  assert.ok(Math.abs(open.totals.equity - 250000) < 0.01);
+  assert.ok(Math.abs(open.totals.balanceDifference) < 0.01);
+
+  // (b) closing entry posted — prior profit now sits in the RE account; must not double count
+  const closing = { id: 'z', status: 'posted', entry_date: '2026-03-31', lines: [
+    { account_code: '4001', debit: 200000, credit: 0 }, { account_code: '3900', debit: 0, credit: 200000 }] };
+  const closed = buildBalanceSheet({ accounts: coa, journalEntries: [priorYear, closing, currentYear], asOfDate: '2026-06-30' });
+  assert.equal(closed.totals.currentYearProfit, 50000);
+  assert.ok(Math.abs(closed.totals.equity - 250000) < 0.01); // still 250k, not 450k
+  assert.ok(Math.abs(closed.totals.balanceDifference) < 0.01);
+});
