@@ -542,6 +542,11 @@ export default function PurchaseOrderForm({ po, onClose }) {
                                     <Calculator className="w-4 h-4" />
                                     Landed Costs
                                 </h3>
+                                <p className="text-xs text-gray-500 -mt-2">
+                                    An <strong>estimate</strong> for this PO&apos;s total. These carry over to the
+                                    Vendor Invoice, where the actual amounts are capitalised into inventory value
+                                    (LKAS 2). They do not affect stock cost on their own.
+                                </p>
                                 <div className="grid grid-cols-3 gap-4">
                                     <div>
                                         <Label>Freight Cost (LKR)</Label>

@@ -13,6 +13,7 @@ import { AlertCircle, CheckCircle2, AlertTriangle, Plus, Trash2, PackageCheck } 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { postJournalEntry } from "../utils/journalService";
+import { buildVendorInvoiceJournal } from "@/lib/vendorInvoiceJournal";
 import { useOrganization } from "../utils/OrganizationContext";
 import ReverseButton from "../shared/ReverseButton";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
@@ -252,12 +253,24 @@ export default function VendorInvoiceForm({ item, onClose }) {
         const po = pos.find(p => p.po_number === poNumber);
         if (!po) return;
         setIsDirty(true);
+
+        // Carry the PO's landed costs onto the invoice. On the PO they are only an
+        // estimate feeding the PO total; they become real cost here, where they are
+        // capitalised into Inventory. Never overwrite a figure already typed in —
+        // the vendor's actual charge always wins over the PO's estimate.
+        const poLanded = (parseFloat(po.freight_cost) || 0)
+            + (parseFloat(po.duty_cost) || 0)
+            + (parseFloat(po.other_costs) || 0);
+
         setFormData(prev => ({
             ...prev,
             po_number:       poNumber,
             po_quantity:     parseFloat(po.quantity)     || 0,
             po_unit_price:   parseFloat(po.unit_price)   || 0,
             po_total_amount: parseFloat(po.total_amount) || 0,
+            freight_cost:    (parseFloat(prev.freight_cost) || 0) > 0
+                ? prev.freight_cost
+                : poLanded,
         }));
     };
 
@@ -274,12 +287,24 @@ export default function VendorInvoiceForm({ item, onClose }) {
         onSuccess: async (savedInvoice) => {
             if (['approved', 'approved_for_payment'].includes(savedInvoice?.status) && !savedInvoice.gl_posted) {
                 try {
+                    // Dr GRNI (clears the GRN accrual) / Dr Inventory (inbound transport
+                    // capitalised, LKAS 2) / Dr VAT Input / Cr Trade Payables.
+                    //
+                    // COGS is deliberately NOT touched here — the sales invoice already
+                    // posts Dr COGS / Cr Inventory when the goods are sold, so debiting
+                    // it at purchase expensed the same goods twice.
+                    const { lines } = buildVendorInvoiceJournal({
+                        subtotal:     savedInvoice.subtotal,
+                        freightCost:  savedInvoice.freight_cost,
+                        otherCharges: savedInvoice.other_charges,
+                        vatAmount:    savedInvoice.vat_amount,
+                        totalAmount:  savedInvoice.total_amount,
+                        gl,
+                        description:  `Vendor invoice ${savedInvoice.vendor_invoice_number}`,
+                    });
+
                     await postJournalEntry({
-                        lines: [
-                            { account_code: gl.cogs_general,   account_name: 'Cost of Goods Sold', debit: savedInvoice.subtotal,        credit: 0 },
-                            { account_code: gl.vat_input,      account_name: 'VAT Receivable',      debit: savedInvoice.vat_amount || 0, credit: 0 },
-                            { account_code: gl.trade_payables, account_name: 'Trade Payables',      debit: 0, credit: savedInvoice.total_amount }
-                        ].filter(line => Number(line.debit || line.credit || 0) > 0),
+                        lines,
                         referenceType: 'vendor_invoice',
                         referenceId:   savedInvoice.vendor_invoice_number,
                         description:   `Vendor invoice ${savedInvoice.vendor_invoice_number}`,
@@ -290,7 +315,19 @@ export default function VendorInvoiceForm({ item, onClose }) {
                     });
                     await matrixSales.entities.VendorInvoice.update(savedInvoice.id, { ...savedInvoice, gl_posted: true });
                 } catch (err) {
-                    toast({ title: "Saved but GL posting failed", description: err.message, variant: "destructive" });
+                    // Do NOT swallow this. The old code caught the failure and showed a
+                    // passing toast, so an unbalanced entry meant the invoice silently
+                    // never reached the general ledger while AP still recorded it — the
+                    // subledger and the GL diverged with nobody told.
+                    console.error('Vendor invoice GL posting failed:', err);
+                    toast({
+                        title: "GL POSTING FAILED — this invoice is NOT in your ledger",
+                        description: `${err.message} The invoice was saved, but it has not hit the General Ledger. Fix this before relying on your accounts.`,
+                        variant: "destructive",
+                        duration: 30000,
+                    });
+                    queryClient.invalidateQueries({ queryKey: ['vendorInvoices'] });
+                    return; // stop: do not create an AP record the GL knows nothing about
                 }
             }
 
