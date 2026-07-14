@@ -89,17 +89,19 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
         [labourEntries]
     );
 
-    // ── Cutting step total cost ───────────────────────────────────────────────
-    const stepTotalCost = useMemo(() => {
-        if (!isCutting) return 0;
-        return [
-            parseFloat(formData.cutting_labour_cost)     || 0,
-            parseFloat(formData.transport_cost)          || 0,
-            parseFloat(formData.packaging_material_cost) || 0,
-            parseFloat(formData.electricity_cost)        || 0,
-            parseFloat(formData.other_labour_cost)       || 0,
-        ].reduce((a, b) => a + b, 0) + totalLabourCost;
-    }, [isCutting, formData.cutting_labour_cost, formData.transport_cost,
+    // ── Step total cost ───────────────────────────────────────────────────────
+    // Costs apply to EVERY stage. They used to be hard-zeroed unless the stage was
+    // "cutting", so transport hauling raw bark into pre-processing had nowhere to
+    // go — the field was not even rendered — and any value already saved was
+    // silently dropped from the total.
+    const stepTotalCost = useMemo(() => [
+        parseFloat(formData.cutting_labour_cost)     || 0,
+        parseFloat(formData.transport_cost)          || 0,
+        parseFloat(formData.packaging_material_cost) || 0,
+        parseFloat(formData.electricity_cost)        || 0,
+        parseFloat(formData.other_labour_cost)       || 0,
+    ].reduce((a, b) => a + b, 0) + totalLabourCost,
+    [formData.cutting_labour_cost, formData.transport_cost,
         formData.packaging_material_cost, formData.electricity_cost,
         formData.other_labour_cost, totalLabourCost]);
 
@@ -344,7 +346,7 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
                         </Alert>
                     )}
 
-                    {/* Cutting-specific fields */}
+                    {/* By-products are genuinely cutting-only. */}
                     {isCutting && (
                         <div className="border border-blue-200 rounded-lg p-4 space-y-4 bg-blue-50">
                             <h3 className="text-sm font-semibold text-blue-900">Cutting By-Products</h3>
@@ -362,50 +364,59 @@ export default function CinnamonProcessStepForm({ item, onClose }) {
                                         onChange={(e) => handleChange("powder_kg", e.target.value)} />
                                 </div>
                             </div>
-
-                            <h3 className="text-sm font-semibold text-blue-900 pt-1 border-t border-blue-200">Processing Costs</h3>
-                            <div className="grid grid-cols-3 gap-4">
-                                <div>
-                                    <Label>Cutting Labour (LKR)</Label>
-                                    <Input type="number" step="0.01" min="0"
-                                        value={formData.cutting_labour_cost}
-                                        onChange={(e) => handleChange("cutting_labour_cost", e.target.value)} />
-                                </div>
-                                <div>
-                                    <Label>Transport (LKR)</Label>
-                                    <Input type="number" step="0.01" min="0"
-                                        value={formData.transport_cost}
-                                        onChange={(e) => handleChange("transport_cost", e.target.value)} />
-                                </div>
-                                <div>
-                                    <Label>Packaging Materials (LKR)</Label>
-                                    <Input type="number" step="0.01" min="0"
-                                        value={formData.packaging_material_cost}
-                                        onChange={(e) => handleChange("packaging_material_cost", e.target.value)} />
-                                </div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <Label>Electricity (LKR)</Label>
-                                    <Input type="number" step="0.01" min="0"
-                                        value={formData.electricity_cost}
-                                        onChange={(e) => handleChange("electricity_cost", e.target.value)} />
-                                </div>
-                                <div>
-                                    <Label>Other Labour (LKR)</Label>
-                                    <Input type="number" step="0.01" min="0"
-                                        value={formData.other_labour_cost}
-                                        onChange={(e) => handleChange("other_labour_cost", e.target.value)} />
-                                </div>
-                            </div>
-                            <div className="flex justify-end pt-1 border-t border-blue-200">
-                                <span className="text-sm font-semibold text-blue-900">
-                                    Step Total Cost:{" "}
-                                    <span className="text-blue-700">LKR {stepTotalCost.toFixed(2)}</span>
-                                </span>
-                            </div>
                         </div>
                     )}
+
+                    {/* Costs apply to EVERY stage. These were previously rendered only
+                        for cutting, so transport into pre-processing could not be
+                        entered at all and was excluded from the batch cost. */}
+                    <div className="border border-blue-200 rounded-lg p-4 space-y-4 bg-blue-50">
+                        <h3 className="text-sm font-semibold text-blue-900">Processing Costs</h3>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div>
+                                <Label>Processing Labour (LKR)</Label>
+                                <Input type="number" step="0.01" min="0"
+                                    value={formData.cutting_labour_cost}
+                                    onChange={(e) => handleChange("cutting_labour_cost", e.target.value)} />
+                            </div>
+                            <div>
+                                <Label>Transport (LKR)</Label>
+                                <Input type="number" step="0.01" min="0"
+                                    value={formData.transport_cost}
+                                    onChange={(e) => handleChange("transport_cost", e.target.value)} />
+                            </div>
+                            <div>
+                                <Label>Packaging Materials (LKR)</Label>
+                                <Input type="number" step="0.01" min="0"
+                                    value={formData.packaging_material_cost}
+                                    onChange={(e) => handleChange("packaging_material_cost", e.target.value)} />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <Label>Electricity (LKR)</Label>
+                                <Input type="number" step="0.01" min="0"
+                                    value={formData.electricity_cost}
+                                    onChange={(e) => handleChange("electricity_cost", e.target.value)} />
+                            </div>
+                            <div>
+                                <Label>Other Labour (LKR)</Label>
+                                <Input type="number" step="0.01" min="0"
+                                    value={formData.other_labour_cost}
+                                    onChange={(e) => handleChange("other_labour_cost", e.target.value)} />
+                            </div>
+                        </div>
+                        <div className="flex justify-end pt-1 border-t border-blue-200">
+                            <span className="text-sm font-semibold text-blue-900">
+                                Step Total Cost:{" "}
+                                <span className="text-blue-700">LKR {stepTotalCost.toFixed(2)}</span>
+                            </span>
+                        </div>
+                        <p className="text-xs text-blue-700">
+                            Includes contract labour of LKR {totalLabourCost.toFixed(2)} entered below — it is not
+                            counted twice.
+                        </p>
+                    </div>
 
                     <div className="grid grid-cols-2 gap-4">
                         <div>

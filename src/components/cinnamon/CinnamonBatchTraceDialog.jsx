@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { GitBranch, Leaf, Scissors, Package, Truck, FlaskConical, ChevronRight } from "lucide-react";
+import { stepAccrual } from "./cinnamonUtils";
 
 const fmt = (v) =>
     `LKR ${Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -77,11 +78,9 @@ export default function CinnamonBatchTraceDialog({ batch, onClose }) {
     });
 
     // Summary numbers
-    const totalProcessCost = useMemo(() =>
-        steps.reduce((sum, s) => {
-            if (s.stage === "cutting") return sum + (parseFloat(s.step_total_cost) || 0);
-            return sum + (parseFloat(s.labour_cost_total) || 0);
-        }, 0),
+    // Shared with the packaging roll-up and the accrual dialog so they cannot drift.
+    const totalProcessCost = useMemo(
+        () => steps.reduce((sum, s) => sum + stepAccrual(s), 0),
         [steps]
     );
     const totalGradedKg   = gradingOutputs.reduce((s, g) => s + (parseFloat(g.output_weight_kg) || 0), 0);
@@ -161,9 +160,7 @@ export default function CinnamonBatchTraceDialog({ batch, onClose }) {
                                         .sort((a, b) => (a.started_at || "") < (b.started_at || "") ? -1 : 1)
                                         .map((s) => {
                                             const Icon = STAGE_ICONS[s.stage] || Leaf;
-                                            const cost = s.stage === "cutting"
-                                                ? parseFloat(s.step_total_cost) || 0
-                                                : parseFloat(s.labour_cost_total) || 0;
+                                            const cost = stepAccrual(s);
                                             return (
                                                 <div key={s.id} className="bg-white border rounded-lg p-3 text-sm">
                                                     <div className="flex items-center justify-between">
