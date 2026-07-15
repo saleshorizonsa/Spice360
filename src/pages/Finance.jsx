@@ -20,6 +20,7 @@ import BudgetVarianceReport from "@/components/finance/BudgetVarianceReport";
 import GLAccountMappingForm from "@/components/finance/GLAccountMappingForm";
 import GLHealthCheck from "@/components/finance/GLHealthCheck";
 import CogsGrniCorrectionTool from "@/components/finance/CogsGrniCorrectionTool";
+import InventoryGlReconciliation from "@/components/finance/InventoryGlReconciliation";
 import FXRateManager from "@/components/finance/FXRateManager";
 import CostCenterForm from "@/components/finance/CostCenterForm";
 import CustomerStatementDialog from "@/components/finance/CustomerStatementDialog";
@@ -837,6 +838,9 @@ export default function Finance() {
 
                     {/* One-click reclassification for the COGS/GRNI damage. */}
                     <CogsGrniCorrectionTool />
+
+                    {/* Stock subledger vs Inventory GL, with the gap attributed. */}
+                    <InventoryGlReconciliation />
 
                     {/* GL Account Mapping */}
                     <Card>
