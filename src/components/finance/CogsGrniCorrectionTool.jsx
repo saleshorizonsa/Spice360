@@ -3,6 +3,8 @@ import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertTriangle, CheckCircle2, Wrench } from "lucide-react";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
@@ -32,6 +34,9 @@ export default function CogsGrniCorrectionTool() {
   const { currentOrg } = useOrganization();
   const [isPosting, setIsPosting] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  // The correction is a reclassification of historical errors, posted into a
+  // currently OPEN period — not necessarily today's, which may well be closed.
+  const [entryDate, setEntryDate] = useState(() => new Date().toISOString().slice(0, 10));
 
   const { data: journalEntries = [], isLoading: l1 } = useQuery({
     queryKey: ["journalEntries"],
@@ -43,6 +48,27 @@ export default function CogsGrniCorrectionTool() {
     queryFn: () => matrixSales.entities.JournalLine.list(),
     initialData: [],
   });
+  const { data: accountingPeriods = [] } = useQuery({
+    queryKey: ["accountingPeriods"],
+    queryFn: () => matrixSales.entities.AccountingPeriod.list(),
+    initialData: [],
+  });
+
+  // Open periods, so the user can pick a valid posting date rather than hitting a
+  // "period not open" error. If the org uses a different period system this list is
+  // empty, and we let the server be the authority instead of blocking.
+  const openPeriods = useMemo(
+    () =>
+      accountingPeriods
+        .filter((p) => String(p.status || "").toLowerCase() === "open")
+        .map((p) => p.period)
+        .filter(Boolean)
+        .sort(),
+    [accountingPeriods]
+  );
+  const selectedPeriod = entryDate.slice(0, 7);
+  const havePeriodData = openPeriods.length > 0;
+  const periodOpen = !havePeriodData || openPeriods.includes(selectedPeriod);
 
   const plan = useMemo(
     () => computeCogsGrniCorrection({ journalEntries, journalLines, gl }),
@@ -69,6 +95,7 @@ export default function CogsGrniCorrectionTool() {
         referenceType: CORRECTION_REF_TYPE,
         referenceId: CORRECTION_REF_ID,
         description,
+        entryDate,
         entryType: "adjustment",
         orgId: currentOrg?.id,
         area: "gl",
@@ -176,25 +203,61 @@ export default function CogsGrniCorrectionTool() {
               </div>
             )}
 
+            {/* Posting date — must land in an open period. */}
+            <div className="rounded-lg border bg-white p-3">
+              <Label className="text-xs text-gray-700">Posting date</Label>
+              <div className="mt-1 flex flex-wrap items-center gap-3">
+                <Input
+                  type="date"
+                  value={entryDate}
+                  onChange={(e) => setEntryDate(e.target.value)}
+                  className="w-44"
+                />
+                {havePeriodData && (
+                  <span className="text-xs text-gray-500">
+                    Open period{openPeriods.length > 1 ? "s" : ""}:{" "}
+                    {openPeriods.map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setEntryDate(`${p}-15`)}
+                        className={`mx-0.5 rounded px-1.5 py-0.5 ${
+                          p === selectedPeriod ? "bg-emerald-100 text-emerald-800" : "bg-gray-100 hover:bg-gray-200"
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </span>
+                )}
+              </div>
+              {!periodOpen && (
+                <p className="mt-2 flex items-center gap-1 text-xs text-red-700">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  Period {selectedPeriod} is not open. Pick a date in an open period above.
+                </p>
+              )}
+            </div>
+
             <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
-                This posts a real journal entry to your ledger, dated today. It reduces Cost of Goods Sold (raising
-                reported profit) and clears the GRNI liability. If you run monthly management accounts, post it in an
-                open period and tell your accountant.
+                This posts a real journal entry to your ledger, dated <strong>{entryDate}</strong>. It reduces Cost
+                of Goods Sold (raising reported profit) and clears the GRNI liability. If you run monthly management
+                accounts, post it in an open period and tell your accountant.
               </span>
             </div>
 
-            {plan.ready && !confirming && (
+            {plan.ready && periodOpen && !confirming && (
               <Button type="button" className="bg-emerald-600 hover:bg-emerald-700" onClick={() => setConfirming(true)}>
                 Review &amp; post correction
               </Button>
             )}
 
-            {plan.ready && confirming && (
+            {plan.ready && periodOpen && confirming && (
               <div className="flex items-center gap-3 rounded-lg border border-emerald-300 bg-emerald-50 p-3">
                 <span className="text-sm font-medium text-emerald-900">
-                  Post Dr GRNI / Cr COGS for LKR {money(plan.amount)}?
+                  Post Dr GRNI / Cr COGS for LKR {money(plan.amount)} on {entryDate}?
                 </span>
                 <Button type="button" className="bg-emerald-600 hover:bg-emerald-700" onClick={handlePost} disabled={isPosting}>
                   {isPosting ? "Posting…" : "Confirm & post"}
