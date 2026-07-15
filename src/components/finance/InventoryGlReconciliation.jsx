@@ -3,7 +3,9 @@ import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Scale, AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/components/ui/use-toast";
+import { CheckCircle2, Scale, AlertTriangle, Copy } from "lucide-react";
 import { reconcileInventoryToGl } from "@/lib/inventoryGlReconciliation";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
 
@@ -17,6 +19,7 @@ const money = (value) =>
  */
 export default function InventoryGlReconciliation() {
   const gl = useGLAccounts();
+  const { toast } = useToast();
 
   const { data: stockLevels = [], isLoading: l1 } = useQuery({
     queryKey: ["stockLevels"],
@@ -43,6 +46,24 @@ export default function InventoryGlReconciliation() {
     () => reconcileInventoryToGl({ stockLevels, journalEntries, journalLines, movements, gl }),
     [stockLevels, journalEntries, journalLines, movements, gl]
   );
+
+  const copyFigures = () => {
+    const lines = [
+      "Inventory ↔ GL Reconciliation",
+      `Stock book value : LKR ${money(r.stockBookValue)}`,
+      `Inventory GL (${gl.inventory}): LKR ${money(r.glBalance)}`,
+      `Difference       : LKR ${money(r.difference)} (${r.difference > 0 ? "stock higher" : r.difference < 0 ? "GL higher" : "tied"})`,
+      r.openingCount ? `Opening-balance stock (no movements): LKR ${money(r.openingBalanceValue)} across ${r.openingCount} position(s)` : "",
+      "",
+      "Inventory GL by source:",
+      ...r.bySource.map((s) => `  ${s.label}: ${s.net >= 0 ? "+" : ""}${money(s.net)}`),
+    ].filter(Boolean).join("\n");
+
+    navigator.clipboard?.writeText(lines).then(
+      () => toast({ title: "Copied", description: "Paste the figures into the chat." }),
+      () => toast({ title: "Copy failed", description: "Select and copy the numbers manually.", variant: "destructive" })
+    );
+  };
 
   if (l1 || l2 || l3 || l4) {
     return <div className="py-6 text-center text-sm text-gray-500">Reconciling inventory…</div>;
@@ -75,9 +96,12 @@ export default function InventoryGlReconciliation() {
             <Badge className="border border-red-300 bg-red-100 text-red-800">Out by {money(Math.abs(r.difference))}</Badge>
           )}
         </CardTitle>
-        <p className="mt-1 text-sm text-gray-500">
-          Stock records vs the Inventory GL account. Read-only.
-        </p>
+        <div className="mt-1 flex items-center justify-between gap-3">
+          <p className="text-sm text-gray-500">Stock records vs the Inventory GL account. Read-only.</p>
+          <Button type="button" variant="outline" size="sm" onClick={copyFigures} className="shrink-0">
+            <Copy className="mr-2 h-4 w-4" /> Copy figures
+          </Button>
+        </div>
       </CardHeader>
 
       <CardContent className="space-y-4">
