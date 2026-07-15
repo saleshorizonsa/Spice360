@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { postJournalEntry } from "../utils/journalService";
 import { buildVendorInvoiceJournal } from "@/lib/vendorInvoiceJournal";
+import { apportionLandedCost } from "@/lib/landedCostApportionment";
 import { useOrganization } from "../utils/OrganizationContext";
 import ReverseButton from "../shared/ReverseButton";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
@@ -279,6 +280,55 @@ export default function VendorInvoiceForm({ item, onClose }) {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
+    // Capitalise a vendor invoice's freight + other charges into the per-unit cost
+    // of the stock it was received into, apportioned by received value. Keeps the
+    // Inventory subledger in step with the Inventory GL debit the invoice posts.
+    const capitaliseLandedCostToStock = async (savedInvoice) => {
+        const landedCost = (parseFloat(savedInvoice.freight_cost) || 0)
+            + (parseFloat(savedInvoice.other_charges) || 0);
+        if (landedCost <= 0) return;
+
+        // grn_references round-trips through jsonb; it may come back as a string.
+        let refs = savedInvoice.grn_references;
+        if (typeof refs === 'string') { try { refs = JSON.parse(refs); } catch { refs = []; } }
+        if (!Array.isArray(refs) || refs.length === 0) return;
+
+        // Resolve each linked GRN to its stock position and current on-hand figures.
+        const positions = [];
+        for (const ref of refs) {
+            const grn = grns.find(g => g.grn_number === ref.grn_number);
+            if (!grn) continue;
+
+            const filter = { material_code: grn.material_code, warehouse_code: grn.receiving_location };
+            if (grn.storage_bin) filter.bin_code = grn.storage_bin;
+            if (grn.batch_number) filter.batch_number = grn.batch_number;
+
+            const levels = await matrixSales.entities.StockLevel.filter(filter);
+            const stock = levels?.[0];
+            if (!stock) continue;
+
+            const recvQty = parseFloat(ref.grn_quantity) || parseFloat(grn.quantity_received) || 0;
+            const recvCost = parseFloat(ref.unit_cost) || parseFloat(grn.unit_price) || 0;
+            positions.push({
+                id: stock.id,
+                key: `${grn.material_code}|${grn.receiving_location}|${grn.storage_bin || ''}|${grn.batch_number || ''}`,
+                receivedValue: recvQty * recvCost,
+                currentQty: parseFloat(stock.quantity) || 0,
+                currentUnitCost: parseFloat(stock.unit_cost) || 0,
+                currentTotalValue: parseFloat(stock.total_value) || 0,
+            });
+        }
+
+        const { updates } = apportionLandedCost({ positions, landedCost });
+        for (const u of updates) {
+            await matrixSales.entities.StockLevel.update(u.id, {
+                unit_cost: u.newUnitCost,
+                total_value: u.newTotalValue,
+            });
+        }
+        if (updates.length) queryClient.invalidateQueries({ queryKey: ['stockLevels'] });
+    };
+
     // ── Save ──────────────────────────────────────────────────────────────────
     const saveMutation = useMutation({
         mutationFn: (data) => item
@@ -314,6 +364,23 @@ export default function VendorInvoiceForm({ item, onClose }) {
                         area:          "ap"
                     });
                     await matrixSales.entities.VendorInvoice.update(savedInvoice.id, { ...savedInvoice, gl_posted: true });
+
+                    // Capitalise the freight into the PER-UNIT stock cost, so the
+                    // inventory subledger matches the Inventory GL debit above and
+                    // COGS on the eventual sale reflects the true landed cost. The GL
+                    // is already committed, so a failure here is non-fatal — but it is
+                    // reported loudly, because on failure the two would drift.
+                    try {
+                        await capitaliseLandedCostToStock(savedInvoice);
+                    } catch (stockErr) {
+                        console.error('Landed-cost stock revaluation failed:', stockErr);
+                        toast({
+                            title: "Posted, but stock cost not updated",
+                            description: `The invoice posted to the GL, but capitalising freight into the per-unit stock cost failed (${stockErr.message}). Inventory unit cost may exclude freight until this is retried.`,
+                            variant: "destructive",
+                            duration: 20000,
+                        });
+                    }
                 } catch (err) {
                     // Do NOT swallow this. The old code caught the failure and showed a
                     // passing toast, so an unbalanced entry meant the invoice silently
