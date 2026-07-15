@@ -19,6 +19,7 @@ import CashFlowStatementReport from "@/components/finance/CashFlowStatementRepor
 import BudgetVarianceReport from "@/components/finance/BudgetVarianceReport";
 import GLAccountMappingForm from "@/components/finance/GLAccountMappingForm";
 import GLHealthCheck from "@/components/finance/GLHealthCheck";
+import CogsGrniCorrectionTool from "@/components/finance/CogsGrniCorrectionTool";
 import FXRateManager from "@/components/finance/FXRateManager";
 import CostCenterForm from "@/components/finance/CostCenterForm";
 import CustomerStatementDialog from "@/components/finance/CustomerStatementDialog";
@@ -833,6 +834,9 @@ export default function Finance() {
                     {/* Read-only diagnostic for damage left by the vendor-invoice
                         posting defects fixed in 9b03fc7. */}
                     <GLHealthCheck />
+
+                    {/* One-click reclassification for the COGS/GRNI damage. */}
+                    <CogsGrniCorrectionTool />
 
                     {/* GL Account Mapping */}
                     <Card>

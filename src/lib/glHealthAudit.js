@@ -13,6 +13,8 @@
  *      as a phantom liability. -> summariseGrniBalance
  */
 
+import { CORRECTION_REF_TYPE } from './cogsGrniCorrection.js';
+
 const num = (value) => {
   const parsed = parseFloat(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -65,18 +67,29 @@ export const findUnpostedVendorInvoices = ({ vendorInvoices = [], journalEntries
 /**
  * COGS debited by a PURCHASE. Every one of these is a double count: the sale posts
  * COGS again when the goods leave.
+ *
+ * Correction-aware: the reported overstatement is the gross purchase COGS minus what
+ * the reclassification tool (reference_type = CORRECTION_REF_TYPE) has already
+ * credited back, so this goes to zero once the correction is posted rather than
+ * flagging the original entries forever.
  */
 export const findPurchaseCogsPostings = ({
   journalEntries = [],
   journalLines = [],
   cogsAccount,
 } = {}) => {
-  if (!cogsAccount) return { entries: [], totals: { count: 0, value: 0 } };
+  if (!cogsAccount) return { entries: [], totals: { count: 0, value: 0, gross: 0, corrected: 0 } };
 
   const purchaseJournals = new Map(
     journalEntries
       .filter((e) => isLive(e) && e.reference_type === 'vendor_invoice')
       .map((e) => [String(e.journal_number), e])
+  );
+
+  const correctionJournals = new Set(
+    journalEntries
+      .filter((e) => isLive(e) && e.reference_type === CORRECTION_REF_TYPE)
+      .map((e) => String(e.journal_number))
   );
 
   const entries = journalLines
@@ -97,11 +110,21 @@ export const findPurchaseCogsPostings = ({
     })
     .sort((a, b) => String(a.entry_date).localeCompare(String(b.entry_date)));
 
+  const gross = round(entries.reduce((sum, e) => sum + e.amount, 0));
+  const corrected = round(
+    journalLines
+      .filter((l) => String(l.account_code) === String(cogsAccount) && correctionJournals.has(String(l.journal_number)))
+      .reduce((sum, l) => sum + num(l.credit), 0)
+  );
+  const value = round(Math.max(0, gross - corrected));
+
   return {
     entries,
     totals: {
-      count: entries.length,
-      value: round(entries.reduce((sum, e) => sum + e.amount, 0)),
+      count: value > 0.01 ? entries.length : 0,
+      value,
+      gross,
+      corrected,
     },
   };
 };
