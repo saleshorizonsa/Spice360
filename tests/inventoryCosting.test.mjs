@@ -124,3 +124,41 @@ test('LIFO is flagged as not permitted under IFRS', () => {
   assert.equal(COSTING_METHODS.lifo.authoritative, false);
   assert.match(COSTING_METHODS.lifo.note, /NOT permitted under IFRS/i);
 });
+
+// ── Weighted average must report the BOOK value, not a movement replay ────────
+// Freight is capitalised into StockLevel.unit_cost/total_value but is NOT a stock
+// movement. A movement replay therefore excludes it and understates the book value.
+// The "Weighted Average — Book value" method must read StockLevel directly.
+test('weighted average reports StockLevel book value including capitalised freight', () => {
+  const stockLevels = [
+    // Book says 100 @ 550 = 55,000 (500 goods + 50/unit freight capitalised).
+    { id: 's1', material_code: 'CIN-001', warehouse_code: 'WH1', bin_code: '', batch_number: '',
+      quantity: 100, unit_cost: 550, total_value: 55000 },
+  ];
+  // Movements only carry the purchase price (500) — no freight line exists.
+  const movements = [receipt(100, 500, '2026-01-01')];
+
+  const wa = buildInventoryValuation({ stockLevels, movements, method: 'weighted_average' });
+  assert.equal(wa.totals.value, 55000);        // book value, freight included
+  assert.equal(wa.rows[0].unitCost, 550);
+  assert.equal(wa.unreconciled.length, 0);      // book value has nothing to reconcile
+
+  // FIFO stays a movement replay, so it reflects the ex-freight purchase cost.
+  const fifo = buildInventoryValuation({ stockLevels, movements, method: 'fifo' });
+  assert.equal(fifo.totals.value, 50000);
+});
+
+test('weighted average book value is unaffected by incomplete movement history', () => {
+  // No movements at all (opening balance loaded straight into stock). FIFO cannot
+  // value it; the book value simply reads what is recorded.
+  const stockLevels = [
+    { id: 's1', material_code: 'M', warehouse_code: 'W', bin_code: '', batch_number: '',
+      quantity: 80, unit_cost: 12.5, total_value: 1000 },
+  ];
+  const wa = buildInventoryValuation({ stockLevels, movements: [], method: 'weighted_average' });
+  assert.equal(wa.totals.value, 1000);
+  assert.equal(wa.unreconciled.length, 0);
+
+  const fifo = buildInventoryValuation({ stockLevels, movements: [], method: 'fifo' });
+  assert.equal(fifo.unreconciled.length, 1);    // FIFO flags the missing history
+});

@@ -27,12 +27,12 @@ export const COSTING_METHODS = {
   weighted_average: {
     label: 'Weighted Average',
     authoritative: true,
-    note: 'The basis the system actually carries stock at. This is what your Balance Sheet reflects.',
+    note: 'The actual carrying value from stock records, including capitalised freight. This is what your Balance Sheet and Inventory GL reflect. FIFO/LIFO below are indicative and exclude freight, so they will read a little lower.',
   },
   fifo: {
     label: 'FIFO (First In, First Out)',
     authoritative: false,
-    note: 'Indicative. The oldest units are treated as sold first, so the stock remaining is valued at the most recent purchase costs.',
+    note: 'Indicative, from purchase prices in the movement history — it excludes capitalised freight, so it will differ from the book value. The oldest units are treated as sold first, so the stock remaining is valued at the most recent purchase costs.',
   },
   lifo: {
     label: 'LIFO (Last In, First Out)',
@@ -179,6 +179,14 @@ export const buildInventoryValuation = ({
   method = 'weighted_average',
   quantityTolerance = 0.001,
 } = {}) => {
+  // Weighted average is the basis the books are kept on, so it reports the ACTUAL
+  // carrying value from StockLevel (unit_cost x quantity). That value is maintained
+  // live on every movement AND carries capitalised freight and any revaluation
+  // adjustments — none of which are stock movements, so a movement replay would
+  // wrongly exclude them and understate the "book value". FIFO/LIFO are indicative
+  // what-ifs with no persisted layers, so those still replay the movement history.
+  const useBookValue = method === 'weighted_average';
+
   const byPosition = groupMovementsByPosition(movements);
   const byMaterial = new Map();
   const unreconciled = [];
@@ -186,7 +194,9 @@ export const buildInventoryValuation = ({
   for (const stock of stockLevels) {
     const key = positionKey(stock);
     const history = byPosition.get(key) || [];
-    const valued = valuePosition(history, key, method);
+    const valued = useBookValue
+      ? { quantity: num(stock.quantity), totalValue: round(num(stock.total_value), 2) }
+      : valuePosition(history, key, method);
 
     const storedQty = num(stock.quantity);
     const code = stock.material_code;
@@ -205,7 +215,11 @@ export const buildInventoryValuation = ({
     const row = byMaterial.get(code);
     row.positions += 1;
 
-    if (Math.abs(valued.quantity - storedQty) > quantityTolerance) {
+    // For FIFO/LIFO the value is only trustworthy when the replayed quantity matches
+    // what is on hand — otherwise the movement history is incomplete and the derived
+    // cost cannot be relied on. Book value has nothing to reconcile against: it IS
+    // the recorded value.
+    if (!useBookValue && Math.abs(valued.quantity - storedQty) > quantityTolerance) {
       row.hasUnreconciled = true;
       unreconciled.push({
         key,
