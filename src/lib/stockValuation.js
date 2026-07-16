@@ -60,10 +60,12 @@ const round = (value, dp = 6) => {
 export const applyStockChange = ({
   currentQty = 0,
   currentUnitCost = 0,
+  currentTotalValue = null,
   quantity = 0,
   unitCost = 0,
   operation,
   strict = false,
+  valueToRemove = null,
   materialCode = '',
   warehouse = '',
 }) => {
@@ -71,6 +73,7 @@ export const applyStockChange = ({
   const heldCost = num(currentUnitCost);
   const qty = Math.abs(num(quantity));
   const incomingCost = num(unitCost);
+  const heldValue = currentTotalValue == null ? round(onHand * heldCost, 2) : num(currentTotalValue);
 
   if (operation === 'increase') {
     const newQty = round(onHand + qty);
@@ -93,8 +96,29 @@ export const applyStockChange = ({
     return { quantity: 0, unitCost: heldCost, totalValue: 0 };
   }
 
-  // Issuing at the moving average does not change the unit cost of what remains.
   const newQty = round(onHand - qty);
+
+  // Reversing a receipt: remove exactly the VALUE that receipt added, not
+  // qty x current average.
+  //
+  // The GL reversal is a mirror of the original entry, so it credits Inventory
+  // with the original receipt value. Removing the average instead left the stock
+  // subledger and the Inventory GL permanently apart by
+  // qty x (original price - blended average) on every reversal.
+  //
+  // It also un-blends the average correctly: take back what was put in and the
+  // cost returns to what it was before the receipt, rather than staying blended.
+  if (valueToRemove != null) {
+    const newTotalValue = newQty <= 0 ? 0 : round(heldValue - num(valueToRemove), 2);
+    return {
+      quantity: newQty,
+      unitCost: newQty > 0 ? round(newTotalValue / newQty) : 0,
+      totalValue: newTotalValue,
+    };
+  }
+
+  // Ordinary issue: consuming at the moving average leaves the unit cost of what
+  // remains unchanged.
   return {
     quantity: newQty,
     unitCost: heldCost,

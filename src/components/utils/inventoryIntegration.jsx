@@ -122,7 +122,10 @@ export async function reverseGoodsReceipt(grn, user = null) {
             unitOfMeasure: grn.unit_of_measure,
             unitCost: parseFloat(grn.unit_price) || 0,
             operation: 'decrease',
-            strict: true
+            strict: true,
+            // Give back exactly what this receipt added. The GL's mirror entry
+            // credits Inventory with this same value, so the two stay in step.
+            valueToRemove: (parseFloat(grn.quantity_received) || 0) * (parseFloat(grn.unit_price) || 0)
         });
 
         const movement = await matrixSales.entities.StockMovement.create({
@@ -308,7 +311,11 @@ export async function updateStockLevel({
     // Refuse to remove more stock than is on hand instead of silently clamping to
     // zero. Reversals opt in: writing stock down to 0 while the GL reverses the
     // full receipt value leaves the ledger and the warehouse permanently apart.
-    strict = false
+    strict = false,
+    // Reversals only: the exact VALUE the original receipt added, so stock gives
+    // back what the GL's mirror entry reverses. Without it a reversal removes
+    // qty x current average, which drifts from the GL once the average has blended.
+    valueToRemove = null
 }) {
     try {
         // Find existing stock level
@@ -331,10 +338,12 @@ export async function updateStockLevel({
             const next = applyStockChange({
                 currentQty: stock.quantity,
                 currentUnitCost: stock.unit_cost,
+                currentTotalValue: stock.total_value,
                 quantity,
                 unitCost,
                 operation,
                 strict,
+                valueToRemove,
                 materialCode,
                 warehouse
             });

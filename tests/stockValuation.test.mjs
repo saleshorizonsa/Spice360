@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { applyStockChange, StockShortfallError } from '../src/lib/stockValuation.js';
 
+const round2 = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
+
 // ── Weighted moving average ──────────────────────────────────────────────────
 // unit_cost used to never be recalculated on receipt, so receiving at a new
 // price left the whole position valued at the old cost.
@@ -90,23 +92,64 @@ test('non-strict callers keep the old clamping behaviour', () => {
 });
 
 // ── Round trip: receive then reverse must return to the starting position ────
-test('receive then reverse restores the original quantity and cost', () => {
-  const opening = { quantity: 100, unitCost: 10 };
-
+test('reversing a receipt by VALUE restores the original quantity AND cost', () => {
   const afterReceipt = applyStockChange({
-    currentQty: opening.quantity, currentUnitCost: opening.unitCost,
+    currentQty: 100, currentUnitCost: 10, // opening: 100 @ 10 = 1,000
     quantity: 50, unitCost: 22, operation: 'increase',
   });
   assert.equal(afterReceipt.quantity, 150);
   assert.equal(afterReceipt.unitCost, 14); // (1000 + 1100) / 150
 
+  // Give back exactly what the receipt added (50 x 22 = 1,100).
   const afterReversal = applyStockChange({
-    currentQty: afterReceipt.quantity, currentUnitCost: afterReceipt.unitCost,
-    quantity: 50, operation: 'decrease', strict: true,
+    currentQty: afterReceipt.quantity,
+    currentUnitCost: afterReceipt.unitCost,
+    currentTotalValue: afterReceipt.totalValue,
+    quantity: 50, valueToRemove: 1100, operation: 'decrease', strict: true,
   });
-  assert.equal(afterReversal.quantity, 100); // quantity is fully restored
-  // NOTE: the cost does not return to 10. Under a moving average, reversing a
-  // receipt at a different price cannot un-blend the average — the remaining
-  // 100 units stay at 14. This is inherent to the costing method, not a defect.
-  assert.equal(afterReversal.unitCost, 14);
+  assert.equal(afterReversal.quantity, 100);
+  assert.equal(afterReversal.totalValue, 1000);
+  assert.equal(afterReversal.unitCost, 10); // fully un-blended, back to the opening cost
+});
+
+// The bug this fixes: the GL reverses a receipt with a MIRROR of the original
+// entry (the original value), while stock removed qty x the blended average. Once
+// the average had blended, the subledger and the Inventory GL drifted apart on
+// every reversal and never came back.
+test('reversal removes the same value the GL mirror entry reverses', () => {
+  // 100 @ 10 then 50 @ 22 -> 150 @ 14. Reverse the 50 @ 22 receipt.
+  const blended = { currentQty: 150, currentUnitCost: 14, currentTotalValue: 2100 };
+  const originalReceiptValue = 50 * 22; // 1,100 — what the GL credits back
+
+  const byValue = applyStockChange({
+    ...blended, quantity: 50, valueToRemove: originalReceiptValue,
+    operation: 'decrease', strict: true,
+  });
+  const removedByStock = round2(2100 - byValue.totalValue);
+  assert.equal(removedByStock, originalReceiptValue); // stock and GL agree
+
+  // The old behaviour removed 50 x 14 = 700, leaving stock 400 above the GL.
+  const byAverage = applyStockChange({ ...blended, quantity: 50, operation: 'decrease', strict: true });
+  assert.equal(round2(2100 - byAverage.totalValue), 700);
+  assert.notEqual(round2(2100 - byAverage.totalValue), originalReceiptValue);
+});
+
+test('reversing the whole position leaves nothing behind', () => {
+  const r = applyStockChange({
+    currentQty: 100, currentUnitCost: 10, currentTotalValue: 1000,
+    quantity: 100, valueToRemove: 1000, operation: 'decrease', strict: true,
+  });
+  assert.equal(r.quantity, 0);
+  assert.equal(r.totalValue, 0);
+  assert.equal(r.unitCost, 0);
+});
+
+test('an ordinary issue still consumes at the moving average', () => {
+  // No valueToRemove -> unchanged behaviour for sales/issues.
+  const r = applyStockChange({
+    currentQty: 150, currentUnitCost: 14, currentTotalValue: 2100,
+    quantity: 50, operation: 'decrease',
+  });
+  assert.equal(r.unitCost, 14);
+  assert.equal(r.totalValue, 1400);
 });
