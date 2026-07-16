@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useRef, useEffect } from "react";
+import { pickPostingDate } from "@/lib/postingDate";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -69,6 +70,18 @@ export default function CogsGrniCorrectionTool() {
   const selectedPeriod = entryDate.slice(0, 7);
   const havePeriodData = openPeriods.length > 0;
   const periodOpen = !havePeriodData || openPeriods.includes(selectedPeriod);
+
+  // Default into an OPEN period once the period data arrives. Defaulting to today
+  // breaks whenever the current calendar month is outside the open fiscal year —
+  // on an April–March year, a correction run in July 2026 defaulted to 2026-07 and
+  // failed with "Accounting period 2026-07 is not open" before the user could pick
+  // a valid date. Runs once, so it never fights a date the user has chosen.
+  const dateDefaulted = useRef(false);
+  useEffect(() => {
+    if (dateDefaulted.current || !havePeriodData) return;
+    dateDefaulted.current = true;
+    setEntryDate((current) => pickPostingDate({ openPeriods, today: current }));
+  }, [havePeriodData, openPeriods]);
 
   const plan = useMemo(
     () => computeCogsGrniCorrection({ journalEntries, journalLines, gl }),
