@@ -1,4 +1,4 @@
-import { applyStockChange } from './stockValuation.js';
+import { applyStockChange, reversalValueOf } from './stockValuation.js';
 import { classifyMovement, positionKey } from './stockRevaluation.js';
 
 /**
@@ -110,6 +110,7 @@ export const valueByLayers = (movements, key, method = 'fifo') => {
 export const valueByMovingAverage = (movements, key) => {
   let quantity = 0;
   let unitCost = 0;
+  let totalValue = 0;
 
   for (const movement of chronological(movements)) {
     const operation = classifyMovement(movement, key);
@@ -118,19 +119,23 @@ export const valueByMovingAverage = (movements, key) => {
     const result = applyStockChange({
       currentQty: quantity,
       currentUnitCost: unitCost,
+      currentTotalValue: totalValue,
       quantity: num(movement.quantity),
       unitCost: num(movement.cost_per_unit ?? movement.unit_cost),
       operation,
       strict: false,
+      // A receipt reversal gives back what its receipt added, not qty x average.
+      valueToRemove: operation === 'decrease' ? reversalValueOf(movement) : null,
     });
     quantity = result.quantity;
     unitCost = result.unitCost;
+    totalValue = result.totalValue;
   }
 
   return {
     quantity: round(quantity, 6),
     unitCost: round(unitCost, 6),
-    totalValue: round(quantity * unitCost, 2),
+    totalValue: round(totalValue, 2),
   };
 };
 

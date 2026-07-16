@@ -1,4 +1,4 @@
-import { applyStockChange } from './stockValuation.js';
+import { applyStockChange, reversalValueOf } from './stockValuation.js';
 
 /**
  * Recompute inventory valuation by replaying stock movement history.
@@ -72,6 +72,7 @@ export const replayPosition = (movements = [], key) => {
 
   let quantity = 0;
   let unitCost = 0;
+  let totalValue = 0;
   let applied = 0;
 
   for (const movement of ordered) {
@@ -81,21 +82,27 @@ export const replayPosition = (movements = [], key) => {
     const result = applyStockChange({
       currentQty: quantity,
       currentUnitCost: unitCost,
+      currentTotalValue: totalValue,
       quantity: num(movement.quantity),
       unitCost: num(movement.cost_per_unit ?? movement.unit_cost),
       operation,
       strict: false, // replaying history: never throw, just report the mismatch
+      // A receipt reversal gives back exactly what its receipt added, matching the
+      // GL's mirror entry. Replaying it as an ordinary issue (qty x average) would
+      // reproduce the very drift this replay exists to detect.
+      valueToRemove: operation === 'decrease' ? reversalValueOf(movement) : null,
     });
 
     quantity = result.quantity;
     unitCost = result.unitCost;
+    totalValue = result.totalValue;
     applied += 1;
   }
 
   return {
     quantity: round(quantity, 6),
     unitCost: round(unitCost, 6),
-    totalValue: round(quantity * unitCost, 2),
+    totalValue: round(totalValue, 2),
     movementsApplied: applied,
   };
 };

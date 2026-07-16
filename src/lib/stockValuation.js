@@ -17,6 +17,26 @@
  *    diverged with no error. A shortfall is now an explicit failure.
  */
 
+/**
+ * The value a movement should give back, or null if it is not a receipt reversal.
+ *
+ * A reversal must remove exactly what its receipt added — the GL's mirror entry
+ * credits Inventory with that same original value. Replaying it as an ordinary
+ * issue (qty x current average) reproduces the very drift being looked for, which
+ * is why a replay-based revaluation could not see it.
+ */
+export const reversalValueOf = (movement = {}) => {
+  if (String(movement?.movement_type) !== 'goods_receipt_reversal') return null;
+
+  const explicit = parseFloat(movement.total_value);
+  if (Number.isFinite(explicit) && explicit > 0) return explicit;
+
+  const qty = Math.abs(parseFloat(movement.quantity) || 0);
+  const cost = parseFloat(movement.cost_per_unit ?? movement.unit_cost) || 0;
+  const derived = qty * cost;
+  return derived > 0 ? derived : null;
+};
+
 export class StockShortfallError extends Error {
   constructor({ materialCode, warehouse, available, requested }) {
     super(

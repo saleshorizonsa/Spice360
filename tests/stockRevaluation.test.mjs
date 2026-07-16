@@ -100,6 +100,54 @@ test('an already-correct position is reported as unchanged', () => {
   assert.equal(plan.totals.valueDelta, 0);
 });
 
+// A receipt reversal must give back what its receipt added — the same value the
+// GL's mirror entry reverses. Replaying it as an ordinary issue (qty x average)
+// reproduced the exact drift the revaluation exists to find, so the tool reported
+// "already valued correctly" and never offered an Apply button.
+test('a receipt reversal is replayed by value, not at the moving average', () => {
+  const h = [
+    receipt(100, 10, '2026-01-01'),                       // 100 @ 10 = 1,000
+    receipt(50, 22, '2026-02-01'),                        // -> 150 @ 14 = 2,100
+    { material_code: 'CIN-001', from_warehouse: 'WH1', batch_number: '',
+      movement_type: 'goods_receipt_reversal',
+      quantity: 50, cost_per_unit: 22, total_value: 1100, movement_date: '2026-03-01' },
+  ];
+  const r = replayPosition(h, KEY);
+  assert.equal(r.quantity, 100);
+  assert.equal(r.totalValue, 1000); // gave back exactly 1,100 — not 50 x 14 = 700
+  assert.equal(r.unitCost, 10);     // average un-blended back to the opening cost
+});
+
+test('the plan now DETECTS stock left above the GL by a mis-valued reversal', () => {
+  // Stored stock kept the old (wrong) result: reversal removed 50 x 14 = 700,
+  // leaving 100 units valued 1,400. The truth is 1,000.
+  const stockLevels = [{
+    id: 's1', material_code: 'CIN-001', warehouse_code: 'WH1', bin_code: '', batch_number: '',
+    quantity: 100, unit_cost: 14, total_value: 1400,
+  }];
+  const movements = [
+    receipt(100, 10, '2026-01-01'),
+    receipt(50, 22, '2026-02-01'),
+    { material_code: 'CIN-001', from_warehouse: 'WH1', batch_number: '',
+      movement_type: 'goods_receipt_reversal',
+      quantity: 50, cost_per_unit: 22, total_value: 1100, movement_date: '2026-03-01' },
+  ];
+
+  const plan = buildRevaluationPlan({ stockLevels, movements });
+  assert.equal(plan.changes.length, 1);        // an Apply button will now render
+  assert.equal(plan.unreliable.length, 0);     // quantity reconciles, so it is safe to apply
+  assert.equal(plan.changes[0].newValue, 1000);
+  assert.equal(plan.changes[0].valueDelta, -400); // writes the overstatement off
+});
+
+test('an ordinary issue is still replayed at the moving average', () => {
+  const h = [receipt(100, 10, '2026-01-01'), receipt(50, 22, '2026-02-01'), issue(50, '2026-03-01')];
+  const r = replayPosition(h, KEY);
+  assert.equal(r.quantity, 100);
+  assert.equal(r.unitCost, 14);   // a sale does not un-blend anything
+  assert.equal(r.totalValue, 1400);
+});
+
 test('positionKey is stable across bin and batch', () => {
   assert.equal(
     positionKey({ material_code: 'M', warehouse_code: 'W', bin_code: 'B', batch_number: 'L1' }),
