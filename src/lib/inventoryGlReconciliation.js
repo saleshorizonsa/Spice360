@@ -27,7 +27,18 @@ const num = (value) => {
 
 const round = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
 
-const isPosted = (entry) => String(entry?.status || '').toLowerCase() === 'posted';
+/**
+ * Did this entry actually hit the ledger?
+ *
+ * Both 'posted' and 'reversed' did. reverseJournalEntry() creates a MIRROR entry
+ * (debits and credits swapped) and marks the original 'reversed' — the mirror is
+ * what cancels it, and the original's lines still stand as ledger history.
+ *
+ * Counting only 'posted' excluded the reversed original while still counting its
+ * mirror, so every reversal was subtracted TWICE and the account balance was
+ * understated by the reversed amount. Only never-posted drafts are excluded.
+ */
+const hitTheLedger = (entry) => ['posted', 'reversed'].includes(String(entry?.status || '').toLowerCase());
 
 const REFERENCE_LABELS = {
   grn: 'Goods receipts (GRN)',
@@ -59,7 +70,7 @@ export const reconcileInventoryToGl = ({
 
   // ── GL: net movement on the Inventory account (posted entries only) ──
   const entryByJournal = new Map(
-    journalEntries.filter(isPosted).map((e) => [String(e.journal_number), e])
+    journalEntries.filter(hitTheLedger).map((e) => [String(e.journal_number), e])
   );
 
   const bySourceMap = new Map();

@@ -74,11 +74,47 @@ test('opening-balance stock with no movements is flagged (stock > GL)', () => {
   assert.equal(r.openingCount, 1);
 });
 
-test('a reversed journal is excluded from the GL balance', () => {
-  const journalEntries = [{ journal_number: 'JE-G', status: 'reversed', reference_type: 'grn' }];
-  const journalLines = [{ journal_number: 'JE-G', account_code: '1200', debit: 60000, credit: 0 }];
+// reverseJournalEntry() posts a MIRROR entry and marks the original 'reversed'.
+// Both are real ledger history and must both count — the mirror is what cancels
+// the original. Counting only 'posted' dropped the original while keeping the
+// mirror, subtracting every reversal twice.
+test('a reversed entry and its mirror net to zero, not to minus the amount', () => {
+  const journalEntries = [
+    { journal_number: 'JE-G', status: 'reversed', reference_type: 'grn' },      // original
+    { journal_number: 'JE-R', status: 'posted',   reference_type: 'reversal' }, // mirror
+  ];
+  const journalLines = [
+    { journal_number: 'JE-G', account_code: '1200', debit: 60000, credit: 0 },
+    { journal_number: 'JE-R', account_code: '1200', debit: 0, credit: 60000 },
+  ];
+  const r = reconcileInventoryToGl({ stockLevels: [], journalEntries, journalLines, gl });
+  assert.equal(r.glBalance, 0); // not -60000
+});
+
+test('a draft entry that never posted is excluded', () => {
+  const journalEntries = [{ journal_number: 'JE-D', status: 'draft', reference_type: 'grn' }];
+  const journalLines = [{ journal_number: 'JE-D', account_code: '1200', debit: 60000, credit: 0 }];
   const r = reconcileInventoryToGl({ stockLevels: [], journalEntries, journalLines, gl });
   assert.equal(r.glBalance, 0);
+});
+
+// Reproduces the reported figures: GRNs totalling 934,900 of which 254,800 were
+// reversed. The GL must read 680,100 (still-open receipts), not 425,300.
+test('reversed GRNs are not double-subtracted from the Inventory balance', () => {
+  const journalEntries = [
+    { journal_number: 'JE-1', status: 'posted',   reference_type: 'grn' },      // open receipts
+    { journal_number: 'JE-2', status: 'reversed', reference_type: 'grn' },      // reversed receipt
+    { journal_number: 'JE-3', status: 'posted',   reference_type: 'reversal' }, // its mirror
+  ];
+  const journalLines = [
+    { journal_number: 'JE-1', account_code: '1200', debit: 680100, credit: 0 },
+    { journal_number: 'JE-2', account_code: '1200', debit: 254800, credit: 0 },
+    { journal_number: 'JE-3', account_code: '1200', debit: 0, credit: 254800 },
+  ];
+  const r = reconcileInventoryToGl({ stockLevels: [], journalEntries, journalLines, gl });
+  assert.equal(r.glBalance, 680100); // was reading 425,300 — understated by the reversal
+  const grn = r.bySource.find((s) => s.reference_type === 'grn');
+  assert.equal(grn.net, 934900); // all receipts ever, matching GRNI credited
 });
 
 test('lines on other accounts are ignored', () => {
