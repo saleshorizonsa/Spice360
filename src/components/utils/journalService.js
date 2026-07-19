@@ -33,7 +33,7 @@ const assertDirectPostingAllowed = async (lines, orgId) => {
 };
 
 // OB52-aware period gate. Checks period_control (new) with fallback to accounting_period (legacy).
-const assertPeriodAllowed = async (entryDate, orgId, area = "gl", specialPeriod = null) => {
+export const assertPeriodAllowed = async (entryDate, orgId, area = "gl", specialPeriod = null) => {
   const fp = dateToFiscalPeriod(entryDate);
   const periodNumber = specialPeriod != null ? parseInt(specialPeriod, 10) : fp.period;
 

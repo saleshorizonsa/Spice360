@@ -16,7 +16,7 @@ import { processGoodsIssue } from "../utils/inventoryIntegration";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
 import { createNotification } from "../utils/notificationService";
 import { logAuditTrail } from "../utils/auditTrail";
-import { postJournalEntry } from "../utils/journalService";
+import { postJournalEntry, assertPeriodAllowed } from "../utils/journalService";
 import { useGLAccounts } from "../../hooks/useGLAccounts";
 import SearchableSelect from "@/components/ui/SearchableSelect";
 import { buildDeliveryLines, clampDeliverQty, totalDelivering, validateDeliveryLines } from "@/lib/deliveryLines";
@@ -201,6 +201,14 @@ export default function DeliveryForm({ item, onClose }) {
     const pgiMutation = useMutation({
         mutationFn: async () => {
             const shipped = lines.filter(l => Number(l.quantity_delivering) > 0);
+
+            // Check the accounting period is OPEN before moving any stock. PGI
+            // issues stock and then posts COGS; if the period were closed the stock
+            // would move while the GL entry failed, leaving inventory and the ledger
+            // out of step. Fail here so nothing is touched.
+            if (currentOrg?.id) {
+                await assertPeriodAllowed(formData.delivery_date, currentOrg.id, 'inventory');
+            }
 
             // Issue stock for every shipped line, and build the COGS journal as one
             // balanced entry: Dr COGS / Cr Inventory per product.
