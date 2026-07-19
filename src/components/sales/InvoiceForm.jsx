@@ -21,6 +21,7 @@ import { useSubscription } from "@/lib/SubscriptionContext";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
 import { resolveVatRate } from "@/lib/vat";
+import { buildInvoiceLines, clampInvoiceQty, invoiceTotals, validateInvoiceLines } from "@/lib/invoiceLines";
 import SearchableSelect from "../shared/SearchableSelect";
 
 export default function InvoiceForm({ item, onClose }) {
@@ -59,10 +60,21 @@ export default function InvoiceForm({ item, onClose }) {
         initialData: []
     });
 
+    const { data: allSoLines = [] } = useQuery({
+        queryKey: ['salesOrderLines'],
+        queryFn: () => matrixSales.entities.SalesOrderLine.list(),
+        initialData: []
+    });
+
     // ── Multi-Delivery state ──────────────────────────────────────────────────
     // Each entry: { delivery_number, delivery_date, delivered_quantity, product_code }
     const [linkedDeliveries, setLinkedDeliveries] = useState([]);
     const [deliveryToAdd, setDeliveryToAdd] = useState('');
+
+    // Per-product invoice lines aggregated from the linked deliveries. Product,
+    // unit price and delivered quantity are fixed; only the billed quantity is
+    // editable, defaulting to everything delivered.
+    const [lines, setLines] = useState([]);
 
     const totalDeliveredQty = linkedDeliveries.reduce(
         (sum, d) => sum + (parseFloat(d.delivered_quantity) || 0), 0
@@ -121,6 +133,21 @@ export default function InvoiceForm({ item, onClose }) {
             } else if (typeof refs === 'string' && refs) {
                 try { setLinkedDeliveries(JSON.parse(refs)); } catch { setLinkedDeliveries([]); }
             }
+
+            // Parse stored invoice lines (multi-product invoices).
+            let storedLines = item.invoice_lines;
+            if (typeof storedLines === 'string') { try { storedLines = JSON.parse(storedLines); } catch { storedLines = null; } }
+            if (Array.isArray(storedLines) && storedLines.length) {
+                setLines(storedLines.map(l => ({
+                    product_code: l.product_code,
+                    product_name: l.product_name,
+                    unit_of_measure: l.unit_of_measure || '',
+                    unit_price: parseFloat(l.unit_price) || 0,
+                    delivered_quantity: parseFloat(l.delivered_quantity ?? l.quantity) || 0,
+                    quantity: parseFloat(l.quantity) || 0,
+                    line_total: parseFloat(l.line_total) || 0,
+                })));
+            }
         }
     }, [item]);
 
@@ -132,12 +159,21 @@ export default function InvoiceForm({ item, onClose }) {
     };
 
     // ── Recalculate totals + 3-way match ──────────────────────────────────────
+    // Totals come from the invoice lines when there are any (multi-product), and
+    // fall back to the single header quantity x unit_price for a manual invoice
+    // with no linked delivery lines.
     useEffect(() => {
-        const subtotal = (formData.quantity || 0) * (formData.unit_price || 0);
-        const taxAmount = subtotal * ((formData.tax_percent || 0) / 100);
-        const total = subtotal + taxAmount;
+        const hasLines = lines.length > 0;
+        const t = hasLines
+            ? invoiceTotals(lines, formData.tax_percent)
+            : (() => {
+                const subtotal = (formData.quantity || 0) * (formData.unit_price || 0);
+                const taxAmount = subtotal * ((formData.tax_percent || 0) / 100);
+                return { subtotal, taxAmount, total: subtotal + taxAmount, totalQuantity: formData.quantity || 0 };
+            })();
 
-        const qtyVariance = (formData.quantity || 0) - totalDeliveredQty;
+        const billedQty = hasLines ? t.totalQuantity : (formData.quantity || 0);
+        const qtyVariance = billedQty - totalDeliveredQty;
         const toleranceFraction = (parseFloat(formData.tolerance_percent) || 0) / 100;
 
         let matchStatus = 'pending';
@@ -150,15 +186,16 @@ export default function InvoiceForm({ item, onClose }) {
 
         setFormData(prev => ({
             ...prev,
-            subtotal,
-            tax_amount: taxAmount,
-            total_amount: total,
+            subtotal: t.subtotal,
+            tax_amount: t.taxAmount,
+            total_amount: t.total,
+            quantity: hasLines ? billedQty : prev.quantity,
             quantity_variance: qtyVariance,
             three_way_match_status: matchStatus,
             total_delivered_quantity: totalDeliveredQty,
         }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [formData.quantity, formData.unit_price, formData.tax_percent, formData.tolerance_percent, totalDeliveredQty]);
+    }, [lines, formData.quantity, formData.unit_price, formData.tax_percent, formData.tolerance_percent, totalDeliveredQty]);
 
     // ── Deliveries available to add ───────────────────────────────────────────
     const availableDeliveryOptions = useMemo(() => {
@@ -188,6 +225,7 @@ export default function InvoiceForm({ item, onClose }) {
         if (!selectedOrder) return;
 
         setLinkedDeliveries([]);
+        setLines([]);
         setDeliveryToAdd('');
 
         const invoiceDate = new Date(formData.invoice_date);
@@ -236,12 +274,13 @@ export default function InvoiceForm({ item, onClose }) {
         }));
     };
 
-    // Default the invoiced quantity to everything delivered across the linked notes;
-    // the user edits it down for a partial invoice. Uses the delivered_quantity the
-    // delivery actually issued (delivery_number join), not the ordered figure.
-    const syncInvoiceQtyToDeliveries = (linked) => {
-        const total = linked.reduce((sum, d) => sum + (parseFloat(d.delivered_quantity) || 0), 0);
-        setFormData(prev => ({ ...prev, quantity: total }));
+    // Rebuild the per-product invoice lines from the linked delivery notes. Each
+    // line bills everything delivered by default; the user edits it down. Uses the
+    // full Delivery records (their delivery_lines) and prices from the SO lines.
+    const rebuildLines = (linked, orderNumber) => {
+        const soLines = allSoLines.filter(l => l.order_number === orderNumber);
+        const built = buildInvoiceLines({ linkedDeliveries: linked, deliveries, soLines });
+        setLines(built);
     };
 
     const handleAddDelivery = () => {
@@ -259,7 +298,7 @@ export default function InvoiceForm({ item, onClose }) {
             }
         ];
         setLinkedDeliveries(next);
-        syncInvoiceQtyToDeliveries(next);
+        rebuildLines(next, formData.sales_order_number);
         setDeliveryToAdd('');
         setIsDirty(true);
     };
@@ -267,8 +306,17 @@ export default function InvoiceForm({ item, onClose }) {
     const handleRemoveDelivery = (deliveryNumber) => {
         const next = linkedDeliveries.filter(d => d.delivery_number !== deliveryNumber);
         setLinkedDeliveries(next);
-        syncInvoiceQtyToDeliveries(next);
+        rebuildLines(next, formData.sales_order_number);
         setIsDirty(true);
+    };
+
+    const handleLineQtyChange = (productCode, value) => {
+        if (!isDirty) setIsDirty(true);
+        setLines(prev => prev.map(l =>
+            l.product_code === productCode
+                ? { ...l, quantity: clampInvoiceQty(value, l.delivered_quantity) }
+                : l
+        ));
     };
 
     const handleChange = (field, value) => {
@@ -386,8 +434,36 @@ export default function InvoiceForm({ item, onClose }) {
     const handleSubmit = (e) => {
         e.preventDefault();
         if (!item && atInvoiceLimit) return;
+
+        // Multi-line invoice: block over-billing beyond what was delivered.
+        if (lines.length > 0) {
+            const { ok, errors } = validateInvoiceLines(lines);
+            if (!ok) {
+                toast({ title: "Invalid Data", description: errors[0], variant: "destructive" });
+                return;
+            }
+        }
+
+        const billed = lines.filter(l => Number(l.quantity) > 0).map(l => ({
+            product_code: l.product_code,
+            product_name: l.product_name,
+            unit_of_measure: l.unit_of_measure,
+            unit_price: l.unit_price,
+            delivered_quantity: l.delivered_quantity,
+            quantity: l.quantity,
+            line_total: Number(l.quantity) * Number(l.unit_price),
+        }));
+
         saveMutation.mutate({
             ...formData,
+            invoice_lines: billed,
+            // Header mirrors for lists / GL / print fallback: first line + totals.
+            ...(billed.length > 0 ? {
+                product_code: billed[0].product_code,
+                product_name: billed[0].product_name,
+                unit_price: billed[0].unit_price,
+                quantity: billed.reduce((s, l) => s + Number(l.quantity), 0),
+            } : {}),
             delivery_references: linkedDeliveries,
             // backward compat: first delivery number
             delivery_number: linkedDeliveries.map(d => d.delivery_number).join(', ') || formData.delivery_number,
@@ -497,13 +573,23 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
 <table>
   <thead><tr><th>#</th><th>Description / الوصف</th><th style="text-align:right">Qty</th><th style="text-align:right">Unit Price (LKR)</th><th style="text-align:right">Amount (LKR)</th></tr></thead>
   <tbody>
+    ${(lines.length > 0
+        ? lines.filter(l => Number(l.quantity) > 0).map((l, i) => `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${l.product_code ? `[${l.product_code}] ` : ''}${l.product_name || ''}</td>
+      <td class="num">${l.quantity}</td>
+      <td class="num">${fmt(l.unit_price)}</td>
+      <td class="num">${fmt(Number(l.quantity) * Number(l.unit_price))}</td>
+    </tr>`).join('')
+        : `
     <tr>
       <td>1</td>
       <td>${formData.product_code ? `[${formData.product_code}] ` : ''}${formData.product_name}</td>
       <td class="num">${formData.quantity}</td>
       <td class="num">${fmt(formData.unit_price)}</td>
       <td class="num">${fmt(formData.subtotal)}</td>
-    </tr>
+    </tr>`)}
   </tbody>
 </table>
 <div class="totals-wrap">
@@ -758,59 +844,84 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
                                         </span>
                                     )}
                                 </h3>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <Label>Product Code *</Label>
-                                        <Input
-                                            value={formData.product_code}
-                                            onChange={(e) => handleChange('product_code', e.target.value)}
-                                            required
-                                            disabled={!!formData.sales_order_number}
-                                        />
+                                {/* Multi-product: one line per delivered product, only
+                                    the billed quantity editable. */}
+                                {lines.length > 0 ? (
+                                    <div className="overflow-x-auto rounded-lg border">
+                                        <table className="w-full text-sm">
+                                            <thead className="bg-gray-50 text-gray-600">
+                                                <tr>
+                                                    <th className="px-3 py-2 text-left font-medium">Product</th>
+                                                    <th className="px-3 py-2 text-right font-medium">Delivered</th>
+                                                    <th className="px-3 py-2 text-right font-medium">Billing Qty</th>
+                                                    <th className="px-3 py-2 text-right font-medium">Unit Price</th>
+                                                    <th className="px-3 py-2 text-right font-medium">Amount</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y">
+                                                {lines.map((l) => (
+                                                    <tr key={l.product_code} className="hover:bg-gray-50">
+                                                        <td className="px-3 py-2">
+                                                            <span className="font-mono text-xs">{l.product_code}</span>
+                                                            <div className="text-xs text-gray-500">{l.product_name}</div>
+                                                        </td>
+                                                        <td className="px-3 py-2 text-right text-gray-500">{Number(l.delivered_quantity).toFixed(3)}</td>
+                                                        <td className="px-3 py-2 text-right">
+                                                            <Input
+                                                                type="number"
+                                                                min="0"
+                                                                max={l.delivered_quantity}
+                                                                step="0.001"
+                                                                value={l.quantity}
+                                                                onChange={(e) => handleLineQtyChange(l.product_code, e.target.value)}
+                                                                className="w-28 text-right ml-auto"
+                                                            />
+                                                        </td>
+                                                        <td className="px-3 py-2 text-right">{Number(l.unit_price).toFixed(2)}</td>
+                                                        <td className="px-3 py-2 text-right font-semibold">{(Number(l.quantity) * Number(l.unit_price)).toFixed(2)}</td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
                                     </div>
-                                    <div>
-                                        <Label>Product Name *</Label>
-                                        <Input
-                                            value={formData.product_name}
-                                            onChange={(e) => handleChange('product_name', e.target.value)}
-                                            required
-                                            disabled={!!formData.sales_order_number}
-                                        />
+                                ) : (
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <Label>Product Code *</Label>
+                                            <Input value={formData.product_code} onChange={(e) => handleChange('product_code', e.target.value)} required disabled={!!formData.sales_order_number} />
+                                        </div>
+                                        <div>
+                                            <Label>Product Name *</Label>
+                                            <Input value={formData.product_name} onChange={(e) => handleChange('product_name', e.target.value)} required disabled={!!formData.sales_order_number} />
+                                        </div>
                                     </div>
-                                </div>
+                                )}
 
                                 <div className="grid grid-cols-3 gap-4">
-                                    <div>
-                                        <Label>Invoiced Quantity *</Label>
-                                        <Input
-                                            type="number"
-                                            value={formData.quantity}
-                                            onChange={(e) => handleChange('quantity', parseFloat(e.target.value) || 0)}
-                                            required
-                                        />
-                                        {totalDeliveredQty > 0 && formData.quantity !== totalDeliveredQty && (
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="sm"
-                                                className="text-xs mt-1 h-6 text-gray-500"
-                                                onClick={() => handleChange('quantity', totalDeliveredQty)}
-                                            >
-                                                Use delivered total ({totalDeliveredQty.toFixed(3)})
-                                            </Button>
-                                        )}
-                                    </div>
-                                    <div>
-                                        <Label>Unit Price (LKR) *</Label>
-                                        <Input
-                                            type="number"
-                                            step="0.01"
-                                            value={formData.unit_price}
-                                            onChange={(e) => handleChange('unit_price', parseFloat(e.target.value) || 0)}
-                                            required
-                                            disabled={!!formData.sales_order_number}
-                                        />
-                                    </div>
+                                    {lines.length === 0 && (
+                                        <>
+                                            <div>
+                                                <Label>Invoiced Quantity *</Label>
+                                                <Input
+                                                    type="number"
+                                                    value={formData.quantity}
+                                                    onChange={(e) => handleChange('quantity', parseFloat(e.target.value) || 0)}
+                                                    required
+                                                />
+                                            </div>
+                                            <div>
+                                                <Label>Unit Price (LKR) *</Label>
+                                                <Input
+                                                    type="number"
+                                                    step="0.01"
+                                                    value={formData.unit_price}
+                                                    onChange={(e) => handleChange('unit_price', parseFloat(e.target.value) || 0)}
+                                                    required
+                                                    disabled={!!formData.sales_order_number}
+                                                />
+                                            </div>
+                                        </>
+                                    )}
                                     <div>
                                         <Label>VAT Type</Label>
                                         <Select
