@@ -19,6 +19,7 @@ import { logAuditTrail } from "../utils/auditTrail";
 import { postJournalEntry } from "../utils/journalService";
 import { useGLAccounts } from "../../hooks/useGLAccounts";
 import SearchableSelect from "@/components/ui/SearchableSelect";
+import { buildDeliveryLines, clampDeliverQty, totalDelivering, validateDeliveryLines } from "@/lib/deliveryLines";
 
 export default function DeliveryForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -28,19 +29,9 @@ export default function DeliveryForm({ item, onClose }) {
     const { currentOrganization: currentOrg } = useOrganization();
     const gl = useGLAccounts();
 
-    // Get current user
     const [currentUser, setCurrentUser] = useState(null);
-    
     useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const user = await matrixSales.auth.me();
-                setCurrentUser(user);
-            } catch (error) {
-                console.error('Error fetching user:', error);
-            }
-        };
-        fetchUser();
+        matrixSales.auth.me().then(setCurrentUser).catch(() => {});
     }, []);
 
     const { data: salesOrders = [] } = useQuery({
@@ -49,304 +40,308 @@ export default function DeliveryForm({ item, onClose }) {
         initialData: []
     });
 
-    const { data: products = [] } = useQuery({
-        queryKey: ['products'],
-        queryFn: () => matrixSales.entities.Product.list(),
+    // Every SO line and every prior delivery — needed to pick all lines and to work
+    // out what is still outstanding per product.
+    const { data: allSoLines = [] } = useQuery({
+        queryKey: ['salesOrderLines'],
+        queryFn: () => matrixSales.entities.SalesOrderLine.list(),
         initialData: []
     });
+    const { data: allDeliveries = [] } = useQuery({
+        queryKey: ['deliveries'],
+        queryFn: () => matrixSales.entities.Delivery.list('-delivery_date'),
+        initialData: []
+    });
+
+    // Editable delivery lines (one per SO line). The product is locked; only the
+    // "delivering now" quantity is editable, defaulting to what is outstanding.
+    const [lines, setLines] = useState([]);
 
     const [formData, setFormData] = useState({
         delivery_number: '',
         sales_order_number: '',
         customer_name: '',
+        customer_code: '',
         delivery_date: new Date().toISOString().split('T')[0],
-        product_code: '',
-        product_name: '',
-        quantity_ordered: 0,
-        quantity_delivered: 0,
         delivery_address: '',
         receiver_name: '',
         receiver_signature: '',
         vehicle_number: '',
         driver_name: '',
+        shipping_location: '',
         status: 'pending',
         pgi_done: false,
         pgi_date: '',
-        pgi_by: '', // Added for audit trail
+        pgi_by: '',
         notes: ''
     });
 
     useEffect(() => {
         if (item) {
             setFormData(item);
+            let existing = item.delivery_lines;
+            if (typeof existing === 'string') { try { existing = JSON.parse(existing); } catch { existing = null; } }
+            if (Array.isArray(existing) && existing.length) {
+                setLines(existing.map((l) => ({
+                    ...l,
+                    quantity_remaining: l.quantity_remaining ?? l.quantity_delivering,
+                    fullyDelivered: false,
+                })));
+            } else if (item.product_code) {
+                // A legacy single-product delivery, shown read-only as one line.
+                setLines([{
+                    line_number: 1,
+                    product_code: item.product_code,
+                    product_name: item.product_name,
+                    unit_of_measure: item.unit_of_measure || '',
+                    unit_price: 0,
+                    quantity_ordered: item.quantity_ordered || item.quantity_delivered || 0,
+                    quantity_already_delivered: 0,
+                    quantity_remaining: item.quantity_delivered || 0,
+                    quantity_delivering: item.quantity_delivered || 0,
+                    fullyDelivered: false,
+                }]);
+            }
         }
     }, [item]);
 
     const handleSalesOrderSelect = (orderNumber) => {
-        const selectedOrder = salesOrders.find(o => o.order_number === orderNumber);
-        if (selectedOrder) {
-            setFormData(prev => ({
-                ...prev,
-                sales_order_number: orderNumber,
-                customer_name: selectedOrder.customer_name,
-                product_code: selectedOrder.product_code,
-                product_name: selectedOrder.product_name,
-                quantity_ordered: selectedOrder.quantity,
-                quantity_delivered: selectedOrder.quantity,
-                delivery_address: selectedOrder.delivery_address || '',
-                notes: `Delivery for Sales Order: ${orderNumber}`
-            }));
+        const so = salesOrders.find(o => o.order_number === orderNumber);
+        if (!so) return;
+
+        // All lines of this SO; fall back to the header product if the SO has no
+        // line records (older single-line orders).
+        let soLines = allSoLines.filter(l => l.order_number === orderNumber);
+        if (soLines.length === 0 && so.product_code) {
+            soLines = [{
+                line_number: 1,
+                product_code: so.product_code,
+                product_name: so.product_name,
+                quantity: so.quantity,
+                unit_of_measure: so.unit_of_measure,
+                unit_price: so.unit_price,
+            }];
         }
+
+        const priorDeliveries = allDeliveries.filter(d => d.sales_order_number === orderNumber && d.id !== item?.id);
+        const built = buildDeliveryLines({ soLines, priorDeliveries });
+
+        setLines(built);
+        setIsDirty(true);
+        setFormData(prev => ({
+            ...prev,
+            sales_order_number: orderNumber,
+            customer_name: so.customer_name,
+            customer_code: so.customer_code || '',
+            delivery_address: so.delivery_address || '',
+            notes: `Delivery for Sales Order: ${orderNumber}`
+        }));
     };
 
+    const handleLineQtyChange = (productCode, value) => {
+        if (!isDirty) setIsDirty(true);
+        setLines(prev => prev.map(l =>
+            l.product_code === productCode
+                ? { ...l, quantity_delivering: clampDeliverQty(value, l.quantity_remaining) }
+                : l
+        ));
+    };
+
+    const totalQty = useMemo(() => totalDelivering(lines), [lines]);
+
+    // A delivery record snapshot for stock/COGS — the header plus a per-line view.
+    const buildDeliveryPayload = () => ({
+        ...formData,
+        delivery_lines: lines
+            .filter(l => Number(l.quantity_delivering) > 0)
+            .map(l => ({
+                product_code: l.product_code,
+                product_name: l.product_name,
+                unit_of_measure: l.unit_of_measure,
+                unit_price: l.unit_price,
+                quantity_ordered: l.quantity_ordered,
+                quantity_remaining: l.quantity_remaining,
+                quantity_delivered: l.quantity_delivering,
+            })),
+        // Header mirrors for lists/back-compat: first shipped line + total quantity.
+        product_code: lines.find(l => Number(l.quantity_delivering) > 0)?.product_code || '',
+        product_name: lines.find(l => Number(l.quantity_delivering) > 0)?.product_name || '',
+        quantity_delivered: totalDelivering(lines),
+    });
+
     const saveMutation = useMutation({
-        mutationFn: async (data) => {
-            let delivery;
+        mutationFn: async () => {
+            const data = buildDeliveryPayload();
             const beforeData = item ? { ...item } : null;
-            
+            let delivery;
             if (item) {
                 delivery = await matrixSales.entities.Delivery.update(item.id, data);
-                
-                // Log audit trail
-                await logAuditTrail({
-                    entityType: 'delivery',
-                    entityId: item.id,
-                    documentNumber: data.delivery_number,
-                    actionType: 'update',
-                    beforeData: beforeData,
-                    afterData: data,
-                    user: currentUser,
-                    severity: 'info',
-                    organizationId: currentOrg?.id // Pass organization ID if available
-                });
+                await logAuditTrail({ entityType: 'delivery', entityId: item.id, documentNumber: data.delivery_number, actionType: 'update', beforeData, afterData: data, user: currentUser, severity: 'info', organizationId: currentOrg?.id });
             } else {
                 delivery = await matrixSales.entities.Delivery.create(data);
-                
-                // Log audit trail
-                await logAuditTrail({
-                    entityType: 'delivery',
-                    entityId: delivery.id,
-                    documentNumber: data.delivery_number,
-                    actionType: 'create',
-                    afterData: data,
-                    user: currentUser,
-                    severity: 'info',
-                    relatedDocumentType: 'sales_order',
-                    relatedDocumentId: data.sales_order_number,
-                    organizationId: currentOrg?.id // Pass organization ID if available
-                });
+                await logAuditTrail({ entityType: 'delivery', entityId: delivery.id, documentNumber: data.delivery_number, actionType: 'create', afterData: data, user: currentUser, severity: 'info', relatedDocumentType: 'sales_order', relatedDocumentId: data.sales_order_number, organizationId: currentOrg?.id });
             }
             return delivery;
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['deliveries'] });
             queryClient.invalidateQueries({ queryKey: ['auditTrails'] });
-            toast({
-                title: "Success",
-                description: item ? "Delivery updated" : "Delivery created",
-                variant: "default"
-            });
+            toast({ title: "Success", description: item ? "Delivery updated" : "Delivery created" });
             onClose();
         },
-        onError: (error) => {
-            toast({
-                title: "Error",
-                description: `Failed to ${item ? 'update' : 'create'} delivery: ${error.message || 'Unknown error'}`,
-                variant: "destructive"
-            });
-        }
+        onError: (error) => toast({ title: "Error", description: `Failed to save delivery: ${error.message || 'Unknown error'}`, variant: "destructive" }),
     });
 
     const pgiMutation = useMutation({
-        mutationFn: async (deliveryData) => { // Changed to accept full deliveryData object
-            // Process goods issue (updates product stock)
-            await processGoodsIssue(deliveryData, currentUser, currentOrg?.id); // Pass organization ID
+        mutationFn: async () => {
+            const shipped = lines.filter(l => Number(l.quantity_delivering) > 0);
 
-            // Update delivery record
-            const updatedDelivery = await matrixSales.entities.Delivery.update(deliveryData.id, {
-                ...deliveryData, // Ensure all fields are passed
+            // Issue stock for every shipped line, and build the COGS journal as one
+            // balanced entry: Dr COGS / Cr Inventory per product.
+            const glLines = [];
+            for (const l of shipped) {
+                await processGoodsIssue({
+                    delivery_number: formData.delivery_number,
+                    delivery_date: formData.delivery_date,
+                    product_code: l.product_code,
+                    product_name: l.product_name,
+                    quantity_delivered: l.quantity_delivering,
+                    unit_of_measure: l.unit_of_measure,
+                    shipping_location: formData.shipping_location,
+                }, currentUser, currentOrg?.id);
+
+                const stock = await matrixSales.entities.StockLevel.filter({ material_code: l.product_code });
+                const unitCost = parseFloat(stock?.[0]?.unit_cost || 0);
+                const cogs = unitCost * Number(l.quantity_delivering);
+                if (cogs > 0) {
+                    glLines.push({ account_code: gl.cogs_general, account_name: "Cost of Goods Sold", debit: cogs, credit: 0, description: `${l.product_name} × ${l.quantity_delivering}` });
+                    glLines.push({ account_code: gl.inventory, account_name: "Inventory", debit: 0, credit: cogs, description: `Goods issue ${formData.delivery_number}: ${l.product_code}` });
+                }
+            }
+
+            const posted = buildDeliveryPayload();
+            const updatedDelivery = await matrixSales.entities.Delivery.update(item.id, {
+                ...posted,
                 pgi_done: true,
                 pgi_date: new Date().toISOString().split('T')[0],
                 pgi_by: currentUser?.email,
                 status: 'pgi_completed'
             });
 
-            // Find and update sales order quantity delivered and status
-            const salesOrdersResult = await matrixSales.entities.SalesOrder.filter({
-                order_number: deliveryData.sales_order_number
-            });
-            
-            if (salesOrdersResult && salesOrdersResult.length > 0) {
-                const salesOrder = salesOrdersResult[0];
-                const newQuantityDelivered = (salesOrder.quantity_delivered || 0) + deliveryData.quantity_delivered;
-                let newSalesOrderStatus = salesOrder.status;
-
-                if (newQuantityDelivered >= salesOrder.quantity) {
-                    newSalesOrderStatus = 'delivered';
-                } else if (newQuantityDelivered > 0 && newQuantityDelivered < salesOrder.quantity) {
-                    newSalesOrderStatus = 'partially_delivered';
-                }
-
-                await matrixSales.entities.SalesOrder.update(salesOrder.id, {
-                    quantity_delivered: newQuantityDelivered,
-                    status: newSalesOrderStatus
-                });
-            }
-
-            // COGS recognition: DR COGS / CR Inventory
-            if (currentOrg?.id) {
-                const stockLevels = await matrixSales.entities.StockLevel.filter({
-                    material_code: deliveryData.product_code
-                });
-                const unitCost = parseFloat(stockLevels?.[0]?.unit_cost || 0);
-                const cogsAmount = unitCost * (deliveryData.quantity_delivered || 0);
-
-                if (cogsAmount > 0) {
+            // COGS journal (one entry for the whole delivery). Non-fatal.
+            if (currentOrg?.id && glLines.length) {
+                try {
                     await postJournalEntry({
-                        lines: [
-                            {
-                                account_code: gl.cogs_general,
-                                account_name: "Cost of Goods Sold",
-                                debit: cogsAmount, credit: 0,
-                                description: `${deliveryData.product_name} × ${deliveryData.quantity_delivered}`
-                            },
-                            {
-                                account_code: gl.inventory,
-                                account_name: "Inventory",
-                                debit: 0, credit: cogsAmount,
-                                description: `Goods issue: ${deliveryData.delivery_number}`
-                            }
-                        ],
+                        lines: glLines,
                         referenceType: 'delivery',
-                        referenceId: deliveryData.delivery_number,
-                        description: `Goods issue: ${deliveryData.delivery_number} – ${deliveryData.customer_name}`,
-                        entryDate: deliveryData.delivery_date,
+                        referenceId: formData.delivery_number,
+                        description: `Goods issue: ${formData.delivery_number} – ${formData.customer_name}`,
+                        entryDate: formData.delivery_date,
                         entryType: 'goods_issue',
                         createdBy: currentUser?.email || '',
                         orgId: currentOrg.id,
                         area: "inventory"
                     });
+                } catch (glErr) {
+                    toast({ title: "PGI posted, GL failed", description: `Stock issued but the COGS entry failed: ${glErr.message}`, variant: "destructive", duration: 15000 });
                 }
             }
 
-            // Log audit trail
-            await logAuditTrail({
-                entityType: 'delivery',
-                entityId: deliveryData.id,
-                documentNumber: deliveryData.delivery_number,
-                actionType: 'complete_pgi',
-                afterData: { pgi_done: true, status: 'pgi_completed', pgi_by: currentUser?.email },
-                user: currentUser,
-                severity: 'info',
-                organizationId: currentOrg?.id // Pass organization ID if available
-            });
+            // Roll each shipped line up to its SO line's delivered quantity.
+            try {
+                const sos = await matrixSales.entities.SalesOrder.filter({ order_number: formData.sales_order_number });
+                if (sos?.length) {
+                    const so = sos[0];
+                    const newDelivered = (parseFloat(so.quantity_delivered) || 0) + totalDelivering(shipped);
+                    const ordered = parseFloat(so.quantity) || 0;
+                    const status = newDelivered >= ordered && ordered > 0 ? 'delivered'
+                        : newDelivered > 0 ? 'partially_delivered' : so.status;
+                    await matrixSales.entities.SalesOrder.update(so.id, { quantity_delivered: newDelivered, status });
+                }
+            } catch (_) { /* non-fatal */ }
 
-            // Auto-create Invoice draft after PGI (non-fatal)
+            await logAuditTrail({ entityType: 'delivery', entityId: item.id, documentNumber: formData.delivery_number, actionType: 'complete_pgi', afterData: { pgi_done: true, status: 'pgi_completed', pgi_by: currentUser?.email }, user: currentUser, severity: 'info', organizationId: currentOrg?.id });
+
+            // Auto-create an Invoice draft covering every shipped line. Non-fatal.
             try {
                 const invoiceNumber = await getNextDocumentNumber('invoice');
                 const today = new Date().toISOString().slice(0, 10);
                 const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-                const linkedSO = salesOrdersResult?.[0];
-                const unitPrice = (deliveryData.quantity_delivered || 0) > 0
-                    ? (parseFloat(linkedSO?.total_amount) || 0) / deliveryData.quantity_delivered
-                    : 0;
-                const subtotal = unitPrice * (deliveryData.quantity_delivered || 0);
+                const sos = await matrixSales.entities.SalesOrder.filter({ order_number: formData.sales_order_number });
+                const so = sos?.[0];
+                const invoiceLines = shipped.map(l => ({
+                    product_code: l.product_code,
+                    product_name: l.product_name,
+                    quantity: l.quantity_delivering,
+                    unit_price: l.unit_price,
+                    line_total: l.unit_price * Number(l.quantity_delivering),
+                }));
+                const subtotal = invoiceLines.reduce((s, l) => s + l.line_total, 0);
                 await matrixSales.entities.Invoice.create({
-                    invoice_number:       invoiceNumber,
-                    invoice_date:         today,
-                    due_date:             dueDate,
-                    sales_order_number:   deliveryData.sales_order_number,
-                    delivery_number:      deliveryData.delivery_number,
-                    delivery_references:  [{
-                        delivery_number:    deliveryData.delivery_number,
-                        delivery_date:      deliveryData.delivery_date,
-                        delivered_quantity: deliveryData.quantity_delivered,
-                        product_code:       deliveryData.product_code,
-                    }],
-                    customer_name:    deliveryData.customer_name,
-                    customer_code:    linkedSO?.customer_code || '',
-                    product_code:     deliveryData.product_code,
-                    product_name:     deliveryData.product_name,
-                    quantity:         deliveryData.quantity_delivered,
-                    unit_price:       unitPrice,
-                    subtotal:         subtotal,
-                    tax_type:         'vat',
-                    tax_percent:      0,
-                    tax_amount:       0,
-                    total_amount:     subtotal,
-                    payment_terms:    linkedSO?.payment_terms || 'net_30',
-                    payment_status:   'unpaid',
-                    status:           'draft',
-                    notes:            `Auto-created from Delivery ${deliveryData.delivery_number}`,
+                    invoice_number: invoiceNumber,
+                    invoice_date: today,
+                    due_date: dueDate,
+                    sales_order_number: formData.sales_order_number,
+                    delivery_number: formData.delivery_number,
+                    delivery_references: [{ delivery_number: formData.delivery_number, delivery_date: formData.delivery_date, delivered_quantity: totalDelivering(shipped) }],
+                    invoice_lines: invoiceLines,
+                    customer_name: formData.customer_name,
+                    customer_code: formData.customer_code || so?.customer_code || '',
+                    product_code: invoiceLines[0]?.product_code || '',
+                    product_name: invoiceLines[0]?.product_name || '',
+                    quantity: totalDelivering(shipped),
+                    unit_price: invoiceLines[0]?.unit_price || 0,
+                    subtotal,
+                    tax_type: 'vat',
+                    tax_percent: 0,
+                    tax_amount: 0,
+                    total_amount: subtotal,
+                    payment_terms: so?.payment_terms || 'net_30',
+                    payment_status: 'unpaid',
+                    status: 'draft',
+                    notes: `Auto-created from Delivery ${formData.delivery_number}`,
                 });
                 toast({ title: "Invoice Draft Created", description: `${invoiceNumber} created in Sales` });
-                if (currentUser?.email) {
-                    createNotification({ userEmail: currentUser.email, notificationType: 'invoice_auto_created', priority: 'high', title: 'Invoice Draft Auto-Created', message: `${invoiceNumber} was created from Delivery ${deliveryData.delivery_number}`, relatedEntity: 'Invoice', relatedDocumentNumber: invoiceNumber, actionUrl: '/Sales' }).catch(() => {});
-                }
+                if (currentUser?.email) createNotification({ userEmail: currentUser.email, notificationType: 'invoice_auto_created', priority: 'high', title: 'Invoice Draft Auto-Created', message: `${invoiceNumber} was created from Delivery ${formData.delivery_number}`, relatedEntity: 'Invoice', relatedDocumentNumber: invoiceNumber, actionUrl: '/Sales' }).catch(() => {});
             } catch (_) { /* non-fatal */ }
 
             return updatedDelivery;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['deliveries'] });
-            queryClient.invalidateQueries({ queryKey: ['products'] });
-            queryClient.invalidateQueries({ queryKey: ['stockLevels'] });
-            queryClient.invalidateQueries({ queryKey: ['movements'] });
-            queryClient.invalidateQueries({ queryKey: ['sales'] });
-            queryClient.invalidateQueries({ queryKey: ['auditTrails'] });
-            queryClient.invalidateQueries({ queryKey: ['journalEntries'] });
-            queryClient.invalidateQueries({ queryKey: ['invoices'] });
-            toast({
-                title: "Success",
-                description: "PGI posted successfully. Stock updated.",
-                variant: "default"
-            });
+            ['deliveries', 'products', 'stockLevels', 'movements', 'sales', 'auditTrails', 'journalEntries', 'invoices'].forEach(k =>
+                queryClient.invalidateQueries({ queryKey: [k] })
+            );
+            toast({ title: "Success", description: "PGI posted successfully. Stock updated." });
             onClose();
         },
-        onError: (error) => {
-            toast({
-                title: "Error",
-                description: `Failed to complete PGI: ${error.message || 'Unknown error'}. Please try again.`,
-                variant: "destructive"
-            });
-        }
+        onError: (error) => toast({ title: "Error", description: `Failed to complete PGI: ${error.message || 'Unknown error'}.`, variant: "destructive" }),
     });
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        saveMutation.mutate(formData);
+        if (lines.length === 0) {
+            toast({ title: "Select a Sales Order", description: "Choose a sales order to load its lines.", variant: "destructive" });
+            return;
+        }
+        saveMutation.mutate();
     };
 
     const handlePGI = () => {
         if (!item || !item.id) {
-            toast({
-                title: "Error",
-                description: "Please save the delivery first before posting goods issue.",
-                variant: "destructive"
-            });
+            toast({ title: "Save First", description: "Save the delivery before posting goods issue.", variant: "destructive" });
             return;
         }
-
         if (formData.pgi_done) {
-            toast({
-                title: "Already Posted",
-                description: "PGI has already been completed for this delivery.",
-                variant: "destructive"
-            });
+            toast({ title: "Already Posted", description: "PGI has already been completed for this delivery.", variant: "destructive" });
             return;
         }
-
-        if (!formData.product_code || formData.quantity_delivered <= 0) {
-            toast({
-                title: "Invalid Data",
-                description: "Product code and a positive delivered quantity are required to post PGI.",
-                variant: "destructive"
-            });
+        const { ok, errors } = validateDeliveryLines(lines);
+        if (!ok) {
+            toast({ title: "Invalid Data", description: errors[0], variant: "destructive" });
             return;
         }
-
-        if (window.confirm(`Are you sure you want to post goods issue for ${formData.quantity_delivered} units of ${formData.product_name}? This will deduct stock from inventory.`)) {
-            pgiMutation.mutate(formData); // Pass the entire formData
+        if (window.confirm(`Post goods issue for ${totalQty} unit(s) across ${lines.filter(l => Number(l.quantity_delivering) > 0).length} line(s)? This deducts stock from inventory.`)) {
+            pgiMutation.mutate();
         }
     };
 
@@ -356,16 +351,14 @@ export default function DeliveryForm({ item, onClose }) {
     };
 
     const confirmedOrders = salesOrders.filter(o =>
-        o.status === 'confirmed' || o.status === 'in_production' || o.status === 'shipped' || o.status === 'partially_delivered'
+        ['confirmed', 'in_production', 'shipped', 'partially_delivered'].includes(o.status)
     );
-
     const salesOrderOptions = useMemo(() =>
-        confirmedOrders.map(o => ({
-            value: o.order_number,
-            label: `${o.order_number} - ${o.customer_name} - ${o.product_name} (${o.quantity} units)`
-        })),
+        confirmedOrders.map(o => ({ value: o.order_number, label: `${o.order_number} - ${o.customer_name}` })),
         [confirmedOrders]
     );
+
+    const readOnly = formData.pgi_done;
 
     return (
         <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
@@ -373,21 +366,11 @@ export default function DeliveryForm({ item, onClose }) {
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
                         {item ? 'Edit Delivery' : 'New Delivery'}
-                        {formData.sales_order_number && (
-                            <Badge variant="outline" className="ml-2">
-                                SO: {formData.sales_order_number}
-                            </Badge>
-                        )}
-                        {formData.pgi_done && (
-                            <Badge className="ml-2 bg-green-600">
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                                PGI Done
-                            </Badge>
-                        )}
+                        {formData.sales_order_number && <Badge variant="outline" className="ml-2">SO: {formData.sales_order_number}</Badge>}
+                        {formData.pgi_done && <Badge className="ml-2 bg-green-600"><CheckCircle className="w-3 h-3 mr-1" />PGI Done</Badge>}
                     </DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-6">
-                    {/* Sales Order Reference Section */}
                     {!item && (
                         <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
                             <SearchableSelect
@@ -401,56 +384,33 @@ export default function DeliveryForm({ item, onClose }) {
                             />
                             {formData.sales_order_number && (
                                 <p className="text-sm text-emerald-700 mt-2 flex items-center gap-2">
-                                    <ArrowRight className="w-4 h-4" />
-                                    Data auto-filled from sales order
+                                    <ArrowRight className="w-4 h-4" /> All order lines loaded below
                                 </p>
                             )}
                         </div>
                     )}
 
-                    {/* Delivery Information */}
                     <div className="space-y-4">
                         <h3 className="font-semibold text-lg border-b pb-2">Delivery Information</h3>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label>Delivery Number *</Label>
-                                <Input
-                                    value={formData.delivery_number}
-                                    onChange={(e) => handleChange('delivery_number', e.target.value)}
-                                    required
-                                />
+                                <Input value={formData.delivery_number} onChange={(e) => handleChange('delivery_number', e.target.value)} required disabled={readOnly} />
                             </div>
                             <div>
                                 <Label>Delivery Date *</Label>
-                                <Input
-                                    type="date"
-                                    value={formData.delivery_date}
-                                    onChange={(e) => handleChange('delivery_date', e.target.value)}
-                                    required
-                                />
+                                <Input type="date" value={formData.delivery_date} onChange={(e) => handleChange('delivery_date', e.target.value)} required disabled={readOnly} />
                             </div>
                         </div>
-
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label>Customer Name *</Label>
-                                <Input
-                                    value={formData.customer_name}
-                                    onChange={(e) => handleChange('customer_name', e.target.value)}
-                                    required
-                                    disabled={!!formData.sales_order_number}
-                                />
+                                <Input value={formData.customer_name} onChange={(e) => handleChange('customer_name', e.target.value)} required disabled={!!formData.sales_order_number || readOnly} />
                             </div>
                             <div>
                                 <Label>Status</Label>
-                                <Select 
-                                    value={formData.status} 
-                                    onValueChange={(val) => handleChange('status', val)}
-                                    disabled={formData.pgi_done} // Disable status change if PGI is done
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
+                                <Select value={formData.status} onValueChange={(val) => handleChange('status', val)} disabled={readOnly}>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="pending">Pending</SelectItem>
                                         <SelectItem value="in_transit">In Transit</SelectItem>
@@ -463,127 +423,95 @@ export default function DeliveryForm({ item, onClose }) {
                         </div>
                     </div>
 
-                    {/* Product & Quantity */}
-                    <div className="space-y-4">
-                        <h3 className="font-semibold text-lg border-b pb-2">Product & Quantity</h3>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label>Product Code *</Label>
-                                <Input
-                                    value={formData.product_code}
-                                    onChange={(e) => handleChange('product_code', e.target.value)}
-                                    required
-                                    disabled={!!formData.sales_order_number || formData.pgi_done}
-                                />
+                    {/* Lines — product locked, only the delivering quantity editable. */}
+                    <div className="space-y-3">
+                        <h3 className="font-semibold text-lg border-b pb-2">Order Lines</h3>
+                        {lines.length === 0 ? (
+                            <p className="text-sm text-gray-500">Select a sales order to load its lines.</p>
+                        ) : (
+                            <div className="overflow-x-auto rounded-lg border">
+                                <table className="w-full text-sm">
+                                    <thead className="bg-gray-50 text-gray-600">
+                                        <tr>
+                                            <th className="px-3 py-2 text-left font-medium">Product</th>
+                                            <th className="px-3 py-2 text-right font-medium">Ordered</th>
+                                            <th className="px-3 py-2 text-right font-medium">Already Delivered</th>
+                                            <th className="px-3 py-2 text-right font-medium">Remaining</th>
+                                            <th className="px-3 py-2 text-right font-medium">Delivering Now</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y">
+                                        {lines.map((l) => (
+                                            <tr key={l.product_code} className={l.fullyDelivered ? "bg-gray-50 text-gray-400" : ""}>
+                                                <td className="px-3 py-2">
+                                                    <span className="font-mono text-xs">{l.product_code}</span>
+                                                    <div className="text-xs text-gray-500">{l.product_name}</div>
+                                                </td>
+                                                <td className="px-3 py-2 text-right">{l.quantity_ordered} {l.unit_of_measure}</td>
+                                                <td className="px-3 py-2 text-right text-gray-500">{l.quantity_already_delivered}</td>
+                                                <td className="px-3 py-2 text-right font-medium">{l.quantity_remaining}</td>
+                                                <td className="px-3 py-2 text-right">
+                                                    <Input
+                                                        type="number"
+                                                        min="0"
+                                                        max={l.quantity_remaining}
+                                                        step="0.001"
+                                                        value={l.quantity_delivering}
+                                                        onChange={(e) => handleLineQtyChange(l.product_code, e.target.value)}
+                                                        disabled={readOnly || l.fullyDelivered}
+                                                        className="w-28 text-right ml-auto"
+                                                    />
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        <tr className="bg-emerald-50 font-bold">
+                                            <td className="px-3 py-2 text-emerald-800" colSpan={4}>Total Delivering</td>
+                                            <td className="px-3 py-2 text-right text-emerald-700">{totalQty}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
                             </div>
-                            <div>
-                                <Label>Product Name *</Label>
-                                <Input
-                                    value={formData.product_name}
-                                    onChange={(e) => handleChange('product_name', e.target.value)}
-                                    required
-                                    disabled={!!formData.sales_order_number || formData.pgi_done}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label>Quantity Ordered</Label>
-                                <Input
-                                    type="number"
-                                    value={formData.quantity_ordered}
-                                    onChange={(e) => handleChange('quantity_ordered', parseFloat(e.target.value))}
-                                    disabled={!!formData.sales_order_number || formData.pgi_done}
-                                />
-                            </div>
-                            <div>
-                                <Label>Quantity Delivered *</Label>
-                                <Input
-                                    type="number"
-                                    value={formData.quantity_delivered}
-                                    onChange={(e) => handleChange('quantity_delivered', parseFloat(e.target.value))}
-                                    required
-                                    disabled={formData.pgi_done} // Disable if PGI is done
-                                />
-                            </div>
-                        </div>
-
-                        {formData.pgi_done && (
+                        )}
+                        <p className="text-xs text-gray-500">
+                            Every line is pre-filled with the quantity still outstanding. Lower any line for a partial
+                            delivery — you cannot deliver more than remaining.
+                        </p>
+                        {readOnly && (
                             <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                                 <p className="text-sm text-green-800 font-semibold flex items-center gap-2">
                                     <CheckCircle className="w-4 h-4" />
-                                    PGI Posted on {formData.pgi_date} by {formData.pgi_by || 'Unknown'} - Stock deducted from inventory
+                                    PGI posted on {formData.pgi_date} by {formData.pgi_by || 'Unknown'} — stock deducted.
                                 </p>
                             </div>
                         )}
                     </div>
 
-                    {/* Delivery Details */}
                     <div className="space-y-4">
                         <h3 className="font-semibold text-lg border-b pb-2">Delivery Details</h3>
                         <div>
                             <Label>Delivery Address</Label>
-                            <Textarea
-                                value={formData.delivery_address}
-                                onChange={(e) => handleChange('delivery_address', e.target.value)}
-                                rows={2}
-                            />
+                            <Textarea value={formData.delivery_address} onChange={(e) => handleChange('delivery_address', e.target.value)} rows={2} disabled={readOnly} />
                         </div>
-
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label>Receiver Name</Label>
-                                <Input
-                                    value={formData.receiver_name}
-                                    onChange={(e) => handleChange('receiver_name', e.target.value)}
-                                />
+                                <Input value={formData.receiver_name} onChange={(e) => handleChange('receiver_name', e.target.value)} disabled={readOnly} />
                             </div>
-                            <div>
-                                <Label>Receiver Signature</Label>
-                                <Input
-                                    value={formData.receiver_signature}
-                                    onChange={(e) => handleChange('receiver_signature', e.target.value)}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label>Vehicle Number</Label>
-                                <Input
-                                    value={formData.vehicle_number}
-                                    onChange={(e) => handleChange('vehicle_number', e.target.value)}
-                                />
-                            </div>
-                            <div>
-                                <Label>Driver Name</Label>
-                                <Input
-                                    value={formData.driver_name}
-                                    onChange={(e) => handleChange('driver_name', e.target.value)}
-                                />
+                                <Input value={formData.vehicle_number} onChange={(e) => handleChange('vehicle_number', e.target.value)} disabled={readOnly} />
                             </div>
                         </div>
-
                         <div>
                             <Label>Notes</Label>
-                            <Textarea
-                                value={formData.notes}
-                                onChange={(e) => handleChange('notes', e.target.value)}
-                                rows={3}
-                            />
+                            <Textarea value={formData.notes} onChange={(e) => handleChange('notes', e.target.value)} rows={3} disabled={readOnly} />
                         </div>
                     </div>
 
                     <div className="flex justify-between items-center pt-4 border-t">
                         <div>
                             {item && !formData.pgi_done && (
-                                <Button 
-                                    type="button" 
-                                    onClick={handlePGI}
-                                    className="bg-blue-600 hover:bg-blue-700"
-                                    disabled={pgiMutation.isPending || saveMutation.isPending} // Disable if saving or PGI is pending
-                                >
+                                <Button type="button" onClick={handlePGI} className="bg-blue-600 hover:bg-blue-700" disabled={pgiMutation.isPending || saveMutation.isPending}>
                                     <Package className="w-4 h-4 mr-2" />
                                     {pgiMutation.isPending ? 'Processing...' : 'Post Goods Issue (PGI)'}
                                 </Button>
@@ -591,15 +519,13 @@ export default function DeliveryForm({ item, onClose }) {
                         </div>
                         <div className="flex gap-3">
                             <Button type="button" variant="outline" onClick={guardedClose(onClose)} disabled={saveMutation.isPending || pgiMutation.isPending}>
-                                Cancel
+                                {readOnly ? 'Close' : 'Cancel'}
                             </Button>
-                            <Button 
-                                type="submit" 
-                                className="bg-emerald-600 hover:bg-emerald-700"
-                                disabled={saveMutation.isPending || pgiMutation.isPending || formData.pgi_done} // Disable save if PGI is done or mutations pending
-                            >
-                                {saveMutation.isPending ? 'Saving...' : (item ? 'Update' : 'Create') + ' Delivery'}
-                            </Button>
+                            {!readOnly && (
+                                <Button type="submit" className="bg-emerald-600 hover:bg-emerald-700" disabled={saveMutation.isPending || pgiMutation.isPending}>
+                                    {saveMutation.isPending ? 'Saving...' : (item ? 'Update' : 'Create') + ' Delivery'}
+                                </Button>
+                            )}
                         </div>
                     </div>
                 </form>
