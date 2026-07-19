@@ -243,6 +243,66 @@ export async function processGoodsIssue(delivery, user = null) {
 }
 
 /**
+ * Reverse a delivery's goods issue (undo PGI): put the issued stock back.
+ *
+ * Mirror of processGoodsIssue. For each shipped line it creates a
+ * goods_issue_reversal movement and increases stock by the issued quantity, at the
+ * cost it was ISSUED at (captured on the line as cogs_unit_cost). Adding it back at
+ * the original cost makes the stock value increase equal the Inventory GL debit the
+ * mirror journal posts — the two stay in step. When the issue cost was never stored
+ * (older deliveries), it falls back to the current stock cost.
+ *
+ * `reversalDate` posts the movement in the delivery's own accounting period.
+ */
+export async function reverseGoodsIssue(delivery, user = null, reversalDate = null) {
+    const { reversalLinesFromDelivery } = await import('@/lib/deliveryReversal');
+    const lines = reversalLinesFromDelivery(delivery);
+    const movementDate = reversalDate || delivery.delivery_date || new Date().toISOString().split('T')[0];
+
+    for (const line of lines) {
+        // Cost to restore: the issue cost if we captured it, else current stock cost.
+        let unitCost = line.cost;
+        if (!line.costKnown) {
+            const filter = { material_code: line.product_code, warehouse_code: line.warehouse };
+            if (line.batch_number) filter.batch_number = line.batch_number;
+            const levels = await matrixSales.entities.StockLevel.filter(filter);
+            unitCost = parseFloat(levels?.[0]?.unit_cost) || 0;
+        }
+
+        await matrixSales.entities.StockMovement.create({
+            movement_number: `GIR-${delivery.delivery_number}-${line.product_code}`,
+            movement_date: movementDate,
+            movement_type: 'goods_issue_reversal',
+            material_code: line.product_code,
+            material_name: line.product_name,
+            batch_number: line.batch_number,
+            quantity: line.quantity,
+            unit_of_measure: line.unit_of_measure,
+            to_warehouse: line.warehouse,           // goods coming back IN
+            reference_document: delivery.delivery_number,
+            reason: `Reversal of delivery ${delivery.delivery_number}`,
+            cost_per_unit: unitCost,
+            total_value: line.quantity * unitCost,
+            performed_by: user?.email || delivery.created_by,
+            status: 'posted'
+        });
+
+        await updateStockLevel({
+            materialCode: line.product_code,
+            materialName: line.product_name,
+            warehouse: line.warehouse,
+            batch: line.batch_number,
+            quantity: line.quantity,
+            unitOfMeasure: line.unit_of_measure,
+            unitCost,                               // restore at the issue cost
+            operation: 'increase'
+        });
+    }
+
+    return lines.length;
+}
+
+/**
  * Reserve stock for Sales Order
  */
 export async function reserveStock(salesOrder, lineItems, user = null) {

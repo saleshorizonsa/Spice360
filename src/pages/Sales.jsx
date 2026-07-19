@@ -10,6 +10,7 @@ import DocumentChainStrip from "@/components/shared/DocumentChainStrip";
 import QuotationForm from "@/components/sales/QuotationForm";
 import SalesOrderForm from "@/components/sales/SalesOrderForm";
 import DeliveryForm from "@/components/sales/DeliveryForm";
+import ReverseDeliveryDialog from "@/components/sales/ReverseDeliveryDialog";
 import InvoiceForm from "@/components/sales/InvoiceForm";
 import SalesReturnForm from "@/components/sales/SalesReturnForm";
 import ServiceOrderForm from "@/components/sales/ServiceOrderForm";
@@ -30,6 +31,7 @@ export default function Sales() {
     const [selectedDocument, setSelectedDocument] = useState(null);
     const [showContractPriceDialog, setShowContractPriceDialog] = useState(false);
     const [editingContractPrice, setEditingContractPrice] = useState(null);
+    const [reverseDelivery, setReverseDelivery] = useState(null);
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { t } = useLanguage();
@@ -565,6 +567,8 @@ export default function Sales() {
                                 onEdit={(item) => handleEdit(item, 'deliveries')}
                                 onDelete={(item) => handleDelete(item, 'Delivery')}
                                 onPrint={(item) => handlePrint(item, 'Delivery Note')}
+                                onReverse={(item) => setReverseDelivery(item)}
+                                canReverse={(row) => row.pgi_done && String(row.status || '').toLowerCase() !== 'reversed'}
                                 exportFileName="deliveries"
                             />
                         </CardContent>
@@ -793,6 +797,9 @@ export default function Sales() {
             )}
             {showDialog && activeTab === 'deliveries' && (
                 <DeliveryForm item={editingItem} onClose={handleCloseDialog} />
+            )}
+            {reverseDelivery && (
+                <ReverseDeliveryDialog delivery={reverseDelivery} onClose={() => setReverseDelivery(null)} />
             )}
             {showDialog && activeTab === 'invoices' && (
                 <InvoiceForm item={editingItem} onClose={handleCloseDialog} />

@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Pencil, Trash2, Printer, ChevronLeft, ChevronRight, ArrowUpDown, CheckCircle2, XCircle, Download } from "lucide-react";
+import { Pencil, Trash2, Printer, ChevronLeft, ChevronRight, ArrowUpDown, CheckCircle2, XCircle, Download, Undo2 } from "lucide-react";
 import SearchFilter from "../shared/SearchFilter";
 import { useLanguage } from "@/components/utils/languageContext";
 
@@ -34,6 +34,8 @@ export default function DataTable({
     onEdit,
     onDelete,
     onPrint,
+    onReverse,          // optional: (row) => void — shows a reverse action; caller decides visibility
+    canReverse,         // optional: (row) => boolean — gates the reverse button per row
     getPrintTitle,
     onBulkDelete,
     onBulkStatusChange,
@@ -253,7 +255,7 @@ export default function DataTable({
                                         </div>
                                     </TableHead>
                                 ))}
-                                {(onEdit || onDelete || onPrint) && (
+                                {(onEdit || onDelete || onPrint || onReverse) && (
                                     <TableHead className="font-semibold text-gray-700">Actions</TableHead>
                                 )}
                             </TableRow>
@@ -284,7 +286,7 @@ export default function DataTable({
                                                 {renderCellValue(row, col)}
                                             </TableCell>
                                         ))}
-                                        {(onEdit || onDelete || onPrint) && (
+                                        {(onEdit || onDelete || onPrint || onReverse) && (
                                             <TableCell>
                                                 <div className="flex gap-2">
                                                     {onPrint && (
@@ -316,6 +318,17 @@ export default function DataTable({
                                                             title="Delete"
                                                         >
                                                             <Trash2 className="w-4 h-4" />
+                                                        </Button>
+                                                    )}
+                                                    {onReverse && (!canReverse || canReverse(row)) && (
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            onClick={() => onReverse(row)}
+                                                            className="text-amber-600 hover:text-amber-700"
+                                                            title="Reverse"
+                                                        >
+                                                            <Undo2 className="w-4 h-4" />
                                                         </Button>
                                                     )}
                                                 </div>
@@ -437,7 +450,7 @@ export default function DataTable({
                                     </div>
                                 )}
 
-                                {(onEdit || onDelete || onPrint) && (
+                                {(onEdit || onDelete || onPrint || onReverse) && (
                                     <div className="mt-4 flex gap-2">
                                         {onPrint && (
                                             <Button

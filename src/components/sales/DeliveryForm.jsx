@@ -214,6 +214,7 @@ export default function DeliveryForm({ item, onClose }) {
             // Issue stock for every shipped line, and build the COGS journal as one
             // balanced entry: Dr COGS / Cr Inventory per product.
             const glLines = [];
+            const issueCostByProduct = {};   // captured so a later reversal restores stock at cost
             for (const l of shipped) {
                 await processGoodsIssue({
                     delivery_number: formData.delivery_number,
@@ -227,6 +228,7 @@ export default function DeliveryForm({ item, onClose }) {
 
                 const stock = await matrixSales.entities.StockLevel.filter({ material_code: l.product_code });
                 const unitCost = parseFloat(stock?.[0]?.unit_cost || 0);
+                issueCostByProduct[l.product_code] = unitCost;
                 const cogs = unitCost * Number(l.quantity_delivering);
                 if (cogs > 0) {
                     glLines.push({ account_code: gl.cogs_general, account_name: "Cost of Goods Sold", debit: cogs, credit: 0, description: `${l.product_name} × ${l.quantity_delivering}` });
@@ -235,6 +237,12 @@ export default function DeliveryForm({ item, onClose }) {
             }
 
             const posted = buildDeliveryPayload();
+            // Stamp each stored line with the cost it was issued at, so reverseGoodsIssue
+            // can restore stock at exactly that cost and stay in step with the GL.
+            posted.delivery_lines = (posted.delivery_lines || []).map(l => ({
+                ...l,
+                cogs_unit_cost: issueCostByProduct[l.product_code] ?? l.cogs_unit_cost ?? 0,
+            }));
             const updatedDelivery = await matrixSales.entities.Delivery.update(item.id, {
                 ...posted,
                 pgi_done: true,

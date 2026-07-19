@@ -34,7 +34,9 @@ export const deliveredByProduct = (priorDeliveries = []) => {
   };
 
   for (const d of priorDeliveries) {
-    if (!d || !d.pgi_done) continue; // only issued stock counts
+    // Only issued stock counts, and a reversed delivery has had its issue undone —
+    // its quantity is available to deliver again, so it must not count.
+    if (!d || !d.pgi_done || String(d.status || '').toLowerCase() === 'reversed') continue;
 
     let lines = d.delivery_lines;
     if (typeof lines === 'string') { try { lines = JSON.parse(lines); } catch { lines = null; } }
