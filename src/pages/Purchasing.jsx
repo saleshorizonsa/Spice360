@@ -11,6 +11,7 @@ import PurchaseRequisitionForm from "@/components/purchasing/PurchaseRequisition
 import RFQForm from "@/components/purchasing/RFQForm";
 import PurchaseOrderForm from "@/components/purchasing/PurchaseOrderForm";
 import GRNForm from "@/components/purchasing/GRNForm";
+import ReverseGRNDialog from "@/components/purchasing/ReverseGRNDialog";
 import VendorInvoiceForm from "@/components/purchasing/VendorInvoiceForm";
 import LotTraceabilityDialog from "@/components/purchasing/LotTraceabilityDialog";
 import DocumentPrintPreview from "@/components/shared/DocumentPrintPreview";
@@ -29,6 +30,7 @@ export default function Purchasing() {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const [currentUser, setCurrentUser] = useState(null);
+    const [reverseGrn, setReverseGrn] = useState(null);
     const { t } = useLanguage();
 
     useEffect(() => {
@@ -442,6 +444,8 @@ export default function Purchasing() {
                                 onEdit={(item) => handleEdit(item, 'grns')}
                                 onDelete={(item) => handleDelete(item, 'GoodsReceiptNote')}
                                 onPrint={(item) => handlePrint(item, 'GRN')}
+                                onReverse={(item) => setReverseGrn(item)}
+                                canReverse={(row) => row.stock_posted && String(row.status || '').toLowerCase() !== 'reversed'}
                             />
                         </CardContent>
                     </Card>
@@ -585,6 +589,9 @@ export default function Purchasing() {
             )}
             {showDialog && activeTab === 'grns' && (
                 <GRNForm item={editingItem} onClose={handleCloseDialog} />
+            )}
+            {reverseGrn && (
+                <ReverseGRNDialog grn={reverseGrn} onClose={() => setReverseGrn(null)} />
             )}
             {showDialog && activeTab === 'invoices' && (
                 <VendorInvoiceForm item={editingItem} onClose={handleCloseDialog} />

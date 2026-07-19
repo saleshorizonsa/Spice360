@@ -101,7 +101,7 @@ export async function assertGoodsReceiptReversible(grn) {
     }
 }
 
-export async function reverseGoodsReceipt(grn, user = null) {
+export async function reverseGoodsReceipt(grn, user = null, reversalDate = null) {
     try {
         // Take the stock back FIRST, in strict mode. If the goods have already
         // been issued there is not enough on hand to reverse, and this throws
@@ -130,7 +130,7 @@ export async function reverseGoodsReceipt(grn, user = null) {
 
         const movement = await matrixSales.entities.StockMovement.create({
             movement_number: `GRR-${grn.grn_number}`,
-            movement_date: new Date().toISOString().split('T')[0],
+            movement_date: reversalDate || grn.grn_date || new Date().toISOString().split('T')[0],
             movement_type: 'goods_receipt_reversal',
             material_code: grn.material_code,
             material_name: grn.material_name,
