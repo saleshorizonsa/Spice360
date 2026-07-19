@@ -63,14 +63,16 @@ export default function AdminCenter() {
         initialData: []
     });
 
+    // Number ranges live in DocumentNumberSeries — the table the number generator
+    // reads. (The admin UI used to point at a non-existent DocumentNumberRange.)
     const { data: numberRanges = [] } = useQuery({
         queryKey: ['documentNumberRanges'],
-        queryFn: () => matrixSales.entities.DocumentNumberRange.list(),
+        queryFn: () => matrixSales.entities.DocumentNumberSeries.list(),
         initialData: []
     });
 
     const deleteNumberRangeMutation = useMutation({
-        mutationFn: (id) => matrixSales.entities.DocumentNumberRange.delete(id),
+        mutationFn: (id) => matrixSales.entities.DocumentNumberSeries.delete(id),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['documentNumberRanges'] });
             toast({ title: "Deleted", description: "Number range deleted." });
@@ -557,7 +559,7 @@ export default function AdminCenter() {
                                             </thead>
                                             <tbody>
                                                 {numberRanges.map(nr => {
-                                                    const num = String(nr.current_number || 1).padStart(parseInt(nr.number_length) || 5, "0");
+                                                    const num = String(nr.current_number || 1).padStart(parseInt(nr.number_length ?? nr.number_width) || 5, "0");
                                                     const year = nr.year_format === "YY"
                                                         ? String(new Date().getFullYear()).slice(-2)
                                                         : String(new Date().getFullYear());
@@ -586,7 +588,7 @@ export default function AdminCenter() {
                                                             <td className="py-2 px-3 font-mono text-gray-700">{nr.prefix || "—"}</td>
                                                             <td className="py-2 px-3 font-mono text-gray-500">{nr.suffix || "—"}</td>
                                                             <td className="py-2 px-3 text-gray-700">{nr.current_number ?? 1}</td>
-                                                            <td className="py-2 px-3 text-gray-500">{nr.number_length ?? 5}</td>
+                                                            <td className="py-2 px-3 text-gray-500">{nr.number_length ?? nr.number_width ?? 5}</td>
                                                             <td className="py-2 px-3 text-gray-500 text-xs">
                                                                 {nr.include_year ? `${nr.year_format || "YYYY"}` : "—"}
                                                                 {nr.reset_yearly && <span className="ml-1 text-blue-500">↺</span>}

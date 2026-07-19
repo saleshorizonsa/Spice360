@@ -89,7 +89,9 @@ export default function DocumentNumberRangeForm({ item, onClose }) {
                 prefix:         item.prefix         || "",
                 suffix:         item.suffix         || "",
                 current_number: item.current_number ?? 1,
-                number_length:  item.number_length  ?? 5,
+                // The generator stores the pad width as `number_width`; the older
+                // admin form called it `number_length`. Read either.
+                number_length:  item.number_length ?? item.number_width ?? 5,
                 mode:           item.mode           || "automatic",
                 include_year:   !!item.include_year,
                 year_format:    item.year_format    || "YYYY",
@@ -120,18 +122,54 @@ export default function DocumentNumberRangeForm({ item, onClose }) {
 
     const saveMutation = useMutation({
         mutationFn: async (data) => {
+            // Persist to DocumentNumberSeries — the table getNextDocumentNumber
+            // actually reads. The old form wrote to a `DocumentNumberRange` entity
+            // that was never created, so every save failed. Keep number_width (what
+            // the generator reads) and number_length (what the admin list reads) in
+            // sync, and align branch_code/fiscal_year with the generator's lookup so
+            // the configured prefix / next number / width take effect immediately.
+            const fiscalYear = new Date().getFullYear().toString().slice(-2);
+            const width = parseInt(data.number_length) || 5;
+            const payload = {
+                ...data,
+                branch_code:    "ALL",
+                fiscal_year:    fiscalYear,
+                number_width:   width,
+                number_length:  width,
+                starting_number: parseInt(data.current_number) || 1,
+                format_pattern: "{PREFIX}-{BR}-{FY}-{NNNNNN}",
+                auto_generate:  true,
+                series_id:      `${data.prefix || ""}-ALL-${fiscalYear}`,
+            };
+
             if (isEdit) {
-                return matrixSales.entities.DocumentNumberRange.update(item.id, data);
+                return matrixSales.entities.DocumentNumberSeries.update(item.id, payload);
             }
-            return matrixSales.entities.DocumentNumberRange.create(data);
+
+            // A unique active series exists per (document_type, branch, year). If one
+            // is already there (usually auto-created by the generator), UPDATE it
+            // rather than inserting a duplicate — which the unique index would reject.
+            const existing = await matrixSales.entities.DocumentNumberSeries.filter({
+                document_type: data.document_type,
+                branch_code:   "ALL",
+                fiscal_year:   fiscalYear,
+                status:        "active",
+            });
+            if (existing?.length > 0) {
+                return matrixSales.entities.DocumentNumberSeries.update(existing[0].id, payload);
+            }
+            return matrixSales.entities.DocumentNumberSeries.create(payload);
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["documentNumberRanges"] });
+            queryClient.invalidateQueries({ queryKey: ["glAccountMapping"] });
             toast({ title: "Saved", description: "Number range saved successfully." });
             onClose();
         },
-        onError: () => {
-            toast({ title: "Error", description: "Failed to save number range.", variant: "destructive" });
+        onError: (err) => {
+            // Surface the real reason — the old handler swallowed it into a generic
+            // message, which is why this was so hard to diagnose.
+            toast({ title: "Error", description: `Failed to save number range: ${err?.message || 'Unknown error'}`, variant: "destructive" });
         },
     });
 
