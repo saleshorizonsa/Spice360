@@ -20,6 +20,7 @@ import BudgetVarianceReport from "@/components/finance/BudgetVarianceReport";
 import GLAccountMappingForm from "@/components/finance/GLAccountMappingForm";
 import GLHealthCheck from "@/components/finance/GLHealthCheck";
 import CogsGrniCorrectionTool from "@/components/finance/CogsGrniCorrectionTool";
+import FreightReclassTool from "@/components/finance/FreightReclassTool";
 import InventoryGlReconciliation from "@/components/finance/InventoryGlReconciliation";
 import FXRateManager from "@/components/finance/FXRateManager";
 import CostCenterForm from "@/components/finance/CostCenterForm";
@@ -838,6 +839,9 @@ export default function Finance() {
 
                     {/* One-click reclassification for the COGS/GRNI damage. */}
                     <CogsGrniCorrectionTool />
+
+                    {/* Move historical inbound freight from Trade Payables to Freight Accrual. */}
+                    <FreightReclassTool />
 
                     {/* Stock subledger vs Inventory GL, with the gap attributed. */}
                     <InventoryGlReconciliation />
