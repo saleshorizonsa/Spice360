@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus, FileText, ShoppingCart, Package, Receipt, RefreshCw, AlertTriangle, Clock, CheckCircle, CreditCard, Tag, Trash2, Pencil } from "lucide-react";
 import DataTable from "@/components/erp/DataTable";
+import DocumentChainStrip from "@/components/shared/DocumentChainStrip";
 import QuotationForm from "@/components/sales/QuotationForm";
 import SalesOrderForm from "@/components/sales/SalesOrderForm";
 import DeliveryForm from "@/components/sales/DeliveryForm";
@@ -145,6 +146,7 @@ export default function Sales() {
 
     const quotationColumns = [
         { header: "Quote #", key: "quotation_number" },
+        { header: "Flow", key: "quotation_number", sortable: false, render: (_v, row) => <DocumentChainStrip seedType="Quotation" seedNumber={row.quotation_number} /> },
         { header: t('customer'), key: "customer_name" },
         { header: t('product'), key: "product_name" },
         { header: "Qty", key: "quantity" },
@@ -172,6 +174,7 @@ export default function Sales() {
 
     const salesOrderColumns = [
         { header: "Order #", key: "order_number" },
+        { header: "Flow", key: "order_number", sortable: false, render: (_v, row) => <DocumentChainStrip seedType="SalesOrder" seedNumber={row.order_number} /> },
         { header: t('customer'), key: "customer_name" },
         { header: t('product'), key: "product_name" },
         { header: t('quantity'), key: "quantity" },
@@ -228,6 +231,7 @@ export default function Sales() {
 
     const deliveryColumns = [
         { header: "Delivery #", key: "delivery_number" },
+        { header: "Flow", key: "delivery_number", sortable: false, render: (_v, row) => <DocumentChainStrip seedType="Delivery" seedNumber={row.delivery_number} /> },
         { header: "SO #", key: "sales_order_number" },
         { header: t('customer'), key: "customer_name" },
         { header: t('product'), key: "product_name" },
@@ -262,6 +266,7 @@ export default function Sales() {
 
     const invoiceColumns = [
         { header: "Invoice #", key: "invoice_number" },
+        { header: "Flow", key: "invoice_number", sortable: false, render: (_v, row) => <DocumentChainStrip seedType="Invoice" seedNumber={row.invoice_number} /> },
         { header: t('type'), key: "invoice_type", isBadge: true },
         { header: "SO #", key: "sales_order_number" },
         { header: t('customer'), key: "customer_name" },
