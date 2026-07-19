@@ -20,7 +20,7 @@ import { useGLAccounts } from "@/hooks/useGLAccounts";
 import { useSubscription } from "@/lib/SubscriptionContext";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
-import { resolveVatRate } from "@/lib/vat";
+import { resolveVatRate, resolveSalesOrderVatRate } from "@/lib/vat";
 import { buildInvoiceLines, clampInvoiceQty, invoiceTotals, validateInvoiceLines } from "@/lib/invoiceLines";
 import SearchableSelect from "../shared/SearchableSelect";
 
@@ -243,12 +243,18 @@ export default function InvoiceForm({ item, onClose }) {
         const isExport = !!customerRecord?.is_export_customer;
         const exportTolPct = isExport ? (parseFloat(customerRecord?.export_tolerance_percent) || 5) : 5;
 
-        // VAT only when both the customer and the item are VAT-activated.
+        // VAT is inherited from the Sales Order — the invoice charges what the
+        // customer was quoted and ordered, rather than re-deriving its own rate
+        // (which could disagree with the SO). Falls back to the customer/item VAT
+        // resolution only if the SO carries no VAT total to read.
+        const soVatRate = resolveSalesOrderVatRate(selectedOrder);
         const productCode = selectedOrder.product_code || '';
         const materialRecord = materials.find(
             m => m.material_code === productCode || m.product_code === productCode
         );
-        const vatRate = resolveVatRate(customerRecord, materialRecord, taxConfig.vat_standard_rate);
+        const vatRate = soVatRate > 0
+            ? soVatRate
+            : resolveVatRate(customerRecord, materialRecord, taxConfig.vat_standard_rate);
 
         setIsDirty(true);
         setFormData(prev => ({
@@ -259,7 +265,7 @@ export default function InvoiceForm({ item, onClose }) {
             customer_name: selectedOrder.customer_name,
             customer_email: selectedOrder.customer_email || '',
             billing_address: selectedOrder.delivery_address || '',
-            tax_type: vatRate > 0 ? 'standard' : 'exempt',
+            tax_type: vatRate > 0 ? 'standard' : (isExport ? 'export' : 'exempt'),
             tax_percent: vatRate,
             product_code: selectedOrder.product_code || '',
             product_name: selectedOrder.product_name || '',

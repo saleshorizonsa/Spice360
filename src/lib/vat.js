@@ -45,6 +45,23 @@ export const resolvePartyVatRate = (party, standardRate = 0) => {
 };
 
 /**
+ * The VAT rate a Sales Order actually charged, so a document raised FROM that SO
+ * (its invoice) inherits the SO's VAT instead of re-deriving its own — which could
+ * disagree with what the customer was quoted and ordered.
+ *
+ * Derived from the SO's stored totals (vat_amount / subtotal) so it reflects the
+ * real charge regardless of how the SO computed it per line. Returns 0 for a
+ * VAT-free order.
+ */
+export const resolveSalesOrderVatRate = (order = {}) => {
+    const subtotal = Number(order?.subtotal) || 0;
+    const vat = Number(order?.vat_amount) || 0;
+    if (subtotal <= 0 || vat <= 0) return 0;
+    // Round to 2dp to shed floating-point noise (e.g. 17.9999 -> 18).
+    return Math.round((vat / subtotal) * 100 * 100) / 100;
+};
+
+/**
  * Per-line VAT for multi-line documents. `lines` carry their own `vat_rate`
  * (already resolved at item-selection time); the party flag gates all of them.
  * Returns the summed VAT amount.

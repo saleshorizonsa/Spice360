@@ -5,6 +5,7 @@ import {
   isVatApplicable,
   resolveVatRate,
   resolvePartyVatRate,
+  resolveSalesOrderVatRate,
   sumLineVat
 } from "../src/lib/vat.js";
 
@@ -58,4 +59,21 @@ test("multi-line documents tax each line, gated by the party", () => {
   assert.equal(sumLineVat(PARTY_OFF, lines), 0);
   assert.equal(sumLineVat(LEGACY, lines), 0);
   assert.equal(sumLineVat(PARTY_ON, []), 0);
+});
+
+// ── An invoice inherits the Sales Order's VAT, not its own re-derived rate ────
+test("resolveSalesOrderVatRate derives the SO's effective rate from its totals", () => {
+  assert.equal(resolveSalesOrderVatRate({ subtotal: 50000, vat_amount: 9000 }), 18);
+  assert.equal(resolveSalesOrderVatRate({ subtotal: 1000, vat_amount: 150 }), 15);
+});
+
+test("a VAT-free sales order yields a zero invoice rate", () => {
+  assert.equal(resolveSalesOrderVatRate({ subtotal: 50000, vat_amount: 0 }), 0);
+  assert.equal(resolveSalesOrderVatRate({ subtotal: 0, vat_amount: 0 }), 0);
+  assert.equal(resolveSalesOrderVatRate({}), 0);
+});
+
+test("floating-point noise is rounded away", () => {
+  // 8999.5 / 50000 = 17.999 -> 18.00
+  assert.equal(resolveSalesOrderVatRate({ subtotal: 50000, vat_amount: 8999.5 }), 18);
 });
