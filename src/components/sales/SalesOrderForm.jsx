@@ -14,6 +14,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { useOrganization } from "../utils/OrganizationContext";
 import LineItemsTable from "../shared/LineItemsTable";
 import SearchableSelect from "../shared/SearchableSelect";
+import DocumentFlow from "../shared/DocumentFlow";
 import { createApprovalRequest, needsApproval } from "../utils/approvalWorkflow";
 import { logAuditTrail } from "../utils/auditTrail";
 import { reserveStock } from "../utils/inventoryIntegration";
@@ -622,6 +623,17 @@ export default function SalesOrderForm({ order, onClose }) {
                             />
                         </div>
                     </div>
+
+                    {order && (
+                        <div className="border-t pt-4">
+                            <details className="group">
+                                <summary className="cursor-pointer text-sm font-semibold text-gray-700 hover:text-gray-900">
+                                    Document Flow
+                                </summary>
+                                <DocumentFlow seedType="SalesOrder" seedNumber={order.order_number} />
+                            </details>
+                        </div>
+                    )}
 
                     <div className="flex justify-end gap-3 pt-4 border-t">
                         <Button type="button" variant="outline" onClick={guardedClose(onClose)}>

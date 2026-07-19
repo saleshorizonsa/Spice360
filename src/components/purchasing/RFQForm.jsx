@@ -16,6 +16,7 @@ import { useOrganization } from "../utils/OrganizationContext";
 import { RefreshCw, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import SearchableSelect from "@/components/ui/SearchableSelect";
+import DocumentFlow from "../shared/DocumentFlow";
 
 export default function RFQForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -495,6 +496,17 @@ export default function RFQForm({ item, onClose }) {
                             rows={2}
                         />
                     </div>
+
+                    {item && (
+                        <div className="border-t pt-4">
+                            <details className="group">
+                                <summary className="cursor-pointer text-sm font-semibold text-gray-700 hover:text-gray-900">
+                                    Document Flow
+                                </summary>
+                                <DocumentFlow seedType="RFQ" seedNumber={item.rfq_number} />
+                            </details>
+                        </div>
+                    )}
 
                     <div className="flex justify-end gap-3">
                         <Button type="button" variant="outline" onClick={guardedClose(onClose)}>

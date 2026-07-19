@@ -21,6 +21,7 @@ import { useTaxConfig } from "@/hooks/useTaxConfig";
 import { resolveVatRate } from "@/lib/vat";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
 import SearchableSelect from "../shared/SearchableSelect";
+import DocumentFlow from "../shared/DocumentFlow";
 
 export default function VendorInvoiceForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -835,6 +836,17 @@ export default function VendorInvoiceForm({ item, onClose }) {
                                 />
                             </div>
                         </>
+                    )}
+
+                    {item && (
+                        <div className="border-t pt-4">
+                            <details className="group">
+                                <summary className="cursor-pointer text-sm font-semibold text-gray-700 hover:text-gray-900">
+                                    Document Flow
+                                </summary>
+                                <DocumentFlow seedType="VendorInvoice" seedNumber={item.vendor_invoice_number} />
+                            </details>
+                        </div>
                     )}
 
                     {/* ── Footer ───────────────────────────────────────────────── */}

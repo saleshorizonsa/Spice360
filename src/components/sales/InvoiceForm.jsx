@@ -11,9 +11,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowRight, Printer, Paperclip, Plus, Trash2, Truck, CheckCircle2, AlertCircle, AlertTriangle } from "lucide-react";
+import { ArrowRight, Printer, Paperclip, Plus, Trash2, Truck, CheckCircle2, AlertCircle, AlertTriangle, GitBranch } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import DocumentList from "../shared/DocumentList";
+import DocumentFlow from "../shared/DocumentFlow";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
@@ -638,13 +639,23 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
                 </DialogHeader>
 
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="grid grid-cols-2 w-96">
+                    <TabsList className="grid grid-cols-3 w-[36rem]">
                         <TabsTrigger value="details">Invoice Details</TabsTrigger>
                         <TabsTrigger value="documents">
                             <Paperclip className="w-4 h-4 mr-2" />
                             Documents
                         </TabsTrigger>
+                        <TabsTrigger value="flow">
+                            <GitBranch className="w-4 h-4 mr-2" />
+                            Flow
+                        </TabsTrigger>
                     </TabsList>
+
+                    <TabsContent value="flow">
+                        {item
+                            ? <DocumentFlow seedType="Invoice" seedNumber={item.invoice_number} />
+                            : <p className="py-6 text-center text-sm text-gray-500">Save the invoice to see its document flow.</p>}
+                    </TabsContent>
 
                     <TabsContent value="details">
                         <form onSubmit={handleSubmit} className="space-y-6 pt-2">

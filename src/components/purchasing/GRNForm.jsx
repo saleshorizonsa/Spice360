@@ -12,6 +12,7 @@ import { useOrganization } from "../utils/OrganizationContext";
 import { Badge } from "@/components/ui/badge";
 import { Package, RefreshCw, AlertTriangle } from "lucide-react";
 import SearchableSelect from "../shared/SearchableSelect";
+import DocumentFlow from "../shared/DocumentFlow";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
 import {
     processGoodsReceipt,
@@ -662,6 +663,17 @@ export default function GRNForm({ item, onClose }) {
                         </div>
                     </div>
                     </fieldset>
+
+                    {item && (
+                        <div className="border-t pt-4">
+                            <details className="group">
+                                <summary className="cursor-pointer text-sm font-semibold text-gray-700 hover:text-gray-900">
+                                    Document Flow
+                                </summary>
+                                <DocumentFlow seedType="GoodsReceiptNote" seedNumber={item.grn_number} />
+                            </details>
+                        </div>
+                    )}
 
                     <div className="flex justify-between gap-3 pt-4 border-t">
                         <div className="flex gap-2">

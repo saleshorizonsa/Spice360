@@ -10,12 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
-import { Calculator, Paperclip } from "lucide-react";
+import { Calculator, Paperclip, GitBranch } from "lucide-react";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
 import { createApprovalRequest, needsApproval } from "../utils/approvalWorkflow";
 import { logAuditTrail } from "../utils/auditTrail";
 import { useOrganization } from "../utils/OrganizationContext";
 import DocumentList from "../shared/DocumentList";
+import DocumentFlow from "../shared/DocumentFlow";
 import ReverseButton from "../shared/ReverseButton";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
@@ -345,13 +346,23 @@ export default function PurchaseOrderForm({ po, onClose }) {
                 </DialogHeader>
 
                 <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="grid grid-cols-2 w-96">
+                    <TabsList className="grid grid-cols-3 w-[36rem]">
                         <TabsTrigger value="details">PO Details</TabsTrigger>
                         <TabsTrigger value="documents">
                             <Paperclip className="w-4 h-4 mr-2" />
                             Documents
                         </TabsTrigger>
+                        <TabsTrigger value="flow">
+                            <GitBranch className="w-4 h-4 mr-2" />
+                            Flow
+                        </TabsTrigger>
                     </TabsList>
+
+                    <TabsContent value="flow">
+                        {po
+                            ? <DocumentFlow seedType="PurchaseOrder" seedNumber={po.po_number} />
+                            : <p className="py-6 text-center text-sm text-gray-500">Save the purchase order to see its document flow.</p>}
+                    </TabsContent>
 
                     <TabsContent value="details">
                         <form onSubmit={handleSubmit} className="space-y-6">
