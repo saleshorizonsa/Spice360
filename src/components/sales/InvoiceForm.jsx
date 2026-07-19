@@ -236,26 +236,38 @@ export default function InvoiceForm({ item, onClose }) {
         }));
     };
 
+    // Default the invoiced quantity to everything delivered across the linked notes;
+    // the user edits it down for a partial invoice. Uses the delivered_quantity the
+    // delivery actually issued (delivery_number join), not the ordered figure.
+    const syncInvoiceQtyToDeliveries = (linked) => {
+        const total = linked.reduce((sum, d) => sum + (parseFloat(d.delivered_quantity) || 0), 0);
+        setFormData(prev => ({ ...prev, quantity: total }));
+    };
+
     const handleAddDelivery = () => {
         if (!deliveryToAdd) return;
         const del = deliveries.find(d => d.delivery_number === deliveryToAdd);
         if (!del) return;
-        const qty = parseFloat(del.quantity) || parseFloat(del.delivered_quantity) || 0;
-        setLinkedDeliveries(prev => [
-            ...prev,
+        const qty = parseFloat(del.quantity_delivered) || parseFloat(del.delivered_quantity) || parseFloat(del.quantity) || 0;
+        const next = [
+            ...linkedDeliveries,
             {
                 delivery_number: del.delivery_number,
                 delivery_date: del.delivery_date || '',
                 delivered_quantity: qty,
                 product_code: del.product_code || '',
             }
-        ]);
+        ];
+        setLinkedDeliveries(next);
+        syncInvoiceQtyToDeliveries(next);
         setDeliveryToAdd('');
         setIsDirty(true);
     };
 
     const handleRemoveDelivery = (deliveryNumber) => {
-        setLinkedDeliveries(prev => prev.filter(d => d.delivery_number !== deliveryNumber));
+        const next = linkedDeliveries.filter(d => d.delivery_number !== deliveryNumber);
+        setLinkedDeliveries(next);
+        syncInvoiceQtyToDeliveries(next);
         setIsDirty(true);
     };
 
