@@ -74,6 +74,50 @@ test('an invoice with no transport still balances and omits the Inventory line',
   assert.equal(lines.length, 3);
 });
 
+// ── Freight to its own liability (3rd-party carrier) ────────────────────────
+const glWithFreight = { ...gl, freight_accrual: '2130' };
+
+test('freight is credited to Freight Accrual, not Trade Payables, when mapped', () => {
+  const { lines, isBalanced } = buildVendorInvoiceJournal({ ...invoice, gl: glWithFreight });
+  const freight = lines.find((l) => l.account_code === '2130');
+  const ap = lines.find((l) => l.account_code === gl.trade_payables);
+  assert.ok(freight, 'a Freight Accrual line must exist');
+  assert.equal(freight.credit, 5000);          // owed to the carrier
+  assert.equal(ap.credit, 59900);              // vendor owed total − freight (64,900 − 5,000)
+  assert.ok(isBalanced);
+});
+
+test('freight is STILL capitalised into Inventory even when split to its own liability', () => {
+  const { lines } = buildVendorInvoiceJournal({ ...invoice, gl: glWithFreight });
+  assert.equal(lines.find((l) => l.account_code === gl.inventory).debit, 5000);
+});
+
+test('only freight is split — other charges stay in Trade Payables', () => {
+  // 50,000 goods + 5,000 freight + 1,500 other + VAT 10,170 = 66,670 total.
+  const { lines, isBalanced } = buildVendorInvoiceJournal({
+    ...invoice, otherCharges: 1500, vatAmount: 10170, totalAmount: 66670, gl: glWithFreight,
+  });
+  assert.equal(lines.find((l) => l.account_code === '2130').credit, 5000);          // freight only
+  assert.equal(lines.find((l) => l.account_code === gl.inventory).debit, 6500);     // freight + other capitalised
+  assert.equal(lines.find((l) => l.account_code === gl.trade_payables).credit, 61670); // 66,670 − 5,000 (other stays)
+  assert.ok(isBalanced);
+});
+
+test('with no freight-accrual account mapped, freight stays in Trade Payables (fallback)', () => {
+  const { lines } = buildVendorInvoiceJournal(invoice); // gl has no freight_accrual
+  assert.equal(lines.find((l) => l.account_code === '2130'), undefined);
+  assert.equal(lines.find((l) => l.account_code === gl.trade_payables).credit, 64900);
+});
+
+test('a freight-only invoice with zero VAT balances and splits correctly', () => {
+  const { lines, isBalanced } = buildVendorInvoiceJournal({
+    subtotal: 50000, freightCost: 5000, otherCharges: 0, vatAmount: 0, totalAmount: 55000, gl: glWithFreight,
+  });
+  assert.equal(lines.find((l) => l.account_code === '2130').credit, 5000);
+  assert.equal(lines.find((l) => l.account_code === gl.trade_payables).credit, 50000);
+  assert.ok(isBalanced);
+});
+
 test('a zero-VAT invoice (VAT not activated for the vendor) still balances', () => {
   const { totalDebit, totalCredit, isBalanced } = buildVendorInvoiceJournal({
     subtotal: 50000, freightCost: 5000, otherCharges: 0, vatAmount: 0, totalAmount: 55000, gl,

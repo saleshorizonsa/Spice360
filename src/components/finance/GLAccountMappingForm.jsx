@@ -24,6 +24,7 @@ const ACCOUNT_FIELD_LABELS = [
   { key: "fixed_asset_cost",   label: "Fixed Asset Cost",             category: "Assets" },
   { key: "trade_payables",     label: "Trade Payables",               category: "Liabilities" },
   { key: "grni",               label: "Goods Received Not Invoiced",  category: "Liabilities" },
+  { key: "freight_accrual",    label: "Freight Accrual (Carrier)",    category: "Liabilities" },
   { key: "vat_output",         label: "VAT Output (Payable)",         category: "Liabilities" },
   { key: "salaries_payable",   label: "Salaries Payable",             category: "Liabilities" },
   { key: "epf_payable",        label: "EPF Payable",                  category: "Liabilities" },

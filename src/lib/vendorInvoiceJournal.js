@@ -22,12 +22,19 @@
  *     Dr  Goods Received Not Invoiced   goods subtotal   (clears what the GRN accrued)
  *     Dr  Inventory                     freight + other  (landed cost, capitalised)
  *     Dr  VAT Input                     VAT
- *     Cr  Trade Payables                invoice total
+ *     Cr  Freight Accrual               freight          (owed to the 3rd-party carrier)
+ *     Cr  Trade Payables                total − freight  (owed to the material vendor)
+ *
+ * Freight is billed by a separate carrier, not the material vendor, so it is NOT
+ * owed to the vendor — it is credited to its own Freight Accrual liability and
+ * cleared when the carrier's own invoice is entered. It is STILL capitalised into
+ * inventory (the Inventory debit above, and the moving-average cost), which is what
+ * LKAS 2 / IAS 2 require. Only freight is split out this way; other charges stay in
+ * Trade Payables. If no freight-accrual account is mapped, freight falls back into
+ * Trade Payables (the prior behaviour), so nothing breaks before it is configured.
  *
  * Cost only becomes an expense when the goods are SOLD (the sales invoice posts
- * Dr COGS / Cr Inventory). Inbound transport is capitalised into the carrying value
- * of the stock, which is what LKAS 2 / IAS 2 require — it is part of the cost of
- * bringing inventories to their present location and condition.
+ * Dr COGS / Cr Inventory).
  *
  * Balance: subtotal + freight + other + vat === total, by construction.
  */
@@ -51,7 +58,12 @@ export const buildVendorInvoiceJournal = ({
   const goods = round(num(subtotal));
   const landed = round(num(freightCost) + num(otherCharges));
   const vat = round(num(vatAmount));
-  const payable = round(num(totalAmount));
+
+  // Freight goes to its own liability (owed to the carrier), not to the vendor —
+  // but only if a freight-accrual account is mapped. Without one it stays in Trade
+  // Payables so the entry still balances before the account is configured.
+  const freight = gl.freight_accrual ? round(num(freightCost)) : 0;
+  const payable = round(num(totalAmount) - freight);
 
   const lines = [
     {
@@ -74,6 +86,13 @@ export const buildVendorInvoiceJournal = ({
       debit: vat,
       credit: 0,
       description: 'Input VAT',
+    },
+    {
+      account_code: gl.freight_accrual,
+      account_name: 'Freight Accrual',
+      debit: 0,
+      credit: freight,
+      description: description ? `Inbound freight — ${description}` : 'Inbound freight (carrier)',
     },
     {
       account_code: gl.trade_payables,

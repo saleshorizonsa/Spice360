@@ -406,6 +406,13 @@ export default function VendorInvoiceForm({ item, onClose }) {
                         vendor_invoice_number: savedInvoice.vendor_invoice_number
                     });
                     if (existingAP.length === 0) {
+                        // Freight is owed to the carrier (Freight Accrual), not the
+                        // vendor, so the vendor's payable excludes it — matching the
+                        // Trade Payables credit on the journal. Only when a
+                        // freight-accrual account is mapped; otherwise it stays with
+                        // the vendor, as before.
+                        const vendorFreight = gl.freight_accrual ? (parseFloat(savedInvoice.freight_cost) || 0) : 0;
+                        const vendorPayable = (parseFloat(savedInvoice.total_amount) || 0) - vendorFreight;
                         await matrixSales.entities.AccountsPayable.create({
                             ap_number:             `AP-${savedInvoice.vendor_invoice_number}`,
                             vendor_invoice_number: savedInvoice.vendor_invoice_number,
@@ -413,9 +420,9 @@ export default function VendorInvoiceForm({ item, onClose }) {
                             vendor_name:           savedInvoice.vendor_name,
                             invoice_date:          savedInvoice.invoice_date,
                             due_date:              savedInvoice.due_date || '',
-                            invoice_amount:        savedInvoice.total_amount,
+                            invoice_amount:        vendorPayable,
                             paid_amount:           0,
-                            outstanding_amount:    savedInvoice.total_amount,
+                            outstanding_amount:    vendorPayable,
                             vat_amount:            savedInvoice.vat_amount || 0,
                             currency:              savedInvoice.currency || 'LKR',
                             payment_terms:         savedInvoice.payment_terms || 'net_30',

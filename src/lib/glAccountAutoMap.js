@@ -28,6 +28,7 @@ const ROLE_RULES = {
 
   trade_payables:     { types: ['liability'],                  keywords: ['trade payable', 'accounts payable', 'account payable', 'trade creditor', 'payable', 'creditor'] },
   grni:               { types: ['liability'],                  keywords: ['goods received not invoiced', 'grni', 'goods received'] },
+  freight_accrual:    { types: ['liability'],                  keywords: ['freight accrual', 'freight payable', 'carriage payable', 'freight clearing'] },
   vat_output:         { types: ['liability'],                  keywords: ['vat output', 'output vat', 'vat payable'] },
   salaries_payable:   { types: ['liability'],                  keywords: ['salaries payable', 'salary payable', 'wages payable'] },
   epf_payable:        { types: ['liability'],                  keywords: ['epf payable', 'epf'] },

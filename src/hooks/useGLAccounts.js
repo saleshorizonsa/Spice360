@@ -13,6 +13,7 @@ export const GL_ACCOUNT_FALLBACK = {
   trade_payables:     "2100",
   inventory:          "1200",
   grni:               "2110",
+  freight_accrual:    "2130",  // inbound freight owed to 3rd-party carriers
   salaries_expense:   "5100",
   epf_employer_exp:   "5210",
   etf_employer_exp:   "5220",
