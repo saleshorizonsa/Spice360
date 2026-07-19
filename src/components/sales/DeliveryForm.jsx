@@ -171,13 +171,19 @@ export default function DeliveryForm({ item, onClose }) {
 
     const saveMutation = useMutation({
         mutationFn: async () => {
-            const data = buildDeliveryPayload();
+            let data = buildDeliveryPayload();
             const beforeData = item ? { ...item } : null;
             let delivery;
             if (item) {
                 delivery = await matrixSales.entities.Delivery.update(item.id, data);
                 await logAuditTrail({ entityType: 'delivery', entityId: item.id, documentNumber: data.delivery_number, actionType: 'update', beforeData, afterData: data, user: currentUser, severity: 'info', organizationId: currentOrg?.id });
             } else {
+                // Claim the delivery number here, not on form open — an abandoned
+                // form must not consume a number.
+                data = {
+                    ...data,
+                    delivery_number: data.delivery_number?.trim() || await getNextDocumentNumber('delivery'),
+                };
                 delivery = await matrixSales.entities.Delivery.create(data);
                 await logAuditTrail({ entityType: 'delivery', entityId: delivery.id, documentNumber: data.delivery_number, actionType: 'create', afterData: data, user: currentUser, severity: 'info', relatedDocumentType: 'sales_order', relatedDocumentId: data.sales_order_number, organizationId: currentOrg?.id });
             }
@@ -394,8 +400,8 @@ export default function DeliveryForm({ item, onClose }) {
                         <h3 className="font-semibold text-lg border-b pb-2">Delivery Information</h3>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <Label>Delivery Number *</Label>
-                                <Input value={formData.delivery_number} onChange={(e) => handleChange('delivery_number', e.target.value)} required disabled={readOnly} />
+                                <Label>Delivery Number</Label>
+                                <Input value={formData.delivery_number} onChange={(e) => handleChange('delivery_number', e.target.value)} disabled={readOnly} placeholder={item ? '' : 'Auto-generated on save'} />
                             </div>
                             <div>
                                 <Label>Delivery Date *</Label>
