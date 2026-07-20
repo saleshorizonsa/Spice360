@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
-import { AlertCircle, CheckCircle2, AlertTriangle, Plus, Trash2, PackageCheck } from "lucide-react";
+import { AlertCircle, CheckCircle2, AlertTriangle, Plus, Trash2, PackageCheck, Wallet } from "lucide-react";
+import VendorPaymentDialog from "./VendorPaymentDialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { postJournalEntry } from "../utils/journalService";
@@ -30,6 +31,7 @@ export default function VendorInvoiceForm({ item, onClose }) {
     const taxConfig = useTaxConfig();
     const gl = useGLAccounts();
     const [isDirty, setIsDirty] = useState(false);
+    const [showPayment, setShowPayment] = useState(false);
     const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
 
     // ── Source data ───────────────────────────────────────────────────────────
@@ -867,6 +869,18 @@ export default function VendorInvoiceForm({ item, onClose }) {
                             journalReferenceId={item?.vendor_invoice_number}
                         />
                         <div className="flex gap-3">
+                            {/* Payment is only available once the invoice exists and is
+                                approved for payment — an AP balance to settle. */}
+                            {item && ['approved', 'approved_for_payment', 'partially_paid'].includes(String(item.status || '').toLowerCase()) && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="border-emerald-500 text-emerald-700 hover:bg-emerald-50 gap-2"
+                                    onClick={() => setShowPayment(true)}
+                                >
+                                    <Wallet className="w-4 h-4" /> Record Payment
+                                </Button>
+                            )}
                             <Button type="button" variant="outline" onClick={guardedClose(onClose)}>Cancel</Button>
                             <Button
                                 type="submit"
@@ -879,6 +893,10 @@ export default function VendorInvoiceForm({ item, onClose }) {
                     </div>
                 </form>
             </DialogContent>
+
+            {showPayment && item && (
+                <VendorPaymentDialog invoice={item} onClose={() => setShowPayment(false)} />
+            )}
         </Dialog>
     );
 }
