@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertTriangle, CheckCircle2, Truck } from "lucide-react";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
+import { useActiveAccounts } from "@/hooks/useActiveAccounts";
 import { postJournalEntry } from "../utils/journalService";
 import { logAuditTrail } from "../utils/auditTrail";
 import {
@@ -29,6 +30,7 @@ const money = (value) =>
  */
 export default function FreightReclassTool() {
   const gl = useGLAccounts();
+  const { allAccounts = [] } = useActiveAccounts();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { currentOrg } = useOrganization();
@@ -136,7 +138,20 @@ export default function FreightReclassTool() {
     return <div className="py-6 text-center text-sm text-gray-500">Checking vendor invoices…</div>;
   }
 
-  if (!gl.freight_accrual) {
+  // The target accounts must actually be in the Chart of Accounts. gl.freight_accrual
+  // is never empty — it falls back to a placeholder code (2130) — so a non-empty
+  // check is not enough. If the mapped/fallback code is not a real account, posting
+  // would fail deep inside postJournalEntry with "Account 2130 does not exist". Catch
+  // it here and say exactly what to do.
+  const chartCodes = new Set(allAccounts.map((a) => String(a.account_code)));
+  const freightExists = chartCodes.has(String(gl.freight_accrual));
+  const payablesExists = chartCodes.has(String(gl.trade_payables));
+
+  if (!freightExists || !payablesExists) {
+    const missing = [
+      !freightExists ? `Freight Accrual (currently → ${gl.freight_accrual})` : null,
+      !payablesExists ? `Trade Payables (currently → ${gl.trade_payables})` : null,
+    ].filter(Boolean);
     return (
       <Card>
         <CardHeader>
@@ -144,11 +159,18 @@ export default function FreightReclassTool() {
             <Truck className="h-5 w-5 text-indigo-600" /> Freight Reclassification
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-amber-700">
-            Map a <strong>Freight Accrual (Carrier)</strong> account in GL Account Mapping first, then this tool can
-            move historical freight into it.
-          </p>
+        <CardContent className="space-y-2">
+          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <p className="font-semibold">{missing.join(" and ")} is not in your Chart of Accounts.</p>
+              <p className="mt-1">
+                Open <strong>Finance → Settings → GL Account Mapping</strong>, set <strong>Freight Accrual
+                (Carrier)</strong> to your real account (e.g. <code>2111</code> — Fright &amp; other cost) — the
+                Auto-map button will find it — and <strong>Save</strong>. Then reopen this tool.
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
