@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
+import { fileToLogoDataUrl } from "@/lib/logoImage";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useOrganization } from "@/components/utils/OrganizationContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -115,8 +116,8 @@ export default function OrganizationSettings() {
         e.target.value = "";
         setIsUploadingLogo(true);
         try {
-            const { file_url } = await matrixSales.integrations.Core.UploadFile({ file });
-            setForm((prev) => ({ ...prev, logo_url: file_url }));
+            const dataUrl = await fileToLogoDataUrl(file);
+            setForm((prev) => ({ ...prev, logo_url: dataUrl }));
             setDirty(true);
             toast({ title: "Logo uploaded", description: "Click Save Changes to apply." });
         } catch (err) {

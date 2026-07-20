@@ -598,7 +598,14 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
   <span class="badge ${formData.payment_status === 'paid' ? 'paid' : formData.payment_status === 'partially_paid' ? 'partial' : 'unpaid'}">${(formData.payment_status || 'unpaid').replace(/_/g,' ').toUpperCase()}</span>
 </div>
 </div>
-<script>window.onload=()=>window.print()<\/script>
+<script>
+// Wait for the logo (and any image) to finish loading before printing, else the
+// print fires on an empty <img>. Falls back after 2s so it never hangs.
+window.onload=function(){var imgs=[].slice.call(document.images);var left=imgs.length;
+if(!left){window.print();return;}var go=function(){if(--left<=0)window.print();};
+imgs.forEach(function(i){if(i.complete)go();else{i.onload=go;i.onerror=go;}});
+setTimeout(function(){window.print();},2000);}
+<\/script>
 </body></html>`);
         printWindow.document.close();
     };

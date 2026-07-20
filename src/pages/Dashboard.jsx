@@ -38,6 +38,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { usePermissions } from "@/components/utils/usePermissions";
 import { useLanguage } from "@/components/utils/languageContext";
 import PlanUsageWidget from "@/components/shared/PlanUsageWidget";
+import { useOrganization } from "@/components/utils/OrganizationContext";
 
 const toList = (value) => (Array.isArray(value) ? value : []);
 const sumBy = (items, key) => items.reduce((sum, item) => sum + (Number(item?.[key]) || 0), 0);
@@ -777,6 +778,7 @@ function BusinessCards() {
 
 export default function Dashboard() {
     const { t } = useLanguage();
+    const { currentOrg } = useOrganization();
     const [activeTab, setActiveTab] = useState("overview");
     const dashboardTabs = useMemo(() => ([
         { value: "overview", label: "Overview", Component: OverviewCards },
@@ -800,11 +802,22 @@ export default function Dashboard() {
     return (
         <div className="space-y-4 p-4 md:space-y-6 md:p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">{t("dashboard")}</h1>
-                    <p className="mt-1 text-sm text-gray-600 md:text-base">
-                        Management overview by module. Use the cards to review status and open the working screens when needed.
-                    </p>
+                <div className="flex items-start gap-4">
+                    {currentOrg?.logo_url && (
+                        <img
+                            src={currentOrg.logo_url}
+                            alt={currentOrg.organization_name || currentOrg.trade_name || "Company logo"}
+                            className="h-14 w-14 shrink-0 rounded-lg border object-contain bg-white p-1"
+                        />
+                    )}
+                    <div>
+                        <h1 className="text-2xl font-bold text-gray-900 md:text-3xl">
+                            {currentOrg?.organization_name || currentOrg?.trade_name || t("dashboard")}
+                        </h1>
+                        <p className="mt-1 text-sm text-gray-600 md:text-base">
+                            Management overview by module. Use the cards to review status and open the working screens when needed.
+                        </p>
+                    </div>
                 </div>
                 <div className="w-full sm:w-72 shrink-0">
                     <PlanUsageWidget />
