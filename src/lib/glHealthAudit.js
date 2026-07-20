@@ -147,10 +147,75 @@ export const summariseGrniBalance = ({ journalLines = [], grniAccount } = {}) =>
   return { credited, debited, balance, uncleared: Math.max(0, balance) };
 };
 
+/**
+ * Postings on account codes that are NOT in the Chart of Accounts.
+ *
+ * A role mapped (or fallen back) to a code the tenant never created posts to a
+ * phantom account — the money is in the ledger but off every chart-driven report
+ * (this is how capitalised freight on fallback 2130 disappeared from the trial
+ * balance). Grouped by account code with the net balance and the sources that
+ * posted there, so every stray code shows in one list.
+ *
+ * Counts 'posted' and 'reversed' entries: a reversal posts a mirror and marks the
+ * original 'reversed'; both are real history and net out, so a fully-reversed
+ * stray nets to zero and drops off.
+ */
+export const findUnchartedPostings = ({ journalEntries = [], journalLines = [], accounts = [] } = {}) => {
+  // Without the chart we cannot tell charted from uncharted — skip rather than
+  // flag every posting as a false positive.
+  if (!accounts.length) return { rows: [], totals: { count: 0, netDebit: 0, netCredit: 0 } };
+
+  const charted = new Set(accounts.map((a) => String(a.account_code)));
+  const ledgerEntry = new Map(
+    journalEntries
+      .filter((e) => ['posted', 'reversed'].includes(String(e?.status || '').toLowerCase()))
+      .map((e) => [String(e.journal_number), e])
+  );
+
+  const byCode = new Map();
+  for (const line of journalLines) {
+    const code = String(line.account_code || '');
+    if (!code || charted.has(code)) continue;
+    const entry = ledgerEntry.get(String(line.journal_number));
+    if (!entry) continue; // line belongs to a draft/never-posted entry
+
+    if (!byCode.has(code)) byCode.set(code, { account_code: code, debit: 0, credit: 0, count: 0, sources: new Set() });
+    const row = byCode.get(code);
+    row.debit = round(row.debit + num(line.debit));
+    row.credit = round(row.credit + num(line.credit));
+    row.count += 1;
+    if (entry.reference_type) row.sources.add(entry.reference_type);
+  }
+
+  const rows = [...byCode.values()]
+    .map((r) => ({
+      account_code: r.account_code,
+      debit: r.debit,
+      credit: r.credit,
+      balance: round(r.debit - r.credit),
+      count: r.count,
+      sources: [...r.sources],
+    }))
+    // Only a non-zero net balance matters: a stray that has been fully reversed
+    // (equal debit and credit) has no money left in it and drops off.
+    .filter((r) => Math.abs(r.balance) > 0.01)
+    .sort((a, b) => Math.abs(b.balance) - Math.abs(a.balance));
+
+  return {
+    rows,
+    totals: {
+      count: rows.length,
+      netDebit: round(rows.reduce((s, r) => s + Math.max(0, r.balance), 0)),
+      netCredit: round(rows.reduce((s, r) => s + Math.max(0, -r.balance), 0)),
+    },
+  };
+};
+
 export const buildGlHealthReport = ({
   vendorInvoices = [],
   journalEntries = [],
   journalLines = [],
+  accounts = [],
   gl = {},
 } = {}) => {
   const unposted = findUnpostedVendorInvoices({ vendorInvoices, journalEntries });
@@ -160,14 +225,17 @@ export const buildGlHealthReport = ({
     cogsAccount: gl.cogs_general,
   });
   const grni = summariseGrniBalance({ journalLines, grniAccount: gl.grni });
+  const uncharted = findUnchartedPostings({ journalEntries, journalLines, accounts });
 
   return {
     unposted,
     purchaseCogs,
     grni,
+    uncharted,
     isHealthy:
       unposted.totals.count === 0 &&
       purchaseCogs.totals.count === 0 &&
-      grni.uncleared < 0.01,
+      grni.uncleared < 0.01 &&
+      uncharted.totals.count === 0,
   };
 };

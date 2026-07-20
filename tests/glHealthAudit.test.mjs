@@ -4,6 +4,7 @@ import {
   findUnpostedVendorInvoices,
   findPurchaseCogsPostings,
   summariseGrniBalance,
+  findUnchartedPostings,
   buildGlHealthReport,
 } from '../src/lib/glHealthAudit.js';
 
@@ -120,4 +121,62 @@ test('missing GL mapping does not crash the audit', () => {
   const report = buildGlHealthReport({ vendorInvoices: [], journalEntries: [], journalLines: [], gl: {} });
   assert.equal(report.purchaseCogs.totals.count, 0);
   assert.equal(report.grni.uncleared, 0);
+});
+
+// ── Uncharted-account postings ──────────────────────────────────────────────
+const accounts = [
+  { account_code: '1010', account_name: 'Cash' },
+  { account_code: '2111', account_name: 'Fright & other cost' },
+];
+
+test('flags postings on an account code not in the Chart of Accounts', () => {
+  // Freight posted to fallback 2130, which is not in the chart (2111 is).
+  const journalEntries = [{ journal_number: 'JE-1', status: 'posted', reference_type: 'vendor_invoice' }];
+  const journalLines = [
+    { journal_number: 'JE-1', account_code: '2130', debit: 0, credit: 7100 },
+    { journal_number: 'JE-1', account_code: '1010', debit: 7100, credit: 0 },
+  ];
+  const { rows, totals } = findUnchartedPostings({ journalEntries, journalLines, accounts });
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].account_code, '2130');
+  assert.equal(rows[0].credit, 7100);
+  assert.equal(rows[0].balance, -7100);
+  assert.deepEqual(rows[0].sources, ['vendor_invoice']);
+  assert.equal(totals.count, 1);
+});
+
+test('a fully reversed stray posting nets to zero and drops off', () => {
+  const journalEntries = [
+    { journal_number: 'JE-1', status: 'reversed', reference_type: 'vendor_invoice' },
+    { journal_number: 'JE-2', status: 'posted',   reference_type: 'reversal' },
+  ];
+  const journalLines = [
+    { journal_number: 'JE-1', account_code: '2130', debit: 0, credit: 7100 },
+    { journal_number: 'JE-2', account_code: '2130', debit: 7100, credit: 0 },
+  ];
+  assert.equal(findUnchartedPostings({ journalEntries, journalLines, accounts }).rows.length, 0);
+});
+
+test('charted accounts are never flagged', () => {
+  const journalEntries = [{ journal_number: 'JE-1', status: 'posted', reference_type: 'grn' }];
+  const journalLines = [{ journal_number: 'JE-1', account_code: '2111', debit: 0, credit: 500 }];
+  assert.equal(findUnchartedPostings({ journalEntries, journalLines, accounts }).rows.length, 0);
+});
+
+test('draft/never-posted lines are ignored', () => {
+  const journalEntries = [{ journal_number: 'JE-1', status: 'draft', reference_type: 'vendor_invoice' }];
+  const journalLines = [{ journal_number: 'JE-1', account_code: '9999', debit: 100, credit: 0 }];
+  assert.equal(findUnchartedPostings({ journalEntries, journalLines, accounts }).rows.length, 0);
+});
+
+test('buildGlHealthReport surfaces uncharted postings and marks unhealthy', () => {
+  const report = buildGlHealthReport({
+    vendorInvoices: [],
+    journalEntries: [{ journal_number: 'JE-1', status: 'posted', reference_type: 'vendor_invoice' }],
+    journalLines: [{ journal_number: 'JE-1', account_code: '2130', debit: 0, credit: 7100 }],
+    accounts,
+    gl,
+  });
+  assert.equal(report.uncharted.totals.count, 1);
+  assert.equal(report.isHealthy, false);
 });

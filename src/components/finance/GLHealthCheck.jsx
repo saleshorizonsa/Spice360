@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertTriangle, CheckCircle2, Stethoscope } from "lucide-react";
 import { buildGlHealthReport } from "@/lib/glHealthAudit";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
+import { useActiveAccounts } from "@/hooks/useActiveAccounts";
 
 const money = (value) =>
   Number(value || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -16,6 +17,7 @@ const money = (value) =>
  */
 export default function GLHealthCheck() {
   const gl = useGLAccounts();
+  const { allAccounts = [], isLoading: l0 } = useActiveAccounts();
 
   const { data: vendorInvoices = [], isLoading: l1 } = useQuery({
     queryKey: ["vendorInvoices"],
@@ -34,15 +36,15 @@ export default function GLHealthCheck() {
   });
 
   const report = useMemo(
-    () => buildGlHealthReport({ vendorInvoices, journalEntries, journalLines, gl }),
-    [vendorInvoices, journalEntries, journalLines, gl]
+    () => buildGlHealthReport({ vendorInvoices, journalEntries, journalLines, accounts: allAccounts, gl }),
+    [vendorInvoices, journalEntries, journalLines, allAccounts, gl]
   );
 
-  if (l1 || l2 || l3) {
+  if (l0 || l1 || l2 || l3) {
     return <div className="py-8 text-center text-sm text-gray-500">Checking the ledger…</div>;
   }
 
-  const { unposted, purchaseCogs, grni, isHealthy } = report;
+  const { unposted, purchaseCogs, grni, uncharted, isHealthy } = report;
 
   return (
     <Card>
@@ -142,6 +144,44 @@ export default function GLHealthCheck() {
               Invoices posted from now on will clear it. Receipts already invoiced under the old behaviour need a
               reclassification journal (Dr GRNI / Cr the account their cost was wrongly sent to).
             </p>
+          </div>
+        )}
+
+        {/* 4 — postings on account codes not in the Chart of Accounts */}
+        {uncharted?.totals?.count > 0 && (
+          <div className="rounded-lg border border-red-300 bg-red-50 p-3">
+            <div className="mb-1 flex items-center gap-2 text-sm font-semibold text-red-800">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              {uncharted.totals.count} account code(s) have postings but are NOT in your Chart of Accounts
+            </div>
+            <p className="mb-2 text-xs text-red-700">
+              A role mapped (or fallen back) to a code you never created posts to a phantom account — the money is
+              in the ledger but drops off the trial balance and the financial statements. Add the account to the
+              chart, or remap the role, then post a reclassification journal to move the balance to the right
+              account. Freight on fallback <code>2130</code> is the usual culprit.
+            </p>
+            <div className="overflow-x-auto rounded border border-red-200 bg-white">
+              <table className="w-full text-sm">
+                <thead className="bg-red-100 text-red-900">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium">Account code</th>
+                    <th className="px-3 py-2 text-left font-medium">Posted by</th>
+                    <th className="px-3 py-2 text-right font-medium">Net balance</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {uncharted.rows.map((r) => (
+                    <tr key={r.account_code}>
+                      <td className="px-3 py-2 font-mono text-xs font-semibold">{r.account_code}</td>
+                      <td className="px-3 py-2 text-xs text-gray-600">{r.sources.join(", ") || "—"}</td>
+                      <td className={`px-3 py-2 text-right font-medium ${r.balance >= 0 ? "text-gray-800" : "text-red-700"}`}>
+                        {r.balance >= 0 ? `Dr ${money(r.balance)}` : `Cr ${money(-r.balance)}`}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </CardContent>
