@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Plus, FileText, ShoppingCart, Receipt, TrendingUp, FlaskConical } from "lucide-react";
 import DataTable from "@/components/erp/DataTable";
-import DocumentChainStrip from "@/components/shared/DocumentChainStrip";
+import DocumentFlowDialog from "@/components/shared/DocumentFlowDialog";
 import PurchaseRequisitionForm from "@/components/purchasing/PurchaseRequisitionForm";
 import RFQForm from "@/components/purchasing/RFQForm";
 import PurchaseOrderForm from "@/components/purchasing/PurchaseOrderForm";
@@ -31,6 +31,7 @@ export default function Purchasing() {
     const { toast } = useToast();
     const [currentUser, setCurrentUser] = useState(null);
     const [reverseGrn, setReverseGrn] = useState(null);
+    const [flowDoc, setFlowDoc] = useState(null);
     const { t } = useLanguage();
 
     useEffect(() => {
@@ -135,7 +136,6 @@ export default function Purchasing() {
 
     const prColumns = [
         { header: "PR #", key: "pr_number" },
-        { header: "Flow", key: "pr_number", sortable: false, render: (_v, row) => <DocumentChainStrip seedType="PurchaseRequisition" seedNumber={row.pr_number} /> },
         { header: t('date'), key: "pr_date" },
         { header: "Requested By", key: "requested_by" },
         { header: t('material'), key: "material_name" },
@@ -147,7 +147,6 @@ export default function Purchasing() {
 
     const rfqColumns = [
         { header: "RFQ #", key: "rfq_number" },
-        { header: "Flow", key: "rfq_number", sortable: false, render: (_v, row) => <DocumentChainStrip seedType="RFQ" seedNumber={row.rfq_number} /> },
         { header: t('date'), key: "rfq_date" },
         { header: t('material'), key: "material_name" },
         { header: "Qty", key: "quantity" },
@@ -157,7 +156,6 @@ export default function Purchasing() {
 
     const purchaseOrderColumns = [
         { header: "PO Number", key: "po_number" },
-        { header: "Flow", key: "po_number", sortable: false, render: (_v, row) => <DocumentChainStrip seedType="PurchaseOrder" seedNumber={row.po_number} /> },
         { header: t('vendor'), key: "vendor_name" },
         { header: t('material'), key: "material_name" },
         { header: t('quantity'), key: "quantity" },
@@ -195,7 +193,6 @@ export default function Purchasing() {
 
     const grnColumns = [
         { header: "GRN #", key: "grn_number" },
-        { header: "Flow", key: "grn_number", sortable: false, render: (_v, row) => <DocumentChainStrip seedType="GoodsReceiptNote" seedNumber={row.grn_number} /> },
         { header: t('date'), key: "grn_date" },
         { header: "PO #", key: "po_number" },
         { header: t('vendor'), key: "vendor_name" },
@@ -209,7 +206,6 @@ export default function Purchasing() {
 
     const invoiceColumns = [
         { header: "Invoice #", key: "vendor_invoice_number" },
-        { header: "Flow", key: "vendor_invoice_number", sortable: false, render: (_v, row) => <DocumentChainStrip seedType="VendorInvoice" seedNumber={row.vendor_invoice_number} /> },
         { header: t('date'), key: "invoice_date" },
         { header: "PO #", key: "po_number" },
         { header: "GRN #", key: "grn_number" },
@@ -353,6 +349,7 @@ export default function Purchasing() {
                             <DataTable
                                 data={requisitions}
                                 columns={prColumns}
+                                onFlow={(row) => setFlowDoc({ seedType: 'PurchaseRequisition', seedNumber: row.pr_number })}
                                 getBadgeColor={getBadgeColor}
                                 onEdit={(item) => handleEdit(item, 'requisitions')}
                                 onDelete={(item) => handleDelete(item, 'PurchaseRequisition')}
@@ -379,6 +376,7 @@ export default function Purchasing() {
                             <DataTable
                                 data={rfqs}
                                 columns={rfqColumns}
+                                onFlow={(row) => setFlowDoc({ seedType: 'RFQ', seedNumber: row.rfq_number })}
                                 getBadgeColor={getBadgeColor}
                                 onEdit={(item) => handleEdit(item, 'rfqs')}
                                 onDelete={(item) => handleDelete(item, 'RFQ')}
@@ -405,6 +403,7 @@ export default function Purchasing() {
                             <DataTable
                                 data={pos}
                                 columns={purchaseOrderColumns}
+                                onFlow={(row) => setFlowDoc({ seedType: 'PurchaseOrder', seedNumber: row.po_number })}
                                 getBadgeColor={getBadgeColor}
                                 onEdit={(item) => handleEdit(item, 'pos')}
                                 onDelete={(item) => handleDelete(item, 'PurchaseOrder')}
@@ -440,6 +439,7 @@ export default function Purchasing() {
                             <DataTable
                                 data={grns}
                                 columns={grnColumns}
+                                onFlow={(row) => setFlowDoc({ seedType: 'GoodsReceiptNote', seedNumber: row.grn_number })}
                                 getBadgeColor={getBadgeColor}
                                 onEdit={(item) => handleEdit(item, 'grns')}
                                 onDelete={(item) => handleDelete(item, 'GoodsReceiptNote')}
@@ -467,6 +467,7 @@ export default function Purchasing() {
                             <DataTable
                                 data={vendorInvoices}
                                 columns={invoiceColumns}
+                                onFlow={(row) => setFlowDoc({ seedType: 'VendorInvoice', seedNumber: row.vendor_invoice_number })}
                                 getBadgeColor={getBadgeColor}
                                 onEdit={(item) => handleEdit(item, 'invoices')}
                                 onDelete={(item) => handleDelete(item, 'VendorInvoice')}
@@ -592,6 +593,9 @@ export default function Purchasing() {
             )}
             {reverseGrn && (
                 <ReverseGRNDialog grn={reverseGrn} onClose={() => setReverseGrn(null)} />
+            )}
+            {flowDoc && (
+                <DocumentFlowDialog seedType={flowDoc.seedType} seedNumber={flowDoc.seedNumber} onClose={() => setFlowDoc(null)} />
             )}
             {showDialog && activeTab === 'invoices' && (
                 <VendorInvoiceForm item={editingItem} onClose={handleCloseDialog} />
