@@ -93,8 +93,38 @@ test('warns when ledger entries are unbalanced or unmapped', () => {
     filters: { tenantId: 'tenant-a' }
   });
 
-  assert.ok(report.warnings.some((warning) => warning.type === 'missing_account_mapping'));
+  assert.ok(report.warnings.some((warning) => warning.type === 'unmapped_account'));
   assert.ok(report.warnings.some((warning) => warning.type === 'ledger_unbalanced'));
+});
+
+test('a posting to an account not in the COA is shown, not dropped from the trial balance', () => {
+  // Regression: capitalised freight posted to a fallback account (2130) that was not
+  // in the chart. The trial balance silently skipped the line, so the freight
+  // vanished from the TB and the mapped freight account showed zero.
+  const report = buildTrialBalance({
+    accounts,
+    journalEntries: [
+      { id: 'f-1', status: 'posted', posting_date: '2026-01-15', account_code: '2130', credit_amount: 7100, tenant_id: 'tenant-a' },
+      { id: 'f-2', status: 'posted', posting_date: '2026-01-15', account_code: '1010', debit_amount: 7100, tenant_id: 'tenant-a' },
+    ],
+    asOfDate: '2026-01-31',
+    filters: { tenantId: 'tenant-a' },
+  });
+
+  const stray = report.rows.find((row) => row.account_code === '2130');
+  assert.ok(stray, 'the unmapped-account posting must appear as its own row');
+  assert.equal(stray.credit, 7100);           // the freight is visible
+  assert.equal(stray.unmapped, true);
+  assert.match(stray.account_name, /not in Chart of Accounts/i);
+  assert.ok(report.warnings.some((w) => w.type === 'unmapped_account'));
+
+  // The 7,100 is counted on both sides, so the trial balance still ties.
+  assert.equal(report.totalDebit, 7100);
+  assert.equal(report.totalCredit, 7100);
+  assert.equal(report.difference, 0);
+
+  // It stays OUT of the P&L / Balance Sheet until it is charted (no category).
+  assert.equal(stray.statement_category, null);
 });
 
 test('drill-down transactions remain tied to the selected account', () => {

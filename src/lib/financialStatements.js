@@ -234,11 +234,40 @@ export const buildTrialBalance = ({ accounts = [], journalEntries = [], asOfDate
 
   lines.forEach((line) => {
     const account = accountMap.get(String(line.account_code));
-    if (!account || !matchesAccountFilters(account, filters)) {
-      warnings.push({
-        type: 'missing_account_mapping',
-        message: `Ledger line ${line.reference_number || line.line_id} uses unmapped account ${line.account_code}.`
-      });
+
+    // Account exists but is filtered out (currency/tenant) — a legitimate exclusion.
+    if (account && !matchesAccountFilters(account, filters)) return;
+
+    // Account is NOT in the Chart of Accounts. Do NOT drop the posting — that hides
+    // real money and lets the trial balance quietly stop reflecting the ledger (this
+    // is exactly how capitalised freight posted to an unmapped fallback code
+    // disappeared from the TB). Surface it as its own row, flagged, so the total
+    // still ties to the ledger and the stray postings are visible and fixable.
+    if (!account) {
+      const code = String(line.account_code);
+      if (!rowsByCode.has(code)) {
+        warnings.push({
+          type: 'unmapped_account',
+          message: `Account ${code} has postings but is not in the Chart of Accounts. Add it, or remap the role that points at it.`
+        });
+        rowsByCode.set(code, {
+          account_code: code,
+          account_name: `${code} — not in Chart of Accounts`,
+          account_type: 'unmapped',
+          statement_category: null,      // stays out of P&L / Balance Sheet until charted
+          normal_balance: 'debit',       // unknown; net debit − credit is shown
+          opening_balance: 0,
+          debit: 0,
+          credit: 0,
+          balance: 0,
+          unmapped: true,
+          transactions: []
+        });
+      }
+      const row = rowsByCode.get(code);
+      row.debit += line.debit;
+      row.credit += line.credit;
+      row.transactions.push(line);
       return;
     }
 
@@ -266,7 +295,7 @@ export const buildTrialBalance = ({ accounts = [], journalEntries = [], asOfDate
 
   rowsByCode.forEach((row) => {
     row.balance = row.opening_balance + signedBalance(row, row.debit, row.credit);
-    if (!row.statement_category) {
+    if (!row.statement_category && !row.unmapped) {
       warnings.push({
         type: 'uncategorized_account',
         message: `Account ${row.account_code} has no financial statement category.`

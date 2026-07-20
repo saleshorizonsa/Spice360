@@ -49,6 +49,18 @@ test('never suggests a header account (nothing can be posted to it)', () => {
   assert.ok(!Object.values(s).includes('2000'));
 });
 
+test('matches a freight liability account, including the common "Fright & other cost" spelling', () => {
+  const withFreight = [
+    ...coa,
+    { account_code: '2111', account_name: 'Fright & other cost', account_type: 'liability' },
+  ];
+  assert.equal(suggestGlMapping(withFreight).freight_accrual, '2111');
+
+  // and a correctly-spelled variant
+  const variant = [{ account_code: '2130', account_name: 'Freight Payable', account_type: 'liability' }];
+  assert.equal(suggestGlMapping(variant).freight_accrual, '2130');
+});
+
 test('suggests nothing rather than guessing when no account matches', () => {
   const s = suggestGlMapping([{ account_code: '9999', account_name: 'Suspense', account_type: 'asset' }]);
   assert.equal(s.trade_payables, undefined);
