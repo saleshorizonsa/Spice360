@@ -12,6 +12,7 @@ import { useTaxConfig } from "@/hooks/useTaxConfig";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import ReverseButton from "../shared/ReverseButton";
 import SearchableSelect from "@/components/ui/SearchableSelect";
+import { isFinalisedInvoice, buildArRecordFromInvoice } from "@/lib/arFromInvoice";
 
 export default function ARForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -26,6 +27,20 @@ export default function ARForm({ item, onClose }) {
         initialData: []
     });
 
+    // Finalised sales invoices, so an AR entry can be raised by PICKING an invoice
+    // instead of typing its number. Draft/cancelled invoices are excluded.
+    const { data: invoices = [] } = useQuery({
+        queryKey: ['invoices'],
+        queryFn: () => matrixSales.entities.Invoice.list('-invoice_date'),
+        initialData: []
+    });
+
+    const { data: arRecords = [] } = useQuery({
+        queryKey: ['ar'],
+        queryFn: () => matrixSales.entities.AccountsReceivable.list(),
+        initialData: []
+    });
+
     const customerOptions = useMemo(() =>
         customers.map(c => ({
             value: c.customer_code,
@@ -33,6 +48,27 @@ export default function ARForm({ item, onClose }) {
         })),
         [customers]
     );
+
+    // Only invoices that are finalised AND don't already have an AR entry.
+    const invoiceOptions = useMemo(() => {
+        const haveAr = new Set(arRecords.map(ar => String(ar.invoice_number || '')));
+        return invoices
+            .filter(isFinalisedInvoice)
+            .filter(inv => !haveAr.has(String(inv.invoice_number)))
+            .map(inv => ({
+                value: inv.invoice_number,
+                label: `${inv.invoice_number} | ${inv.customer_name || ''} | ${Number(inv.total_amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} LKR`,
+            }));
+    }, [invoices, arRecords]);
+
+    const handleInvoiceSelect = (invoiceNumber) => {
+        const inv = invoices.find(i => i.invoice_number === invoiceNumber);
+        if (!inv) return;
+        if (!isDirty) setIsDirty(true);
+        // Prefill every AR field from the invoice — the same shape auto-create uses.
+        const ar = buildArRecordFromInvoice(inv);
+        setFormData(prev => ({ ...prev, ...ar }));
+    };
 
     const [formData, setFormData] = useState({
         ar_number: '',
@@ -141,6 +177,25 @@ export default function ARForm({ item, onClose }) {
                             />
                         </div>
                     </div>
+
+                    {!item && (
+                        <div>
+                            <SearchableSelect
+                                label="Pick a Sales Invoice"
+                                value={formData.invoice_number}
+                                onChange={handleInvoiceSelect}
+                                options={invoiceOptions}
+                                mode="client"
+                                placeholder="Select an invoice to raise AR from…"
+                                searchPlaceholder="Search by invoice #, customer, amount…"
+                                emptyText="No finalised invoices without an AR entry. (Draft invoices don't appear; finalised ones auto-create their AR.)"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                                Picks a finalised invoice and fills the fields below. Finalised invoices already
+                                create their AR entry automatically — this is for adjustments or older invoices.
+                            </p>
+                        </div>
+                    )}
 
                     <div>
                         <SearchableSelect

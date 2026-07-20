@@ -22,6 +22,7 @@ import GLHealthCheck from "@/components/finance/GLHealthCheck";
 import CogsGrniCorrectionTool from "@/components/finance/CogsGrniCorrectionTool";
 import FreightReclassTool from "@/components/finance/FreightReclassTool";
 import InventoryGlReconciliation from "@/components/finance/InventoryGlReconciliation";
+import ArBackfillTool from "@/components/finance/ArBackfillTool";
 import FXRateManager from "@/components/finance/FXRateManager";
 import CostCenterForm from "@/components/finance/CostCenterForm";
 import CustomerStatementDialog from "@/components/finance/CustomerStatementDialog";
@@ -845,6 +846,9 @@ export default function Finance() {
 
                     {/* Stock subledger vs Inventory GL, with the gap attributed. */}
                     <InventoryGlReconciliation />
+
+                    {/* Backfill AR entries for finalised invoices that never got one. */}
+                    <ArBackfillTool />
 
                     {/* GL Account Mapping */}
                     <Card>

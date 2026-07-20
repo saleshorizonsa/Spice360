@@ -24,6 +24,7 @@ import { useTaxConfig } from "@/hooks/useTaxConfig";
 import { resolveVatRate, resolveSalesOrderVatRate } from "@/lib/vat";
 import { buildInvoiceLines, clampInvoiceQty, invoiceTotals, validateInvoiceLines } from "@/lib/invoiceLines";
 import SearchableSelect from "../shared/SearchableSelect";
+import { isFinalisedInvoice, buildArRecordFromInvoice } from "@/lib/arFromInvoice";
 
 export default function InvoiceForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -337,7 +338,7 @@ export default function InvoiceForm({ item, onClose }) {
             ? matrixSales.entities.Invoice.update(item.id, data)
             : matrixSales.entities.Invoice.create(data),
         onSuccess: async (savedInvoice) => {
-            if (savedInvoice?.status === 'submitted' && !savedInvoice.gl_posted) {
+            if (isFinalisedInvoice(savedInvoice) && !savedInvoice.gl_posted) {
                 try {
                     await postJournalEntry({
                         lines: [
@@ -396,32 +397,16 @@ export default function InvoiceForm({ item, onClose }) {
             }
 
             // Create AR record on first submission so customer balance is tracked in Finance → AR
-            if (savedInvoice?.status === 'submitted') {
+            if (isFinalisedInvoice(savedInvoice)) {
                 try {
                     const existingAR = await matrixSales.entities.AccountsReceivable.filter({
                         invoice_number: savedInvoice.invoice_number,
                         organization_id: currentOrg?.id
                     });
                     if (existingAR.length === 0) {
-                        await matrixSales.entities.AccountsReceivable.create({
-                            ar_number:          `AR-${savedInvoice.invoice_number}`,
-                            invoice_number:     savedInvoice.invoice_number,
-                            customer_code:      savedInvoice.customer_code || '',
-                            customer_name:      savedInvoice.customer_name,
-                            invoice_date:       savedInvoice.invoice_date,
-                            due_date:           savedInvoice.due_date || '',
-                            invoice_amount:     savedInvoice.total_amount,
-                            paid_amount:        0,
-                            outstanding_amount: savedInvoice.total_amount,
-                            vat_amount:         savedInvoice.tax_amount || savedInvoice.vat_amount || 0,
-                            currency:           savedInvoice.currency || 'LKR',
-                            payment_terms:      savedInvoice.payment_terms || 'net_30',
-                            aging_days:         0,
-                            aging_bucket:       'current',
-                            status:             'open',
-                            notes:              `From Sales Invoice ${savedInvoice.invoice_number}`,
-                            organization_id:    currentOrg?.id,
-                        });
+                        await matrixSales.entities.AccountsReceivable.create(
+                            buildArRecordFromInvoice(savedInvoice, currentOrg?.id)
+                        );
                     }
                     queryClient.invalidateQueries({ queryKey: ['ar'] });
                 } catch (arErr) {
