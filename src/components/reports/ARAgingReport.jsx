@@ -1,5 +1,6 @@
 
 import React, { useState, useRef, useEffect } from "react";
+import { openPrintWindow } from "@/lib/printWindow";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { useOrganization } from "@/components/utils/OrganizationContext";
@@ -235,7 +236,6 @@ export default function ARAgingReport() {
     };
 
     const handleExportPDF = () => {
-        const printWindow = window.open('', '_blank');
         let effectiveFromCustomer, effectiveToCustomer;
 
         if (selectionMode === "search" || selectionMode === "manual") {
@@ -343,9 +343,7 @@ export default function ARAgingReport() {
                 </body>
             </html>
         `;
-        printWindow.document.write(content);
-        printWindow.document.close();
-        printWindow.print();
+        openPrintWindow(content);
     };
 
     const handleClearFilters = () => {

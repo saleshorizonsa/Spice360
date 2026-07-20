@@ -1,4 +1,5 @@
 import React, { useRef } from "react";
+import { openPrintWindow } from "@/lib/printWindow";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { X, Printer, Download } from "lucide-react";
@@ -235,8 +236,7 @@ export default function DocumentPrintPreview({
         const content = printRef.current?.innerHTML;
         if (!content) return;
 
-        const win = window.open("", "_blank", "width=900,height=700");
-        win.document.write(`<!DOCTYPE html>
+        openPrintWindow(`<!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
@@ -253,12 +253,6 @@ export default function DocumentPrintPreview({
 </head>
 <body>${content}</body>
 </html>`);
-        win.document.close();
-        win.focus();
-        setTimeout(() => {
-            win.print();
-            win.close();
-        }, 400);
     };
 
     return (

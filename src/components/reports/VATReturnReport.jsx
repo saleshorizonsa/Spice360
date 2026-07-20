@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { openPrintWindow } from "@/lib/printWindow";
 import { useQuery } from "@tanstack/react-query";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,8 +76,7 @@ export default function VATReturnReport() {
   const isLoading = loadingInv || loadingVI;
 
   const handlePrint = () => {
-    const w = window.open("", "_blank");
-    w.document.write(`<!DOCTYPE html><html><head><title>VAT Return ${label}</title>
+    openPrintWindow(`<!DOCTYPE html><html><head><title>VAT Return ${label}</title>
 <style>body{font-family:Arial,sans-serif;padding:40px;color:#1e293b}h1{color:#24466f;margin-bottom:4px}h3{margin:20px 0 8px;color:#475569}
 table{width:100%;border-collapse:collapse;margin:0 0 16px}th{background:#24466f;color:#fff;padding:10px;text-align:left}
 td{padding:10px;border-bottom:1px solid #e2e8f0}.num{text-align:right;font-family:monospace}
@@ -101,8 +101,7 @@ td{padding:10px;border-bottom:1px solid #e2e8f0}.num{text-align:right;font-famil
 <tr><td>Less: Input VAT</td><td class="num">(${fmt(stats.inputVAT)})</td></tr>
 <tr class="net"><td>${stats.netVAT >= 0 ? "VAT Payable to ZATCA" : "VAT Refundable"}</td><td class="num">${fmt(Math.abs(stats.netVAT))}</td></tr></table>
 <p style="margin-top:24px;font-size:11px;color:#94a3b8">Generated ${new Date().toLocaleDateString()} — HORIZON ERP</p>
-<script>window.onload=()=>window.print()<\/script></body></html>`);
-    w.document.close();
+</body></html>`);
   };
 
   const yearOptions = [currentYear, currentYear - 1, currentYear - 2].map(String);

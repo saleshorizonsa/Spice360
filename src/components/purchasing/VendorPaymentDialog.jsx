@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { openPrintWindow } from "@/lib/printWindow";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -167,8 +168,7 @@ export default function VendorPaymentDialog({ invoice, onClose }) {
 
     const printVoucher = (payment) => {
         const org = currentOrg || {};
-        const w = window.open("", "_blank");
-        w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Payment Voucher ${payment.payment_number}</title>
+        openPrintWindow(`<!DOCTYPE html><html><head><meta charset="UTF-8"/><title>Payment Voucher ${payment.payment_number}</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:Arial,sans-serif}
 .p{max-width:720px;margin:0 auto;padding:40px;color:#1e293b}
@@ -193,8 +193,7 @@ td.k{color:#64748b;width:38%}
 ${payment.notes ? `<tr><td class="k">Notes</td><td>${payment.notes}</td></tr>` : ""}
 </table>
 <div class="sig"><div>Prepared By</div><div>Approved By</div><div>Received By</div></div>
-</div><script>window.onload=()=>window.print()<\/script></body></html>`);
-        w.document.close();
+</div></body></html>`);
     };
 
     return (

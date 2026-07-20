@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from "react";
+import { openPrintWindow } from "@/lib/printWindow";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -136,11 +137,9 @@ td{padding:4px 8px;border-bottom:1px solid #f1f5f9}tr:nth-child(even)>td:not(.cu
 <tbody>${rows}</tbody></table>
 <div class="summary"><div class="sum-title">Aging Summary</div><div class="sum-grid">${bucketSummaryHtml}</div>
 <div class="grand">Grand Total Outstanding: ${fmt(grandTotal)}</div></div>
-<script>window.onload=()=>window.print()<\/script></body></html>`;
+</body></html>`;
 
-        const w = window.open("", "_blank");
-        w.document.write(html);
-        w.document.close();
+        openPrintWindow(html);
     };
 
     return (
