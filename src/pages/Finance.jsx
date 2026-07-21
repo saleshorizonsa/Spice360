@@ -21,6 +21,7 @@ import GLAccountMappingForm from "@/components/finance/GLAccountMappingForm";
 import GLHealthCheck from "@/components/finance/GLHealthCheck";
 import CogsGrniCorrectionTool from "@/components/finance/CogsGrniCorrectionTool";
 import FreightReclassTool from "@/components/finance/FreightReclassTool";
+import FreightToCogsTool from "@/components/finance/FreightToCogsTool";
 import InventoryGlReconciliation from "@/components/finance/InventoryGlReconciliation";
 import ArBackfillTool from "@/components/finance/ArBackfillTool";
 import FXRateManager from "@/components/finance/FXRateManager";
@@ -843,6 +844,9 @@ export default function Finance() {
 
                     {/* Move historical inbound freight from Trade Payables to Freight Accrual. */}
                     <FreightReclassTool />
+
+                    {/* Capitalise reclassified freight into COGS (product cost of sold goods). */}
+                    <FreightToCogsTool />
 
                     {/* Stock subledger vs Inventory GL, with the gap attributed. */}
                     <InventoryGlReconciliation />
