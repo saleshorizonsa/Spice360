@@ -16,6 +16,7 @@ import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { postJournalEntry } from "../utils/journalService";
 import { buildVendorInvoiceJournal } from "@/lib/vendorInvoiceJournal";
 import { apportionLandedCost } from "@/lib/landedCostApportionment";
+import { assessFreightStrand } from "@/lib/freightStrandRisk";
 import { useOrganization } from "../utils/OrganizationContext";
 import ReverseButton from "../shared/ReverseButton";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
@@ -35,6 +36,12 @@ export default function VendorInvoiceForm({ item, onClose }) {
     const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
 
     // ── Source data ───────────────────────────────────────────────────────────
+    const { data: stockLevels = [] } = useQuery({
+        queryKey: ['stockLevels'],
+        queryFn: () => matrixSales.entities.StockLevel.list(),
+        initialData: []
+    });
+
     const { data: grns = [] } = useQuery({
         queryKey: ['grns'],
         queryFn: () => matrixSales.entities.GoodsReceiptNote.list('-grn_date'),
@@ -65,6 +72,15 @@ export default function VendorInvoiceForm({ item, onClose }) {
     const [grnToAdd, setGrnToAdd]     = useState('');
 
     const totalGRNQty = linkedGRNs.reduce((sum, g) => sum + (parseFloat(g.grn_quantity) || 0), 0);
+
+    // Heads-up: if the received goods are already sold, freight can't re-average into
+    // their unit cost — it will strand and need Freight → COGS.
+    const landedNow = (parseFloat(formData.freight_cost) || 0) + (parseFloat(formData.other_charges) || 0);
+    const strand = useMemo(
+        () => assessFreightStrand({ linkedGRNs, grns, stockLevels }),
+        [linkedGRNs, grns, stockLevels]
+    );
+    const showStrandWarning = landedNow > 0 && strand.atRisk;
 
     // Vendor locked to first GRN's vendor
     const lockedVendorCode = linkedGRNs[0]?.vendor_code || '';
@@ -770,6 +786,24 @@ export default function VendorInvoiceForm({ item, onClose }) {
                                     </p>
                                 </div>
                             </div>
+
+                            {showStrandWarning && (
+                                <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-800">
+                                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                                    <div>
+                                        <p className="font-semibold">These goods are already sold — freight will not fully reach product cost automatically.</p>
+                                        <p className="mt-1">
+                                            {strand.soldQty > 0
+                                                ? `About ${strand.soldQty} of the ${strand.receivedQty} received are no longer in stock`
+                                                : 'The received goods are no longer in stock'}
+                                            , so this freight can't re-average into their unit cost — it will strand.
+                                            Post the invoice, then use <strong>Finance → Settings → Freight → COGS</strong>{" "}
+                                            to move it into cost of goods sold. (If the goods were still in stock, freight
+                                            would flow to COGS automatically on sale.)
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Totals */}
                             <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg space-y-2">
