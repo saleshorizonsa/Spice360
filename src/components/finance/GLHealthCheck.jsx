@@ -1,12 +1,14 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { AlertTriangle, CheckCircle2, Stethoscope } from "lucide-react";
 import { buildGlHealthReport } from "@/lib/glHealthAudit";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
 import { useActiveAccounts } from "@/hooks/useActiveAccounts";
+import SweepUnchartedDialog from "./SweepUnchartedDialog";
 
 const money = (value) =>
   Number(value || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -18,6 +20,7 @@ const money = (value) =>
 export default function GLHealthCheck() {
   const gl = useGLAccounts();
   const { allAccounts = [], isLoading: l0 } = useActiveAccounts();
+  const [sweeping, setSweeping] = useState(null);
 
   const { data: vendorInvoices = [], isLoading: l1 } = useQuery({
     queryKey: ["vendorInvoices"],
@@ -167,6 +170,7 @@ export default function GLHealthCheck() {
                     <th className="px-3 py-2 text-left font-medium">Account code</th>
                     <th className="px-3 py-2 text-left font-medium">Posted by</th>
                     <th className="px-3 py-2 text-right font-medium">Net balance</th>
+                    <th className="px-3 py-2 text-right font-medium">Fix</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -177,6 +181,11 @@ export default function GLHealthCheck() {
                       <td className={`px-3 py-2 text-right font-medium ${r.balance >= 0 ? "text-gray-800" : "text-red-700"}`}>
                         {r.balance >= 0 ? `Dr ${money(r.balance)}` : `Cr ${money(-r.balance)}`}
                       </td>
+                      <td className="px-3 py-2 text-right">
+                        <Button size="sm" variant="outline" className="h-7 border-indigo-400 text-indigo-700 hover:bg-indigo-50" onClick={() => setSweeping(r)}>
+                          Sweep →
+                        </Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -185,6 +194,10 @@ export default function GLHealthCheck() {
           </div>
         )}
       </CardContent>
+
+      {sweeping && (
+        <SweepUnchartedDialog stray={sweeping} accounts={allAccounts} onClose={() => setSweeping(null)} />
+      )}
     </Card>
   );
 }
