@@ -55,6 +55,19 @@ export default [
         { ignore: ["cmdk-input-wrapper", "toast-close"] },
       ],
       "react-hooks/rules-of-hooks": "error",
+      // Reading a const/let above its declaration is a temporal dead zone: it
+      // survives the build and then crashes the whole app at runtime with
+      // "Cannot access 'X' before initialization" (a strand-risk helper read
+      // formData above its useState and took the production app down).
+      // Functions are exempt — they hoist, and forward references between them
+      // are a normal, safe pattern in these components.
+      // Warn, not error: most existing hits are arrow-function consts referenced
+      // inside callbacks, which run after the body and are safe. The dangerous
+      // case is a variable read during the component body itself.
+      "no-use-before-define": [
+        "warn",
+        { functions: false, classes: true, variables: true, allowNamedExports: false },
+      ],
     },
   },
 ];

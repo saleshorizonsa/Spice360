@@ -73,15 +73,6 @@ export default function VendorInvoiceForm({ item, onClose }) {
 
     const totalGRNQty = linkedGRNs.reduce((sum, g) => sum + (parseFloat(g.grn_quantity) || 0), 0);
 
-    // Heads-up: if the received goods are already sold, freight can't re-average into
-    // their unit cost — it will strand and need Freight → COGS.
-    const landedNow = (parseFloat(formData.freight_cost) || 0) + (parseFloat(formData.other_charges) || 0);
-    const strand = useMemo(
-        () => assessFreightStrand({ linkedGRNs, grns, stockLevels }),
-        [linkedGRNs, grns, stockLevels]
-    );
-    const showStrandWarning = landedNow > 0 && strand.atRisk;
-
     // Vendor locked to first GRN's vendor
     const lockedVendorCode = linkedGRNs[0]?.vendor_code || '';
 
@@ -119,6 +110,18 @@ export default function VendorInvoiceForm({ item, onClose }) {
         status: 'pending_match',
         notes: ''
     });
+
+    // Heads-up: if the received goods are already sold, freight cannot re-average
+    // into their unit cost — it strands and needs Freight → COGS instead.
+    // Declared AFTER formData: reading it above the useState is a temporal dead
+    // zone and crashes the whole app with "Cannot access 'formData' before
+    // initialization".
+    const landedNow = (parseFloat(formData.freight_cost) || 0) + (parseFloat(formData.other_charges) || 0);
+    const strand = useMemo(
+        () => assessFreightStrand({ linkedGRNs, grns, stockLevels }),
+        [linkedGRNs, grns, stockLevels]
+    );
+    const showStrandWarning = landedNow > 0 && strand.atRisk;
 
     // Load existing record
     useEffect(() => {
