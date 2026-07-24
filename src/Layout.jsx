@@ -24,6 +24,7 @@ import {
     Recycle,
     Bot,
     ArrowLeft,
+    ExternalLink,
     Brain,
     Landmark,
     ChevronDown,
@@ -288,6 +289,20 @@ function LayoutContent({ children, currentPageName }) {
                         </Button>
                         <GlobalSearch />
                         <div className="hidden items-center gap-2 lg:flex">
+                            {/* Open this same screen in another tab, so two areas can be
+                                worked side by side (post in one, check the ledger in the
+                                other). The session is shared, so no re-login. */}
+                            <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="shrink-0 gap-2"
+                                title="Open this page in a new tab"
+                                onClick={() => window.open(window.location.href, '_blank', 'noopener')}
+                            >
+                                <ExternalLink className="w-4 h-4" />
+                                New tab
+                            </Button>
                             <NotificationBell />
                             <UserMenu onLogout={() => guardedNavigate('/logout')} isRTL={false} />
                         </div>
