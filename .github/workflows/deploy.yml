@@ -53,5 +53,35 @@ jobs:
           npm install -g vercel@latest
           mkdir -p .vercel/output/static
           cp -r dist/. .vercel/output/static/
-          printf '{"version":3}' > .vercel/output/config.json
-          vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN"
+          # --prebuilt ignores vercel.json; routing must be declared here.
+          # "handle": "filesystem" serves real files (assets, manifest.json, images)
+          # first, then any unmatched path falls through to the SPA entry point so
+          # deep links and hard reloads work instead of returning Vercel's 404.
+          cat > .vercel/output/config.json <<'EOF'
+          {
+            "version": 3,
+            "routes": [
+              { "handle": "filesystem" },
+              { "src": "/.*", "dest": "/index.html" }
+            ]
+          }
+          EOF
+          vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN" > deployment-url.txt
+          echo "Deployed to $(cat deployment-url.txt)"
+
+      - name: Verify deep links resolve (SPA fallback)
+        run: |
+          url=$(cat deployment-url.txt)
+          fail=0
+          for path in / /Dashboard /Purchasing /Finance; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$url$path")
+            echo "GET $path -> $code"
+            [ "$code" = "200" ] || fail=1
+          done
+          if [ "$fail" = "1" ]; then
+            echo "ERROR: a deep link did not return 200 — the SPA fallback in"
+            echo ".vercel/output/config.json is missing or wrong. Opening any page"
+            echo "in a new tab, reloading, or sharing a link would 404."
+            exit 1
+          fi
+          echo "OK: deep links resolve."
