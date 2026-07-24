@@ -33,11 +33,13 @@ import PeriodControlOB52 from "@/pages/PeriodControlOB52";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLanguage } from "@/components/utils/languageContext";
-import { Settings, MapPin, Scale, Globe, Calendar } from "lucide-react";
+import { Settings, MapPin, Scale, Globe, Calendar, Truck } from "lucide-react";
+import FreightInvoiceDialog from "@/components/finance/FreightInvoiceDialog";
 
 export default function Finance() {
     const [activeTab, setActiveTab] = useState("gl");
     const [showDialog, setShowDialog] = useState(false);
+    const [showFreightInvoice, setShowFreightInvoice] = useState(false);
     const [showClearingDialog, setShowClearingDialog] = useState(false);
     const [editingItem, setEditingItem] = useState(null);
     const [showCostCenterDialog, setShowCostCenterDialog] = useState(false);
@@ -847,6 +849,34 @@ export default function Finance() {
 
                     {/* Capitalise reclassified freight into COGS (product cost of sold goods). */}
                     <FreightToCogsTool />
+
+                    {/* Enter the carrier's bill — the step that CLEARS the freight accrual. */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2">
+                                <Truck className="w-5 h-5 text-indigo-600" />
+                                Freight Invoice (carrier bill)
+                            </CardTitle>
+                            <p className="mt-1 text-sm text-gray-500">
+                                Freight accrues to the Freight Accrual account when you enter a vendor invoice.
+                                Enter the carrier&apos;s bill here to clear it — paid straight from petty cash, or as a
+                                payable when a transporter is on credit terms.
+                            </p>
+                        </CardHeader>
+                        <CardContent>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                className="gap-2 border-indigo-500 text-indigo-700 hover:bg-indigo-50"
+                                onClick={() => setShowFreightInvoice(true)}
+                            >
+                                <Truck className="w-4 h-4" /> Enter Freight Invoice
+                            </Button>
+                        </CardContent>
+                    </Card>
+                    {showFreightInvoice && (
+                        <FreightInvoiceDialog onClose={() => setShowFreightInvoice(false)} />
+                    )}
 
                     {/* Stock subledger vs Inventory GL, with the gap attributed. */}
                     <InventoryGlReconciliation />
