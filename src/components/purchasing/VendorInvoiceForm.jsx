@@ -33,6 +33,7 @@ export default function VendorInvoiceForm({ item, onClose }) {
     const gl = useGLAccounts();
     const [isDirty, setIsDirty] = useState(false);
     const [showPayment, setShowPayment] = useState(false);
+    const [isPosting, setIsPosting] = useState(false);
     const { guardedOpenChange, guardedClose } = useUnsavedChangesWarning(isDirty);
 
     // ── Source data ───────────────────────────────────────────────────────────
@@ -351,114 +352,118 @@ export default function VendorInvoiceForm({ item, onClose }) {
         if (updates.length) queryClient.invalidateQueries({ queryKey: ['stockLevels'] });
     };
 
+    // Book the invoice to the ledger. This is the ONLY path that posts to the GL,
+    // capitalises freight into the stock ledger, and opens the AP record — saving
+    // merely stores a reviewable draft. Idempotent: refuses to post twice. Returns
+    // true when booked (or already booked), false when GL posting failed so nothing
+    // is built on top of a half-booked invoice.
+    const postInvoiceToLedger = async (invoice) => {
+        if (invoice.gl_posted) return true; // already booked; never post twice
+
+        // Dr GRNI (clears the GRN accrual) / Dr Inventory (inbound transport
+        // capitalised, LKAS 2) / Dr VAT Input / Cr Freight Accrual / Cr Trade Payables.
+        // COGS is deliberately NOT touched — the sales invoice posts Dr COGS / Cr
+        // Inventory when the goods are sold, so debiting it here double-expenses them.
+        try {
+            const { lines } = buildVendorInvoiceJournal({
+                subtotal:     invoice.subtotal,
+                freightCost:  invoice.freight_cost,
+                otherCharges: invoice.other_charges,
+                vatAmount:    invoice.vat_amount,
+                totalAmount:  invoice.total_amount,
+                gl,
+                description:  `Vendor invoice ${invoice.vendor_invoice_number}`,
+            });
+
+            await postJournalEntry({
+                lines,
+                referenceType: 'vendor_invoice',
+                referenceId:   invoice.vendor_invoice_number,
+                description:   `Vendor invoice ${invoice.vendor_invoice_number}`,
+                entryDate:     invoice.invoice_date,
+                entryType:     'invoice',
+                orgId:         currentOrg?.id,
+                area:          "ap"
+            });
+            await matrixSales.entities.VendorInvoice.update(invoice.id, { ...invoice, gl_posted: true });
+        } catch (err) {
+            // Do NOT swallow this. The old code caught the failure and showed a passing
+            // toast, so an unbalanced entry meant the invoice silently never reached the
+            // general ledger while AP still recorded it — the subledger and GL diverged.
+            console.error('Vendor invoice GL posting failed:', err);
+            toast({
+                title: "GL POSTING FAILED — this invoice is NOT in your ledger",
+                description: `${err.message} The invoice was saved, but it has not hit the General Ledger. Fix this before relying on your accounts.`,
+                variant: "destructive",
+                duration: 30000,
+            });
+            return false; // do not build AP on top of a GL the posting never reached
+        }
+
+        // Capitalise freight into the PER-UNIT stock cost, so the inventory subledger
+        // matches the Inventory GL debit above and COGS on the eventual sale reflects
+        // the true landed cost. The GL is already committed, so a failure here is
+        // non-fatal — but reported loudly, because on failure the two would drift.
+        try {
+            await capitaliseLandedCostToStock(invoice);
+        } catch (stockErr) {
+            console.error('Landed-cost stock revaluation failed:', stockErr);
+            toast({
+                title: "Posted, but stock cost not updated",
+                description: `The invoice posted to the GL, but capitalising freight into the per-unit stock cost failed (${stockErr.message}). Inventory unit cost may exclude freight until this is retried.`,
+                variant: "destructive",
+                duration: 20000,
+            });
+        }
+
+        // Open the AP record so the vendor balance is tracked in Finance → AP.
+        try {
+            const existingAP = await matrixSales.entities.AccountsPayable.filter({
+                vendor_invoice_number: invoice.vendor_invoice_number
+            });
+            if (existingAP.length === 0) {
+                // Freight is owed to the carrier (Freight Accrual), not the vendor, so
+                // the vendor's payable excludes it — matching the Trade Payables credit
+                // on the journal. Only when a freight-accrual account is mapped;
+                // otherwise it stays with the vendor, as before.
+                const vendorFreight = gl.freight_accrual ? (parseFloat(invoice.freight_cost) || 0) : 0;
+                const vendorPayable = (parseFloat(invoice.total_amount) || 0) - vendorFreight;
+                await matrixSales.entities.AccountsPayable.create({
+                    ap_number:             `AP-${invoice.vendor_invoice_number}`,
+                    vendor_invoice_number: invoice.vendor_invoice_number,
+                    vendor_code:           invoice.vendor_code,
+                    vendor_name:           invoice.vendor_name,
+                    invoice_date:          invoice.invoice_date,
+                    due_date:              invoice.due_date || '',
+                    invoice_amount:        vendorPayable,
+                    paid_amount:           0,
+                    outstanding_amount:    vendorPayable,
+                    vat_amount:            invoice.vat_amount || 0,
+                    currency:              invoice.currency || 'LKR',
+                    payment_terms:         invoice.payment_terms || 'net_30',
+                    aging_days:            0,
+                    aging_bucket:          'current',
+                    payment_status:        'pending',
+                    notes:                 `From Vendor Invoice ${invoice.vendor_invoice_number}`,
+                });
+            }
+            queryClient.invalidateQueries({ queryKey: ['ap'] });
+        } catch (apErr) {
+            toast({ title: "Posted but AP record failed", description: apErr.message, variant: "destructive" });
+        }
+
+        return true;
+    };
+
     // ── Save ──────────────────────────────────────────────────────────────────
+    // Saving stores a reviewable draft ONLY. Posting to the GL is a separate,
+    // deliberate step (the "Post to Ledger" button), so nothing books silently on
+    // the strength of a status word.
     const saveMutation = useMutation({
         mutationFn: (data) => item
             ? matrixSales.entities.VendorInvoice.update(item.id, data)
             : matrixSales.entities.VendorInvoice.create(data),
-        onSuccess: async (savedInvoice) => {
-            if (['approved', 'approved_for_payment'].includes(savedInvoice?.status) && !savedInvoice.gl_posted) {
-                try {
-                    // Dr GRNI (clears the GRN accrual) / Dr Inventory (inbound transport
-                    // capitalised, LKAS 2) / Dr VAT Input / Cr Trade Payables.
-                    //
-                    // COGS is deliberately NOT touched here — the sales invoice already
-                    // posts Dr COGS / Cr Inventory when the goods are sold, so debiting
-                    // it at purchase expensed the same goods twice.
-                    const { lines } = buildVendorInvoiceJournal({
-                        subtotal:     savedInvoice.subtotal,
-                        freightCost:  savedInvoice.freight_cost,
-                        otherCharges: savedInvoice.other_charges,
-                        vatAmount:    savedInvoice.vat_amount,
-                        totalAmount:  savedInvoice.total_amount,
-                        gl,
-                        description:  `Vendor invoice ${savedInvoice.vendor_invoice_number}`,
-                    });
-
-                    await postJournalEntry({
-                        lines,
-                        referenceType: 'vendor_invoice',
-                        referenceId:   savedInvoice.vendor_invoice_number,
-                        description:   `Vendor invoice ${savedInvoice.vendor_invoice_number}`,
-                        entryDate:     savedInvoice.invoice_date,
-                        entryType:     'invoice',
-                        orgId:         currentOrg?.id,
-                        area:          "ap"
-                    });
-                    await matrixSales.entities.VendorInvoice.update(savedInvoice.id, { ...savedInvoice, gl_posted: true });
-
-                    // Capitalise the freight into the PER-UNIT stock cost, so the
-                    // inventory subledger matches the Inventory GL debit above and
-                    // COGS on the eventual sale reflects the true landed cost. The GL
-                    // is already committed, so a failure here is non-fatal — but it is
-                    // reported loudly, because on failure the two would drift.
-                    try {
-                        await capitaliseLandedCostToStock(savedInvoice);
-                    } catch (stockErr) {
-                        console.error('Landed-cost stock revaluation failed:', stockErr);
-                        toast({
-                            title: "Posted, but stock cost not updated",
-                            description: `The invoice posted to the GL, but capitalising freight into the per-unit stock cost failed (${stockErr.message}). Inventory unit cost may exclude freight until this is retried.`,
-                            variant: "destructive",
-                            duration: 20000,
-                        });
-                    }
-                } catch (err) {
-                    // Do NOT swallow this. The old code caught the failure and showed a
-                    // passing toast, so an unbalanced entry meant the invoice silently
-                    // never reached the general ledger while AP still recorded it — the
-                    // subledger and the GL diverged with nobody told.
-                    console.error('Vendor invoice GL posting failed:', err);
-                    toast({
-                        title: "GL POSTING FAILED — this invoice is NOT in your ledger",
-                        description: `${err.message} The invoice was saved, but it has not hit the General Ledger. Fix this before relying on your accounts.`,
-                        variant: "destructive",
-                        duration: 30000,
-                    });
-                    queryClient.invalidateQueries({ queryKey: ['vendorInvoices'] });
-                    return; // stop: do not create an AP record the GL knows nothing about
-                }
-            }
-
-            // Create AP record on first approval so vendor balance is tracked in Finance → AP
-            if (['approved', 'approved_for_payment'].includes(savedInvoice?.status)) {
-                try {
-                    const existingAP = await matrixSales.entities.AccountsPayable.filter({
-                        vendor_invoice_number: savedInvoice.vendor_invoice_number
-                    });
-                    if (existingAP.length === 0) {
-                        // Freight is owed to the carrier (Freight Accrual), not the
-                        // vendor, so the vendor's payable excludes it — matching the
-                        // Trade Payables credit on the journal. Only when a
-                        // freight-accrual account is mapped; otherwise it stays with
-                        // the vendor, as before.
-                        const vendorFreight = gl.freight_accrual ? (parseFloat(savedInvoice.freight_cost) || 0) : 0;
-                        const vendorPayable = (parseFloat(savedInvoice.total_amount) || 0) - vendorFreight;
-                        await matrixSales.entities.AccountsPayable.create({
-                            ap_number:             `AP-${savedInvoice.vendor_invoice_number}`,
-                            vendor_invoice_number: savedInvoice.vendor_invoice_number,
-                            vendor_code:           savedInvoice.vendor_code,
-                            vendor_name:           savedInvoice.vendor_name,
-                            invoice_date:          savedInvoice.invoice_date,
-                            due_date:              savedInvoice.due_date || '',
-                            invoice_amount:        vendorPayable,
-                            paid_amount:           0,
-                            outstanding_amount:    vendorPayable,
-                            vat_amount:            savedInvoice.vat_amount || 0,
-                            currency:              savedInvoice.currency || 'LKR',
-                            payment_terms:         savedInvoice.payment_terms || 'net_30',
-                            aging_days:            0,
-                            aging_bucket:          'current',
-                            payment_status:        'pending',
-                            notes:                 `From Vendor Invoice ${savedInvoice.vendor_invoice_number}`,
-                        });
-                    }
-                    queryClient.invalidateQueries({ queryKey: ['ap'] });
-                } catch (apErr) {
-                    toast({ title: "Saved but AP record failed", description: apErr.message, variant: "destructive" });
-                }
-            }
-
+        onSuccess: async () => {
             queryClient.invalidateQueries({ queryKey: ['vendorInvoices'] });
             toast({ title: "Success", description: `Vendor invoice ${item ? 'updated' : 'created'} successfully` });
             onClose();
@@ -479,6 +484,51 @@ export default function VendorInvoiceForm({ item, onClose }) {
             grn_quantity:     totalGRNQty,
             total_grn_quantity: totalGRNQty,
         });
+    };
+
+    // Deliberate "Post to Ledger" action. Persists whatever is on screen first so the
+    // ledger matches the reviewed invoice, then books it (Dr GRNI / Dr Inventory freight
+    // / Dr VAT / Cr Freight Accrual / Cr Trade Payables), capitalises freight into stock
+    // and opens the AP record. Booking recognises the payable, so the invoice moves to
+    // Approved for Payment unless it is already further along.
+    const handlePostToLedger = async () => {
+        if (!item?.id) {
+            toast({ title: "Save First", description: "Save the invoice as a draft before posting it to the ledger.", variant: "destructive" });
+            return;
+        }
+        if (item.gl_posted) {
+            toast({ title: "Already Posted", description: "This invoice is already booked to the ledger.", variant: "destructive" });
+            return;
+        }
+        if (linkedGRNs.length === 0) {
+            toast({ title: "Validation", description: "Add at least one GRN before posting.", variant: "destructive" });
+            return;
+        }
+        setIsPosting(true);
+        try {
+            const payload = {
+                ...formData,
+                status: ['paid', 'partially_paid'].includes(String(formData.status || '').toLowerCase())
+                    ? formData.status
+                    : 'approved_for_payment',
+                grn_references:     linkedGRNs,
+                grn_number:         linkedGRNs.map(g => g.grn_number).join(', '),
+                grn_quantity:       totalGRNQty,
+                total_grn_quantity: totalGRNQty,
+            };
+            await matrixSales.entities.VendorInvoice.update(item.id, payload);
+            const ok = await postInvoiceToLedger({ ...payload, id: item.id });
+            if (ok) {
+                queryClient.invalidateQueries();
+                toast({ title: "Posted to Ledger", description: `${payload.vendor_invoice_number} booked. Inventory, GRNI and AP updated.` });
+                onClose();
+            }
+        } catch (err) {
+            console.error('Error posting vendor invoice:', err);
+            toast({ title: "Post Failed", description: err?.message || "Failed to post. The invoice remains a draft.", variant: "destructive" });
+        } finally {
+            setIsPosting(false);
+        }
     };
 
     // ── Display helpers ───────────────────────────────────────────────────────
@@ -905,10 +955,28 @@ export default function VendorInvoiceForm({ item, onClose }) {
                             journalReferenceType="vendor_invoice"
                             journalReferenceId={item?.vendor_invoice_number}
                         />
-                        <div className="flex gap-3">
-                            {/* Payment is only available once the invoice exists and is
-                                approved for payment — an AP balance to settle. */}
-                            {item && ['approved', 'approved_for_payment', 'partially_paid'].includes(String(item.status || '').toLowerCase()) && (
+                        <div className="flex gap-3 items-center">
+                            {/* Booking the invoice to the GL is a deliberate step — save
+                                stores a draft, this posts it. Hidden once booked. */}
+                            {item && !item.gl_posted && (
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="border-blue-600 text-blue-700 hover:bg-blue-50 gap-2"
+                                    onClick={handlePostToLedger}
+                                    disabled={isPosting}
+                                >
+                                    <PackageCheck className="w-4 h-4" /> {isPosting ? 'Posting…' : 'Post to Ledger'}
+                                </Button>
+                            )}
+                            {item && item.gl_posted && (
+                                <Badge className="bg-green-100 text-green-800 gap-1">
+                                    <CheckCircle2 className="w-3.5 h-3.5" /> Booked to GL
+                                </Badge>
+                            )}
+                            {/* Payment is only available once the invoice is booked to the
+                                ledger — there is an AP balance to settle. */}
+                            {item && (item.gl_posted || ['approved', 'approved_for_payment', 'partially_paid'].includes(String(item.status || '').toLowerCase())) && (
                                 <Button
                                     type="button"
                                     variant="outline"
