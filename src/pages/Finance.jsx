@@ -22,6 +22,7 @@ import GLHealthCheck from "@/components/finance/GLHealthCheck";
 import CogsGrniCorrectionTool from "@/components/finance/CogsGrniCorrectionTool";
 import FreightReclassTool from "@/components/finance/FreightReclassTool";
 import FreightToCogsTool from "@/components/finance/FreightToCogsTool";
+import AccountNameRepairTool from "@/components/finance/AccountNameRepairTool";
 import InventoryGlReconciliation from "@/components/finance/InventoryGlReconciliation";
 import ArBackfillTool from "@/components/finance/ArBackfillTool";
 import FXRateManager from "@/components/finance/FXRateManager";
@@ -837,6 +838,9 @@ export default function Finance() {
                 </TabsContent>
 
                 <TabsContent value="settings" className="space-y-6">
+                    {/* Repair account names garbled by a UTF-8 -> CP1252 round-trip. */}
+                    <AccountNameRepairTool />
+
                     {/* Read-only diagnostic for damage left by the vendor-invoice
                         posting defects fixed in 9b03fc7. */}
                     <GLHealthCheck />
