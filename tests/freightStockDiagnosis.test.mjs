@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { diagnoseFreightToStock } from "../src/lib/freightStockDiagnosis.js";
+import { diagnoseFreightToStock, assessFreightGlLeg } from "../src/lib/freightStockDiagnosis.js";
 
 const grn = {
   grn_number: "GRN-7000",
@@ -80,6 +80,64 @@ test("reports all_stranded when the matched stock has been fully issued", () => 
   assert.equal(reason, "all_stranded");
   assert.equal(plan.updates.length, 0);
   assert.equal(plan.strandedAmount, 7100);
+});
+
+// ── assessFreightGlLeg ──────────────────────────────────────────────────────
+const GL = { inventory: "1200", freight_accrual: "2130" };
+
+test("detects freight missing from the Inventory GL (the 7931 journal) and clears it to post", () => {
+  // 7931's actual journal: Dr GRNI / Cr Trade Payables only — no freight anywhere.
+  const invoice = { vendor_invoice_number: "7931", freight_cost: 2000, other_charges: 0 };
+  const journalEntries = [{ journal_number: "JE-46", reference_type: "vendor_invoice", reference_id: "7931", status: "posted" }];
+  const journalLines = [
+    { journal_number: "JE-46", account_code: "2110", debit: 1800100, credit: 0 },
+    { journal_number: "JE-46", account_code: "2100", debit: 0, credit: 1800100 },
+  ];
+  const a = assessFreightGlLeg({ invoice, journalEntries, journalLines, gl: GL });
+  assert.equal(a.landedCost, 2000);
+  assert.equal(a.inventoryDebit, 0);
+  assert.equal(a.freightAccrualCredit, 0);
+  assert.equal(a.glGap, 2000);
+  assert.equal(a.canAutoPost, true);
+});
+
+test("does not offer to post when the freight is already in the Inventory GL", () => {
+  const invoice = { vendor_invoice_number: "8000", freight_cost: 2000 };
+  const journalEntries = [{ journal_number: "JE-50", reference_type: "vendor_invoice", reference_id: "8000", status: "posted" }];
+  const journalLines = [
+    { journal_number: "JE-50", account_code: "1200", debit: 2000, credit: 0 },
+    { journal_number: "JE-50", account_code: "2130", debit: 0, credit: 2000 },
+  ];
+  const a = assessFreightGlLeg({ invoice, journalEntries, journalLines, gl: GL });
+  assert.equal(a.glGap, 0);
+  assert.equal(a.canAutoPost, false);
+});
+
+test("refuses to auto-post when the freight accrual was already credited (avoid double liability)", () => {
+  const invoice = { vendor_invoice_number: "8001", freight_cost: 2000 };
+  const journalEntries = [{ journal_number: "JE-51", reference_type: "vendor_invoice", reference_id: "8001", status: "posted" }];
+  const journalLines = [
+    { journal_number: "JE-51", account_code: "2130", debit: 0, credit: 2000 }, // accrual credited, but Inventory never debited
+  ];
+  const a = assessFreightGlLeg({ invoice, journalEntries, journalLines, gl: GL });
+  assert.equal(a.glGap, 2000);
+  assert.equal(a.freightAccrualCredit, 2000);
+  assert.equal(a.canAutoPost, false);
+});
+
+test("ignores reversed/other invoices' lines when assessing", () => {
+  const invoice = { vendor_invoice_number: "7931", freight_cost: 2000 };
+  const journalEntries = [
+    { journal_number: "JE-46", reference_type: "vendor_invoice", reference_id: "7931", status: "posted" },
+    { journal_number: "JE-99", reference_type: "vendor_invoice", reference_id: "9999", status: "posted" }, // other invoice
+  ];
+  const journalLines = [
+    { journal_number: "JE-46", account_code: "2110", debit: 1800100, credit: 0 },
+    { journal_number: "JE-99", account_code: "1200", debit: 5000, credit: 0 }, // must NOT count
+  ];
+  const a = assessFreightGlLeg({ invoice, journalEntries, journalLines, gl: GL });
+  assert.equal(a.inventoryDebit, 0);
+  assert.equal(a.glGap, 2000);
 });
 
 test("parses grn_references that arrive as a JSON string", () => {

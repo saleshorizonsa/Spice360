@@ -7,8 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { AlertTriangle, CheckCircle2, PackageSearch } from "lucide-react";
-import { diagnoseFreightToStock } from "@/lib/freightStockDiagnosis";
+import { diagnoseFreightToStock, assessFreightGlLeg } from "@/lib/freightStockDiagnosis";
 import { logAuditTrail } from "../utils/auditTrail";
+import { useGLAccounts } from "@/hooks/useGLAccounts";
+import { useOrganization } from "../utils/OrganizationContext";
+import { postJournalEntry, assertPeriodAllowed } from "../utils/journalService";
 
 const money = (v) => Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -29,8 +32,11 @@ const REASON_TEXT = {
 export default function FreightStockRepairTool() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const gl = useGLAccounts();
+  const { currentOrg } = useOrganization();
   const [numberInput, setNumberInput] = useState("");
   const [query, setQuery] = useState("");
+  const [glDate, setGlDate] = useState(new Date().toISOString().split("T")[0]);
 
   const { data: invoices = [] } = useQuery({
     queryKey: ["vendorInvoices"],
@@ -47,6 +53,16 @@ export default function FreightStockRepairTool() {
     queryFn: () => matrixSales.entities.StockLevel.list(),
     initialData: [],
   });
+  const { data: journalEntries = [] } = useQuery({
+    queryKey: ["journalEntries"],
+    queryFn: () => matrixSales.entities.JournalEntry.list(),
+    initialData: [],
+  });
+  const { data: journalLines = [] } = useQuery({
+    queryKey: ["journalLines"],
+    queryFn: () => matrixSales.entities.JournalLine.list(),
+    initialData: [],
+  });
 
   const invoice = useMemo(() => {
     if (!query) return null;
@@ -59,8 +75,51 @@ export default function FreightStockRepairTool() {
     [invoice, grns, stockLevels]
   );
 
+  const glLeg = useMemo(
+    () => (invoice ? assessFreightGlLeg({ invoice, journalEntries, journalLines, gl }) : null),
+    [invoice, journalEntries, journalLines, gl]
+  );
+
   const alreadyApplied = !!invoice?.landed_cost_applied;
   const canApply = !!diagnosis && diagnosis.reason === null && !alreadyApplied;
+
+  const postGlLegMutation = useMutation({
+    mutationFn: async () => {
+      const amount = glLeg?.glGap || 0;
+      if (!(amount > 0)) throw new Error("No Inventory GL gap to post.");
+      if (currentOrg?.id) await assertPeriodAllowed(glDate, currentOrg.id, "gl");
+
+      const je = await postJournalEntry({
+        lines: [
+          { account_code: gl.inventory, account_name: "Inventory", debit: amount, credit: 0, description: `Capitalise freight — Vendor invoice ${invoice.vendor_invoice_number}` },
+          { account_code: gl.freight_accrual, account_name: "Freight Accrual", debit: 0, credit: amount, description: `Inbound freight accrual — Vendor invoice ${invoice.vendor_invoice_number}` },
+        ],
+        referenceType: "vendor_invoice",
+        referenceId: invoice.vendor_invoice_number,
+        description: `Freight capitalisation — missing GL leg — Vendor invoice ${invoice.vendor_invoice_number}`,
+        entryDate: glDate,
+        entryType: "adjustment",
+        orgId: currentOrg?.id,
+        area: "gl",
+      });
+      await logAuditTrail({
+        entityType: "vendor_invoice",
+        entityId: invoice.id,
+        documentNumber: invoice.vendor_invoice_number,
+        actionType: "freight_gl_leg_repair",
+        afterData: { amount, inventory: gl.inventory, freight_accrual: gl.freight_accrual },
+        severity: "warning",
+      }).catch(() => {});
+      return je;
+    },
+    onSuccess: (je) => {
+      queryClient.invalidateQueries();
+      toast({ title: "Freight posted to Inventory GL", description: `Dr ${gl.inventory} / Cr ${gl.freight_accrual} LKR ${money(glLeg.glGap)} — ${je?.journal_number || ""}.` });
+    },
+    onError: (err) => {
+      toast({ title: "Post failed", description: `${err.message || "Unknown error"}. Nothing was changed.`, variant: "destructive", duration: 15000 });
+    },
+  });
 
   const applyMutation = useMutation({
     mutationFn: async () => {
@@ -212,6 +271,71 @@ export default function FreightStockRepairTool() {
                   </Button>
                 </div>
               </>
+            )}
+
+            {glLeg && (
+              <div className="space-y-3 rounded-lg border border-gray-200 p-3">
+                <div className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+                  <PackageSearch className="h-4 w-4 text-indigo-600" /> Inventory GL leg
+                </div>
+
+                {glLeg.lines.length > 0 && (
+                  <div className="overflow-x-auto rounded-lg border text-xs">
+                    <table className="w-full">
+                      <thead className="bg-gray-50 text-gray-600">
+                        <tr>
+                          <th className="px-3 py-1.5 text-left font-medium">Posted account</th>
+                          <th className="px-3 py-1.5 text-right font-medium">Debit</th>
+                          <th className="px-3 py-1.5 text-right font-medium">Credit</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {glLeg.lines.map((l, i) => (
+                          <tr key={i}>
+                            <td className="px-3 py-1.5 font-mono">{l.account_code}{l.account_name ? ` — ${l.account_name}` : ""}</td>
+                            <td className="px-3 py-1.5 text-right">{l.debit ? money(l.debit) : ""}</td>
+                            <td className="px-3 py-1.5 text-right">{l.credit ? money(l.credit) : ""}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {glLeg.glGap <= 0.01 ? (
+                  <div className="flex items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" /> Freight is already in the Inventory GL. Nothing to post here.
+                  </div>
+                ) : glLeg.canAutoPost ? (
+                  <>
+                    <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-800">
+                      The Inventory GL is short of this invoice&apos;s freight by <strong>LKR {money(glLeg.glGap)}</strong>. Posting{" "}
+                      <strong>Dr {gl.inventory} Inventory / Cr {gl.freight_accrual} Freight Accrual</strong> brings the GL up to match the
+                      stock ledger and records the freight owed to the carrier (clear it later with the Freight Invoice tool).
+                    </div>
+                    <div className="flex items-end justify-between gap-3">
+                      <div>
+                        <Label>Entry date</Label>
+                        <Input type="date" value={glDate} onChange={(e) => setGlDate(e.target.value)} />
+                      </div>
+                      <Button
+                        type="button"
+                        className="bg-indigo-600 hover:bg-indigo-700"
+                        onClick={() => postGlLegMutation.mutate()}
+                        disabled={postGlLegMutation.isPending}
+                      >
+                        {postGlLegMutation.isPending ? "Posting…" : `Post Dr ${gl.inventory} / Cr ${gl.freight_accrual} LKR ${money(glLeg.glGap)}`}
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                    The Inventory GL is short by LKR {money(glLeg.glGap)}, but this invoice already credits Freight Accrual — posting again
+                    could double the liability. This one needs a manual correcting entry; send me the journal and I&apos;ll pin the exact fix.
+                  </div>
+                )}
+              </div>
             )}
           </>
         )}

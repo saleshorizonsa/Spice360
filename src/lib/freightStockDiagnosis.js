@@ -23,6 +23,54 @@ const parseRefs = (raw) => {
   return Array.isArray(refs) ? refs : [];
 };
 
+const hitLedger = (e) => ["posted", "reversed"].includes(String(e?.status || "").toLowerCase());
+
+/**
+ * Assess whether a vendor invoice's freight ever reached the Inventory GL account,
+ * from its actual posted journal. Used to detect (and safely close) the case where
+ * freight was capitalised into the stock ledger but the matching Dr Inventory was
+ * never posted — the stock-higher-than-GL reconciliation gap.
+ *
+ * @returns {{ landedCost, hasEntry, lines, inventoryDebit, freightAccrualCredit, glGap, canAutoPost }}
+ *   glGap: how much the Inventory GL is short of the landed cost.
+ *   canAutoPost: safe to auto-post Dr Inventory / Cr Freight Accrual — true only when
+ *   the GL is short AND the freight accrual has not already been credited for this
+ *   invoice (so the liability can't be double-booked).
+ */
+export function assessFreightGlLeg({ invoice, journalEntries = [], journalLines = [], gl = {} } = {}) {
+  const landedCost = round2(num(invoice?.freight_cost) + num(invoice?.other_charges));
+  const invNo = String(invoice?.vendor_invoice_number ?? "");
+  const inventoryCode = String(gl.inventory ?? "");
+  const freightCode = String(gl.freight_accrual ?? "");
+
+  const entries = journalEntries.filter(
+    (e) => String(e.reference_type) === "vendor_invoice" && String(e.reference_id) === invNo && hitLedger(e)
+  );
+  const nums = new Set(entries.map((e) => String(e.journal_number)));
+  const lines = journalLines
+    .filter((l) => nums.has(String(l.journal_number)))
+    .map((l) => ({ account_code: l.account_code, account_name: l.account_name, debit: num(l.debit), credit: num(l.credit) }));
+
+  let inventoryDebit = 0;
+  let freightAccrualCredit = 0;
+  for (const l of lines) {
+    const code = String(l.account_code);
+    if (inventoryCode && code === inventoryCode) inventoryDebit = round2(inventoryDebit + l.debit - l.credit);
+    if (freightCode && code === freightCode) freightAccrualCredit = round2(freightAccrualCredit + l.credit - l.debit);
+  }
+
+  const glGap = round2(landedCost - inventoryDebit);
+  return {
+    landedCost,
+    hasEntry: entries.length > 0,
+    lines,
+    inventoryDebit,
+    freightAccrualCredit,
+    glGap,
+    canAutoPost: glGap > 0.01 && freightAccrualCredit < 0.01 && !!inventoryCode && !!freightCode,
+  };
+}
+
 const matchStock = (stockLevels, grn) =>
   stockLevels.find((s) =>
     s.material_code === grn.material_code &&
