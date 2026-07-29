@@ -79,6 +79,46 @@ test('partial issue spreads freight over what remains on hand', () => {
   assert.equal(updates[0].newUnitCost, 625); // 25,000 / 40
 });
 
+test('falls back to quantity when received value is 0, so a single position still gets its freight', () => {
+  // The 7931 case: one material, still fully in stock, but the linked GRN's unit
+  // cost did not resolve so receivedValue computes to 0. Freight must NOT be dropped.
+  const { updates, applied, basis } = apportionLandedCost({
+    positions: [{ id: 's1', key: 'M|W||', receivedValue: 0, currentQty: 100, currentUnitCost: 500, currentTotalValue: 50000 }],
+    landedCost: 5000,
+  });
+  assert.equal(basis, 'quantity');
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0].newTotalValue, 55000);
+  assert.equal(updates[0].newUnitCost, 550);
+  assert.equal(applied, 5000);
+});
+
+test('quantity fallback splits across positions by on-hand quantity', () => {
+  const { updates, applied } = apportionLandedCost({
+    positions: [
+      { id: 'a', key: 'A', receivedValue: 0, currentQty: 60, currentUnitCost: 500, currentTotalValue: 30000 },
+      { id: 'b', key: 'B', receivedValue: 0, currentQty: 40, currentUnitCost: 500, currentTotalValue: 20000 },
+    ],
+    landedCost: 5000,
+  });
+  const a = updates.find((u) => u.id === 'a');
+  const b = updates.find((u) => u.id === 'b');
+  assert.equal(a.freightShare, 3000); // 60/100
+  assert.equal(b.freightShare, 2000); // 40/100
+  assert.equal(applied, 5000);
+});
+
+test('no value and nothing on hand strands the whole charge instead of dividing by zero', () => {
+  const { updates, strandedAmount, basis } = apportionLandedCost({
+    positions: [{ id: 'x', key: 'X', receivedValue: 0, currentQty: 0, currentUnitCost: 0, currentTotalValue: 0 }],
+    landedCost: 5000,
+  });
+  assert.equal(updates.length, 0);
+  assert.equal(strandedAmount, 5000);
+  assert.equal(basis, 'quantity');
+  assert.ok(Number.isFinite(strandedAmount));
+});
+
 test('no landed cost or no positions does nothing', () => {
   assert.deepEqual(apportionLandedCost({ positions: [], landedCost: 5000 }).updates, []);
   assert.deepEqual(

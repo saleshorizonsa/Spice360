@@ -23,6 +23,7 @@ import CogsGrniCorrectionTool from "@/components/finance/CogsGrniCorrectionTool"
 import FreightReclassTool from "@/components/finance/FreightReclassTool";
 import FreightToCogsTool from "@/components/finance/FreightToCogsTool";
 import AccountNameRepairTool from "@/components/finance/AccountNameRepairTool";
+import FreightStockRepairTool from "@/components/finance/FreightStockRepairTool";
 import InventoryGlReconciliation from "@/components/finance/InventoryGlReconciliation";
 import ArBackfillTool from "@/components/finance/ArBackfillTool";
 import FXRateManager from "@/components/finance/FXRateManager";
@@ -853,6 +854,10 @@ export default function Finance() {
 
                     {/* Capitalise reclassified freight into COGS (product cost of sold goods). */}
                     <FreightToCogsTool />
+
+                    {/* Re-apply a booked invoice's freight to the per-unit stock cost when
+                        it hit the Inventory GL but never moved the material's cost. */}
+                    <FreightStockRepairTool />
 
                     {/* Enter the carrier's bill — the step that CLEARS the freight accrual. */}
                     <Card>

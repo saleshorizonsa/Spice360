@@ -349,7 +349,12 @@ export default function VendorInvoiceForm({ item, onClose }) {
                 total_value: u.newTotalValue,
             });
         }
-        if (updates.length) queryClient.invalidateQueries({ queryKey: ['stockLevels'] });
+        if (updates.length) {
+            // Stamp the invoice so the same freight is never capitalised twice — the
+            // Freight → Stock repair tool checks this flag before re-applying.
+            await matrixSales.entities.VendorInvoice.update(savedInvoice.id, { landed_cost_applied: true });
+            queryClient.invalidateQueries({ queryKey: ['stockLevels'] });
+        }
     };
 
     // Book the invoice to the ledger. This is the ONLY path that posts to the GL,

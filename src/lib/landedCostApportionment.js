@@ -37,16 +37,37 @@ const round2 = (value) => round(value, 2);
  */
 export const apportionLandedCost = ({ positions = [], landedCost = 0 } = {}) => {
   const total = round2(num(landedCost));
-  const totalReceivedValue = positions.reduce((sum, p) => sum + num(p.receivedValue), 0);
+  if (total <= 0 || positions.length === 0) {
+    return { updates: [], stranded: [], applied: 0, strandedAmount: 0, basis: null };
+  }
 
-  if (total <= 0 || totalReceivedValue <= 0) {
-    return { updates: [], stranded: [], applied: 0, strandedAmount: 0 };
+  const totalReceivedValue = positions.reduce((sum, p) => sum + num(p.receivedValue), 0);
+  // Freight is apportioned by received VALUE (the standard basis). When no received
+  // value is available — e.g. a linked GRN whose unit cost did not resolve, so the
+  // value computes to 0 — fall back to on-hand QUANTITY. Without the fallback the
+  // whole charge was dropped even when a valid in-stock position could carry it: a
+  // single-material invoice would post freight to the Inventory GL but never move
+  // the per-unit stock cost.
+  const basis = totalReceivedValue > 0 ? 'value' : 'quantity';
+  const weightOf = (p) => (basis === 'value' ? num(p.receivedValue) : num(p.currentQty));
+  const totalWeight = positions.reduce((sum, p) => sum + weightOf(p), 0);
+
+  if (totalWeight <= 0) {
+    // No received value and nothing on hand anywhere — the charge cannot be
+    // capitalised per unit; report it all as stranded rather than dividing by zero.
+    return {
+      updates: [],
+      stranded: positions.map((p) => ({ id: p.id, key: p.key, share: 0 })),
+      applied: 0,
+      strandedAmount: total,
+      basis,
+    };
   }
 
   // Largest-remainder apportionment so the shares sum to exactly `landedCost`.
   const raw = positions.map((p) => ({
     p,
-    exact: (total * num(p.receivedValue)) / totalReceivedValue,
+    exact: (total * weightOf(p)) / totalWeight,
   }));
   const shares = raw.map((r) => round2(Math.floor(r.exact * 100) / 100));
   let remainder = round2(total - shares.reduce((s, v) => s + v, 0));
@@ -90,5 +111,5 @@ export const apportionLandedCost = ({ positions = [], landedCost = 0 } = {}) => 
     applied = round2(applied + share);
   });
 
-  return { updates, stranded, applied, strandedAmount };
+  return { updates, stranded, applied, strandedAmount, basis };
 };
