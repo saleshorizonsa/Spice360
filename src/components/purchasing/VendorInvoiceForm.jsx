@@ -24,6 +24,7 @@ import { resolveVatRate } from "@/lib/vat";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
 import SearchableSelect from "../shared/SearchableSelect";
 import DocumentFlow from "../shared/DocumentFlow";
+import JournalEntriesPanel from "../shared/JournalEntriesPanel";
 
 export default function VendorInvoiceForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -946,6 +947,17 @@ export default function VendorInvoiceForm({ item, onClose }) {
                                     Document Flow
                                 </summary>
                                 <DocumentFlow seedType="VendorInvoice" seedNumber={item.vendor_invoice_number} />
+                            </details>
+                        </div>
+                    )}
+
+                    {item && (
+                        <div className="border-t pt-4">
+                            <details className="group">
+                                <summary className="cursor-pointer text-sm font-semibold text-gray-700 hover:text-gray-900">
+                                    Journal Entries
+                                </summary>
+                                <JournalEntriesPanel documentNumber={item.vendor_invoice_number} />
                             </details>
                         </div>
                     )}

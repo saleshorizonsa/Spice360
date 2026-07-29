@@ -15,6 +15,7 @@ import { ArrowRight, Printer, Paperclip, Plus, Trash2, Truck, CheckCircle2, Aler
 import { useToast } from "@/components/ui/use-toast";
 import DocumentList from "../shared/DocumentList";
 import DocumentFlow from "../shared/DocumentFlow";
+import JournalEntriesPanel from "../shared/JournalEntriesPanel";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
@@ -644,9 +645,17 @@ setTimeout(function(){window.print();},2000);}
                     </TabsList>
 
                     <TabsContent value="flow">
-                        {item
-                            ? <DocumentFlow seedType="Invoice" seedNumber={item.invoice_number} />
-                            : <p className="py-6 text-center text-sm text-gray-500">Save the invoice to see its document flow.</p>}
+                        {item ? (
+                            <>
+                                <DocumentFlow seedType="Invoice" seedNumber={item.invoice_number} />
+                                <div className="mt-6 border-t pt-4">
+                                    <h4 className="mb-1 text-sm font-semibold text-gray-700">Journal Entries</h4>
+                                    <JournalEntriesPanel documentNumber={item.invoice_number} />
+                                </div>
+                            </>
+                        ) : (
+                            <p className="py-6 text-center text-sm text-gray-500">Save the invoice to see its document flow.</p>
+                        )}
                     </TabsContent>
 
                     <TabsContent value="details">

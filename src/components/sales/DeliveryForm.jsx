@@ -20,6 +20,7 @@ import { postJournalEntry, assertPeriodAllowed } from "../utils/journalService";
 import { useGLAccounts } from "../../hooks/useGLAccounts";
 import SearchableSelect from "@/components/ui/SearchableSelect";
 import DocumentFlow from "../shared/DocumentFlow";
+import JournalEntriesPanel from "../shared/JournalEntriesPanel";
 import { buildDeliveryLines, clampDeliverQty, totalDelivering, validateDeliveryLines } from "@/lib/deliveryLines";
 
 export default function DeliveryForm({ item, onClose }) {
@@ -538,6 +539,17 @@ export default function DeliveryForm({ item, onClose }) {
                                     Document Flow
                                 </summary>
                                 <DocumentFlow seedType="Delivery" seedNumber={item.delivery_number} />
+                            </details>
+                        </div>
+                    )}
+
+                    {item && (
+                        <div className="border-t pt-4">
+                            <details className="group">
+                                <summary className="cursor-pointer text-sm font-semibold text-gray-700 hover:text-gray-900">
+                                    Journal Entries
+                                </summary>
+                                <JournalEntriesPanel documentNumber={item.delivery_number} />
                             </details>
                         </div>
                     )}

@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import ReverseButton from "../shared/ReverseButton";
+import JournalEntriesPanel from "../shared/JournalEntriesPanel";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
@@ -446,6 +447,17 @@ export default function SalesReturnForm({ item, onClose }) {
                             />
                         </div>
                     </div>
+
+                    {item && (
+                        <div className="border-t pt-4">
+                            <details className="group">
+                                <summary className="cursor-pointer text-sm font-semibold text-gray-700 hover:text-gray-900">
+                                    Journal Entries
+                                </summary>
+                                <JournalEntriesPanel documentNumber={item.return_number} />
+                            </details>
+                        </div>
+                    )}
 
                     <div className="flex justify-between items-center pt-4 border-t">
                         <ReverseButton
