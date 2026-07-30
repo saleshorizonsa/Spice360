@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, Users, CreditCard, Building2, AlertCircle, Clock, CheckCircle, Receipt } from "lucide-react";
+import { Plus, Users, CreditCard, Building2, AlertCircle, Clock, CheckCircle, Receipt, Wallet } from "lucide-react";
 import DataTable from "@/components/erp/DataTable";
 import JournalEntryForm from "@/components/finance/JournalEntryForm";
 import ARForm from "@/components/finance/ARForm";
@@ -12,6 +12,7 @@ import APForm from "@/components/finance/APForm";
 import PaymentForm from "@/components/finance/PaymentForm";
 import FixedAssetForm from "@/components/finance/FixedAssetForm";
 import InvoiceClearingDialog from "@/components/finance/InvoiceClearingDialog";
+import CustomerReceiptDialog from "@/components/finance/CustomerReceiptDialog";
 import TrialBalanceReport from "@/components/finance/TrialBalanceReport";
 import IncomeStatementReport from "@/components/finance/IncomeStatementReport";
 import BalanceSheetReport from "@/components/finance/BalanceSheetReport";
@@ -43,6 +44,7 @@ export default function Finance() {
     const [showDialog, setShowDialog] = useState(false);
     const [showFreightInvoice, setShowFreightInvoice] = useState(false);
     const [showClearingDialog, setShowClearingDialog] = useState(false);
+    const [receivingAr, setReceivingAr] = useState(null);
     const [editingItem, setEditingItem] = useState(null);
     const [showCostCenterDialog, setShowCostCenterDialog] = useState(false);
     const [editingCostCenter, setEditingCostCenter] = useState(null);
@@ -240,7 +242,21 @@ export default function Finance() {
         { header: t('amount'), key: "invoice_amount", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: "Outstanding", key: "outstanding_amount", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: "Aging", key: "aging_bucket", isBadge: true },
-        { header: t('status'), key: "status", isBadge: true }
+        { header: t('status'), key: "status", isBadge: true },
+        {
+            header: "", key: "_receive",
+            render: (_v, row) => (
+                row.status !== 'paid' && (parseFloat(row.outstanding_amount) || 0) > 0.01 ? (
+                    <Button
+                        size="sm"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-xs gap-1"
+                        onClick={(e) => { e.stopPropagation(); setReceivingAr(row); }}
+                    >
+                        <Wallet className="w-3 h-3" /> Receive
+                    </Button>
+                ) : null
+            )
+        }
     ];
 
     const apColumns = [
@@ -717,10 +733,9 @@ export default function Finance() {
                                                             <Button
                                                                 size="sm"
                                                                 className="bg-emerald-600 hover:bg-emerald-700 text-xs gap-1"
-                                                                disabled={markArPaidMutation.isPending}
-                                                                onClick={() => markArPaidMutation.mutate(ar)}
+                                                                onClick={() => setReceivingAr(ar)}
                                                             >
-                                                                <CheckCircle className="w-3 h-3" />Collected
+                                                                <Wallet className="w-3 h-3" />Receive
                                                             </Button>
                                                         </td>
                                                     </tr>
@@ -1034,6 +1049,13 @@ export default function Finance() {
                 <InvoiceClearingDialog
                     open={showClearingDialog}
                     onClose={() => setShowClearingDialog(false)}
+                />
+            )}
+
+            {receivingAr && (
+                <CustomerReceiptDialog
+                    ar={receivingAr}
+                    onClose={() => setReceivingAr(null)}
                 />
             )}
 
