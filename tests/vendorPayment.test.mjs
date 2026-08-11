@@ -2,6 +2,10 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   isCashBankAccount,
+  classifyCashBank,
+  isCashAccount,
+  isBankAccount,
+  DEFAULT_PETTY_CASH_CODE,
   amountPaidForInvoice,
   outstandingForInvoice,
   validatePaymentAmount,
@@ -16,6 +20,29 @@ test('recognises cash, bank and petty-cash asset accounts', () => {
   assert.equal(isCashBankAccount({ account_name: 'Cash in Hand', account_type: 'asset' }), true);
   assert.equal(isCashBankAccount({ account_name: 'Bank - BOC Current Account', account_type: 'asset' }), true);
   assert.equal(isCashBankAccount({ account_name: 'Cash at Bank' }), true); // blank type allowed
+});
+
+// ── Cash vs Bank split that drives the payment method ───────────────────────
+test('classifyCashBank splits physical cash from bank accounts', () => {
+  assert.equal(classifyCashBank({ account_name: 'Petty Cash - Priyantha', account_type: 'asset' }), 'cash');
+  assert.equal(classifyCashBank({ account_name: 'Cash in Hand' }), 'cash');
+  assert.equal(classifyCashBank({ account_name: 'Sales Till' }), 'cash');
+  assert.equal(classifyCashBank({ account_name: 'BOC - Current Account' }), 'bank');
+  assert.equal(classifyCashBank({ account_name: 'Sampath Savings' }), 'bank');
+  // Names the bank explicitly → bank wins over the word "cash".
+  assert.equal(classifyCashBank({ account_name: 'Cash at Bank' }), 'bank');
+  // Not a cash/bank account at all.
+  assert.equal(classifyCashBank({ account_name: 'Trade Payables', account_type: 'liability' }), null);
+});
+
+test('isCashAccount / isBankAccount are the classifier’s two sides', () => {
+  const petty = { account_name: 'Petty Cash - Priyantha', account_type: 'asset' };
+  const bank = { account_name: 'Sampath Bank', account_type: 'asset' };
+  assert.equal(isCashAccount(petty), true);
+  assert.equal(isBankAccount(petty), false);
+  assert.equal(isBankAccount(bank), true);
+  assert.equal(isCashAccount(bank), false);
+  assert.equal(DEFAULT_PETTY_CASH_CODE, '1011');
 });
 
 test('rejects non-cash and non-asset accounts', () => {

@@ -18,8 +18,10 @@ const round = (value) => Math.round((value + Number.EPSILON) * 100) / 100;
 
 const clean = (value) => String(value ?? '').trim().toLowerCase();
 
-// Accounts you can pay OUT of: asset-type cash, bank or petty-cash accounts.
+// Accounts you can pay OUT of / receive INTO: asset-type cash, bank or petty-cash.
 const CASH_BANK_WORDS = ['cash', 'bank', 'petty', 'till', 'current account', 'savings'];
+// Words that mark a cash/bank account as specifically a BANK (vs physical cash).
+const BANK_WORDS = ['bank', 'current account', 'savings', 'overdraft'];
 const NON_ASSET_TYPES = new Set(['liability', 'equity', 'revenue', 'income', 'expense', 'cost_of_sales', 'unmapped']);
 
 export const isCashBankAccount = (account = {}) => {
@@ -30,6 +32,26 @@ export const isCashBankAccount = (account = {}) => {
   const hay = `${clean(account.account_name)} ${clean(account.account_subtype || account.subtype)}`;
   return CASH_BANK_WORDS.some((w) => hay.includes(w));
 };
+
+/**
+ * Split a cash/bank account into the payment method it belongs to. An account whose
+ * name/subtype mentions a bank ('bank', 'current account', 'savings', 'overdraft')
+ * is a 'bank'; any other qualifying account is physical 'cash' (petty cash, till).
+ * Returns null for accounts that are not cash/bank at all.
+ *   "Petty Cash - Priyantha" → 'cash'   "Cash at Bank" / "Sampath Bank" → 'bank'
+ */
+export const classifyCashBank = (account = {}) => {
+  if (!isCashBankAccount(account)) return null;
+  const hay = `${clean(account.account_name)} ${clean(account.account_subtype || account.subtype)}`;
+  return BANK_WORDS.some((w) => hay.includes(w)) ? 'bank' : 'cash';
+};
+
+export const isCashAccount = (account = {}) => classifyCashBank(account) === 'cash';
+export const isBankAccount = (account = {}) => classifyCashBank(account) === 'bank';
+
+// The petty-cash account the Cash method pre-selects (still choosable in the UI).
+// 1011 Petty Cash - Priyantha.
+export const DEFAULT_PETTY_CASH_CODE = '1011';
 
 /** Total already paid against an invoice — outgoing payments that still stand. */
 export const amountPaidForInvoice = (invoiceNumber, payments = []) => {

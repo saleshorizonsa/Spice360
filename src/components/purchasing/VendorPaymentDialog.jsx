@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { openPrintWindow } from "@/lib/printWindow";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
@@ -9,18 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { Wallet, Printer } from "lucide-react";
-import SearchableSelect from "@/components/ui/SearchableSelect";
 import { useOrganization } from "../utils/OrganizationContext";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
 import { useActiveAccounts } from "@/hooks/useActiveAccounts";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
 import { postJournalEntry, assertPeriodAllowed } from "../utils/journalService";
 import { logAuditTrail } from "../utils/auditTrail";
-import {
-    isCashBankAccount,
-    validatePaymentAmount,
-    buildVendorPaymentJournal,
-} from "@/lib/vendorPayment";
+import { validatePaymentAmount, buildVendorPaymentJournal } from "@/lib/vendorPayment";
+import CashBankMethodPicker from "@/components/finance/CashBankMethodPicker";
 
 const money = (v) => Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -49,14 +45,7 @@ export default function VendorPaymentDialog({ invoice, onClose }) {
         ? parseFloat(ap.outstanding_amount) || 0
         : (parseFloat(invoice?.total_amount) || 0);
 
-    const cashBankOptions = useMemo(
-        () => allAccounts.filter(isCashBankAccount).map((a) => ({
-            value: a.account_code,
-            label: `${a.account_code} — ${a.account_name}`,
-        })),
-        [allAccounts]
-    );
-
+    const [method, setMethod] = useState("cash");
     const [payFrom, setPayFrom] = useState("");
     const [amount, setAmount] = useState("");
     const [payDate, setPayDate] = useState(new Date().toISOString().split("T")[0]);
@@ -92,7 +81,7 @@ export default function VendorPaymentDialog({ invoice, onClose }) {
                 reference_number: invoice.vendor_invoice_number,
                 amount: amt,
                 currency: invoice.currency || "LKR",
-                payment_method: "bank_transfer",
+                payment_method: method,
                 pay_from_account_code: payFrom,
                 pay_from_account_name: payFromName,
                 status: "cleared",
@@ -232,18 +221,14 @@ ${payment.notes ? `<tr><td class="k">Notes</td><td>${payment.notes}</td></tr>` :
                             <div className="flex justify-between"><span className="text-gray-600">Outstanding</span><span className="font-bold text-emerald-700">LKR {money(outstanding)}</span></div>
                         </div>
 
-                        <div>
-                            <SearchableSelect
-                                label="Pay From (Cash / Bank) *"
-                                mode="client"
-                                value={payFrom}
-                                onChange={setPayFrom}
-                                options={cashBankOptions}
-                                placeholder="Select petty cash or a bank account…"
-                                searchPlaceholder="Search cash/bank accounts…"
-                                emptyText="No cash/bank accounts in the chart. Add one under Admin → Chart of Accounts."
-                            />
-                        </div>
+                        <CashBankMethodPicker
+                            allAccounts={allAccounts}
+                            method={method}
+                            onMethodChange={setMethod}
+                            account={payFrom}
+                            onAccountChange={setPayFrom}
+                            label="Pay From"
+                        />
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
