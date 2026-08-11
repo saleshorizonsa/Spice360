@@ -47,10 +47,20 @@ test("applyReceiptToAr clears the balance and marks paid on full settlement", ()
   assert.equal(upd.status, "paid");
 });
 
-test("applyReceiptToAr never drives outstanding below zero on a rounding overshoot", () => {
+test("applyReceiptToAr floors a sub-cent rounding overshoot to a clean zero", () => {
   const ar = { invoice_amount: 10000, paid_amount: 9999.99, status: "partially_paid" };
   const upd = applyReceiptToAr(ar, 0.02);
   assert.equal(upd.outstanding_amount, 0);
+  assert.equal(upd.status, "paid");
+});
+
+test("applyReceiptToAr keeps a genuine overpayment as a credit (negative outstanding)", () => {
+  // Free amount: customer pays 12,000 against a 10,000 invoice. The receipt journal
+  // credits AR by the full 12,000, so the subledger must show the 2,000 credit too.
+  const ar = { invoice_amount: 10000, paid_amount: 0, status: "open" };
+  const upd = applyReceiptToAr(ar, 12000);
+  assert.equal(upd.paid_amount, 12000);
+  assert.equal(upd.outstanding_amount, -2000);
   assert.equal(upd.status, "paid");
 });
 

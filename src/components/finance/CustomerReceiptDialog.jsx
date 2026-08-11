@@ -16,7 +16,7 @@ import { useActiveAccounts } from "@/hooks/useActiveAccounts";
 import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
 import { postJournalEntry, assertPeriodAllowed } from "../utils/journalService";
 import { logAuditTrail } from "../utils/auditTrail";
-import { isCashBankAccount, validatePaymentAmount, buildCustomerReceiptJournal, applyReceiptToAr } from "@/lib/customerReceipt";
+import { isCashBankAccount, buildCustomerReceiptJournal, applyReceiptToAr } from "@/lib/customerReceipt";
 
 const money = (v) => Number(v || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -50,8 +50,15 @@ export default function CustomerReceiptDialog({ ar, onClose }) {
   const [done, setDone] = useState(null); // saved receipt, for voucher print
 
   const receiveIntoName = allAccounts.find((a) => a.account_code === receiveInto)?.account_name || "Cash & Bank";
-  const amountCheck = validatePaymentAmount(amount, outstanding);
-  const canReceive = !!receiveInto && amountCheck.ok && !!receiptDate;
+
+  // The received amount is free — the user enters exactly what the customer paid,
+  // including an overpayment (recorded as a credit on the invoice). The only rule is
+  // that it must be a positive number; it is NOT capped at the outstanding balance.
+  const amt = parseFloat(amount);
+  const amountValid = Number.isFinite(amt) && amt > 0;
+  const isPartial = amountValid && amt < outstanding - 0.01;
+  const isOverpay = amountValid && amt > outstanding + 0.01;
+  const canReceive = !!receiveInto && amountValid && !!receiptDate;
 
   const receiptMutation = useMutation({
     mutationFn: async () => {
@@ -230,13 +237,19 @@ ${payment.notes ? `<tr><td class="k">Notes</td><td>${payment.notes}</td></tr>` :
                   type="number" step="0.01" min="0"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
+                  placeholder={outstanding > 0 ? money(outstanding) : "0.00"}
                 />
-                {amount !== "" && !amountCheck.ok && (
-                  <p className="mt-1 text-xs text-red-600">{amountCheck.error}</p>
+                {amount !== "" && !amountValid && (
+                  <p className="mt-1 text-xs text-red-600">Enter an amount greater than zero.</p>
                 )}
-                {parseFloat(amount) > 0 && parseFloat(amount) < outstanding && amountCheck.ok && (
+                {isPartial && (
                   <p className="mt-1 text-xs text-amber-600">
-                    Partial — LKR {money(outstanding - parseFloat(amount))} will remain outstanding.
+                    Partial — LKR {money(outstanding - amt)} will remain outstanding.
+                  </p>
+                )}
+                {isOverpay && (
+                  <p className="mt-1 text-xs text-amber-600">
+                    LKR {money(amt - outstanding)} over the outstanding balance — the excess is recorded as a credit on this invoice.
                   </p>
                 )}
               </div>

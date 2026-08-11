@@ -54,11 +54,18 @@ export const buildCustomerReceiptJournal = ({
 /**
  * Apply a receipt to an AR record and return the fields to persist.
  * Partial receipts leave the balance 'partially_paid'; a full one clears it.
+ *
+ * The received amount is free, so it can exceed the outstanding balance. A genuine
+ * overpayment is left standing as a NEGATIVE outstanding (a credit on the invoice),
+ * because the receipt journal credits Accounts Receivable by the full amount — the
+ * subledger has to move by that same amount or the two drift. Only sub-cent
+ * overshoots (rounding noise) are floored to a clean zero.
  */
 export const applyReceiptToAr = (ar = {}, amount = 0) => {
   const invoiceAmount = num(ar.invoice_amount);
   const newPaid = round(num(ar.paid_amount) + num(amount));
-  const newOutstanding = round(Math.max(0, invoiceAmount - newPaid));
+  let newOutstanding = round(invoiceAmount - newPaid);
+  if (newOutstanding < 0 && newOutstanding >= -0.01) newOutstanding = 0; // rounding noise
   const status = newOutstanding <= 0.01 ? "paid" : newPaid > 0 ? "partially_paid" : (ar.status || "open");
   return { paid_amount: newPaid, outstanding_amount: newOutstanding, status };
 };
