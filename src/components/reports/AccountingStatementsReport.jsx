@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Download } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useOrganization } from "@/components/utils/OrganizationContext";
 import { dateToFiscalPeriod } from "@/components/utils/fiscalPeriod";
+import { exportRowsToCsv } from "@/lib/financialStatements";
 
 const fmt = (value) => `LKR ${Number(value || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const today = () => new Date().toISOString().slice(0, 10);
@@ -155,10 +157,77 @@ export default function AccountingStatementsReport({ initialTab = "trial_balance
   const equity = bsRows.filter((row) => row.account.account_type === "equity").reduce((sum, row) => sum + row.balance, 0);
   const bsDifference = assets - (liabilities + equity + bsAllTimeNetIncome);
 
+  // Build the export for whichever statement tab is showing. Reuses exportRowsToCsv;
+  // written as an .xls (CSV Excel opens natively) with an org/title/period header.
+  const num2 = (v) => Number(v || 0).toFixed(2);
+  const buildExport = () => {
+    if (activeTab === "profit_loss") {
+      const cols = [
+        { header: "Account Code", value: (r) => r.account.account_code },
+        { header: "Account Name", value: (r) => r.account.account_name },
+        { header: "Type", value: (r) => r.account.account_type || "" },
+        { header: "Amount", value: (r) => num2(r.balance) },
+      ];
+      const rows = [
+        ...plRows,
+        { account: { account_code: "", account_name: "Total Revenue" }, balance: revenue },
+        { account: { account_code: "", account_name: "Total Expenses" }, balance: expenses },
+        { account: { account_code: "", account_name: "Net Income" }, balance: netIncome },
+      ];
+      return { title: "Profit and Loss", subtitle: `${fromDate} to ${toDate}`, tag: `${fromDate}_${toDate}`, csv: exportRowsToCsv(rows, cols) };
+    }
+    if (activeTab === "balance_sheet") {
+      const cols = [
+        { header: "Account Code", value: (r) => r.account.account_code },
+        { header: "Account Name", value: (r) => r.account.account_name },
+        { header: "Type", value: (r) => r.account.account_type || "" },
+        { header: "Balance", value: (r) => num2(r.balance) },
+      ];
+      const rows = [
+        ...bsRows.filter((r) => Math.abs(r.balance) > 0.01),
+        { account: { account_code: "", account_name: "Total Assets" }, balance: assets },
+        { account: { account_code: "", account_name: "Total Liabilities" }, balance: liabilities },
+        { account: { account_code: "", account_name: "Total Equity" }, balance: equity },
+        { account: { account_code: "", account_name: "Retained Earnings (net income to date)" }, balance: bsAllTimeNetIncome },
+      ];
+      return { title: "Balance Sheet", subtitle: `As of ${asOfDate}`, tag: asOfDate, csv: exportRowsToCsv(rows, cols) };
+    }
+    const cols = [
+      { header: "Account Code", value: (r) => r.account.account_code },
+      { header: "Account Name", value: (r) => r.account.account_name },
+      { header: "Debit", value: (r) => num2(r.debit) },
+      { header: "Credit", value: (r) => num2(r.credit) },
+      { header: "Net Balance", value: (r) => num2(r.balance) },
+    ];
+    const rows = [
+      ...trialRows,
+      { account: { account_code: "", account_name: "TOTAL" }, debit: totalDebit, credit: totalCredit, balance: totalDebit - totalCredit },
+    ];
+    return { title: "Trial Balance", subtitle: `Period ${period}`, tag: period, csv: exportRowsToCsv(rows, cols) };
+  };
+
+  const downloadActive = () => {
+    const { title, subtitle, tag, csv } = buildExport();
+    const org = currentOrg?.organization_name || currentOrg?.trade_name || "";
+    const esc = (s) => `"${String(s).replace(/"/g, '""')}"`;
+    const heading = [org, title, subtitle].filter(Boolean).map(esc).join("\n");
+    const content = "﻿" + heading + "\n\n" + csv + "\n"; // BOM so Excel reads UTF-8
+    const blob = new Blob([content], { type: "application/vnd.ms-excel;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${title.replace(/\s+/g, "-").toLowerCase()}-${tag}.xls`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle>Ledger Financial Statements</CardTitle>
+        <Button variant="outline" size="sm" className="gap-2" onClick={downloadActive}>
+          <Download className="w-4 h-4" /> Download Excel
+        </Button>
       </CardHeader>
       <CardContent>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
