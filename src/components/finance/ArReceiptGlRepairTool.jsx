@@ -89,6 +89,19 @@ export default function ArReceiptGlRepairTool() {
             if (target.receipts.length === 0) throw new Error(`No cleared incoming receipt was found for ${target.ar.invoice_number}.`);
 
             const changes = [];
+            const postedReceiptEntries = target.receipts
+                .flatMap(({ payment, entries }) => entries
+                    .filter((journal) => journal.status === "posted")
+                    .map((journal) => ({ payment, journal })))
+                .sort((a, b) => String(a.payment.created_at || a.payment.payment_number)
+                    .localeCompare(String(b.payment.created_at || b.payment.payment_number)));
+            if (postedReceiptEntries.length > 1) {
+                const duplicate = postedReceiptEntries.at(-1);
+                await reverseJournalEntry(duplicate.journal.journal_number, duplicate.payment.payment_date, "", currentOrg.id);
+                changes.push(`${duplicate.payment.payment_number}: reversed duplicate receipt journal ${duplicate.journal.journal_number}`);
+                return changes;
+            }
+
             for (const { payment, entry, entries, lines } of target.receipts) {
                 const amount = amountOf(payment.amount);
                 if (amount <= 0) continue;
