@@ -15,11 +15,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
+import CashBankMethodPicker from "./CashBankMethodPicker";
 
 export default function InvoiceClearingDialog({ open, onClose }) {
     const [selectedCustomer, setSelectedCustomer] = useState('');
     const [paymentAmount, setPaymentAmount] = useState(0);
-    const [paymentMethod, setPaymentMethod] = useState('bank_transfer');
+    const [paymentMethod, setPaymentMethod] = useState('cash');
+    const [receiveIntoAccount, setReceiveIntoAccount] = useState('1011');
     const [paymentDate, setPaymentDate] = useState(new Date().toISOString().split('T')[0]);
     const [referenceNumber, setReferenceNumber] = useState('');
     const [selectedInvoices, setSelectedInvoices] = useState({});
@@ -30,6 +32,12 @@ export default function InvoiceClearingDialog({ open, onClose }) {
     const { toast } = useToast();
     const { currentOrg } = useOrganization();
     const gl = useGLAccounts();
+
+    const { data: allAccounts = [] } = useQuery({
+        queryKey: ['chartOfAccounts'],
+        queryFn: () => matrixSales.entities.ChartOfAccounts.list(),
+        initialData: []
+    });
 
     const { data: customers = [] } = useQuery({
         queryKey: ['customers'],
@@ -73,6 +81,7 @@ export default function InvoiceClearingDialog({ open, onClose }) {
                 amount: data.paymentAmount,
                 currency: 'LKR',
                 payment_method: data.paymentMethod,
+                bank_account: data.receiveIntoAccount,
                 status: 'cleared',
                 cleared_date: data.paymentDate,
                 gl_posted: false,
@@ -81,7 +90,7 @@ export default function InvoiceClearingDialog({ open, onClose }) {
 
             await postJournalEntry({
                 lines: [
-                    { account_code: gl.cash_bank,      account_name: 'Cash & Bank',      debit: data.paymentAmount, credit: 0 },
+                    { account_code: data.receiveIntoAccount, account_name: data.receiveIntoName, debit: data.paymentAmount, credit: 0 },
                     { account_code: gl.ar_receivables, account_name: 'Trade Receivables', debit: 0, credit: data.paymentAmount }
                 ],
                 referenceType: 'customer_payment',
@@ -268,6 +277,8 @@ export default function InvoiceClearingDialog({ open, onClose }) {
                 paymentAmount,
                 paymentDate,
                 paymentMethod,
+                receiveIntoAccount,
+                receiveIntoName: allAccounts.find((account) => account.account_code === receiveIntoAccount)?.account_name || 'Petty Cash',
                 referenceNumber,
                 allocations: allocationData
             });
@@ -277,7 +288,8 @@ export default function InvoiceClearingDialog({ open, onClose }) {
     const handleReset = () => {
         setSelectedCustomer('');
         setPaymentAmount(0);
-        setPaymentMethod('bank_transfer');
+        setPaymentMethod('cash');
+        setReceiveIntoAccount('1011');
         setPaymentDate(new Date().toISOString().split('T')[0]);
         setReferenceNumber('');
         setSelectedInvoices({});
@@ -338,19 +350,15 @@ export default function InvoiceClearingDialog({ open, onClose }) {
                                     onChange={(e) => setPaymentDate(e.target.value)}
                                 />
                             </div>
-                            <div>
-                                <Label>Payment Method *</Label>
-                                <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                                    <SelectTrigger>
-                                        <SelectValue />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                                        <SelectItem value="cash">Cash</SelectItem>
-                                        <SelectItem value="check">Check</SelectItem>
-                                        <SelectItem value="credit_card">Credit Card</SelectItem>
-                                    </SelectContent>
-                                </Select>
+                            <div className="col-span-2">
+                                <CashBankMethodPicker
+                                    allAccounts={allAccounts}
+                                    method={paymentMethod}
+                                    onMethodChange={setPaymentMethod}
+                                    account={receiveIntoAccount}
+                                    onAccountChange={setReceiveIntoAccount}
+                                    label="Receive Into"
+                                />
                             </div>
                             <div className="col-span-2">
                                 <Label>Reference Number</Label>
