@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { useOrganization } from "../utils/OrganizationContext";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
-import { postJournalEntry } from "../utils/journalService";
+import { postJournalEntry, reverseJournalEntry } from "../utils/journalService";
 
 const TARGET_AR = "AR-INV-ALL-26-000002";
 const TARGET_RECEIPT_ACCOUNT = "1011";
@@ -70,13 +70,14 @@ export default function ArReceiptGlRepairTool() {
                 allocationPaymentNumbers.has(payment.payment_number)
             )
             .map((payment) => {
-                const entry = journalEntries.find((journal) =>
+                const entries = journalEntries.filter((journal) =>
                     journal.reference_type === "customer_payment" && journal.reference_id === payment.payment_number
                 );
+                const entry = entries[0];
                 const lines = entry
                     ? journalLines.filter((line) => line.journal_number === entry.journal_number)
                     : [];
-                return { payment, entry, lines };
+                return { payment, entry, entries, lines };
             });
         return { ar, receipts };
     }, [arNumber, arRecords, payments, allocations, journalEntries, journalLines]);
@@ -88,9 +89,19 @@ export default function ArReceiptGlRepairTool() {
             if (target.receipts.length === 0) throw new Error(`No cleared incoming receipt was found for ${target.ar.invoice_number}.`);
 
             const changes = [];
-            for (const { payment, entry, lines } of target.receipts) {
+            for (const { payment, entry, entries, lines } of target.receipts) {
                 const amount = amountOf(payment.amount);
                 if (amount <= 0) continue;
+
+                const postedEntries = entries.filter((journal) => journal.status === "posted");
+                if (postedEntries.length > 1) {
+                    const duplicate = [...postedEntries].sort((a, b) =>
+                        String(a.created_at || a.journal_number).localeCompare(String(b.created_at || b.journal_number))
+                    ).at(-1);
+                    await reverseJournalEntry(duplicate.journal_number, payment.payment_date, "", currentOrg.id);
+                    changes.push(`${payment.payment_number}: reversed duplicate journal ${duplicate.journal_number}`);
+                    continue;
+                }
 
                 const arCredit = lines.find((line) => line.account_code === gl.ar_receivables && amountOf(line.credit) > 0);
                 const cashDebit = lines.find((line) => amountOf(line.debit) > 0 && line.account_code !== gl.ar_receivables);
