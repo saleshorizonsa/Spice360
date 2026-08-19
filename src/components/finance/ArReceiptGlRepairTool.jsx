@@ -35,6 +35,11 @@ export default function ArReceiptGlRepairTool() {
         queryFn: () => matrixSales.entities.Payment.list(),
         initialData: [],
     });
+    const { data: allocations = [], isLoading: allocationsLoading } = useQuery({
+        queryKey: ["ar-receipt-repair-allocations"],
+        queryFn: () => matrixSales.entities.PaymentAllocation.list(),
+        initialData: [],
+    });
     const { data: journalEntries = [], isLoading: entriesLoading } = useQuery({
         queryKey: ["ar-receipt-repair-journal-entries"],
         queryFn: () => matrixSales.entities.JournalEntry.list(),
@@ -50,9 +55,20 @@ export default function ArReceiptGlRepairTool() {
         const normalized = arNumber.trim().toLowerCase();
         const ar = arRecords.find((record) => String(record.ar_number || "").toLowerCase() === normalized);
         if (!ar) return { ar: null, receipts: [] };
+        const allocationPaymentNumbers = new Set(
+            allocations
+                .filter((allocation) => allocation.ar_number === ar.ar_number || allocation.invoice_number === ar.invoice_number)
+                .map((allocation) => allocation.payment_number)
+                .filter(Boolean)
+        );
         const receipts = payments
-            .filter((payment) => payment.payment_type === "incoming" && payment.status === "cleared")
-            .filter((payment) => payment.reference_number === ar.invoice_number || payment.reference_number === ar.ar_number)
+            .filter((payment) => payment.payment_type === "incoming")
+            .filter((payment) => ["cleared", "posted", "completed"].includes(String(payment.status || "").toLowerCase()))
+            .filter((payment) =>
+                payment.reference_number === ar.invoice_number ||
+                payment.reference_number === ar.ar_number ||
+                allocationPaymentNumbers.has(payment.payment_number)
+            )
             .map((payment) => {
                 const entry = journalEntries.find((journal) =>
                     journal.reference_type === "customer_payment" && journal.reference_id === payment.payment_number
@@ -63,7 +79,7 @@ export default function ArReceiptGlRepairTool() {
                 return { payment, entry, lines };
             });
         return { ar, receipts };
-    }, [arNumber, arRecords, payments, journalEntries, journalLines]);
+    }, [arNumber, arRecords, payments, allocations, journalEntries, journalLines]);
 
     const repair = useMutation({
         mutationFn: async () => {
@@ -132,7 +148,7 @@ export default function ArReceiptGlRepairTool() {
         onError: (error) => toast({ title: "AR receipt repair failed", description: error.message, variant: "destructive" }),
     });
 
-    const loading = arLoading || paymentsLoading || entriesLoading || linesLoading;
+    const loading = arLoading || paymentsLoading || allocationsLoading || entriesLoading || linesLoading;
     const targetStatus = target.ar ? `${target.receipts.length} cleared receipt(s) found` : "AR record not found";
 
     return (
