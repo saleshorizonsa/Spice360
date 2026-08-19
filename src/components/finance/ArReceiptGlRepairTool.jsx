@@ -135,7 +135,6 @@ export default function ArReceiptGlRepairTool() {
                     orgId: currentOrg.id,
                     area: "ar",
                 });
-                await matrixSales.entities.Payment.update(payment.id, { ...payment, gl_posted: true });
                 changes.push(`${payment.payment_number}: posted ${TARGET_RECEIPT_ACCOUNT} / ${gl.ar_receivables}`);
             }
             return changes;
