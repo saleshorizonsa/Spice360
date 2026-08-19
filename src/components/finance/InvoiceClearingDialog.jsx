@@ -12,6 +12,9 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
 import { CheckCircle2, AlertCircle, DollarSign, Receipt } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { postJournalEntry } from "../utils/journalService";
+import { useOrganization } from "../utils/OrganizationContext";
+import { useGLAccounts } from "@/hooks/useGLAccounts";
 
 export default function InvoiceClearingDialog({ open, onClose }) {
     const [selectedCustomer, setSelectedCustomer] = useState('');
@@ -25,6 +28,8 @@ export default function InvoiceClearingDialog({ open, onClose }) {
 
     const queryClient = useQueryClient();
     const { toast } = useToast();
+    const { currentOrg } = useOrganization();
+    const gl = useGLAccounts();
 
     const { data: customers = [] } = useQuery({
         queryKey: ['customers'],
@@ -57,8 +62,8 @@ export default function InvoiceClearingDialog({ open, onClose }) {
             const paymentNumber = `PMT-${Date.now()}`;
             const clearingRef = `CLR-${Date.now()}`;
 
-            // Create payment record
-            await matrixSales.entities.Payment.create({
+            // Create the payment first so the journal can reference its number.
+            const savedPayment = await matrixSales.entities.Payment.create({
                 payment_number: paymentNumber,
                 payment_type: 'incoming',
                 payment_date: data.paymentDate,
@@ -70,7 +75,27 @@ export default function InvoiceClearingDialog({ open, onClose }) {
                 payment_method: data.paymentMethod,
                 status: 'cleared',
                 cleared_date: data.paymentDate,
+                gl_posted: false,
                 notes: `Invoice clearing: ${data.allocations.length} invoice(s) allocated`
+            });
+
+            await postJournalEntry({
+                lines: [
+                    { account_code: gl.cash_bank,      account_name: 'Cash & Bank',      debit: data.paymentAmount, credit: 0 },
+                    { account_code: gl.ar_receivables, account_name: 'Trade Receivables', debit: 0, credit: data.paymentAmount }
+                ],
+                referenceType: 'customer_payment',
+                referenceId: paymentNumber,
+                description: `Payment ${paymentNumber}`,
+                entryDate: data.paymentDate,
+                entryType: 'payment',
+                orgId: currentOrg?.id,
+                area: 'ar',
+                createdBy: user.email || ''
+            });
+            await matrixSales.entities.Payment.update(savedPayment.id, {
+                ...savedPayment,
+                gl_posted: true
             });
 
             // Create allocation records and update AR
