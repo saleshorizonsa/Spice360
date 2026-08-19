@@ -27,6 +27,7 @@ import AccountNameRepairTool from "@/components/finance/AccountNameRepairTool";
 import FreightStockRepairTool from "@/components/finance/FreightStockRepairTool";
 import InventoryGlReconciliation from "@/components/finance/InventoryGlReconciliation";
 import ArBackfillTool from "@/components/finance/ArBackfillTool";
+import ArReceiptGlRepairTool from "@/components/finance/ArReceiptGlRepairTool";
 import FXRateManager from "@/components/finance/FXRateManager";
 import CostCenterForm from "@/components/finance/CostCenterForm";
 import CustomerStatementDialog from "@/components/finance/CustomerStatementDialog";
@@ -907,6 +908,9 @@ export default function Finance() {
 
                     {/* Backfill AR entries for finalised invoices that never got one. */}
                     <ArBackfillTool />
+
+                    {/* Repair the historical customer receipt GL entry without changing AR again. */}
+                    <ArReceiptGlRepairTool />
 
                     {/* GL Account Mapping */}
                     <Card>
