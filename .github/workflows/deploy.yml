@@ -70,11 +70,27 @@ jobs:
           echo "Deployed to $(cat deployment-url.txt)"
 
       - name: Verify deep links resolve (SPA fallback)
+        env:
+          # The stable production alias. Override with a PROD_URL repo variable
+          # if the alias ever changes, so this does not need a code edit.
+          PROD_URL: ${{ vars.PROD_URL || 'https://spice360-lake.vercel.app' }}
         run: |
-          url=$(cat deployment-url.txt)
+          # Check the alias, NOT the generated URL in deployment-url.txt.
+          # Vercel's Deployment Protection covers generated production URLs by
+          # default while leaving the alias public, so curling the generated URL
+          # returns 401 and this step went red on every run even though the site
+          # was fine. The alias is also what users actually visit.
+          echo "Deployment URL: $(cat deployment-url.txt)"
+          echo "Verifying alias: $PROD_URL"
           fail=0
           for path in / /Dashboard /Purchasing /Finance; do
-            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$url$path")
+            # The alias can take a few seconds to swing over to the new
+            # deployment, so give it a handful of tries before calling it broken.
+            for attempt in 1 2 3 4 5; do
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$PROD_URL$path" || echo 000)
+              [ "$code" = "200" ] && break
+              sleep 5
+            done
             echo "GET $path -> $code"
             [ "$code" = "200" ] || fail=1
           done
