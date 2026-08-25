@@ -26,6 +26,7 @@ import { resolveVatRate, resolveSalesOrderVatRate } from "@/lib/vat";
 import { buildInvoiceLines, clampInvoiceQty, invoiceTotals, validateInvoiceLines } from "@/lib/invoiceLines";
 import SearchableSelect from "../shared/SearchableSelect";
 import { isFinalisedInvoice, buildArRecordFromInvoice } from "@/lib/arFromInvoice";
+import { lineDiscount, normalizeSalesLine } from "@/lib/salesDiscount";
 
 export default function InvoiceForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -101,6 +102,8 @@ export default function InvoiceForm({ item, onClose }) {
         subtotal: 0,
         // VAT is opt-in: stays at 0 unless the customer AND the item are both
         // VAT-activated (resolved on sales-order select), or the user overrides.
+        discount_amount: 0,
+        discount_total: 0,
         tax_type: 'exempt',
         tax_percent: 0,
         tax_amount: 0,
@@ -127,6 +130,8 @@ export default function InvoiceForm({ item, onClose }) {
                 quantity: parseFloat(item.quantity) || 0,
                 unit_price: parseFloat(item.unit_price) || 0,
                 tax_percent: parseFloat(item.tax_percent) || 0,
+                                discount_amount: parseFloat(item.discount_amount) || 0,
+                                setLines(storedLines.map(l => normalizeSalesLine({
                 amount_paid: parseFloat(item.amount_paid) || 0,
             }));
             // Parse stored delivery references
@@ -169,9 +174,12 @@ export default function InvoiceForm({ item, onClose }) {
         const hasLines = lines.length > 0;
         const t = hasLines
             ? invoiceTotals(lines, formData.tax_percent)
+            ? invoiceTotals(lines, formData.tax_percent, formData.discount_amount)
             : (() => {
                 const subtotal = (formData.quantity || 0) * (formData.unit_price || 0);
-                const taxAmount = subtotal * ((formData.tax_percent || 0) / 100);
+                const discountAmount = Math.min(subtotal, Math.max(0, parseFloat(formData.discount_amount) || 0));
+                const taxAmount = (subtotal - discountAmount) * ((formData.tax_percent || 0) / 100);
+                return { subtotal, discountAmount, taxAmount, total: subtotal - discountAmount + taxAmount, totalQuantity: formData.quantity || 0 };
                 return { subtotal, taxAmount, total: subtotal + taxAmount, totalQuantity: formData.quantity || 0 };
             })();
 
@@ -190,6 +198,7 @@ export default function InvoiceForm({ item, onClose }) {
         setFormData(prev => ({
             ...prev,
             subtotal: t.subtotal,
+                        discount_total: t.discountAmount,
             tax_amount: t.taxAmount,
             total_amount: t.total,
             quantity: hasLines ? billedQty : prev.quantity,
@@ -198,7 +207,7 @@ export default function InvoiceForm({ item, onClose }) {
             total_delivered_quantity: totalDeliveredQty,
         }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [lines, formData.quantity, formData.unit_price, formData.tax_percent, formData.tolerance_percent, totalDeliveredQty]);
+    }, [lines, formData.quantity, formData.unit_price, formData.tax_percent, formData.discount_amount, formData.tolerance_percent, totalDeliveredQty]);
 
     // ── Deliveries available to add ───────────────────────────────────────────
     const availableDeliveryOptions = useMemo(() => {
@@ -328,6 +337,16 @@ export default function InvoiceForm({ item, onClose }) {
         ));
     };
 
+    const handleLineDiscountChange = (productCode, value) => {
+        if (!isDirty) setIsDirty(true);
+        setLines(prev => prev.map(l => {
+            if (l.product_code !== productCode) return l;
+            const updated = { ...l, discount_amount: value, discount_percent: 0 };
+            const totals = lineDiscount(updated);
+            return { ...updated, discount_amount: totals.discountAmount, line_total: totals.lineTotal };
+        }));
+    };
+
     const handleChange = (field, value) => {
         if (!isDirty) setIsDirty(true);
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -344,7 +363,8 @@ export default function InvoiceForm({ item, onClose }) {
                     await postJournalEntry({
                         lines: [
                             { account_code: gl.ar_receivables, account_name: 'Trade Receivables', debit: savedInvoice.total_amount, credit: 0 },
-                            { account_code: gl.sales_revenue,  account_name: 'Sales Revenue',     debit: 0, credit: savedInvoice.subtotal },
+                            { account_code: gl.sales_discount, account_name: 'Sales Discount',    debit: savedInvoice.discount_total || savedInvoice.discount_amount || 0, credit: 0 },
+                            { account_code: gl.sales_revenue,  account_name: 'Sales Revenue',     debit: 0, credit: Math.max(0, savedInvoice.subtotal - (savedInvoice.discount_total || savedInvoice.discount_amount || 0)) },
                             { account_code: gl.vat_output,     account_name: 'VAT Payable',       debit: 0, credit: savedInvoice.tax_amount || savedInvoice.vat_amount || 0 }
                         ].filter(line => Number(line.debit || line.credit || 0) > 0),
                         referenceType: 'sales_invoice',
@@ -444,12 +464,14 @@ export default function InvoiceForm({ item, onClose }) {
             unit_price: l.unit_price,
             delivered_quantity: l.delivered_quantity,
             quantity: l.quantity,
-            line_total: Number(l.quantity) * Number(l.unit_price),
+            discount_amount: Number(l.discount_amount) || 0,
+            line_total: lineDiscount(l).lineTotal,
         }));
 
         saveMutation.mutate({
             ...formData,
             invoice_lines: billed,
+            discount_total: formData.discount_total || formData.discount_amount || 0,
             // Header mirrors for lists / GL / print fallback: first line + totals.
             ...(billed.length > 0 ? {
                 product_code: billed[0].product_code,
@@ -873,6 +895,7 @@ setTimeout(function(){window.print();},2000);}
                                                     <th className="px-3 py-2 text-right font-medium">Delivered</th>
                                                     <th className="px-3 py-2 text-right font-medium">Billing Qty</th>
                                                     <th className="px-3 py-2 text-right font-medium">Unit Price</th>
+                                                    <th className="px-3 py-2 text-right font-medium">Discount (LKR)</th>
                                                     <th className="px-3 py-2 text-right font-medium">Amount</th>
                                                 </tr>
                                             </thead>
@@ -896,7 +919,17 @@ setTimeout(function(){window.print();},2000);}
                                                             />
                                                         </td>
                                                         <td className="px-3 py-2 text-right">{Number(l.unit_price).toFixed(2)}</td>
-                                                        <td className="px-3 py-2 text-right font-semibold">{(Number(l.quantity) * Number(l.unit_price)).toFixed(2)}</td>
+                                                        <td className="px-3 py-2 text-right">
+                                                            <Input
+                                                                type="number"
+                                                                min="0"
+                                                                step="0.01"
+                                                                value={l.discount_amount || 0}
+                                                                onChange={(e) => handleLineDiscountChange(l.product_code, e.target.value)}
+                                                                className="w-28 text-right ml-auto"
+                                                            />
+                                                        </td>
+                                                        <td className="px-3 py-2 text-right font-semibold">{lineDiscount(l).lineTotal.toFixed(2)}</td>
                                                     </tr>
                                                 ))}
                                             </tbody>
@@ -957,6 +990,18 @@ setTimeout(function(){window.print();},2000);}
                                     </div>
                                 </div>
 
+                                <div className="flex items-center justify-between gap-4 rounded-lg bg-gray-50 p-4">
+                                    <Label>Document Discount (LKR)</Label>
+                                    <Input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={formData.discount_amount}
+                                        onChange={(e) => handleChange('discount_amount', parseFloat(e.target.value) || 0)}
+                                        className="w-40 text-right bg-white"
+                                    />
+                                </div>
+
                                 {/* Export Customer Tolerance band */}
                                 {formData.is_export_customer && (
                                     <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
@@ -1011,6 +1056,10 @@ setTimeout(function(){window.print();},2000);}
                                         <span className="text-gray-600">Subtotal:</span>
                                         <span className="font-semibold">LKR {Number(formData.subtotal || 0).toFixed(2)}</span>
                                     </div>
+                                    {Number(formData.discount_amount || 0) > 0 && <div className="flex justify-between text-sm text-red-600">
+                                        <span>Discount:</span>
+                                        <span>−LKR {Number(formData.discount_amount).toFixed(2)}</span>
+                                    </div>}
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-600">VAT ({formData.tax_percent}%):</span>
                                         <span className="font-semibold">LKR {Number(formData.tax_amount || 0).toFixed(2)}</span>

@@ -11,6 +11,7 @@ import { useOrganization } from "@/components/utils/OrganizationContext";
 import { useQueryClient } from "@tanstack/react-query";
 import { getItemCode, itemToSelectOption, materialToSalesLinePatch, normalizeItemCode } from "@/lib/itemSelection";
 import { useTaxConfig } from "@/hooks/useTaxConfig";
+import { normalizeSalesLine, lineDiscount } from "@/lib/salesDiscount";
 
 export default function LineItemsTable({
     lineItems = [],
@@ -27,7 +28,7 @@ export default function LineItemsTable({
     const taxConfig = useTaxConfig();
 
     useEffect(() => {
-        setEditingLines(lineItems);
+        setEditingLines(lineItems.map(normalizeSalesLine));
     }, [lineItems]);
 
     const handleAddLine = () => {
@@ -39,7 +40,6 @@ export default function LineItemsTable({
             quantity: 0,
             unit_of_measure: 'piece',
             unit_price: 0,
-            discount_percent: 0,
             discount_amount: 0,
             line_total: 0
         };
@@ -64,17 +64,11 @@ export default function LineItemsTable({
         updated[index][field] = value;
 
         // Auto-calculate line totals
-        if (field === 'quantity' || field === 'unit_price' || field === 'discount_percent') {
-            const qty = parseFloat(updated[index].quantity) || 0;
-            const price = parseFloat(updated[index].unit_price) || 0;
-            const discountPercent = parseFloat(updated[index].discount_percent) || 0;
-            
-            const subtotal = qty * price;
-            const discountAmount = subtotal * (discountPercent / 100);
-            const lineTotal = subtotal - discountAmount;
-
-            updated[index].discount_amount = discountAmount;
-            updated[index].line_total = lineTotal;
+        if (field === 'quantity' || field === 'unit_price' || field === 'discount_amount' || field === 'discount_percent') {
+            const totals = lineDiscount(updated[index]);
+            updated[index].discount_percent = 0;
+            updated[index].discount_amount = totals.discountAmount;
+            updated[index].line_total = totals.lineTotal;
         }
 
         setEditingLines(updated);
@@ -118,13 +112,10 @@ export default function LineItemsTable({
             }
             
             // Recalculate line total
-            const qty = parseFloat(updated[index].quantity) || 0;
-            const price = parseFloat(updated[index].unit_price) || 0;
-            const discountPercent = parseFloat(updated[index].discount_percent) || 0;
-            const subtotal = qty * price;
-            const discountAmount = subtotal * (discountPercent / 100);
-            updated[index].line_total = subtotal - discountAmount;
-            updated[index].discount_amount = discountAmount;
+            const totals = lineDiscount(updated[index]);
+            updated[index].line_total = totals.lineTotal;
+            updated[index].discount_percent = 0;
+            updated[index].discount_amount = totals.discountAmount;
 
             setEditingLines(updated);
             onLineItemsChange(updated);
@@ -194,7 +185,6 @@ export default function LineItemsTable({
                 quantity: 1,
                 unit_of_measure: 'piece',
                 unit_price: 0,
-                discount_percent: 0,
                 discount_amount: 0,
                 line_total: 0,
                 ...materialToSalesLinePatch(item)
@@ -240,7 +230,7 @@ export default function LineItemsTable({
                                 <TableHead className="min-w-[200px]">Description</TableHead>
                                 <TableHead className="w-28">Quantity</TableHead>
                                 <TableHead className="w-28">Unit Price</TableHead>
-                                <TableHead className="w-28">Discount %</TableHead>
+                                <TableHead className="w-28">Discount (LKR)</TableHead>
                                 <TableHead className="w-32">Line Total</TableHead>
                                 <TableHead className="w-16">Action</TableHead>
                             </TableRow>
@@ -304,10 +294,9 @@ export default function LineItemsTable({
                                         <TableCell className="w-28">
                                             <Input
                                                 type="number"
-                                                value={line.discount_percent}
-                                                onChange={(e) => handleLineChange(index, 'discount_percent', e.target.value)}
+                                                value={line.discount_amount}
+                                                onChange={(e) => handleLineChange(index, 'discount_amount', e.target.value)}
                                                 min="0"
-                                                max="100"
                                                 step="0.01"
                                             />
                                         </TableCell>

@@ -21,6 +21,17 @@ const round = (value, dp = 2) => {
 
 const round6 = (value) => round(value, 6);
 
+const lineDiscountAmount = (line) => {
+  const gross = num(line.quantity) * num(line.unit_price);
+  const hasLegacyPercent = num(line.discount_percent) > 0 && num(line.discount_amount) === 0;
+  const stored = hasLegacyPercent
+    ? gross * (num(line.discount_percent) / 100)
+    : line.discount_amount != null && line.discount_amount !== ''
+    ? num(line.discount_amount)
+    : gross * (num(line.discount_percent) / 100);
+  return Math.min(gross, Math.max(0, stored));
+};
+
 // Per-product delivered quantity from a delivery record, handling the multi-line
 // shape (delivery_lines) and legacy single-product deliveries.
 const deliveredLinesOf = (delivery) => {
@@ -100,13 +111,17 @@ export const clampInvoiceQty = (value, deliveredMax) => {
 };
 
 /** Totals for the whole invoice: a single VAT rate applied to the summed subtotal. */
-export const invoiceTotals = (lines = [], taxPercent = 0) => {
+export const invoiceTotals = (lines = [], taxPercent = 0, documentDiscountAmount = 0) => {
   const subtotal = round(lines.reduce((sum, l) => sum + num(l.quantity) * num(l.unit_price), 0));
-  const taxAmount = round(subtotal * (num(taxPercent) / 100));
+  const lineDiscounts = lines.reduce((sum, l) => sum + lineDiscountAmount(l), 0);
+  const discountAmount = Math.min(subtotal, Math.max(0, round(lineDiscounts + num(documentDiscountAmount))));
+  const taxableSubtotal = subtotal - discountAmount;
+  const taxAmount = round(taxableSubtotal * (num(taxPercent) / 100));
   return {
     subtotal,
+    discountAmount,
     taxAmount,
-    total: round(subtotal + taxAmount),
+    total: round(taxableSubtotal + taxAmount),
     totalQuantity: round6(lines.reduce((sum, l) => sum + num(l.quantity), 0)),
     totalDelivered: round6(lines.reduce((sum, l) => sum + num(l.delivered_quantity), 0)),
   };

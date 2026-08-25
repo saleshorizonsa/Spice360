@@ -49,7 +49,7 @@ export default function POS() {
     const [customerPhone, setCustomerPhone] = useState("");
     const [paymentMethod, setPaymentMethod] = useState("cash");
     const [cashReceived, setCashReceived] = useState("");
-    const [discountPercent, setDiscountPercent] = useState(0);
+    const [discountAmountInput, setDiscountAmountInput] = useState(0);
     const [showReceipt, setShowReceipt] = useState(false);
     const [lastTransaction, setLastTransaction] = useState(null);
     const [barcodeBuffer, setBarcodeBuffer] = useState("");
@@ -154,7 +154,7 @@ export default function POS() {
     // Cart calculations. VAT is per line and only applies to VAT-activated items;
     // a cart of non-VAT items totals with no VAT at all.
     const cartSubtotal = cart.reduce((sum, item) => sum + item.line_total, 0);
-    const discountAmount = (cartSubtotal * discountPercent) / 100;
+    const discountAmount = Math.min(cartSubtotal, Math.max(0, parseFloat(discountAmountInput) || 0));
     const taxableAmount = cartSubtotal - discountAmount;
     // Apply the cart-level discount proportionally before taxing each line.
     const discountFactor = cartSubtotal > 0 ? taxableAmount / cartSubtotal : 0;
@@ -179,7 +179,6 @@ export default function POS() {
                 product_name: item.name,
                 quantity: 1,
                 unit_price: item.price,
-                discount_percent: 0,
                 line_total: item.price,
                 vat_rate: Number(item.vat_rate) || 0,
                 vat_amount: item.price * ((Number(item.vat_rate) || 0) / 100)
@@ -213,6 +212,10 @@ export default function POS() {
                 const lines = [];
                 // Debit Cash/Bank for total received
                 lines.push({ account_code: gl.cash_bank,     account_name: "Cash / Bank",   debit: data.total_amount,                           credit: 0,                                          description: `POS ${data.transaction_number}` });
+                // Debit the fixed discount separately so revenue remains gross.
+                if ((data.discount_amount || 0) > 0) {
+                    lines.push({ account_code: gl.sales_discount, account_name: "Sales Discount", debit: data.discount_amount, credit: 0, description: `POS discount ${data.transaction_number}` });
+                }
                 // Credit Sales Revenue (net of VAT)
                 lines.push({ account_code: gl.sales_revenue, account_name: "Sales Revenue", debit: 0,                                           credit: data.subtotal - (data.discount_amount || 0), description: `POS ${data.transaction_number}` });
                 // Credit VAT Output
@@ -278,7 +281,7 @@ export default function POS() {
             setCustomerName("");
             setCustomerPhone("");
             setCashReceived("");
-            setDiscountPercent(0);
+            setDiscountAmountInput(0);
             queryClient.invalidateQueries({ queryKey: ['posTransactions'] });
             queryClient.invalidateQueries({ queryKey: ['stockLevels'] });
             toast({ title: "Sale Completed!", description: `Transaction ${tx.transaction_number} recorded.` });
@@ -532,17 +535,17 @@ export default function POS() {
                             <div className="px-3 py-2 border-t bg-gray-50 space-y-1.5">
                                 <div className="flex items-center gap-2">
                                     <Tag className="w-3.5 h-3.5 text-gray-400" />
-                                    <span className="text-xs text-gray-500">Discount %</span>
+                                    <span className="text-xs text-gray-500">Discount (LKR)</span>
                                     <Input
-                                        type="number" min="0" max="100"
-                                        value={discountPercent}
-                                        onChange={e => setDiscountPercent(parseFloat(e.target.value) || 0)}
+                                        type="number" min="0" step="0.01"
+                                        value={discountAmountInput}
+                                        onChange={e => setDiscountAmountInput(parseFloat(e.target.value) || 0)}
                                         className="h-7 text-sm ml-auto w-20 text-right"
                                     />
                                 </div>
                                 <div className="space-y-0.5 text-sm">
                                     <div className="flex justify-between text-gray-500"><span>Subtotal</span><span>LKR {cartSubtotal.toFixed(2)}</span></div>
-                                    {discountAmount > 0 && <div className="flex justify-between text-red-500"><span>Discount ({discountPercent}%)</span><span>−LKR {discountAmount.toFixed(2)}</span></div>}
+                                    {discountAmount > 0 && <div className="flex justify-between text-red-500"><span>Discount</span><span>−LKR {discountAmount.toFixed(2)}</span></div>}
                                     <div className="flex justify-between text-gray-500"><span>VAT</span><span>LKR {vatAmount.toFixed(2)}</span></div>
                                 </div>
                                 <div className="flex justify-between font-extrabold text-xl border-t pt-1.5 text-emerald-700">

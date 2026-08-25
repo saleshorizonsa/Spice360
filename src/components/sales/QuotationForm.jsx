@@ -17,6 +17,7 @@ import LineItemsTable from "../shared/LineItemsTable";
 import DocumentFlow from "../shared/DocumentFlow";
 import { useOrganization } from "../utils/OrganizationContext";
 import { sumLineVat } from "@/lib/vat";
+import { documentDiscount, normalizeSalesLine } from "@/lib/salesDiscount";
 
 export default function QuotationForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -55,6 +56,10 @@ export default function QuotationForm({ item, onClose }) {
         payment_terms: 'net_30',
         delivery_terms: '',
         status: 'draft',
+        subtotal: 0,
+        discount_amount: 0,
+        vat_amount: 0,
+        total_amount: 0,
         notes: ''
     });
 
@@ -129,7 +134,7 @@ export default function QuotationForm({ item, onClose }) {
             }
 
             // Create new line items
-            const linesWithOrgId = lineItems.map(line => ({
+            const linesWithOrgId = lineItems.map(normalizeSalesLine).map(line => ({
                 ...line,
                 organization_id: currentOrg?.id,
                 quotation_number: data.quotation_number
@@ -157,7 +162,7 @@ export default function QuotationForm({ item, onClose }) {
                         status:              'pending',
                         notes:               `Auto-created from Quotation ${data.quotation_number}`,
                     });
-                    const soLines = lineItems.map(line => ({
+                    const soLines = lineItems.map(normalizeSalesLine).map(line => ({
                         ...line,
                         organization_id: currentOrg?.id,
                         order_number:    soNumber,
@@ -200,11 +205,13 @@ export default function QuotationForm({ item, onClose }) {
         // Calculate totals from line items. VAT is per-line and only applies when
         // the customer AND the item are both VAT-activated.
         const subtotal = lineItems.reduce((sum, line) => sum + (line.line_total || 0), 0);
+        const discount = documentDiscount(subtotal, formData.discount_amount);
         const vatAmount = sumLineVat(selectedCustomer, lineItems);
-        const totalAmount = subtotal + vatAmount;
+        const totalAmount = subtotal - discount + vatAmount;
 
         saveMutation.mutate({
             ...formData,
+            discount_amount: discount,
             subtotal,
             vat_amount: vatAmount,
             total_amount: totalAmount
@@ -225,8 +232,9 @@ export default function QuotationForm({ item, onClose }) {
     // the item on that line are both VAT-activated.
     const selectedCustomer = customers.find(c => c.customer_code === formData.customer_code);
     const subtotal = lineItems.reduce((sum, line) => sum + (line.line_total || 0), 0);
+    const discount = documentDiscount(subtotal, formData.discount_amount);
     const vatAmount = sumLineVat(selectedCustomer, lineItems);
-    const totalAmount = subtotal + vatAmount;
+    const totalAmount = subtotal - discount + vatAmount;
 
     return (
         <Dialog open={true} onOpenChange={guardedOpenChange(onClose)}>
@@ -336,6 +344,18 @@ export default function QuotationForm({ item, onClose }) {
                             <span>Subtotal:</span>
                             <span className="font-semibold">LKR {subtotal.toFixed(2)}</span>
                         </div>
+                        <div className="flex justify-between items-center">
+                            <Label>Document Discount (LKR)</Label>
+                            <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={formData.discount_amount}
+                                onChange={(e) => handleChange('discount_amount', parseFloat(e.target.value) || 0)}
+                                className="w-32 text-right"
+                            />
+                        </div>
+                        {discount > 0 && <div className="flex justify-between text-red-600"><span>Discount</span><span>−LKR {discount.toFixed(2)}</span></div>}
                         <div className="flex justify-between">
                             <span>{vatAmount > 0 ? 'VAT' : 'VAT (not applicable)'}:</span>
                             <span className="font-semibold">LKR {vatAmount.toFixed(2)}</span>

@@ -81,7 +81,7 @@ const seededAccounts = [
   ["5500", "Depreciation Expense",                        "", "expense", "depreciation",        "5000", false, "debit"],
   ["5600", "VAT Expense (irrecoverable)",                 "", "expense", "vat",                 "5000", false, "debit"],
   ["5700", "Administrative Expenses",                     "", "expense", "operating_expense",   "5000", false, "debit"],
-  ["5800", "Selling & Export Costs",                      "", "expense", "operating_expense",   "5000", false, "debit"],
+  ["5800", "Sales Discounts",                             "", "expense", "operating_expense",   "5000", false, "debit"],
   ["5900", "Gross Payment / WHT Expense",                 "", "expense", "other_expense",       "5000", false, "debit"],
 ];
 

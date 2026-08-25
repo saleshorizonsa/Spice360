@@ -21,6 +21,7 @@ import { reserveStock } from "../utils/inventoryIntegration";
 import { createNotification } from "../utils/notificationService";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { sumLineVat } from "@/lib/vat";
+import { documentDiscount, normalizeSalesLine } from "@/lib/salesDiscount";
 
 export default function SalesOrderForm({ order, onClose }) {
     const queryClient = useQueryClient();
@@ -84,6 +85,7 @@ export default function SalesOrderForm({ order, onClose }) {
         delivery_date: '',
         status: 'pending',
         subtotal: 0,
+        discount_amount: 0,
         vat_amount: 0,
         total_amount: 0,
         payment_terms: 'net_30',
@@ -97,14 +99,15 @@ export default function SalesOrderForm({ order, onClose }) {
         // until VAT is explicitly switched on.
         const customer = customers.find(c => c.customer_code === formData.customer_code);
         const newSubtotal = lineItems.reduce((sum, lineItem) => sum + (lineItem.line_total || 0), 0);
+        const discount = documentDiscount(newSubtotal, formData.discount_amount);
         const newVat = sumLineVat(customer, lineItems);
         setFormData(prev => ({
             ...prev,
             subtotal: newSubtotal,
             vat_amount: newVat,
-            total_amount: newSubtotal + newVat,
+            total_amount: newSubtotal - discount + newVat,
         }));
-    }, [lineItems, customers, formData.customer_code]);
+    }, [lineItems, customers, formData.customer_code, formData.discount_amount]);
 
     useEffect(() => {
         if (order) {
@@ -318,7 +321,7 @@ export default function SalesOrderForm({ order, onClose }) {
             }
 
             // Create new line items
-            const linesWithOrgId = lineItems.map(line => ({
+            const linesWithOrgId = lineItems.map(normalizeSalesLine).map(line => ({
                 ...line,
                 organization_id: currentOrg?.id,
                 order_number: data.order_number,
@@ -383,7 +386,10 @@ export default function SalesOrderForm({ order, onClose }) {
             return;
         }
 
-        saveMutation.mutate(formData);
+        saveMutation.mutate({
+            ...formData,
+            discount_amount: documentDiscount(formData.subtotal, formData.discount_amount),
+        });
     };
 
     const handleChange = (field, value) => {
@@ -575,9 +581,22 @@ export default function SalesOrderForm({ order, onClose }) {
                             itemType="sales_item"
                         />
                         <div className="bg-gray-50 p-4 rounded-lg flex justify-between items-center">
-                            <Label className="text-lg">Total Amount</Label>
-                            <div className="text-3xl font-bold text-emerald-600">
-                                LKR {formData.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            <div>
+                                <Label className="text-lg">Document Discount (LKR)</Label>
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={formData.discount_amount}
+                                    onChange={(e) => handleChange('discount_amount', parseFloat(e.target.value) || 0)}
+                                    className="mt-1 w-40 bg-white"
+                                />
+                            </div>
+                            <div className="text-right">
+                                <Label className="text-lg">Total Amount</Label>
+                                <div className="text-3xl font-bold text-emerald-600">
+                                    LKR {formData.total_amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                </div>
                             </div>
                         </div>
                     </div>
