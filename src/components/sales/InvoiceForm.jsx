@@ -130,8 +130,7 @@ export default function InvoiceForm({ item, onClose }) {
                 quantity: parseFloat(item.quantity) || 0,
                 unit_price: parseFloat(item.unit_price) || 0,
                 tax_percent: parseFloat(item.tax_percent) || 0,
-                                discount_amount: parseFloat(item.discount_amount) || 0,
-                                setLines(storedLines.map(l => normalizeSalesLine({
+                discount_amount: parseFloat(item.discount_amount) || 0,
                 amount_paid: parseFloat(item.amount_paid) || 0,
             }));
             // Parse stored delivery references
@@ -146,13 +145,14 @@ export default function InvoiceForm({ item, onClose }) {
             let storedLines = item.invoice_lines;
             if (typeof storedLines === 'string') { try { storedLines = JSON.parse(storedLines); } catch { storedLines = null; } }
             if (Array.isArray(storedLines) && storedLines.length) {
-                setLines(storedLines.map(l => ({
+                setLines(storedLines.map(l => normalizeSalesLine({
                     product_code: l.product_code,
                     product_name: l.product_name,
                     unit_of_measure: l.unit_of_measure || '',
                     unit_price: parseFloat(l.unit_price) || 0,
                     delivered_quantity: parseFloat(l.delivered_quantity ?? l.quantity) || 0,
                     quantity: parseFloat(l.quantity) || 0,
+                    discount_amount: parseFloat(l.discount_amount) || 0,
                     line_total: parseFloat(l.line_total) || 0,
                 })));
             }
@@ -173,14 +173,12 @@ export default function InvoiceForm({ item, onClose }) {
     useEffect(() => {
         const hasLines = lines.length > 0;
         const t = hasLines
-            ? invoiceTotals(lines, formData.tax_percent)
             ? invoiceTotals(lines, formData.tax_percent, formData.discount_amount)
             : (() => {
                 const subtotal = (formData.quantity || 0) * (formData.unit_price || 0);
                 const discountAmount = Math.min(subtotal, Math.max(0, parseFloat(formData.discount_amount) || 0));
                 const taxAmount = (subtotal - discountAmount) * ((formData.tax_percent || 0) / 100);
                 return { subtotal, discountAmount, taxAmount, total: subtotal - discountAmount + taxAmount, totalQuantity: formData.quantity || 0 };
-                return { subtotal, taxAmount, total: subtotal + taxAmount, totalQuantity: formData.quantity || 0 };
             })();
 
         const billedQty = hasLines ? t.totalQuantity : (formData.quantity || 0);
@@ -198,7 +196,7 @@ export default function InvoiceForm({ item, onClose }) {
         setFormData(prev => ({
             ...prev,
             subtotal: t.subtotal,
-                        discount_total: t.discountAmount,
+            discount_total: t.discountAmount,
             tax_amount: t.taxAmount,
             total_amount: t.total,
             quantity: hasLines ? billedQty : prev.quantity,
@@ -364,7 +362,9 @@ export default function InvoiceForm({ item, onClose }) {
                         lines: [
                             { account_code: gl.ar_receivables, account_name: 'Trade Receivables', debit: savedInvoice.total_amount, credit: 0 },
                             { account_code: gl.sales_discount, account_name: 'Sales Discount',    debit: savedInvoice.discount_total || savedInvoice.discount_amount || 0, credit: 0 },
-                            { account_code: gl.sales_revenue,  account_name: 'Sales Revenue',     debit: 0, credit: Math.max(0, savedInvoice.subtotal - (savedInvoice.discount_total || savedInvoice.discount_amount || 0)) },
+                            // Revenue is credited GROSS — the discount above is its own debit,
+                            // so netting it here too would double-count it and unbalance the entry.
+                            { account_code: gl.sales_revenue,  account_name: 'Sales Revenue',     debit: 0, credit: Number(savedInvoice.subtotal) || 0 },
                             { account_code: gl.vat_output,     account_name: 'VAT Payable',       debit: 0, credit: savedInvoice.tax_amount || savedInvoice.vat_amount || 0 }
                         ].filter(line => Number(line.debit || line.credit || 0) > 0),
                         referenceType: 'sales_invoice',
@@ -611,7 +611,7 @@ tbody td{padding:10px 14px;border-bottom:1px solid #e2e8f0}
   <table class="tot">
     <tr><td>Subtotal / قبل الضريبة</td><td>LKR ${fmt(formData.subtotal)}</td></tr>
     <tr><td>VAT (${formData.tax_percent}%)</td><td>LKR ${fmt(formData.tax_amount)}</td></tr>
-    ${Number(formData.discount_amount) > 0 ? `<tr><td>Discount / خصم</td><td>− LKR ${fmt(formData.discount_amount)}</td></tr>` : ''}
+    ${Number(formData.discount_total) > 0 ? `<tr><td>Discount / خصم</td><td>− LKR ${fmt(formData.discount_total)}</td></tr>` : ''}
     <tr class="tot-grand"><td>Total / الإجمالي</td><td>LKR ${fmt(formData.total_amount)}</td></tr>
     ${Number(formData.amount_paid) > 0 ? `<tr><td>Paid / مدفوع</td><td>LKR ${fmt(formData.amount_paid)}</td></tr><tr><td>Balance Due / الرصيد المستحق</td><td>LKR ${fmt(Number(formData.total_amount) - Number(formData.amount_paid))}</td></tr>` : ''}
   </table>
@@ -1056,9 +1056,9 @@ setTimeout(function(){window.print();},2000);}
                                         <span className="text-gray-600">Subtotal:</span>
                                         <span className="font-semibold">LKR {Number(formData.subtotal || 0).toFixed(2)}</span>
                                     </div>
-                                    {Number(formData.discount_amount || 0) > 0 && <div className="flex justify-between text-sm text-red-600">
+                                    {Number(formData.discount_total || 0) > 0 && <div className="flex justify-between text-sm text-red-600">
                                         <span>Discount:</span>
-                                        <span>−LKR {Number(formData.discount_amount).toFixed(2)}</span>
+                                        <span>−LKR {Number(formData.discount_total).toFixed(2)}</span>
                                     </div>}
                                     <div className="flex justify-between text-sm">
                                         <span className="text-gray-600">VAT ({formData.tax_percent}%):</span>

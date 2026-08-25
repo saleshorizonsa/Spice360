@@ -28,10 +28,17 @@ test('invoice totals and GL separate discount from net revenue', () => {
   const lines = buildSalesInvoiceGlLines({ total_amount: 187, subtotal: 200, discount_amount: 30, tax_amount: 17 }, {
     ar_receivables: '1100', sales_revenue: '4001', vat_output: '2200'
   });
+  // Revenue is credited GROSS. Crediting it net of the discount while also
+  // debiting 5800 counts the discount twice, and postJournalEntry rejects the
+  // entry as unbalanced — so no discounted invoice could reach the GL at all.
   assert.deepEqual(lines.map(({ account_code, debit, credit }) => ({ account_code, debit, credit })), [
     { account_code: '1100', debit: 187, credit: 0 },
     { account_code: '5800', debit: 30, credit: 0 },
-    { account_code: '4001', debit: 0, credit: 170 },
+    { account_code: '4001', debit: 0, credit: 200 },
     { account_code: '2200', debit: 0, credit: 17 }
   ]);
+
+  const debit = lines.reduce((sum, l) => sum + Number(l.debit || 0), 0);
+  const credit = lines.reduce((sum, l) => sum + Number(l.credit || 0), 0);
+  assert.equal(debit, credit, 'the entry must balance');
 });

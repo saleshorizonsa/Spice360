@@ -16,6 +16,7 @@ import JournalEntriesPanel from "../shared/JournalEntriesPanel";
 import { postJournalEntry } from "../utils/journalService";
 import { useOrganization } from "../utils/OrganizationContext";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
+import { documentDiscount } from "@/lib/salesDiscount";
 
 export default function SalesReturnForm({ item, onClose }) {
     const queryClient = useQueryClient();
@@ -45,6 +46,7 @@ export default function SalesReturnForm({ item, onClose }) {
         quantity_returned: 0,
         unit_price: 0,
         subtotal: 0,
+        discount_amount: 0,
         vat_percent: 0,
         vat_amount: 0,
         total_return_amount: 0,
@@ -68,15 +70,19 @@ export default function SalesReturnForm({ item, onClose }) {
 
     useEffect(() => {
         const subtotal = (formData.quantity_returned || 0) * (formData.unit_price || 0);
-        const vatAmount = subtotal * ((formData.vat_percent || 0) / 100);
-        const total = subtotal + vatAmount;
+        // Mirror the invoice: VAT was charged on the discounted amount, so the credit
+        // note has to reverse it the same way or the customer is over-credited.
+        const discount = documentDiscount(subtotal, formData.discount_amount);
+        const vatAmount = (subtotal - discount) * ((formData.vat_percent || 0) / 100);
+        const total = subtotal - discount + vatAmount;
         setFormData(prev => ({ 
             ...prev, 
             subtotal, 
+            discount_amount: discount,
             vat_amount: vatAmount,
             total_return_amount: total 
         }));
-    }, [formData.quantity_returned, formData.unit_price, formData.vat_percent]);
+    }, [formData.quantity_returned, formData.unit_price, formData.discount_amount, formData.vat_percent]);
 
     const handleInvoiceSelect = (invoiceNumber) => {
         const selectedInvoice = invoices.find(i => i.invoice_number === invoiceNumber);
@@ -94,6 +100,8 @@ export default function SalesReturnForm({ item, onClose }) {
                 // Mirror the original invoice's VAT. Invoices store it as tax_percent;
                 // if the invoice carried no VAT, the return carries none either.
                 vat_percent: Number(selectedInvoice.tax_percent ?? selectedInvoice.vat_percent) || 0,
+                // Prefilled for a full return; trim it if only part of the invoice comes back.
+                discount_amount: Number(selectedInvoice.discount_total ?? selectedInvoice.discount_amount) || 0,
                 notes: `Return for Invoice: ${invoiceNumber}`
             }));
         }
@@ -112,8 +120,11 @@ export default function SalesReturnForm({ item, onClose }) {
                 try {
                     await postJournalEntry({
                         lines: [
+                            // The exact mirror of the sales invoice: revenue reversed gross,
+                            // the discount credited back out of 5800 so it does not strand there.
                             { account_code: gl.sales_revenue,  account_name: 'Sales Revenue',    debit: savedReturn.subtotal,         credit: 0 },
                             { account_code: gl.vat_output,     account_name: 'VAT Payable',      debit: savedReturn.vat_amount || 0,  credit: 0 },
+                            { account_code: gl.sales_discount, account_name: 'Sales Discount',   debit: 0, credit: savedReturn.discount_amount || 0 },
                             { account_code: gl.ar_receivables, account_name: 'Trade Receivables', debit: 0, credit: savedReturn.total_return_amount }
                         ].filter(line => Number(line.debit || line.credit || 0) > 0),
                         referenceType: 'sales_return',
@@ -376,6 +387,17 @@ export default function SalesReturnForm({ item, onClose }) {
                             <div className="flex justify-between">
                                 <span className="text-gray-600">Subtotal:</span>
                                 <span className="font-semibold">LKR {formData.subtotal.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <Label className="text-gray-600">Discount (LKR):</Label>
+                                <Input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={formData.discount_amount}
+                                    onChange={(e) => handleChange('discount_amount', parseFloat(e.target.value) || 0)}
+                                    className="w-32 text-right bg-white"
+                                />
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-gray-600">VAT ({formData.vat_percent}%):</span>

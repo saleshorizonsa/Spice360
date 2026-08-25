@@ -7,7 +7,7 @@ import { matrixSales } from "@/api/matrixSalesClient";
 export const GL_ACCOUNT_FALLBACK = {
   ar_receivables:     "1100",
   sales_revenue:      "4001",
-    sales_discount:     "5800",
+  sales_discount:     "5800",
   vat_output:         "2200",
   cogs_general:       "5001",
   vat_input:          "2210",

@@ -74,11 +74,15 @@ export const findUnreflectedInvoices = (invoices = [], arRecords = [], journalEn
     .filter(Boolean)
     .filter((r) => r.needsAr || r.needsArGl || r.needsCogs);
 
-/** Dr Receivables / Cr Revenue / Cr VAT — identical to InvoiceForm's entry. */
+/**
+ * Dr Receivables / Dr Sales Discount / Cr Revenue / Cr VAT — identical to InvoiceForm's entry.
+ * Revenue is credited GROSS: the discount is its own debit, so netting it out of
+ * revenue as well would count it twice and the entry would not balance.
+ */
 export const buildSalesInvoiceGlLines = (invoice = {}, gl = {}) => [
   { account_code: gl.ar_receivables, account_name: 'Trade Receivables', debit: num(invoice.total_amount), credit: 0 },
   { account_code: gl.sales_discount || '5800', account_name: 'Sales Discount', debit: num(invoice.discount_total || invoice.discount_amount), credit: 0 },
-  { account_code: gl.sales_revenue,  account_name: 'Sales Revenue',     debit: 0, credit: Math.max(0, num(invoice.subtotal) - num(invoice.discount_total || invoice.discount_amount)) },
+  { account_code: gl.sales_revenue,  account_name: 'Sales Revenue',     debit: 0, credit: num(invoice.subtotal) },
   { account_code: gl.vat_output,     account_name: 'VAT Payable',       debit: 0, credit: num(invoice.tax_amount || invoice.vat_amount || 0) },
 ].filter((l) => Number(l.debit || l.credit || 0) > 0);
 

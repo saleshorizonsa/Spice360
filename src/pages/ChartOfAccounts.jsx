@@ -112,12 +112,27 @@ export async function seedChartOfAccounts(orgId) {
     )
   );
 
-  return { inserted: toInsert.length, skipped: existingCodes.size };
+  // 5800 was seeded as "Selling & Export Costs" before it became the Sales
+  // Discount account the sales module posts to, and the insert above skips codes
+  // that already exist — so an org seeded earlier would show sales discounts
+  // under the old name. Rename that exact legacy name only, never a custom one.
+  const legacy5800 = (existing || []).find(
+    (a) => a.account_code === "5800" && a.account_name === "Selling & Export Costs"
+  );
+  if (legacy5800) {
+    await matrixSales.entities.ChartOfAccounts.update(legacy5800.id, {
+      ...legacy5800,
+      account_name: "Sales Discounts",
+    });
+  }
+
+  return { inserted: toInsert.length, skipped: existingCodes.size, renamed: legacy5800 ? 1 : 0 };
 }
 
 const GL_MAPPING_DEFAULTS = {
   ar_receivables:     "1100",
   sales_revenue:      "4001",
+  sales_discount:     "5800",
   vat_output:         "2200",
   cogs_general:       "5001",
   vat_input:          "2210",
@@ -306,11 +321,11 @@ export default function ChartOfAccounts() {
 
   const seedMutation = useMutation({
     mutationFn: () => seedChartOfAccounts(orgId),
-    onSuccess: ({ inserted, skipped }) => {
+    onSuccess: ({ inserted, skipped, renamed }) => {
       queryClient.invalidateQueries({ queryKey: ["accounts", orgId] });
       toast({
         title: "Chart of accounts seeded",
-        description: `${inserted} account${inserted !== 1 ? "s" : ""} inserted, ${skipped} already existed.`,
+        description: `${inserted} account${inserted !== 1 ? "s" : ""} inserted, ${skipped} already existed${renamed ? ", 5800 renamed to Sales Discounts" : ""}.`,
       });
     },
     onError: (error) => {

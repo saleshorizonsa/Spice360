@@ -1,3 +1,5 @@
+import { lineDiscount } from './salesDiscount.js';
+
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export const serviceBillingCycles = {
@@ -49,14 +51,20 @@ export const getServiceContractLines = (contract = {}) => {
       unit_price: Number(contract.monthly_amount || contract.contract_amount || 0),
       // VAT is opt-in — never assume the standard rate.
       vat_rate: Number(contract.vat_rate) || 0,
-      discount_percent: 0
+      discount_amount: 0
     }];
 
   return lines.map((line, index) => {
     const quantity = Number(line.quantity || 1);
     const unitPrice = Number(line.unit_price || 0);
-    const discountPercent = Number(line.discount_percent || 0);
-    const taxableAmount = quantity * unitPrice * (1 - discountPercent / 100);
+    // Discounts are fixed amounts across the sales module; a legacy percent on an
+    // old contract line is still honoured until that line is re-saved as an amount.
+    const { discountAmount, lineTotal: taxableAmount } = lineDiscount({
+      quantity,
+      unit_price: unitPrice,
+      discount_percent: line.discount_percent,
+      discount_amount: line.discount_amount,
+    });
     const vatRate = Number(line.vat_rate ?? contract.vat_rate) || 0;
     const vatAmount = taxableAmount * (vatRate / 100);
     return {
@@ -67,7 +75,8 @@ export const getServiceContractLines = (contract = {}) => {
       unit: line.unit || line.unit_of_measure || "month",
       unit_of_measure: line.unit || line.unit_of_measure || "month",
       unit_price: unitPrice,
-      discount_percent: discountPercent,
+      discount_percent: 0,
+      discount_amount: discountAmount,
       taxable_amount: taxableAmount,
       vat_rate: vatRate,
       vat_amount: vatAmount,

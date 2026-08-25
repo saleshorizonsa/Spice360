@@ -216,8 +216,9 @@ export default function POS() {
                 if ((data.discount_amount || 0) > 0) {
                     lines.push({ account_code: gl.sales_discount, account_name: "Sales Discount", debit: data.discount_amount, credit: 0, description: `POS discount ${data.transaction_number}` });
                 }
-                // Credit Sales Revenue (net of VAT)
-                lines.push({ account_code: gl.sales_revenue, account_name: "Sales Revenue", debit: 0,                                           credit: data.subtotal - (data.discount_amount || 0), description: `POS ${data.transaction_number}` });
+                // Credit Sales Revenue gross (net of VAT only). The discount is debited
+                // above, so netting it here as well would double-count it and unbalance.
+                lines.push({ account_code: gl.sales_revenue, account_name: "Sales Revenue", debit: 0,                                           credit: data.subtotal, description: `POS ${data.transaction_number}` });
                 // Credit VAT Output
                 if ((data.vat_amount || 0) > 0) {
                     lines.push({ account_code: gl.vat_output, account_name: "VAT Output",   debit: 0,                                           credit: data.vat_amount, description: `POS VAT ${data.transaction_number}` });

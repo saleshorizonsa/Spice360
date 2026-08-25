@@ -40,6 +40,7 @@ const ROLE_RULES = {
   sales_revenue:      { types: ['revenue'],                    keywords: ['sales revenue', 'revenue from', 'sales', 'revenue', 'turnover'] },
   gain_on_disposal:   { types: ['revenue', 'other_income'],    keywords: ['gain on disposal', 'gain on sale', 'profit on disposal'] },
 
+  sales_discount:     { types: ['expense', 'cost_of_sales'],   keywords: ['sales discount', 'discounts allowed', 'discount allowed', 'trade discount'] },
   cogs_general:       { types: ['cost_of_sales', 'expense'],   keywords: ['cost of goods sold', 'cost of sales', 'cogs'] },
   salaries_expense:   { types: ['expense'],                    keywords: ['salaries expense', 'salaries and wages', 'salaries', 'wages', 'payroll expense'] },
   epf_employer_exp:   { types: ['expense'],                    keywords: ['epf employer', 'epf expense', 'epf contribution', 'epf'] },

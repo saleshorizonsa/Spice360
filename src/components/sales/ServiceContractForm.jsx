@@ -28,7 +28,7 @@ export default function ServiceContractForm({ item, onClose }) {
     unit: "month",
     unit_price: 0,
     vat_rate: 0,
-    discount_percent: 0
+    discount_amount: 0
   };
   const [formData, setFormData] = useState(item || {
     contract_number: "",

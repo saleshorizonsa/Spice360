@@ -171,7 +171,7 @@ export default function SalesOrderForm({ order, onClose }) {
                     discount_percent: line.discount_percent || 0,
                     discount_amount: line.discount_amount || 0,
                     line_total: line.line_total
-                }));
+                })).map(normalizeSalesLine);
                 setLineItems(mappedLines);
             };
             loadQuotationLines();
@@ -213,18 +213,11 @@ export default function SalesOrderForm({ order, onClose }) {
         const updated = lineItems.map(line => {
             const cp = priceMap[line.product_code];
             if (!cp) return line;
-            const qty = parseFloat(line.quantity) || 0;
             const price = parseFloat(cp.price_per_unit) || 0;
-            const discountPct = parseFloat(line.discount_percent) || 0;
-            const subtotal = qty * price;
-            const discountAmt = subtotal * (discountPct / 100);
-            return {
-                ...line,
-                unit_price: price,
-                discount_amount: discountAmt,
-                line_total: subtotal - discountAmt,
-                _contract_price: true
-            };
+            // Only the unit price changes — the fixed discount the user entered is
+            // preserved. Recomputing it from discount_percent used to zero it out,
+            // because discounts are fixed amounts now and the percent is always 0.
+            return { ...normalizeSalesLine({ ...line, unit_price: price }), _contract_price: true };
         });
 
         setLineItems(updated);

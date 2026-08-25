@@ -34,6 +34,7 @@ const ACCOUNT_FIELD_LABELS = [
   { key: "accrued_mfg_costs",  label: "Accrued Manufacturing Costs",  category: "Liabilities" },
   { key: "sales_revenue",      label: "Sales Revenue",                category: "Revenue" },
   { key: "gain_on_disposal",   label: "Gain on Asset Disposal",       category: "Revenue" },
+  { key: "sales_discount",     label: "Sales Discount",               category: "Expenses" },
   { key: "cogs_general",       label: "Cost of Goods Sold",           category: "Expenses" },
   { key: "salaries_expense",   label: "Salaries Expense",             category: "Expenses" },
   { key: "epf_employer_exp",   label: "EPF Employer Expense",         category: "Expenses" },
