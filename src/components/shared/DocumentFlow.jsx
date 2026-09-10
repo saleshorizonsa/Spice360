@@ -76,8 +76,13 @@ const money = (v) =>
 export default function DocumentFlow({ seedType, seedNumber, highlightNumber }) {
   const results = Object.entries(ENTITY_QUERY).map(([type, queryFn]) => {
     // One hook per entity — order is stable, so this is a valid fixed-length list.
+    //
+    // Do NOT pass initialData here. React Query stamps initialData as fresh as of
+    // now, so together with a staleTime it satisfies the mount refetch and the
+    // queryFn never runs: every dataset stayed empty, the trace found nothing but
+    // the seed, and the panel always read "No linked documents yet".
     // eslint-disable-next-line react-hooks/rules-of-hooks
-    const q = useQuery({ queryKey: ["docflow", type], queryFn, initialData: [], staleTime: 60_000 });
+    const q = useQuery({ queryKey: ["docflow", type], queryFn, staleTime: 60_000 });
     return [type, q];
   });
 
@@ -89,6 +94,9 @@ export default function DocumentFlow({ seedType, seedNumber, highlightNumber }) 
   }, [results.map(([, q]) => q.dataUpdatedAt).join(",")]);
 
   const isLoading = results.some(([, q]) => q.isLoading);
+  // A failed dataset silently drops part of the chain, which is indistinguishable
+  // from "nothing is linked yet" — so say which one could not be read.
+  const failed = results.filter(([, q]) => q.isError).map(([type]) => DOC_META[type]?.short || type);
 
   const { nodes } = useMemo(
     () => traceDocumentFlow({ seedType, seedNumber, datasets }),
@@ -101,11 +109,20 @@ export default function DocumentFlow({ seedType, seedNumber, highlightNumber }) 
   if (isLoading) {
     return <p className="py-6 text-center text-sm text-gray-500">Tracing document flow…</p>;
   }
+  const warning = failed.length ? (
+    <p className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+      Could not load {failed.join(", ")} — the chain shown may be incomplete.
+    </p>
+  ) : null;
+
   if (nodes.length <= 1) {
     return (
-      <p className="py-6 text-center text-sm text-gray-500">
-        No linked documents yet. Related documents appear here as the chain progresses.
-      </p>
+      <div className="py-2">
+        {warning}
+        <p className="py-6 text-center text-sm text-gray-500">
+          No linked documents yet. Related documents appear here as the chain progresses.
+        </p>
+      </div>
     );
   }
 
@@ -113,6 +130,7 @@ export default function DocumentFlow({ seedType, seedNumber, highlightNumber }) 
 
   return (
     <div className="space-y-1 py-2">
+      {warning}
       <p className="mb-3 text-xs text-gray-500">
         The full transaction chain this document belongs to — what it came from, and what followed.
       </p>
