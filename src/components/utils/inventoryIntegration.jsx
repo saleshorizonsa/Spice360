@@ -305,6 +305,76 @@ export async function reverseGoodsIssue(delivery, user = null, reversalDate = nu
 /**
  * Reserve stock for Sales Order
  */
+/**
+ * Put a customer return back into stock.
+ *
+ * Mirror of processGoodsIssue: creates a sales_return movement and increases the
+ * stock level by the returned quantity, at the CURRENT stock unit cost (so the
+ * weighted average is left where it is — a return is not a new purchase at a new
+ * price).
+ *
+ * Returns the value added, because the caller has to debit Inventory in the GL by
+ * exactly what the warehouse gained. Letting those two numbers come from different
+ * places is how the ledger and the warehouse drift apart.
+ *
+ * Returns null when there is nothing to move (no product, or nothing returned).
+ */
+export async function processSalesReturnReceipt(salesReturn, user = null) {
+    const quantity = parseFloat(salesReturn?.quantity_returned) || 0;
+    if (!salesReturn?.product_code || quantity <= 0) return null;
+
+    const stockLevels = await matrixSales.entities.StockLevel.filter({
+        material_code: salesReturn.product_code
+    });
+    const existing = stockLevels?.[0] || null;
+    const unitCost = parseFloat(existing?.unit_cost) || 0;
+    // Back into the warehouse it is costed in, so the value lands where it left.
+    const warehouse = existing?.warehouse_code || salesReturn.warehouse_code || 'MAIN';
+    const unitOfMeasure = salesReturn.unit_of_measure || existing?.unit_of_measure || '';
+    const value = unitCost * quantity;
+
+    const movement = await matrixSales.entities.StockMovement.create({
+        movement_number: `SR-${salesReturn.return_number}`,
+        movement_date: salesReturn.return_date,
+        movement_type: 'sales_return',
+        material_code: salesReturn.product_code,
+        material_name: salesReturn.product_name,
+        quantity,
+        unit_of_measure: unitOfMeasure,
+        to_warehouse: warehouse,
+        reference_document: salesReturn.invoice_number || salesReturn.return_number,
+        reason: `Customer return ${salesReturn.return_number}`,
+        cost_per_unit: unitCost,
+        total_value: value,
+        performed_by: user?.email || salesReturn.created_by,
+        status: 'posted'
+    });
+
+    await updateStockLevel({
+        materialCode: salesReturn.product_code,
+        materialName: salesReturn.product_name,
+        warehouse,
+        unitOfMeasure,
+        quantity,
+        unitCost,
+        operation: 'increase'
+    });
+
+    await logAuditTrail({
+        entityType: 'stock_movement',
+        entityId: movement.id,
+        documentNumber: movement.movement_number,
+        actionType: 'create',
+        afterData: movement,
+        user,
+        severity: 'info',
+        relatedDocumentType: 'sales_return',
+        relatedDocumentId: salesReturn.return_number
+    });
+
+    return { movement, unitCost, quantity, value, warehouse };
+}
+
 export async function reserveStock(salesOrder, lineItems, user = null) {
     try {
         for (const line of lineItems) {
