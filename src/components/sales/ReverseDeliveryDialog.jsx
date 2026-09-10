@@ -12,6 +12,7 @@ import { reverseGoodsIssue } from "../utils/inventoryIntegration";
 import { reverseJournalEntriesForDocument, assertPeriodAllowed } from "../utils/journalService";
 import { logAuditTrail } from "../utils/auditTrail";
 import { findBlockingInvoices } from "@/lib/deliveryReversal";
+import { isReturnDelivery } from "@/lib/salesReturnDocs";
 
 /**
  * Reverse a delivery note after PGI: put the stock back, post the mirror COGS
@@ -40,7 +41,11 @@ export default function ReverseDeliveryDialog({ delivery, onClose }) {
 
     const alreadyReversed = String(delivery?.status || "").toLowerCase() === "reversed";
     const notPosted = !delivery?.pgi_done;
-    const blocked = blockingInvoices.length > 0 || alreadyReversed || notPosted;
+    // A return delivery is the credit note's own document. Its stock movement was
+    // made by the credit note, so "reversing" it here would put the same goods back
+    // a second time — reverse the credit note instead.
+    const isReturn = isReturnDelivery(delivery);
+    const blocked = blockingInvoices.length > 0 || alreadyReversed || notPosted || isReturn;
 
     const reverseMutation = useMutation({
         mutationFn: async () => {
@@ -119,7 +124,19 @@ export default function ReverseDeliveryDialog({ delivery, onClose }) {
                     </DialogTitle>
                 </DialogHeader>
 
-                {notPosted && (
+                {isReturn && (
+                    <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                        <div className="mb-1 flex items-center gap-2 font-semibold">
+                            <AlertTriangle className="h-4 w-4 shrink-0" /> This is a return delivery
+                        </div>
+                        It was raised by credit note{" "}
+                        <strong>{delivery?.sales_return_number || "—"}</strong>, which already returned the
+                        stock and reversed the cost. Reversing it here would return the same goods twice —
+                        edit the credit note instead.
+                    </div>
+                )}
+
+                {!isReturn && notPosted && (
                     <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
                         This delivery has not been posted (PGI) yet — there is nothing to reverse. Use Delete instead.
                     </div>

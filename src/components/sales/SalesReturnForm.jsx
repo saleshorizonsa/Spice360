@@ -19,6 +19,8 @@ import { useGLAccounts } from "@/hooks/useGLAccounts";
 import { documentDiscount } from "@/lib/salesDiscount";
 import { isFinalisedInvoice } from "@/lib/arFromInvoice";
 import { processSalesReturnReceipt } from "../utils/inventoryIntegration";
+import { getNextDocumentNumber } from "../utils/documentNumberGenerator";
+import { buildReturnDelivery, salesOrderAfterReturn } from "@/lib/salesReturnDocs";
 
 /**
  * Sales Return / Credit Note.
@@ -240,6 +242,50 @@ export default function SalesReturnForm({ item, onClose, seedInvoiceNumber }) {
                     queryClient.invalidateQueries({ queryKey: ['accountsReceivable'] });
                 } catch (_) {
                     // Non-fatal
+                }
+            }
+
+            // ── Documents ────────────────────────────────────────────────────────
+            // Reversing the money and the stock still leaves the shipping documents
+            // saying the goods are with the customer: the sales order reads fully
+            // delivered, so nothing can be re-shipped against it, and nothing records
+            // the goods coming back. Raise the return delivery and give the quantity
+            // back to the order. Not gated on inspection — the goods returned either
+            // way; whether they are resellable only decides if they re-enter stock.
+            if (savedReturn?.status === 'approved' && !savedReturn.documents_reversed) {
+                try {
+                    const deliveryNumber = await getNextDocumentNumber('delivery');
+                    await matrixSales.entities.Delivery.create(
+                        buildReturnDelivery({
+                            salesReturn: savedReturn,
+                            deliveryNumber,
+                            orgId: currentOrg?.id,
+                        })
+                    );
+
+                    if (savedReturn.sales_order_number) {
+                        const sos = await matrixSales.entities.SalesOrder.filter({
+                            order_number: savedReturn.sales_order_number
+                        });
+                        if (sos?.length) {
+                            const so = sos[0];
+                            await matrixSales.entities.SalesOrder.update(so.id, {
+                                ...so,
+                                ...salesOrderAfterReturn(so, savedReturn.quantity_returned),
+                            });
+                        }
+                    }
+
+                    patch.documents_reversed = true;
+                    patch.return_delivery_number = deliveryNumber;
+                    queryClient.invalidateQueries({ queryKey: ['deliveries'] });
+                    queryClient.invalidateQueries({ queryKey: ['sales'] });
+                } catch (docErr) {
+                    toast({
+                        title: "Credit note posted — documents not reversed",
+                        description: `${docErr.message}. The sales order still reads as delivered.`,
+                        variant: "destructive",
+                    });
                 }
             }
 

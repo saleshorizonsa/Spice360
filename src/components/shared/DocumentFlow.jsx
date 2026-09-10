@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { traceDocumentFlow, DOC_META } from "@/lib/documentFlow";
 import {
   FileText, ShoppingCart, PackageCheck, Receipt, Truck, ClipboardList,
-  Factory, Banknote, BookOpen, CircleDollarSign, ArrowDown, HelpCircle,
+  Factory, Banknote, BookOpen, CircleDollarSign, ArrowDown, HelpCircle, Undo2,
 } from "lucide-react";
 
 // Only the entities the tracer knows about need loading.
@@ -21,6 +21,7 @@ const ENTITY_QUERY = {
   Delivery:            () => matrixSales.entities.Delivery.list(),
   Invoice:             () => matrixSales.entities.Invoice.list(),
   AccountsReceivable:  () => matrixSales.entities.AccountsReceivable.list(),
+  SalesReturn:         () => matrixSales.entities.SalesReturn.list(),
   Payment:             () => matrixSales.entities.Payment.list(),
   JournalEntry:        () => matrixSales.entities.JournalEntry.list(),
   ProductionOrder:     () => matrixSales.entities.ProductionOrder.list(),
@@ -38,6 +39,7 @@ const ICONS = {
   Delivery: Truck,
   Invoice: Receipt,
   AccountsReceivable: CircleDollarSign,
+  SalesReturn: Undo2,
   Payment: Banknote,
   JournalEntry: BookOpen,
   ProductionOrder: Factory,

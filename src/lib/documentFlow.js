@@ -24,6 +24,7 @@ export const DOC_META = {
   Delivery:            { numberField: 'delivery_number',        label: 'Delivery / PGI',       short: 'DN',  module: 'sales',      stage: 3 },
   Invoice:             { numberField: 'invoice_number',         label: 'Sales Invoice',        short: 'INV', module: 'sales',      stage: 4 },
   AccountsReceivable:  { numberField: 'invoice_number',         label: 'Accounts Receivable',  short: 'AR',  module: 'finance',    stage: 5 },
+  SalesReturn:         { numberField: 'return_number',          label: 'Sales Return / Credit Note', short: 'CN', module: 'sales', stage: 6 },
 
   Payment:             { numberField: 'payment_number',         label: 'Payment',              short: 'PAY', module: 'finance',    stage: 9 },
   JournalEntry:        { numberField: 'journal_number',         label: 'Journal Entry',        short: 'JE',  module: 'finance',    stage: 10 },
@@ -46,6 +47,10 @@ const EDGES = [
   { parent: 'SalesOrder',          child: 'Invoice',          field: 'sales_order_number' },
   { parent: 'Delivery',            child: 'Invoice',          field: 'delivery_references[].delivery_number' },
   { parent: 'Invoice',             child: 'AccountsReceivable',field: 'invoice_number' },
+  // A credit note hangs off the invoice it credits, and raises its own return
+  // delivery — so the chain shows the goods going out and coming back.
+  { parent: 'Invoice',             child: 'SalesReturn',      field: 'invoice_number' },
+  { parent: 'SalesReturn',         child: 'Delivery',         field: 'sales_return_number' },
 ];
 
 const clean = (value) => String(value ?? '').trim();
