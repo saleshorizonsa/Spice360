@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowRight, Printer, Paperclip, Plus, Trash2, Truck, CheckCircle2, AlertCircle, AlertTriangle, GitBranch } from "lucide-react";
+import { ArrowRight, Printer, Paperclip, Plus, Trash2, Truck, CheckCircle2, AlertCircle, AlertTriangle, GitBranch, FileMinus2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import DocumentList from "../shared/DocumentList";
 import DocumentFlow from "../shared/DocumentFlow";
@@ -28,7 +28,28 @@ import SearchableSelect from "../shared/SearchableSelect";
 import { isFinalisedInvoice, buildArRecordFromInvoice } from "@/lib/arFromInvoice";
 import { lineDiscount, normalizeSalesLine } from "@/lib/salesDiscount";
 
-export default function InvoiceForm({ item, onClose }) {
+// Fields that must NOT carry over when an invoice is duplicated: the original's
+// identity and dates, its payment and GL state, and the delivery/sales-order links
+// — a copy that kept those would claim the original's deliveries and could re-post
+// its COGS. invoice_lines is excluded here because it is rebuilt separately.
+const DUPLICATE_EXCLUDES = new Set([
+    'id', 'invoice_number', 'invoice_date', 'due_date', 'created_at', 'updated_at',
+    'created_by', 'updated_by', 'gl_posted', 'amount_paid', 'payment_date',
+    'payment_status', 'status', 'delivery_references', 'sales_order_number',
+    'three_way_match_status', 'quantity_variance', 'total_delivered_quantity',
+    'invoice_lines',
+]);
+
+/**
+ * Sales invoice.
+ *
+ * `item` is an existing invoice being edited. `duplicateOf` seeds a brand-new
+ * invoice from an existing one — it deliberately does NOT go through `item`, so
+ * the form still says "Create", the monthly invoice limit still applies and the
+ * save creates rather than updates. `onCreateCreditNote` shows the Credit Note
+ * button for an issued invoice.
+ */
+export default function InvoiceForm({ item, onClose, duplicateOf, onCreateCreditNote }) {
     const queryClient = useQueryClient();
     const { atInvoiceLimit, invoiceLimit } = useSubscription();
     const { toast } = useToast();
@@ -158,6 +179,40 @@ export default function InvoiceForm({ item, onClose }) {
             }
         }
     }, [item]);
+
+    // Duplicate: copy the commercial content, drop everything that identifies the
+    // original — number, dates, payment state, GL flag, and the delivery/SO links,
+    // so the copy cannot claim the original's deliveries or re-post its COGS. It
+    // lands as a draft, which posts no GL and raises no AR until it is issued.
+    useEffect(() => {
+        if (item || !duplicateOf) return;
+        const carried = Object.fromEntries(
+            Object.entries(duplicateOf).filter(([key]) => !DUPLICATE_EXCLUDES.has(key))
+        );
+        setFormData(prev => ({
+            ...prev,
+            ...carried,
+            invoice_date: new Date().toISOString().split('T')[0],
+            amount_paid: 0,
+            payment_status: 'unpaid',
+            status: 'draft',
+            gl_posted: false,
+        }));
+        let storedLines = duplicateOf.invoice_lines;
+        if (typeof storedLines === 'string') { try { storedLines = JSON.parse(storedLines); } catch { storedLines = null; } }
+        if (Array.isArray(storedLines) && storedLines.length) {
+            setLines(storedLines.map(l => normalizeSalesLine({
+                product_code: l.product_code,
+                product_name: l.product_name,
+                unit_of_measure: l.unit_of_measure || '',
+                unit_price: parseFloat(l.unit_price) || 0,
+                quantity: parseFloat(l.quantity) || 0,
+                delivered_quantity: 0,
+                discount_amount: parseFloat(l.discount_amount) || 0,
+                line_total: parseFloat(l.line_total) || 0,
+            })));
+        }
+    }, [duplicateOf, item]);
 
     const TAX_TYPES = {
         standard: { label: "Standard Rate (18%)", rate: 18 },
@@ -1150,10 +1205,22 @@ setTimeout(function(){window.print();},2000);}
 
                             {/* ── Footer ───────────────────────────────────────── */}
                             <div className="flex justify-between items-center gap-3 pt-4 border-t">
-                                <div>
+                                <div className="flex gap-3">
                                     {item && (
                                         <Button type="button" variant="outline" onClick={handlePrintInvoice} className="gap-2">
                                             <Printer className="w-4 h-4" /> Print Invoice
+                                        </Button>
+                                    )}
+                                    {/* Only an issued invoice can be credited — there is nothing to
+                                        reverse on a draft, and no AR entry behind it yet. */}
+                                    {item && onCreateCreditNote && isFinalisedInvoice(item) && (
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => onCreateCreditNote(item)}
+                                            className="gap-2 text-red-600 hover:text-red-700"
+                                        >
+                                            <FileMinus2 className="w-4 h-4" /> Credit Note
                                         </Button>
                                     )}
                                 </div>

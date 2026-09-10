@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, FileText, ShoppingCart, Package, Receipt, RefreshCw, AlertTriangle, Clock, CheckCircle, CreditCard, Tag, Trash2, Pencil } from "lucide-react";
+import { Plus, FileText, ShoppingCart, Package, Receipt, RefreshCw, AlertTriangle, Clock, CheckCircle, CreditCard, Tag, Trash2, Pencil, FileMinus2, Banknote, Copy } from "lucide-react";
 import DataTable from "@/components/erp/DataTable";
 import DocumentFlowDialog from "@/components/shared/DocumentFlowDialog";
 import QuotationForm from "@/components/sales/QuotationForm";
@@ -15,6 +15,8 @@ import InvoiceForm from "@/components/sales/InvoiceForm";
 import SalesReturnForm from "@/components/sales/SalesReturnForm";
 import ServiceOrderForm from "@/components/sales/ServiceOrderForm";
 import CreditLimitManager from "@/components/sales/CreditLimitManager";
+import CustomerReceiptDialog from "@/components/finance/CustomerReceiptDialog";
+import { isFinalisedInvoice } from "@/lib/arFromInvoice";
 import ServiceContractsPanel from "@/components/sales/ServiceContractsPanel";
 import ContractPriceForm from "@/components/sales/ContractPriceForm";
 import DocumentPrintPreview from "@/components/shared/DocumentPrintPreview";
@@ -33,6 +35,13 @@ export default function Sales() {
     const [editingContractPrice, setEditingContractPrice] = useState(null);
     const [reverseDelivery, setReverseDelivery] = useState(null);
     const [flowDoc, setFlowDoc] = useState(null);
+    // Raised from an invoice row / the invoice form: a credit note against that invoice.
+    const [creditNoteInvoice, setCreditNoteInvoice] = useState(null);
+    // The AR open item a customer receipt is being taken against.
+    const [receivingAr, setReceivingAr] = useState(null);
+    // Source invoice for "Duplicate invoice" — kept apart from editingItem so the
+    // form still creates rather than updates.
+    const [duplicateInvoice, setDuplicateInvoice] = useState(null);
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { t } = useLanguage();
@@ -79,6 +88,18 @@ export default function Sales() {
         queryFn: () => matrixSales.entities.ContractPrice.list(),
         initialData: []
     });
+
+    // Open AR items, so an invoice row can offer "Record customer receipt" and hand
+    // the receipt dialog the actual receivable rather than the invoice.
+    const { data: arRecords = [] } = useQuery({
+        queryKey: ['accountsReceivable'],
+        queryFn: () => matrixSales.entities.AccountsReceivable.list(),
+        initialData: []
+    });
+
+    const openArFor = (invoice) => arRecords.find(
+        (ar) => ar.invoice_number === invoice.invoice_number && (parseFloat(ar.outstanding_amount) || 0) > 0.01
+    );
 
     const totalQuotations = quotations.length;
     const acceptedQuotations = quotations.filter(q => q.status === 'accepted' || q.status === 'converted').length;
@@ -425,7 +446,45 @@ export default function Sales() {
     const handleCloseDialog = () => {
         setShowDialog(false);
         setEditingItem(null);
+        setDuplicateInvoice(null);
     };
+
+    // Copy an invoice into a fresh draft. duplicateOf (not editingItem) so the form
+    // creates a new invoice instead of updating the one being copied.
+    const handleDuplicateInvoice = (invoice) => {
+        setEditingItem(null);
+        setDuplicateInvoice(invoice);
+        setActiveTab('invoices');
+        setShowDialog(true);
+    };
+
+    // Row actions that are specific to an invoice. Each is hidden when it cannot
+    // apply, so the menu never offers something that would just fail.
+    const invoiceActions = [
+        {
+            key: 'credit-note',
+            label: 'Create credit note',
+            icon: FileMinus2,
+            iconClass: 'text-red-600',
+            show: (row) => isFinalisedInvoice(row),
+            onClick: (row) => setCreditNoteInvoice(row.invoice_number),
+        },
+        {
+            key: 'receipt',
+            label: 'Record customer receipt',
+            icon: Banknote,
+            iconClass: 'text-emerald-600',
+            show: (row) => Boolean(openArFor(row)),
+            onClick: (row) => setReceivingAr(openArFor(row)),
+        },
+        {
+            key: 'duplicate',
+            label: 'Duplicate invoice',
+            icon: Copy,
+            show: () => !atInvoiceLimit,
+            onClick: handleDuplicateInvoice,
+        },
+    ];
 
     const handlePrint = (item, type) => {
         setSelectedDocument({ 
@@ -508,6 +567,7 @@ export default function Sales() {
                                 getBadgeColor={getBadgeColor}
                                 onEdit={(item) => handleEdit(item, 'quotations')}
                                 onDelete={(item) => handleDelete(item, 'Quotation')}
+                                actionsMenu
                                 onPrint={(item) => handlePrint(item, 'Quotation')}
                                 exportFileName="quotations"
                             />
@@ -537,6 +597,7 @@ export default function Sales() {
                                 getBadgeColor={getBadgeColor}
                                 onEdit={(item) => handleEdit(item, 'orders')}
                                 onDelete={(item) => handleDelete(item, 'SalesOrder')}
+                                actionsMenu
                                 onPrint={(item) => handlePrint(item, 'Sales Order')}
                                 exportFileName="sales-orders"
                             />
@@ -566,6 +627,7 @@ export default function Sales() {
                                 getBadgeColor={getBadgeColor}
                                 onEdit={(item) => handleEdit(item, 'deliveries')}
                                 onDelete={(item) => handleDelete(item, 'Delivery')}
+                                actionsMenu
                                 onPrint={(item) => handlePrint(item, 'Delivery Note')}
                                 onReverse={(item) => setReverseDelivery(item)}
                                 canReverse={(row) => row.pgi_done && String(row.status || '').toLowerCase() !== 'reversed'}
@@ -614,6 +676,8 @@ export default function Sales() {
                                 getBadgeColor={getBadgeColor}
                                 onEdit={(item) => handleEdit(item, 'invoices')}
                                 onDelete={(item) => handleDelete(item, 'Invoice')}
+                                actionsMenu
+                                extraActions={invoiceActions}
                                 onPrint={(item) => handlePrint(item, 'Invoice')}
                                 exportFileName="invoices"
                             />
@@ -642,6 +706,7 @@ export default function Sales() {
                                 getBadgeColor={getBadgeColor}
                                 onEdit={(item) => handleEdit(item, 'returns')}
                                 onDelete={(item) => handleDelete(item, 'SalesReturn')}
+                                actionsMenu
                                 onPrint={(item) => handlePrint(item, 'Sales Return')}
                             />
                         </CardContent>
@@ -783,6 +848,7 @@ export default function Sales() {
                                 getBadgeColor={getBadgeColor}
                                 onEdit={(item) => handleEdit(item, 'services')}
                                 onDelete={(item) => handleDelete(item, 'ServiceOrder')}
+                                actionsMenu
                                 onPrint={(item) => handlePrint(item, 'Service Order')}
                             />
                         </CardContent>
@@ -806,10 +872,28 @@ export default function Sales() {
                 <DocumentFlowDialog seedType={flowDoc.seedType} seedNumber={flowDoc.seedNumber} onClose={() => setFlowDoc(null)} />
             )}
             {showDialog && activeTab === 'invoices' && (
-                <InvoiceForm item={editingItem} onClose={handleCloseDialog} />
+                <InvoiceForm
+                    item={editingItem}
+                    duplicateOf={duplicateInvoice}
+                    onClose={handleCloseDialog}
+                    onCreateCreditNote={(invoice) => {
+                        // Close the invoice first — one dialog at a time.
+                        handleCloseDialog();
+                        setCreditNoteInvoice(invoice.invoice_number);
+                    }}
+                />
             )}
             {showDialog && activeTab === 'returns' && (
                 <SalesReturnForm item={editingItem} onClose={handleCloseDialog} />
+            )}
+            {creditNoteInvoice && (
+                <SalesReturnForm
+                    seedInvoiceNumber={creditNoteInvoice}
+                    onClose={() => setCreditNoteInvoice(null)}
+                />
+            )}
+            {receivingAr && (
+                <CustomerReceiptDialog ar={receivingAr} onClose={() => setReceivingAr(null)} />
             )}
             {showDialog && activeTab === 'services' && (
                 <ServiceOrderForm item={editingItem} onClose={handleCloseDialog} />

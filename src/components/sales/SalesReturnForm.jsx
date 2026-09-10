@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -18,7 +18,14 @@ import { useOrganization } from "../utils/OrganizationContext";
 import { useGLAccounts } from "@/hooks/useGLAccounts";
 import { documentDiscount } from "@/lib/salesDiscount";
 
-export default function SalesReturnForm({ item, onClose }) {
+/**
+ * Sales Return / Credit Note.
+ *
+ * `seedInvoiceNumber` opens it as "Create Credit Note" against that invoice: the
+ * form prefills from the invoice exactly as picking it from the dropdown would,
+ * so the credit note mirrors what was actually charged.
+ */
+export default function SalesReturnForm({ item, onClose, seedInvoiceNumber }) {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const [isDirty, setIsDirty] = useState(false);
@@ -68,6 +75,8 @@ export default function SalesReturnForm({ item, onClose }) {
         }
     }, [item]);
 
+    const seededFromInvoice = useRef(false);
+
     useEffect(() => {
         const subtotal = (formData.quantity_returned || 0) * (formData.unit_price || 0);
         // Mirror the invoice: VAT was charged on the discounted amount, so the credit
@@ -106,6 +115,17 @@ export default function SalesReturnForm({ item, onClose }) {
             }));
         }
     };
+
+    // Raised from an invoice's "Create credit note" action: prefill as soon as the
+    // invoice list arrives, exactly as picking that invoice from the dropdown would.
+    // The ref makes it seed once, so it never fights the user's later edits or a
+    // different invoice they choose afterwards.
+    useEffect(() => {
+        if (item || !seedInvoiceNumber || seededFromInvoice.current) return;
+        if (!invoices.some((i) => i.invoice_number === seedInvoiceNumber)) return;
+        seededFromInvoice.current = true;
+        handleInvoiceSelect(seedInvoiceNumber);
+    }, [item, seedInvoiceNumber, invoices]);
 
     const saveMutation = useMutation({
         mutationFn: (data) => {
@@ -191,7 +211,7 @@ export default function SalesReturnForm({ item, onClose }) {
             <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
-                        {item ? 'Edit Sales Return' : 'New Sales Return'}
+                        {item ? 'Edit Sales Return' : seedInvoiceNumber ? 'New Credit Note' : 'New Sales Return'}
                         {formData.invoice_number && (
                             <Badge variant="outline" className="ml-2">
                                 Invoice: {formData.invoice_number}

@@ -1,11 +1,105 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Pencil, Trash2, Printer, ChevronLeft, ChevronRight, ArrowUpDown, CheckCircle2, XCircle, Download, Undo2, Waypoints } from "lucide-react";
+import { Pencil, Trash2, Printer, ChevronLeft, ChevronRight, ArrowUpDown, CheckCircle2, XCircle, Download, Undo2, Waypoints, MoreVertical } from "lucide-react";
 import SearchFilter from "../shared/SearchFilter";
 import { useLanguage } from "@/components/utils/languageContext";
+
+const MENU_WIDTH = 224; // matches w-56
+
+/**
+ * The "⋮" row-actions menu.
+ *
+ * Deliberately not the shared DropdownMenu: that one positions itself with
+ * `absolute`, and the desktop table sits inside `overflow-hidden` +
+ * `overflow-x-auto` wrappers that would clip the menu on the lower rows. This
+ * portals to the body and positions with fixed coordinates taken from the
+ * trigger, so it escapes both scroll containers, and flips above the button when
+ * there is not enough room below.
+ */
+function RowActionsMenu({ items }) {
+    const [open, setOpen] = useState(false);
+    const [pos, setPos] = useState(null);
+    const triggerRef = useRef(null);
+
+    useEffect(() => {
+        if (!open) return undefined;
+
+        const place = () => {
+            const rect = triggerRef.current?.getBoundingClientRect();
+            if (!rect) return;
+            const height = items.length * 40 + 8;
+            const below = rect.bottom + 4;
+            setPos({
+                top: below + height > window.innerHeight ? Math.max(8, rect.top - height - 4) : below,
+                left: Math.max(8, Math.min(rect.right - MENU_WIDTH, window.innerWidth - MENU_WIDTH - 8)),
+            });
+        };
+        place();
+
+        const close = () => setOpen(false);
+        const onKey = (e) => { if (e.key === "Escape") setOpen(false); };
+        // Any scroll or resize moves the trigger out from under the menu.
+        window.addEventListener("scroll", close, true);
+        window.addEventListener("resize", close);
+        window.addEventListener("keydown", onKey);
+        return () => {
+            window.removeEventListener("scroll", close, true);
+            window.removeEventListener("resize", close);
+            window.removeEventListener("keydown", onKey);
+        };
+    }, [open, items.length]);
+
+    if (items.length === 0) return null;
+
+    return (
+        <>
+            <Button
+                ref={triggerRef}
+                variant="ghost"
+                size="icon"
+                title="Actions"
+                aria-label="Actions"
+                aria-haspopup="menu"
+                aria-expanded={open}
+                onClick={() => setOpen((v) => !v)}
+            >
+                <MoreVertical className="w-4 h-4" />
+            </Button>
+            {open && pos && createPortal(
+                <>
+                    <div className="fixed inset-0 z-[60]" onClick={() => setOpen(false)} />
+                    <div
+                        role="menu"
+                        style={{ top: pos.top, left: pos.left }}
+                        className="fixed z-[61] w-56 overflow-hidden rounded-md border bg-white p-1 shadow-lg"
+                    >
+                        {items.map((item) => (
+                            <React.Fragment key={item.key}>
+                                {item.separatorBefore && <div className="-mx-1 my-1 h-px bg-slate-100" />}
+                                <button
+                                    type="button"
+                                    role="menuitem"
+                                    onClick={() => { setOpen(false); item.run(); }}
+                                    className={`flex w-full items-center gap-2 rounded-sm px-2 py-2 text-left text-sm transition-colors hover:bg-slate-100 ${
+                                        item.destructive ? "text-red-600 hover:text-red-700" : "text-slate-700"
+                                    }`}
+                                >
+                                    {item.Icon && <item.Icon className={`h-4 w-4 shrink-0 ${item.iconClass || ""}`} />}
+                                    {item.label}
+                                </button>
+                            </React.Fragment>
+                        ))}
+                    </div>
+                </>,
+                document.body
+            )}
+        </>
+    );
+}
 
 function exportToCsv(filename, columns, rows) {
     const headers = columns.map((c) => `"${String(c.header || c.label || c.key).replace(/"/g, '""')}"`).join(",");
@@ -37,6 +131,8 @@ export default function DataTable({
     onReverse,          // optional: (row) => void — shows a reverse action; caller decides visibility
     canReverse,         // optional: (row) => boolean — gates the reverse button per row
     onFlow,             // optional: (row) => void — shows a document-flow action icon
+    actionsMenu = false, // opt-in: collapse the row actions into a single "⋮" menu
+    extraActions = [],   // [{ key, label, icon, onClick(row), show?(row), destructive?, iconClass? }]
     getPrintTitle,
     onBulkDelete,
     onBulkStatusChange,
@@ -54,6 +150,53 @@ export default function DataTable({
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedRows, setSelectedRows] = useState([]);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+
+    const hasRowActions = Boolean(onEdit || onDelete || onPrint || onReverse || onFlow || extraActions.length);
+
+    // Menu order: the everyday actions first, then whatever the page injected,
+    // then the destructive ones behind a separator so they are hard to hit by
+    // accident. Built per row because visibility can depend on the record.
+    const menuItemsFor = (row) => {
+        const items = [];
+        if (onEdit) items.push({ key: "edit", label: "Edit", Icon: Pencil, run: () => onEdit(row) });
+        if (onPrint) {
+            items.push({
+                key: "print",
+                label: getPrintTitle ? getPrintTitle(row) : "Print",
+                Icon: Printer,
+                iconClass: "text-blue-600",
+                run: () => onPrint(row),
+            });
+        }
+        if (onFlow) {
+            items.push({
+                key: "flow",
+                label: "Document flow",
+                Icon: Waypoints,
+                iconClass: "text-indigo-600",
+                run: () => onFlow(row),
+            });
+        }
+        for (const action of extraActions) {
+            if (action.show && !action.show(row)) continue;
+            items.push({
+                key: action.key,
+                label: typeof action.label === "function" ? action.label(row) : action.label,
+                Icon: action.icon,
+                iconClass: action.iconClass,
+                destructive: action.destructive,
+                run: () => action.onClick(row),
+            });
+        }
+        if (onReverse && (!canReverse || canReverse(row))) {
+            items.push({ key: "reverse", label: "Reverse", Icon: Undo2, destructive: true, run: () => onReverse(row) });
+        }
+        if (onDelete) items.push({ key: "delete", label: "Delete", Icon: Trash2, destructive: true, run: () => onDelete(row) });
+
+        const firstDestructive = items.findIndex((i) => i.destructive);
+        if (firstDestructive > 0) items[firstDestructive].separatorBefore = true;
+        return items;
+    };
 
     // Update filtered data when source data changes
     React.useEffect(() => {
@@ -256,7 +399,7 @@ export default function DataTable({
                                         </div>
                                     </TableHead>
                                 ))}
-                                {(onEdit || onDelete || onPrint || onReverse || onFlow) && (
+                                {hasRowActions && (
                                     <TableHead className="font-semibold text-gray-700">Actions</TableHead>
                                 )}
                             </TableRow>
@@ -287,8 +430,9 @@ export default function DataTable({
                                                 {renderCellValue(row, col)}
                                             </TableCell>
                                         ))}
-                                        {(onEdit || onDelete || onPrint || onReverse || onFlow) && (
+                                        {hasRowActions && (
                                             <TableCell>
+                                                {actionsMenu ? <RowActionsMenu items={menuItemsFor(row)} /> : (
                                                 <div className="flex gap-2">
                                                     {onFlow && (
                                                         <Button
@@ -344,6 +488,7 @@ export default function DataTable({
                                                         </Button>
                                                     )}
                                                 </div>
+                                                )}
                                             </TableCell>
                                         )}
                                     </TableRow>
@@ -462,7 +607,12 @@ export default function DataTable({
                                     </div>
                                 )}
 
-                                {(onEdit || onDelete || onPrint || onReverse || onFlow) && (
+                                {hasRowActions && actionsMenu && (
+                                    <div className="mt-4 flex justify-end">
+                                        <RowActionsMenu items={menuItemsFor(row)} />
+                                    </div>
+                                )}
+                                {hasRowActions && !actionsMenu && (
                                     <div className="mt-4 flex gap-2">
                                         {onPrint && (
                                             <Button
