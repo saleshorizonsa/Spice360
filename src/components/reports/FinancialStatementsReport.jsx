@@ -23,6 +23,7 @@ import {
   exportRowsToCsv,
   statementCategoryLabels
 } from "@/lib/financialStatements";
+import { cashPositionFromLedger } from "@/lib/dashboardMetrics";
 
 const currency = (value) =>
   `LKR ${Number(value || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -302,13 +303,20 @@ export default function FinancialStatementsReport({ initialTab = "profit_loss" }
     filters
   }), [accounts, mergedJournals, asOfDate, branch, costCenter, project, currencyFilter]);
 
+  // Cash from the ledger — the same figure the dashboard, Finance and Treasury show.
+  const ledgerCash = useMemo(
+    () => cashPositionFromLedger({ accounts, lines: journalLines, entries: journalEntries }).total,
+    [accounts, journalLines, journalEntries]
+  );
+
   const managementSummary = useMemo(() => buildManagementSummary({
     profitAndLoss,
     balanceSheet,
     arRecords,
     apRecords,
-    bankAccounts
-  }), [profitAndLoss, balanceSheet, arRecords, apRecords, bankAccounts]);
+    bankAccounts,
+    cashPosition: ledgerCash
+  }), [profitAndLoss, balanceSheet, arRecords, apRecords, bankAccounts, ledgerCash]);
 
   const periodComparison = useMemo(() => buildPeriodComparison({
     accounts,

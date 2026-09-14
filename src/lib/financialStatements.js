@@ -489,11 +489,15 @@ const previousDate = (dateString) => {
   return date.toISOString().slice(0, 10);
 };
 
-export const buildManagementSummary = ({ profitAndLoss, balanceSheet, arRecords = [], apRecords = [], bankAccounts = [] }) => {
+export const buildManagementSummary = ({ profitAndLoss, balanceSheet, arRecords = [], apRecords = [], bankAccounts = [], cashPosition: ledgerCash }) => {
   const revenue = profitAndLoss?.totals?.revenue || 0;
   const previousRevenue = profitAndLoss?.comparison?.revenue || 0;
   const totalExpenses = (profitAndLoss?.totals?.operatingExpenses || 0) + (profitAndLoss?.totals?.otherExpenses || 0);
-  const cashPosition = bankAccounts.reduce((sum, bank) => sum + amount(bank.current_balance || bank.opening_balance), 0);
+  // Prefer the ledger cash figure when the caller has one. Stored bank balances are
+  // written by only a couple of forms, so they drift from what was actually posted.
+  const cashPosition = Number.isFinite(ledgerCash)
+    ? ledgerCash
+    : bankAccounts.reduce((sum, bank) => sum + amount(bank.current_balance || bank.opening_balance), 0);
   const receivables = arRecords.reduce((sum, item) => sum + amount(item.outstanding_amount), 0);
   const payables = apRecords.reduce((sum, item) => sum + amount(item.outstanding_amount), 0);
 

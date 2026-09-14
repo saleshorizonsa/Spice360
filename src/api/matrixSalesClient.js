@@ -2,7 +2,8 @@ import { appParams } from '@/lib/app-params';
 import { supabase } from '@/lib/supabaseClient';
 import { isMatrixSalesAdminEmail, isMatrixSalesPlatformOwner } from '@/lib/adminAccess';
 import { getSubscriptionPlan } from '@/lib/subscriptionPlans';
-import { withChangeNotifications } from '@/lib/dataChanged';
+import { withChangeNotifications, onDataChanged } from '@/lib/dataChanged';
+import { createKeyedLookupCache } from '@/lib/lookupCache';
 
 const { appId, token, functionsVersion, appBaseUrl } = appParams;
 
@@ -633,18 +634,41 @@ const getCurrentSupabaseUser = async () => {
   };
 };
 
-const getCurrentSupabaseUserSafe = async () => {
-  try {
-    return await getCurrentSupabaseUser();
-  } catch {
-    return {
-      id: null,
-      email: 'system@horizon.local',
-      full_name: 'System',
-      role: 'system'
-    };
-  }
-};
+// Every entity read and write used to look the signed-in user up afresh: a round
+// trip to the Supabase Auth server plus one or two tenant-profile queries, before the
+// table query itself — so a dashboard tab of ten queries paid for thirty round trips
+// on every refresh. The data layer now reuses the lookup briefly, per selected
+// company. It is dropped on any auth event (sign-in, sign-out, token refresh, user
+// update) and whenever a record it is built from is written, and a failed lookup is
+// never kept. auth.me() is deliberately left uncached: its callers need it fresh.
+const USER_LOOKUP_TTL_MS = 30_000;
+const USER_SHAPING_ENTITIES = new Set(['User', 'Organization', 'Subscription']);
+
+const currentUserLookup = createKeyedLookupCache({
+  ttlMs: USER_LOOKUP_TTL_MS,
+  fetch: async () => {
+    try {
+      return await getCurrentSupabaseUser();
+    } catch {
+      return {
+        id: null,
+        email: 'system@horizon.local',
+        full_name: 'System',
+        role: 'system'
+      };
+    }
+  },
+  isCacheable: (user) => Boolean(user?.id)
+});
+
+const getCurrentSupabaseUserSafe = () => currentUserLookup.get(getSelectedOrganizationId() || '');
+
+if (supabase) {
+  supabase.auth.onAuthStateChange(() => currentUserLookup.clear());
+}
+onDataChanged((entityName) => {
+  if (USER_SHAPING_ENTITIES.has(entityName)) currentUserLookup.clear();
+});
 
 const getNextSupabaseDocumentNumber = async (entityName, record = {}) => {
   const config = documentNumberConfig[entityName];

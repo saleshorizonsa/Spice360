@@ -44,9 +44,9 @@ import {
     overdueScheduledCount,
     revenueInvoices,
     unpaidInvoiceCount,
-    cashPositionFromLedger,
     lowStockMaterials
 } from "@/lib/dashboardMetrics";
+import { useLedgerCash } from "@/hooks/useLedgerCash";
 
 const toList = (value) => (Array.isArray(value) ? value : []);
 const sumBy = (items, key) => items.reduce((sum, item) => sum + (Number(item?.[key]) || 0), 0);
@@ -514,9 +514,6 @@ function BusinessCards() {
     const { data: invoices  = [] } = useEntityList("Invoice",             ["biz-invoices"],  "-invoice_date");
     const { data: arList    = [] } = useEntityList("AccountsReceivable",  ["biz-ar"],        "-invoice_date");
     const { data: apList    = [] } = useEntityList("AccountsPayable",     ["biz-ap"],        "-invoice_date");
-    const { data: accounts    = [] } = useEntityList("ChartOfAccounts",   ["biz-accounts"]);
-    const { data: ledgerLines = [] } = useEntityList("JournalLine",       ["biz-journal-lines"]);
-    const { data: journals    = [] } = useEntityList("JournalEntry",      ["biz-journal-entries"]);
     const { data: materials   = [] } = useEntityList("Material",          ["biz-materials"]);
     const { data: stockLevels = [] } = useEntityList("StockLevel",        ["biz-stock-levels"]);
     const { data: approvals   = [] } = useEntityList("ApprovalRequest",   ["biz-approvals"], "-request_date");
@@ -538,13 +535,9 @@ function BusinessCards() {
     const openAP     = toList(apList).filter(ap => ap.payment_status !== "paid" && (parseFloat(ap.outstanding_amount) || 0) > 0.01);
     const totalAP    = sumBy(openAP, "outstanding_amount");
 
-    // Cash position — live from the ledger, so every receipt, payment, POS sale and
-    // journal moves it. The stored bank balance was written by only two forms.
-    const { total: cashPos, accountCount: cashAccountCount } = cashPositionFromLedger({
-        accounts,
-        lines: ledgerLines,
-        entries: journals
-    });
+    // Cash position — live from the ledger, shared with Finance, Treasury and the
+    // financial statements, so every receipt, payment, POS sale and journal moves it.
+    const { total: cashPos, accountCount: cashAccountCount } = useLedgerCash({ refetchInterval: DASHBOARD_REFRESH_MS });
     const netWorkCap = cashPos + totalAR - totalAP;
 
     // Pending approvals

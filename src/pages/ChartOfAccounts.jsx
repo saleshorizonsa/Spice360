@@ -287,16 +287,31 @@ export default function ChartOfAccounts() {
     initialData: []
   });
 
+  // The Journal Entry page writes lines when it saves a DRAFT, so without this the
+  // balances included entries that were never posted.
+  const { data: journalEntries = [] } = useQuery({
+    queryKey: ["journalEntries", orgId],
+    enabled: !!orgId,
+    queryFn: () => matrixSales.entities.JournalEntry.filter({ organization_id: orgId }, "-entry_date"),
+    initialData: []
+  });
+
   const balances = useMemo(() => {
+    const draftJournals = new Set(
+      journalEntries
+        .filter((entry) => String(entry.status || "").trim().toLowerCase() === "draft")
+        .map((entry) => String(entry.journal_number))
+    );
     const map = new Map();
     lines.forEach((line) => {
+      if (draftJournals.has(String(line.journal_number))) return;
       const current = map.get(line.account_code) || { debit: 0, credit: 0 };
       current.debit += Number(line.debit || 0);
       current.credit += Number(line.credit || 0);
       map.set(line.account_code, current);
     });
     return map;
-  }, [lines]);
+  }, [lines, journalEntries]);
 
   const depthFor = (account, lookup, depth = 0) => {
     if (!account.parent_account || depth > 8) return depth;

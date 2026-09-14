@@ -11,6 +11,7 @@ import { Plus, TrendingUp, TrendingDown, DollarSign, AlertCircle, Calendar } fro
 import DataTable from "../components/erp/DataTable";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useLedgerCash } from "@/hooks/useLedgerCash";
 
 export default function TreasuryManagement() {
     const [activeTab, setActiveTab] = useState("dashboard");
@@ -50,7 +51,10 @@ export default function TreasuryManagement() {
     });
 
     // Calculate cash position
-    const totalCash = banks.reduce((sum, b) => sum + (b.current_balance || 0), 0);
+    // Cash from the ledger. The stored bank balances are written by only a couple of
+    // forms, so they missed receipts, vendor payments, POS sales and journal entries —
+    // and every figure below (net position, ratios, forecast opening) inherited that.
+    const { total: totalCash } = useLedgerCash();
     const totalAR = arTransactions.filter(ar => ar.status === 'open' || ar.status === 'overdue')
         .reduce((sum, ar) => sum + (ar.outstanding_amount || 0), 0);
     const totalAP = apTransactions.filter(ap => ap.payment_status !== 'paid')
@@ -180,6 +184,7 @@ export default function TreasuryManagement() {
                         <Card>
                             <CardHeader>
                                 <CardTitle>Bank Accounts</CardTitle>
+                                <p className="text-xs text-gray-500">Register balances. Cash totals on this page come from the general ledger.</p>
                             </CardHeader>
                             <CardContent>
                                 <div className="space-y-3">

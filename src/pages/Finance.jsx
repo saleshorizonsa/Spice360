@@ -37,6 +37,7 @@ import PeriodControlOB52 from "@/pages/PeriodControlOB52";
 import { useToast } from "@/components/ui/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useLanguage } from "@/components/utils/languageContext";
+import { useLedgerCash } from "@/hooks/useLedgerCash";
 import { Settings, MapPin, Scale, Globe, Calendar, Truck } from "lucide-react";
 import FreightInvoiceDialog from "@/components/finance/FreightInvoiceDialog";
 
@@ -56,6 +57,8 @@ export default function Finance() {
     const queryClient = useQueryClient();
     const { toast } = useToast();
     const { t } = useLanguage();
+    // The one cash figure — from the ledger, not the stored bank balances.
+    const { total: ledgerCash } = useLedgerCash();
 
     const { data: journals = [] } = useQuery({
         queryKey: ['journals'],
@@ -300,7 +303,7 @@ export default function Finance() {
         { header: "Bank", key: "bank_name" },
         { header: "IBAN", key: "iban" },
         { header: "Currency", key: "currency" },
-        { header: "Balance", key: "current_balance", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
+        { header: "Register Balance", key: "current_balance", render: (val) => `LKR ${val?.toLocaleString() || 0}` },
         { header: t('status'), key: "status", isBadge: true }
     ];
 
@@ -572,7 +575,7 @@ export default function Finance() {
                                                 <th className="p-3 text-left font-semibold">Account Name</th>
                                                 <th className="p-3 text-left font-semibold">Bank</th>
                                                 <th className="p-3 text-left font-semibold">Currency</th>
-                                                <th className="p-3 text-right font-semibold">Balance</th>
+                                                <th className="p-3 text-right font-semibold">Register Balance</th>
                                                 <th className="p-3 text-center font-semibold">Actions</th>
                                             </tr>
                                         </thead>
@@ -679,7 +682,7 @@ export default function Finance() {
                                 { label: "Total AR Outstanding", value: `LKR ${totalAR.toLocaleString()}`, color: "text-blue-700", bg: "bg-blue-50 border-blue-200" },
                                 { label: "Overdue AR Items",     value: overdueAR,                         color: overdueAR > 0 ? "text-red-700" : "text-green-700", bg: overdueAR > 0 ? "bg-red-50 border-red-200" : "bg-green-50 border-green-200" },
                                 { label: "Total AP Outstanding", value: `LKR ${totalAP.toLocaleString()}`, color: "text-orange-700", bg: "bg-orange-50 border-orange-200" },
-                                { label: "Net Cash Position",    value: `LKR ${banks.reduce((s, b) => s + (b.current_balance || 0), 0).toLocaleString()}`, color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200" },
+                                { label: "Net Cash Position",    value: `LKR ${ledgerCash.toLocaleString()}`, color: "text-emerald-700", bg: "bg-emerald-50 border-emerald-200" },
                             ].map(({ label, value, color, bg }) => (
                                 <div key={label} className={`border rounded-lg p-4 ${bg}`}>
                                     <p className="text-xs text-slate-600">{label}</p>
