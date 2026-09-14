@@ -52,7 +52,8 @@ export default function PlanUsageWidget() {
       return list.length > 0 ? list[0] : null;
     },
     enabled: Boolean(orgId) && !user?.is_platform_owner,
-    staleTime: 5 * 60 * 1000
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 60_000
   });
 
   const { data: userCount = 0 } = useQuery({
@@ -62,30 +63,29 @@ export default function PlanUsageWidget() {
       return Array.isArray(users) ? users.filter(Boolean).length : 0;
     },
     enabled: Boolean(orgId) && !user?.is_platform_owner,
-    staleTime: 5 * 60 * 1000
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 60_000
   });
 
   const { data: invoiceCount = 0 } = useQuery({
     queryKey: ["plan-usage-invoices", orgId],
     queryFn: async () => {
       const now = new Date();
-      const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
-      try {
-        const invoices = await matrixSales.entities.Invoice.filter({
-          organization_id: orgId,
-          invoice_date_gte: firstOfMonth
-        });
-        return Array.isArray(invoices) ? invoices.filter(Boolean).length : 0;
-      } catch {
-        const invoices = await matrixSales.entities.Invoice.list("-invoice_date", 9999);
-        const thisMonth = Array.isArray(invoices)
-          ? invoices.filter(Boolean).filter((inv) => inv.invoice_date >= firstOfMonth)
-          : [];
-        return thisMonth.length;
-      }
+      // Local calendar date. toISOString() shifts local midnight back into the
+      // previous day east of UTC, which pulled last month's final day into the count.
+      const firstOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+      // The data client has no range operators: a filter on "invoice_date_gte" was
+      // sent as an equality test on a field of that literal name, matched nothing,
+      // and returned an empty list instead of throwing — so this always showed 0.
+      // Count client-side, the same way the invoice limit itself is enforced.
+      const invoices = await matrixSales.entities.Invoice.list("-invoice_date");
+      return Array.isArray(invoices)
+        ? invoices.filter(Boolean).filter((inv) => String(inv.invoice_date || "") >= firstOfMonth).length
+        : 0;
     },
     enabled: Boolean(orgId) && !user?.is_platform_owner,
-    staleTime: 5 * 60 * 1000
+    staleTime: 5 * 60 * 1000,
+    refetchInterval: 60_000
   });
 
   if (!subscription || user?.is_platform_owner) return null;

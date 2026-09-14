@@ -2,6 +2,7 @@ import { appParams } from '@/lib/app-params';
 import { supabase } from '@/lib/supabaseClient';
 import { isMatrixSalesAdminEmail, isMatrixSalesPlatformOwner } from '@/lib/adminAccess';
 import { getSubscriptionPlan } from '@/lib/subscriptionPlans';
+import { withChangeNotifications } from '@/lib/dataChanged';
 
 const { appId, token, functionsVersion, appBaseUrl } = appParams;
 
@@ -1324,6 +1325,14 @@ const baseMatrixSales = {
   })
 };
 
-export const matrixSales = phpApiUrl   ? phpApiMatrixSales
+const selectedMatrixSales = phpApiUrl   ? phpApiMatrixSales
   : appId       ? baseMatrixSales
   : supabaseMatrixSales;
+
+// Every successful create / update / delete announces itself, so the query client
+// can refresh every figure that depends on the write — not only the cache keys the
+// form that made it happened to know about.
+export const matrixSales = {
+  ...selectedMatrixSales,
+  entities: withChangeNotifications(selectedMatrixSales.entities),
+};

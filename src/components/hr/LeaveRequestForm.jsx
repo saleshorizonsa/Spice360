@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -46,12 +46,18 @@ export default function LeaveRequestForm({ item, onClose }) {
         notes: ''
     });
 
+    // A new request is pre-filled with the signed-in user's employee record, once per
+    // user. The employee list is refreshed whenever data changes or the window regains
+    // focus; re-applying it on every refresh would overwrite an employee someone chose
+    // on purpose, such as HR filing leave on another person's behalf.
+    const seededForUser = useRef(null);
     useEffect(() => {
         if (item) {
             setFormData(item);
-        } else if (!item && currentUser) {
+        } else if (!item && currentUser && seededForUser.current !== currentUser.email) {
             const employee = employees.find(e => e.email === currentUser.email);
             if (employee) {
+                seededForUser.current = currentUser.email;
                 setFormData(prev => ({
                     ...prev,
                     employee_number: employee.employee_number,

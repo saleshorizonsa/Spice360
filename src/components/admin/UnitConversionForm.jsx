@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useUnsavedChangesWarning } from "@/hooks/useUnsavedChangesWarning";
 import { matrixSales } from "@/api/matrixSalesClient";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -38,12 +38,17 @@ export default function UnitConversionForm({ item, materialCode, onClose = () =>
         initialData: []
     });
 
+    // Pre-fill from the material once per material code. The materials list is
+    // refreshed whenever data changes or the window regains focus; re-applying on
+    // every refresh would reset a from-unit the user had already changed.
+    const seededForMaterial = useRef(null);
     useEffect(() => {
         if (item) {
             setFormData(item);
-        } else if (materialCode) {
+        } else if (materialCode && seededForMaterial.current !== materialCode) {
             const material = materials.find(m => m.material_code === materialCode);
             if (material) {
+                seededForMaterial.current = materialCode;
                 setFormData(prev => ({
                     ...prev,
                     material_name: material.material_name,

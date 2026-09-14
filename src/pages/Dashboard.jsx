@@ -39,17 +39,31 @@ import { usePermissions } from "@/components/utils/usePermissions";
 import { useLanguage } from "@/components/utils/languageContext";
 import PlanUsageWidget from "@/components/shared/PlanUsageWidget";
 import { useOrganization } from "@/components/utils/OrganizationContext";
+import {
+    pendingSalesOrderCount,
+    overdueScheduledCount,
+    revenueInvoices,
+    unpaidInvoiceCount,
+    cashPositionFromLedger,
+    lowStockMaterials
+} from "@/lib/dashboardMetrics";
 
 const toList = (value) => (Array.isArray(value) ? value : []);
 const sumBy = (items, key) => items.reduce((sum, item) => sum + (Number(item?.[key]) || 0), 0);
 const formatLkr = (value) => `LKR ${(Number(value) || 0).toLocaleString()}`;
 const formatLkrM = (value) => `LKR ${((Number(value) || 0) / 1000000).toFixed(1)}M`;
 
+// Dashboard figures refresh on their own every minute, so postings made by other
+// users or devices show up without a reload. (Your own postings refresh them at
+// once — every write triggers a refresh of whatever is on screen.)
+const DASHBOARD_REFRESH_MS = 60_000;
+
 function useEntityList(entityName, queryKey, sort, limit) {
     return useQuery({
         queryKey,
         queryFn: () => matrixSales.entities[entityName].list(sort, limit),
-        initialData: []
+        initialData: [],
+        refetchInterval: DASHBOARD_REFRESH_MS
     });
 }
 
@@ -64,7 +78,8 @@ function useOptionalEntityList(entityName, queryKey, sort, limit) {
                 throw error;
             }
         },
-        initialData: []
+        initialData: [],
+        refetchInterval: DASHBOARD_REFRESH_MS
     });
 }
 
@@ -121,10 +136,13 @@ function OverviewCards() {
     const { t } = useLanguage();
 
     const { data: assets = [] } = useEntityList("FixedAsset", ["dashboard-assets"]);
-    const { data: salesOrders = [] } = useEntityList("SalesOrder", ["dashboard-sales-orders"], "-order_date", 10);
-    const { data: maintenance = [] } = useEntityList("AssetMaintenance", ["dashboard-maintenance"], "-maintenance_date", 20);
-    const { data: approvalRequests = [] } = useEntityList("ApprovalRequest", ["dashboard-approval-requests"], "-created_date", 10);
-    const { data: verificationTasks = [] } = useEntityList("AssetVerificationTask", ["dashboard-verification-tasks"], "-scheduled_date", 5);
+    // No row limits: these feed counts, and a count over the newest 10 or 20 records
+    // is simply wrong (it capped Pending Sales Orders at 10 and dropped the oldest,
+    // most overdue maintenance). The client fetches whole tables regardless.
+    const { data: salesOrders = [] } = useEntityList("SalesOrder", ["dashboard-sales-orders"], "-order_date");
+    const { data: maintenance = [] } = useEntityList("AssetMaintenance", ["dashboard-maintenance"], "-scheduled_date");
+    const { data: approvalRequests = [] } = useEntityList("ApprovalRequest", ["dashboard-approval-requests"], "-request_date");
+    const { data: verificationTasks = [] } = useEntityList("AssetVerificationTask", ["dashboard-verification-tasks"], "-scheduled_date");
 
     const assetList = toList(assets);
     const salesOrderList = toList(salesOrders);
@@ -135,10 +153,10 @@ function OverviewCards() {
     const activeAssets = assetList.filter(a => a.status === "active").length;
     const totalAssetValue = sumBy(assetList, "acquisition_cost");
     const totalNBV = sumBy(assetList, "net_book_value");
-    const pendingSalesOrders = salesOrderList.filter(o => o.status === "pending_approval" || o.status === "draft").length;
-    const overdueMaintenance = maintenanceList.filter(m => m.status === "scheduled" && new Date(m.scheduled_date) < new Date()).length;
+    const pendingSalesOrders = pendingSalesOrderCount(salesOrderList);
+    const overdueMaintenance = overdueScheduledCount(maintenanceList);
     const pendingApprovals = approvalRequestList.filter(a => a.status === "pending").length;
-    const overdueVerifications = verificationTaskList.filter(t => t.status === "scheduled" && new Date(t.scheduled_date) < new Date()).length;
+    const overdueVerifications = overdueScheduledCount(verificationTaskList);
 
     return (
         <div className="space-y-4 md:space-y-6">
@@ -344,7 +362,7 @@ function SalesCards() {
         { title: "Quotations", value: quotationList.length, description: `${quotationList.filter(q => q.status === "accepted" || q.status === "converted").length} accepted or converted`, icon: FileText, color: "blue", to: "Sales" },
         { title: "Sales Orders", value: orderList.length, description: `${formatLkr(sumBy(orderList, "total_amount"))} total order value`, icon: ShoppingCart, color: "indigo", to: "Sales" },
         { title: "Deliveries", value: deliveryList.filter(d => d.status === "pending" || d.status === "in_transit").length, description: "Pending or in transit", icon: Truck, color: "amber", to: "Sales" },
-        { title: "Invoices", value: invoiceList.filter(i => i.payment_status === "unpaid" || i.payment_status === "overdue").length, description: "Unpaid or overdue", icon: Receipt, color: "red", to: "Sales" },
+        { title: "Invoices", value: unpaidInvoiceCount(invoiceList), description: "Unpaid or overdue", icon: Receipt, color: "red", to: "Sales" },
         { title: "POS", value: "Open", description: "Point of sale workspace", icon: DollarSign, color: "emerald", to: "POS" },
         { title: "Sales Reports", value: "Reports", description: "Sales analytics and exports", icon: BarChart3, color: "purple", to: "SalesReports" }
     ]} />;
@@ -460,7 +478,7 @@ function ReportsCards() {
 }
 
 function WorkflowCards() {
-    const { data: approvals = [] } = useEntityList("ApprovalRequest", ["dashboard-workflow-approvals"], "-created_date");
+    const { data: approvals = [] } = useEntityList("ApprovalRequest", ["dashboard-workflow-approvals"], "-request_date");
     const { data: matrix = [] } = useEntityList("ApprovalMatrix", ["dashboard-approval-matrix"]);
 
     return <ModuleCards cards={[
@@ -496,18 +514,18 @@ function BusinessCards() {
     const { data: invoices  = [] } = useEntityList("Invoice",             ["biz-invoices"],  "-invoice_date");
     const { data: arList    = [] } = useEntityList("AccountsReceivable",  ["biz-ar"],        "-invoice_date");
     const { data: apList    = [] } = useEntityList("AccountsPayable",     ["biz-ap"],        "-invoice_date");
-    const { data: banks     = [] } = useEntityList("BankAccount",         ["biz-banks"]);
-    const { data: materials = [] } = useEntityList("Material",            ["biz-materials"]);
-    const { data: approvals = [] } = useEntityList("ApprovalRequest",     ["biz-approvals"], "-created_date");
+    const { data: accounts    = [] } = useEntityList("ChartOfAccounts",   ["biz-accounts"]);
+    const { data: ledgerLines = [] } = useEntityList("JournalLine",       ["biz-journal-lines"]);
+    const { data: journals    = [] } = useEntityList("JournalEntry",      ["biz-journal-entries"]);
+    const { data: materials   = [] } = useEntityList("Material",          ["biz-materials"]);
+    const { data: stockLevels = [] } = useEntityList("StockLevel",        ["biz-stock-levels"]);
+    const { data: approvals   = [] } = useEntityList("ApprovalRequest",   ["biz-approvals"], "-request_date");
     const { data: payments  = [] } = useEntityList("Payment",             ["biz-payments"],  "-payment_date");
 
     // Revenue calculations
-    const mtdInvoices = toList(invoices).filter(i =>
-        i.invoice_date >= monthStart && (i.status === "submitted" || i.payment_status !== "draft")
-    );
-    const ytdInvoices = toList(invoices).filter(i =>
-        i.invoice_date >= yearStart && (i.status === "submitted" || i.payment_status !== "draft")
-    );
+    // Issued invoices only — drafts are not revenue.
+    const mtdInvoices = revenueInvoices(invoices, monthStart);
+    const ytdInvoices = revenueInvoices(invoices, yearStart);
     const revenueMTD  = sumBy(mtdInvoices, "total_amount");
     const revenueYTD  = sumBy(ytdInvoices, "total_amount");
 
@@ -520,8 +538,13 @@ function BusinessCards() {
     const openAP     = toList(apList).filter(ap => ap.payment_status !== "paid" && (parseFloat(ap.outstanding_amount) || 0) > 0.01);
     const totalAP    = sumBy(openAP, "outstanding_amount");
 
-    // Cash position
-    const cashPos    = sumBy(toList(banks), "current_balance");
+    // Cash position — live from the ledger, so every receipt, payment, POS sale and
+    // journal moves it. The stored bank balance was written by only two forms.
+    const { total: cashPos, accountCount: cashAccountCount } = cashPositionFromLedger({
+        accounts,
+        lines: ledgerLines,
+        entries: journals
+    });
     const netWorkCap = cashPos + totalAR - totalAP;
 
     // Pending approvals
@@ -533,12 +556,8 @@ function BusinessCards() {
     );
     const collectedMTD = sumBy(mtdPayments, "amount");
 
-    // Low stock materials
-    const lowStock = toList(materials).filter(m => {
-        const stock  = parseFloat(m.current_stock) || 0;
-        const reorder = parseFloat(m.reorder_point) || 0;
-        return reorder > 0 && stock <= reorder && m.status === "active";
-    });
+    // Low stock — from StockLevel quantities, which every stock movement updates.
+    const lowStock = lowStockMaterials({ materials, stockLevels });
 
     // Top 5 customers by outstanding AR
     const customerAR = {};
@@ -556,7 +575,7 @@ function BusinessCards() {
             <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
                 {[
                     { label: "Revenue MTD", value: formatLkrM(revenueMTD),  sub: `YTD: ${formatLkrM(revenueYTD)}`,   color: "emerald", icon: TrendingUp },
-                    { label: "Cash Position", value: formatLkrM(cashPos),   sub: `${toList(banks).length} accounts`,   color: "blue",    icon: Landmark },
+                    { label: "Cash Position", value: formatLkrM(cashPos),   sub: `${cashAccountCount} cash/bank accounts`,   color: "blue",    icon: Landmark },
                     { label: "AR Outstanding", value: formatLkrM(totalAR),  sub: `${openAR.length} open invoices`,     color: "indigo",  icon: Receipt },
                     { label: "Overdue AR",    value: formatLkrM(totalODue), sub: `${overdueAR.length} past due`,       color: overdueAR.length > 0 ? "red" : "emerald", icon: AlertTriangle },
                     { label: "AP Outstanding", value: formatLkrM(totalAP),  sub: `${openAP.length} vendor invoices`,   color: "amber",   icon: TrendingDown },
@@ -625,7 +644,7 @@ function BusinessCards() {
                                     </thead>
                                     <tbody className="divide-y">
                                         {lowStock.slice(0, 8).map(m => {
-                                            const stock   = parseFloat(m.current_stock) || 0;
+                                            const stock   = m.on_hand;
                                             const reorder = parseFloat(m.reorder_point) || 0;
                                             const pct     = reorder > 0 ? Math.round((stock / reorder) * 100) : 0;
                                             return (
